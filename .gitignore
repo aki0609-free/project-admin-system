@@ -82,6 +82,8 @@ reports/
 **/reports-output/
 **/report-output-history/
 tmp/
+__pycache__/
+*.py[cod]
 
 # Environment-specific business data and signing assets
 backend/src/main/resources/env/fuyo/

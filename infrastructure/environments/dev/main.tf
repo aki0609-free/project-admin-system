@@ -160,6 +160,19 @@ module "ses_domain_identity" {
   cloudflare_zone_id = local.cloudflare_zone_id
 }
 
+module "ses_smtp_iam" {
+  source = "../../modules/ses_smtp_iam"
+
+  user_name        = "${local.name_prefix}-ses-smtp"
+  ses_identity_arn = module.ses_domain_identity.identity_arn
+  from_address     = "no-reply@${local.cloudflare_zone_name}"
+
+  tags = {
+    Component = "Mail"
+    Purpose   = "SesSmtpSending"
+  }
+}
+
 module "github_actions_deploy_iam" {
   source = "../../modules/github_actions_deploy_iam"
 
