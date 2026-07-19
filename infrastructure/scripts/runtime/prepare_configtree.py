@@ -109,6 +109,8 @@ runtime_mapping = {
     "openAiApiKey": "spring.ai.openai.api-key",
     "mongoUri": "spring.data.mongodb.uri",
     "cloudflareTunnelToken": "cloudflare.tunnel.token",
+    "mailHost": "spring.mail.host",
+    "mailPort": "spring.mail.port",
     "mailUsername": "spring.mail.username",
     "mailPassword": "spring.mail.password",
     "mailFromAddress": "project.mail.from-address",

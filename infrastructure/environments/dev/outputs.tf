@@ -167,6 +167,16 @@ output "ses_dkim_record_names" {
   value       = module.ses_domain_identity.dkim_record_names
 }
 
+output "ses_smtp_iam_user_name" {
+  description = "Dedicated IAM user name used for Amazon SES SMTP."
+  value       = module.ses_smtp_iam.user_name
+}
+
+output "ses_smtp_iam_user_arn" {
+  description = "Dedicated IAM user ARN used for Amazon SES SMTP."
+  value       = module.ses_smtp_iam.user_arn
+}
+
 output "github_actions_deploy_role_arn" {
   description = "IAM role ARN assumed by the protected GitHub dev Environment."
   value       = module.github_actions_deploy_iam.role_arn
