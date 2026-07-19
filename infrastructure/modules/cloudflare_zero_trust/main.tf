@@ -12,15 +12,15 @@ resource "cloudflare_zero_trust_access_identity_provider" "one_time_pin" {
   account_id = var.account_id
   # Cloudflare represents the account-level One-time PIN provider with an empty
   # custom name and renders the provider type as its display label.
-  name       = ""
-  type       = "onetimepin"
-  config     = {}
+  name   = ""
+  type   = "onetimepin"
+  config = {}
 }
 
 resource "cloudflare_zero_trust_access_policy" "application_users" {
-  account_id = var.account_id
-  name       = var.access_policy_name
-  decision   = "allow"
+  account_id       = var.account_id
+  name             = var.access_policy_name
+  decision         = "allow"
   session_duration = "24h"
 
   connection_rules = {
@@ -37,12 +37,12 @@ resource "cloudflare_zero_trust_access_policy" "application_users" {
 }
 
 resource "cloudflare_zero_trust_access_application" "application" {
-  account_id                = var.account_id
-  name                      = var.access_application_name
-  domain                    = local.application_hostname
-  type                      = "self_hosted"
-  session_duration          = "24h"
-  auto_redirect_to_identity = false
+  account_id                 = var.account_id
+  name                       = var.access_application_name
+  domain                     = local.application_hostname
+  type                       = "self_hosted"
+  session_duration           = "24h"
+  auto_redirect_to_identity  = false
   enable_binding_cookie      = false
   http_only_cookie_attribute = false
   options_preflight_bypass   = false

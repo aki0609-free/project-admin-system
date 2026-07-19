@@ -77,6 +77,8 @@ crash.*.log
 # =========================
 uploads/
 reports/
+!backend/src/main/resources/reports/
+!backend/src/main/resources/reports/**
 **/reports-output/
 **/report-output-history/
 tmp/
