@@ -6,10 +6,13 @@ resource "aws_iam_user" "this" {
 
 data "aws_iam_policy_document" "send_raw_email" {
   statement {
-    sid       = "SendRawEmailFromProjectAdmin"
-    effect    = "Allow"
-    actions   = ["ses:SendRawEmail"]
-    resources = [var.ses_identity_arn]
+    sid     = "SendRawEmailFromProjectAdmin"
+    effect  = "Allow"
+    actions = ["ses:SendRawEmail"]
+    # SES SMTP evaluates SendRawEmail against identities involved in the
+    # request. Keep Resource broad as documented for SMTP, and constrain the
+    # usable sender with ses:FromAddress below.
+    resources = ["*"]
 
     condition {
       test     = "StringEquals"
