@@ -35,3 +35,15 @@ variable "github_repository" {
   type        = string
   default     = "aki0609-free/project-admin-system"
 }
+
+variable "github_repository_owner_id" {
+  description = "Immutable numeric GitHub repository owner ID used by the customized OIDC subject."
+  type        = string
+  default     = "73347656"
+}
+
+variable "github_repository_id" {
+  description = "Immutable numeric GitHub repository ID used by the customized OIDC subject."
+  type        = string
+  default     = "1305657877"
+}
