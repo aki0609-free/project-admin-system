@@ -103,6 +103,8 @@ app:
       enabled: true
 
 project:
+  cors:
+    allowed-origins: ${PROJECT_CORS_ALLOWED_ORIGINS:http://localhost:5173}
   storage:
     default-type: ${PROJECT_STORAGE_DEFAULT_TYPE:LOCAL}
     local-base-path: ${PROJECT_STORAGE_LOCAL_BASE_PATH:storage}
