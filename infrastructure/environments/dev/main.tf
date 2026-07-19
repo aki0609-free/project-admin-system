@@ -153,6 +153,13 @@ module "cloudflare_zero_trust" {
   allowed_emails          = var.cloudflare_allowed_emails
 }
 
+module "ses_domain_identity" {
+  source = "../../modules/ses_domain_identity"
+
+  domain             = local.cloudflare_zone_name
+  cloudflare_zone_id = local.cloudflare_zone_id
+}
+
 module "github_actions_deploy_iam" {
   source = "../../modules/github_actions_deploy_iam"
 

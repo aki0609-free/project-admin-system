@@ -152,6 +152,21 @@ output "cloudflare_tunnel_id" {
   value       = module.cloudflare_zero_trust.tunnel_id
 }
 
+output "ses_domain_identity_arn" {
+  description = "Amazon SES domain identity ARN."
+  value       = module.ses_domain_identity.identity_arn
+}
+
+output "ses_domain_identity" {
+  description = "Amazon SES verified sending domain."
+  value       = module.ses_domain_identity.domain
+}
+
+output "ses_dkim_record_names" {
+  description = "Cloudflare DNS names used by Amazon SES Easy DKIM."
+  value       = module.ses_domain_identity.dkim_record_names
+}
+
 output "github_actions_deploy_role_arn" {
   description = "IAM role ARN assumed by the protected GitHub dev Environment."
   value       = module.github_actions_deploy_iam.role_arn
