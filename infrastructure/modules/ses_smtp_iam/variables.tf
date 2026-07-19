@@ -3,11 +3,6 @@ variable "user_name" {
   type        = string
 }
 
-variable "ses_identity_arn" {
-  description = "Verified SES identity ARN from which SMTP mail can be sent."
-  type        = string
-}
-
 variable "from_address" {
   description = "Exact From address permitted for the SMTP user."
   type        = string
