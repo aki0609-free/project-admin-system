@@ -1,6 +1,7 @@
 {
   "name": "projectadmin",
   "version": "1.0.0",
+  "private": true,
   "main": "index.js",
   "scripts": {
     "backend": "cd backend && ./gradlew bootRun",
@@ -27,7 +28,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "description": "",
   "devDependencies": {
     "concurrently": "^9.2.1"
