@@ -1,52 +1,117 @@
-version: "3.9"
+name: project-admin-local
 
 services:
   mysql:
-    image: mysql:8.0
-    container_name: project-mysql
-    restart: always
+    image: mysql:8.4
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: app_db
+      MYSQL_ROOT_PASSWORD: ${LOCAL_MYSQL_ROOT_PASSWORD:-projectadmin-root-local}
+      MYSQL_DATABASE: ADMIN
+      MYSQL_USER: projectadmin_app
+      MYSQL_PASSWORD: ${LOCAL_MYSQL_PASSWORD:-projectadmin-app-local}
+      TZ: Asia/Tokyo
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --host=127.0.0.1 --user=root --password=$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
 
   mongodb:
     image: mongo:7
-    container_name: project-mongo
-    restart: always
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
 
   backend:
-    build: ./backend
-    container_name: project-backend
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ADMIN?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Tokyo&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: projectadmin_app
+      SPRING_DATASOURCE_PASSWORD: ${LOCAL_MYSQL_PASSWORD:-projectadmin-app-local}
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/project_admin_local
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "false"
+      SPRING_JPA_FORMAT_SQL: "false"
+      SPRING_BATCH_JDBC_INITIALIZE_SCHEMA: always
+      SPRING_FLYWAY_ENABLED: "false"
+      APP_AI_ENABLED: "false"
+      SPRING_AI_MODEL_CHAT: none
+      SPRING_AI_MODEL_EMBEDDING: none
+      SPRING_AI_MODEL_IMAGE: none
+      SPRING_AI_MODEL_AUDIO_TRANSCRIPTION: none
+      SPRING_AI_MODEL_AUDIO_SPEECH: none
+      SPRING_AI_MODEL_MODERATION: none
+      SPRING_AI_CHAT_CLIENT_ENABLED: "false"
+      OPENAI_API_KEY: ""
+      PROJECT_STORAGE_DEFAULT_TYPE: LOCAL
+      PROJECT_STORAGE_LOCAL_BASE_PATH: /app/storage
+      PROJECT_STORAGE_S3_ENABLED: "false"
+      JWT_SECRET: project-admin-local-only-jwt-secret-change-before-shared-use
+      MANAGEMENT_HEALTH_MAIL_ENABLED: "false"
+      TZ: Asia/Tokyo
     depends_on:
-      - mysql
-      - mongodb
+      mysql:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8080:8080"
     volumes:
-      - ./backend:/app
-    working_dir: /app
-    command: ./gradlew bootRun
+      - backend_storage:/app/storage
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
 
   frontend:
-    build: ./frontend
-    container_name: project-frontend
+    build:
+      context: frontend
+      dockerfile: Dockerfile
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-    working_dir: /app
-    command: npm run dev
+      - "5173:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
 
 volumes:
   mysql_data:
   mongo_data:
+  redis_data:
+  backend_storage:

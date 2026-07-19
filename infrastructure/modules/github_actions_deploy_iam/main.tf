@@ -2,10 +2,10 @@ data "aws_caller_identity" "current" {}
 data "aws_partition" "current" {}
 
 locals {
-  github_oidc_host       = "token.actions.githubusercontent.com"
-  github_environment_sub = "repo:${var.github_repository}:environment:${var.github_environment}"
+  github_oidc_host         = "token.actions.githubusercontent.com"
+  github_environment_sub   = "repo:${var.github_repository}:environment:${var.github_environment}"
   application_instance_arn = "arn:${data.aws_partition.current.partition}:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:instance/${var.application_instance_id}"
-  run_shell_document_arn = "arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}::document/AWS-RunShellScript"
+  run_shell_document_arn   = "arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}::document/AWS-RunShellScript"
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
@@ -114,9 +114,9 @@ data "aws_iam_policy_document" "deploy" {
   }
 
   statement {
-    sid       = "RunDeploymentCommand"
-    effect    = "Allow"
-    actions   = ["ssm:SendCommand"]
+    sid     = "RunDeploymentCommand"
+    effect  = "Allow"
+    actions = ["ssm:SendCommand"]
     resources = [
       local.application_instance_arn,
       local.run_shell_document_arn,

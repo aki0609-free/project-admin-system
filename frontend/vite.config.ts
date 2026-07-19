@@ -1,23 +1,12 @@
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
-  // Storybook 判定
-  const isStorybook = process.argv.some((arg) =>
-    arg.includes('storybook')
-  )
-
   return {
-    plugins: [
-      vue(),
-
-      // Storybook では DevTools を無効化
-      !isStorybook && mode === 'development' && ''/*vueDevTools()*/,
-    ].filter(Boolean),
+    plugins: [vue()],
 
     worker: {
       format: 'es',

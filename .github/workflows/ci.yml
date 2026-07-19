@@ -40,6 +40,10 @@ jobs:
           --tests 'com.project.backend.common.sanitizer.*'
           --tests 'com.project.backend.features.system.mail.*'
           --tests 'com.project.backend.features.system.report.*'
+      - name: Observe full backend test baseline
+        continue-on-error: true
+        working-directory: backend
+        run: ./gradlew --no-daemon test
       - name: Package backend
         working-directory: backend
         run: ./gradlew --no-daemon clean bootJar -x test
@@ -60,6 +64,45 @@ jobs:
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
+      - name: Audit production dependencies
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
+      - name: Verify unit-test configuration
+        working-directory: frontend
+        run: npm run test:unit -- --run --project unit --passWithNoTests
+      - name: Observe frontend type baseline
+        continue-on-error: true
+        working-directory: frontend
+        run: npm run type-check
+      - name: Observe frontend lint baseline
+        continue-on-error: true
+        working-directory: frontend
+        run: npm run lint:check
       - name: Build frontend
         working-directory: frontend
         run: npm run build-only
+
+  terraform:
+    name: Terraform format and validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: "1.15.5"
+      - name: Check Terraform formatting
+        working-directory: infrastructure
+        run: terraform fmt -check -recursive
+      - name: Validate bootstrap configuration
+        working-directory: infrastructure/bootstrap
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+      - name: Validate DEV configuration
+        working-directory: infrastructure/environments/dev
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
