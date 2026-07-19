@@ -1,0 +1,201 @@
+/* =========================
+   TABLE
+========================= */
+.mlh-table {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+  font-size: 13px;
+}
+
+/* =========================
+   WRAPPER（横スクロール）
+========================= */
+.mlh-table-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-width: 100%;
+  width: 100%;
+  position: relative;
+}
+
+/* =========================
+   共通セル（縦線統一）
+========================= */
+.mlh-th,
+.mlh-td,
+.mlh-filter-cell {
+  border-right: 1px solid #e5e7eb;
+}
+.mlh-th,
+.mlh-td {
+  white-space: nowrap;
+}
+
+/* 最後の列だけ縦線なし */
+.mlh-th:last-child,
+.mlh-td:last-child,
+.mlh-filter-cell:last-child {
+  border-right: none;
+}
+
+/* =========================
+   HEADER
+========================= */
+.mlh-th {
+  border: 1px solid #ddd;
+  padding: 8px;
+  background: #fafafa;
+  font-weight: 600;
+
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+.mlh-group {
+  background: #f0f4f8;
+}
+
+.mlh-leaf {
+  background: #ffffff;
+}
+
+/* =========================
+   ROW HEADER（左固定）
+========================= */
+.mlh-row-header {
+  background: #f9fafb;
+  font-weight: 600;
+
+  position: sticky;
+  left: 0;
+  z-index: 5;
+
+  white-space: nowrap;
+}
+
+/* z-index調整 */
+.mlh-th.mlh-row-header {
+  z-index: 7;
+}
+
+.mlh-filter-row .mlh-row-header {
+  z-index: 6;
+}
+
+.mlh-td.mlh-row-header {
+  z-index: 5;
+}
+
+.mlh-tfoot .mlh-row-header {
+  z-index: 8;
+}
+
+/* =========================
+   BODY
+========================= */
+.mlh-td {
+  border: 1px solid #eee;
+  padding: 6px 8px;
+  background: #fff;
+}
+
+.mlh-table tbody tr:hover {
+  background: #f5f7fa;
+}
+
+/* =========================
+   CELL
+========================= */
+.mlh-cell {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.mlh-input {
+  width: 100%;
+}
+
+/* error */
+.mlh-input .v-field--error {
+  background: #fff5f5;
+}
+
+/* =========================
+   FILTER
+========================= */
+.mlh-filter-row {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* 👇 全thに適用（左端も含める） */
+.mlh-filter-row th {
+  border-right: 1px solid #e5e7eb;
+}
+
+/* 最後だけ消す */
+.mlh-filter-row th:last-child {
+  border-right: none;
+}
+
+.mlh-filter-cell {
+  padding: 4px 6px;
+  vertical-align: middle;
+}
+
+.mlh-filter-inner {
+  display: flex;
+  align-items: center;
+  height: 40px;
+}
+
+/* Vuetify調整 */
+.mlh-filter-inner .v-field {
+  font-size: 12px;
+}
+
+.mlh-filter-inner .v-field--variant-outlined {
+  height: 32px;
+}
+
+.mlh-filter-inner .v-select {
+  width: 100%;
+}
+
+.mlh-filter-cell:hover {
+  background: #f3f4f6;
+}
+
+/* =========================
+   FOOTER（合計固定）
+========================= */
+.mlh-tfoot {
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
+
+  background: #fff;
+  border-top: 2px solid #e5e7eb;
+  font-weight: 600;
+}
+
+.mlh-tfoot .mlh-td {
+  background: #fff;
+}
+
+/* =========================
+   UTILS
+========================= */
+.cell-placeholder {
+  min-height: 24px;
+  display: inline-block;
+  width: 100%;
+}
+
+.required {
+  background-color: #ffecec;
+  border: 1px solid #ffb3b3;
+}

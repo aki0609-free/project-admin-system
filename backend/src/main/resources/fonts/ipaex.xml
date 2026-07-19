@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fontFamilies>
+    <fontFamily name="IPAexGothic">
+        <normal>fonts/ipaexg.ttf</normal>
+        <bold>fonts/ipaexg.ttf</bold>
+        <italic>fonts/ipaexg.ttf</italic>
+        <boldItalic>fonts/ipaexg.ttf</boldItalic>
+        <pdfEncoding>Identity-H</pdfEncoding>
+        <pdfEmbedded>true</pdfEmbedded>
+    </fontFamily>
+</fontFamilies>

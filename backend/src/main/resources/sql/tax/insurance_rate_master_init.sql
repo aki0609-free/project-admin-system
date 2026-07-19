@@ -1,0 +1,18 @@
+INSERT INTO insurance_rate_master (insurance_type, year, employee_rate, employer_rate) VALUES
+-- 2024年度
+('EMPLOYMENT', 2024, 0.006, 0.006),
+('HEALTH', 2024, 0.0490, 0.0490),
+('PENSION', 2024, 0.0910, 0.0910),
+('NURSING', 2024, 0.0075, 0.0075),
+
+-- 2025年度
+('EMPLOYMENT', 2025, 0.006, 0.006),
+('HEALTH', 2025, 0.0492, 0.0492),
+('PENSION', 2025, 0.0912, 0.0912),
+('NURSING', 2025, 0.0078, 0.0078),
+
+-- 2026年度
+('EMPLOYMENT', 2026, 0.006, 0.006),
+('HEALTH', 2026, 0.0495, 0.0495),
+('PENSION', 2026, 0.0915, 0.0915),
+('NURSING', 2026, 0.008, 0.008);

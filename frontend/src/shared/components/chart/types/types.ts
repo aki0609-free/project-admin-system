@@ -1,0 +1,1 @@
+export type SupportedChartType = 'bar' | 'line' | 'pie' | 'doughnut'

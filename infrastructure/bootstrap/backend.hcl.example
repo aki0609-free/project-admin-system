@@ -1,0 +1,5 @@
+bucket       = "replace-with-a-globally-unique-terraform-state-bucket"
+key          = "bootstrap/terraform.tfstate"
+region       = "ap-northeast-1"
+encrypt      = true
+use_lockfile = true

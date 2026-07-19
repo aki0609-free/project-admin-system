@@ -1,0 +1,15 @@
+.git
+.github
+.idea
+.vscode
+.storybook
+node_modules
+dist
+coverage
+storybook-static
+*.log
+.env
+.env.*
+!.env.example
+Dockerfile*
+README.md

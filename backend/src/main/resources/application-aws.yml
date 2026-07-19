@@ -1,0 +1,28 @@
+spring:
+  ai:
+    model:
+      chat: ${SPRING_AI_MODEL_CHAT:none}
+    chat:
+      client:
+        enabled: ${SPRING_AI_CHAT_CLIENT_ENABLED:false}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  batch:
+    jdbc:
+      initialize-schema: never
+
+  flyway:
+    enabled: false
+
+logging:
+  level:
+    "[org.springframework.security]": INFO
+    "[org.hibernate.SQL]": INFO
+
+app:
+  ai:
+    enabled: ${APP_AI_ENABLED:false}

@@ -1,0 +1,8 @@
+{
+  "reportCode": "RPT_TEST_CSV",
+  "params": {
+    "category": "備品",
+    "itemName": "ノートPC",
+    "amount": 128000
+  }
+}

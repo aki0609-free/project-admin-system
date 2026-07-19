@@ -1,0 +1,132 @@
+/* Root */
+.pivot-root {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+/* Wrapper */
+.pivot-wrapper {
+  overflow: auto;
+}
+
+/* Table */
+.pivot-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+/* Header */
+.header {
+  background: #eef1f5;
+  padding: 10px;
+  text-align: center;
+  font-weight: 600;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Row header */
+.row-header {
+  background: #fafafa;
+  font-weight: 500;
+  padding: 10px;
+  border-right: 1px solid #eee;
+}
+
+/* Cell */
+.cell {
+  padding: 8px 12px;
+  text-align: right;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* Hover */
+.row:hover {
+  background: #f7faff;
+}
+
+/* Sticky */
+.sticky-left {
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+/* Totals */
+.total-cell {
+  font-weight: 600;
+  background: #fafafa;
+}
+
+.total-row {
+  background: #f9fafb;
+}
+
+.grand-total {
+  font-weight: 700;
+  background: #e5e7eb;
+}
+
+/* Click */
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  outline: 2px solid #3b82f6;
+}
+
+.pivot-toolbar {
+  display: flex;
+  justify-content: space-between; /* ← これが右寄せの本体 */
+  align-items: center;
+  padding: 14px 18px;
+  background: linear-gradient(to right, #fafafa, #f3f4f6);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.toolbar-right {
+  display: flex;
+  gap: 8px;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.pivot-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.filter-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center; /* ← 横並び */
+  gap: 6px;
+}
+
+.filter-row {
+  margin-top: 22px;
+}
+
+.filter-column {
+  margin-top: 22px;
+}
+
+.filter-title {
+  font-size: 11px;
+  color: #888;
+  white-space: nowrap;
+}

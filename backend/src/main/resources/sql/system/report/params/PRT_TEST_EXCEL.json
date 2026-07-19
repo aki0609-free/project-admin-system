@@ -1,0 +1,9 @@
+{
+  "reportCode": "RPT_TEST_EXCEL",
+  "params": {
+    "employeeCode": "E001",
+    "employeeName": "山田太郎",
+    "departmentName": "総務部",
+    "salary": 300000
+  }
+}

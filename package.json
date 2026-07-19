@@ -1,0 +1,39 @@
+{
+  "name": "projectadmin",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "backend": "cd backend && ./gradlew bootRun",
+    "frontend": "cd frontend && npm run dev",
+    "backend:clean": "cd backend && ./gradlew clean",
+    "frontend:clean": "cd frontend && rm -rf node_modules/.vite dist",
+    "clean": "concurrently \"npm run backend:clean\" \"npm run frontend:clean\"",
+    "clean:all": "concurrently \"cd backend && ./gradlew clean\" \"cd frontend && rm -rf node_modules dist .vite node_modules/.vite package-lock.json\"",
+    "reset": "npm run clean:all && cd frontend && npm install",
+    "db:mysql": "mysql.server start",
+    "db:mongo": "brew services start mongodb/brew/mongodb-community",
+    "db": "concurrently \"npm run db:mysql\" \"npm run db:mongo\"",
+    "db:stop:mysql": "mysql.server status || mysql.server stop",
+    "db:stop:mongo": "brew services list | grep mongodb-community ||  services stop mongodb/brew/mongodb-community",
+    "db:stop": "concurrently \"npm run db:stop:mysql\" \"npm run db:stop:mongo\"",
+    "stop": "concurrently \"npm run db:stop\"",
+    "dev": "concurrently \"npm run db\" \"npm run backend\" \"npm run frontend\"",
+    "docker:dev": "docker compose up -d",
+    "docker:logs": "docker compose logs -f",
+    "docker:logs:backend": "docker compose logs -f backend",
+    "docker:logs:frontend": "docker compose logs -f frontend",
+    "docker:stop": "docker compose down",
+    "docker:build": "docker compose up --build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "monaco-editor": "^0.55.1",
+    "vue-monaco-editor": "^0.0.19"
+  }
+}

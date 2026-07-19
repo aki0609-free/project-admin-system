@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    "lib": ["ESNext", "DOM"],
+
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+
+    "jsx": "preserve",
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+
+    "types": ["vite/client"]
+  },
+
+  "include": ["env.d.ts", "src/**/*"],
+  "exclude": [
+    "node_modules",
+    "src/**/__tests__/*",
+    "src/**/*.vue.js",
+    "src/**/*.vue.ts",
+    "src/**/*.d.ts",
+    "src/**/*.js.map"
+  ]
+}

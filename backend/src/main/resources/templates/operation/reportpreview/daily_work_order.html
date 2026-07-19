@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>作業証明伝票 Preview</title>
+
+<style>
+    body {
+        margin: 24px;
+        font-family: "Yu Gothic", "Meiryo", sans-serif;
+        font-size: 14px;
+        color: #1f2937;
+        background: #f8fafc;
+    }
+
+    .page {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 24px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+    }
+
+    .title {
+        margin: 0 0 24px;
+        text-align: center;
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+    }
+
+    .summary {
+        display: grid;
+        grid-template-columns: 140px 1fr 140px 1fr;
+        gap: 10px 16px;
+        margin-bottom: 24px;
+        padding: 14px 16px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+    }
+
+    .summary-label {
+        font-weight: 700;
+        color: #475569;
+    }
+
+    .summary-value {
+        color: #111827;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+    }
+
+    table {
+        width: 100%;
+        min-width: 1100px;
+        border-collapse: collapse;
+        background: #ffffff;
+    }
+
+    thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #eef2f7;
+        color: #334155;
+        font-weight: 700;
+        text-align: left;
+    }
+
+    th,
+    td {
+        border-bottom: 1px solid #e5e7eb;
+        border-right: 1px solid #e5e7eb;
+        padding: 8px 10px;
+        vertical-align: top;
+        white-space: nowrap;
+    }
+
+    th:last-child,
+    td:last-child {
+        border-right: none;
+    }
+
+    tbody tr:nth-child(even) {
+        background: #f9fafb;
+    }
+
+    tbody tr:hover {
+        background: #eff6ff;
+    }
+
+    .number {
+        width: 52px;
+        text-align: center;
+    }
+
+    .code {
+        width: 110px;
+    }
+
+    .name {
+        width: 150px;
+    }
+
+    .customer {
+        width: 190px;
+    }
+
+    .site {
+        width: 190px;
+    }
+
+    .distance {
+        width: 90px;
+        text-align: right;
+    }
+
+    .vehicle {
+        width: 80px;
+        text-align: center;
+    }
+
+    .note {
+        width: 200px;
+        white-space: normal;
+    }
+
+    .work {
+        min-width: 280px;
+        white-space: normal;
+    }
+
+    .empty {
+        padding: 32px;
+        text-align: center;
+        color: #64748b;
+    }
+</style>
+</head>
+
+<body>
+<div class="page">
+
+    <h1 class="title">作業証明伝票</h1>
+
+    <section class="summary">
+        <div class="summary-label">対象日</div>
+        <div
+            class="summary-value"
+            th:text="${#temporals.format(T(java.time.LocalDate).parse(request.targetDate), 'yyyy年M月d日')}">
+        </div>
+
+        <div class="summary-label">件数</div>
+        <div
+            class="summary-value"
+            th:text="${rows.size()} + ' 件'">
+        </div>
+    </section>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+            <tr>
+                <th class="number">No</th>
+                <th class="code">社員コード</th>
+                <th class="name">氏名</th>
+                <th class="customer">得意先</th>
+                <th class="site">現場</th>
+                <th class="distance">距離(km)</th>
+                <th class="vehicle">車両</th>
+                <th class="note">備考</th>
+                <th class="work">作業内容</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:if="${rows == null || rows.isEmpty()}">
+                <td colspan="9" class="empty">表示するデータがありません。</td>
+            </tr>
+
+            <tr th:each="row, stat : ${rows}">
+                <td class="number" th:text="${stat.count}"></td>
+                <td th:text="${row['employee_code']}"></td>
+                <td th:text="${row['employee_name']}"></td>
+                <td th:text="${row['customer_name']}"></td>
+                <td th:text="${row['site_name']}"></td>
+                <td
+                    class="distance"
+                    th:text="${row['distance_from_company_km'] != null ? row['distance_from_company_km'] + ' km' : ''}"
+                ></td>
+                <td 
+                    class="vehicle" 
+                    th:text="${row['vehicle_count'] != null ? row['vehicle_count'] + ' 台' : ''}"
+                ></td>
+                <td class="note" th:text="${row['note']}"></td>
+                <td class="work" th:text="${row['work_description']}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+</body>
+</html>

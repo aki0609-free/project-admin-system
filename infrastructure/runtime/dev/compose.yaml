@@ -1,0 +1,162 @@
+name: project-admin-dev
+
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:2026.7.2
+    user: "10001:10001"
+    restart: unless-stopped
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token-file
+      - /run/project-admin-secrets/cloudflare.tunnel.token
+    volumes:
+      - /opt/project-admin/config/backend-secrets:/run/project-admin-secrets:ro
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 128m
+    networks:
+      - application
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  redis:
+    image: redis:7.4-alpine
+    user: "999:1000"
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 128mb
+      - --maxmemory-policy
+      - noeviction
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    read_only: true
+    tmpfs:
+      - /data:size=16m,mode=0700,uid=999,gid=1000
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 192m
+    networks:
+      - application
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  backend:
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE must be set}
+    pull_policy: missing
+    restart: unless-stopped
+    init: true
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      AWS_REGION: ap-northeast-1
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-aws}
+      SPRING_CONFIG_IMPORT: optional:configtree:/run/project-admin-secrets/
+      APP_AI_ENABLED: ${APP_AI_ENABLED:-false}
+      SPRING_AI_MODEL_CHAT: ${SPRING_AI_MODEL_CHAT:-none}
+      SPRING_AI_MODEL_EMBEDDING: ${SPRING_AI_MODEL_EMBEDDING:-none}
+      SPRING_AI_MODEL_IMAGE: ${SPRING_AI_MODEL_IMAGE:-none}
+      SPRING_AI_MODEL_AUDIO_TRANSCRIPTION: ${SPRING_AI_MODEL_AUDIO_TRANSCRIPTION:-none}
+      SPRING_AI_MODEL_AUDIO_SPEECH: ${SPRING_AI_MODEL_AUDIO_SPEECH:-none}
+      SPRING_AI_MODEL_MODERATION: ${SPRING_AI_MODEL_MODERATION:-none}
+      SPRING_AI_CHAT_CLIENT_ENABLED: ${SPRING_AI_CHAT_CLIENT_ENABLED:-false}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_DATA_MONGODB_DATABASE: ${SPRING_DATA_MONGODB_DATABASE:-project_admin_dev}
+      MANAGEMENT_HEALTH_MAIL_ENABLED: ${MANAGEMENT_HEALTH_MAIL_ENABLED:-false}
+      PROJECT_STORAGE_DEFAULT_TYPE: S3
+      PROJECT_STORAGE_S3_ENABLED: "true"
+      PROJECT_STORAGE_S3_BUCKET: ${PROJECT_STORAGE_S3_BUCKET:?PROJECT_STORAGE_S3_BUCKET must be set}
+      PROJECT_STORAGE_LOCAL_BASE_PATH: /app/storage
+      PROJECT_IMPORTS_SCRIPT_PYTHON_COMMAND: /opt/projectadmin-python/bin/python
+    ports:
+      - 127.0.0.1:8080:8080
+    volumes:
+      - /opt/project-admin/config/backend-secrets:/run/project-admin-secrets:ro
+      - /opt/project-admin/logs:/app/logs
+      - backend_storage:/app/storage
+    read_only: true
+    tmpfs:
+      - /tmp/projectadmin:size=256m,mode=0700,uid=10001,gid=10001
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 2800m
+    stop_signal: SIGTERM
+    stop_grace_period: 150s
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 180s
+    networks:
+      - application
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "5"
+
+  frontend:
+    image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE must be set}
+    pull_policy: missing
+    restart: unless-stopped
+    init: true
+    depends_on:
+      backend:
+        condition: service_healthy
+    expose:
+      - "8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=0700,uid=101,gid=101
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - application
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  backend_storage:
+    name: project-admin-dev-backend-storage
+
+networks:
+  application:
+    name: project-admin-dev-application

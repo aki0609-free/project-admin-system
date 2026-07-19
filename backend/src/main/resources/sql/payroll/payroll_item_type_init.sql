@@ -1,0 +1,15 @@
+INSERT INTO payroll_item_types (id, code, name_ja, name_en, category, calc_type, is_active) VALUES
+(1, 'BASIC_SALARY', '基本給', 'Basic Salary', 'EARNING', 'FIXED', true),
+(2, 'EMPLOYMENT_INSURANCE', '雇用保険', 'Employment Insurance', 'DEDUCTION', 'RATE', true),
+(3, 'HEALTH_INSURANCE', '健康保険', 'Health Insurance', 'DEDUCTION', 'RATE', true),
+(4, 'PENSION', '厚生年金保険料', 'Employees Pension Insurance', 'DEDUCTION', 'RATE', true),
+(5, 'NURSING', '介護保険料', 'Nursing Care Insurance', 'DEDUCTION', 'RATE', true),
+(6, 'INCOME_TAX', '所得税', 'Income Tax', 'DEDUCTION', 'TABLE', true),
+(7, 'RESIDENT_TAX', '住民税', 'Resident Tax', 'DEDUCTION', 'FIXED', true),
+(8, 'LOAN', '借入金返済', 'Loan Repayment', 'DEDUCTION', 'FIXED', true),
+(9, 'DORMITORY', '寮費', 'Dormitory Fee', 'DEDUCTION', 'FIXED', true),
+(10, 'MOBILE', '携帯代', 'Mobile Fee', 'DEDUCTION', 'FIXED', true),
+(11, 'SAVINGS', '積立貯蓄', 'Savings Deduction', 'DEDUCTION', 'FIXED', true),
+(12, 'OVERTIME', '残業手当', 'Overtime Pay', 'EARNING', 'PER_HOUR', true),
+(13, 'WEEKEND_BONUS', '土日出勤手当', 'Weekend Bonus', 'EARNING', 'PER_HOUR', true),
+(14, 'NIGHT_SHIFT', '深夜手当', 'Night Shift Bonus', 'EARNING', 'PER_HOUR', true);

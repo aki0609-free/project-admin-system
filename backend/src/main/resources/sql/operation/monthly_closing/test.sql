@@ -1,0 +1,36 @@
+INSERT INTO monthly_closings
+(
+  tenant_id,
+  target_month,
+  attendance_count,
+  employee_count,
+  payment_total,
+  deduction_total,
+  net_payment_total,
+  billing_total,
+  status,
+  calculated_at,
+  closed_at,
+  note,
+  created_at,
+  updated_at,
+  deleted_at
+)
+VALUES
+(
+  'default',
+  '2026-05',
+  420,
+  26,
+  2450000,
+  320000,
+  2130000,
+  3120000,
+  'OPEN',
+  NULL,
+  NULL,
+  '',
+  NOW(),
+  NOW(),
+  NULL
+);

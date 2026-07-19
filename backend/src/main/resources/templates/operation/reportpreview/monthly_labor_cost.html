@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>月間労務費一覧</title>
+
+<style>
+body {
+  margin: 0;
+  padding: 18px;
+  font-family: "Yu Gothic", "Meiryo", sans-serif;
+  font-size: 11px;
+  color: #111827;
+  background: #f3f4f6;
+}
+
+.page {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 3px solid #111827;
+}
+
+.title {
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+.month {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.summary-area {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.summary-card {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.summary-label {
+  padding: 5px 8px;
+  background: #e5e7eb;
+  font-weight: 900;
+}
+
+.summary-value {
+  padding: 8px 10px;
+  text-align: right;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.table-wrapper {
+  max-height: 720px;
+  overflow: auto;
+  border: 1px solid #cbd5e1;
+}
+
+table {
+  min-width: 1700px;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: #fff;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 6px 4px;
+  background: #e5e7eb;
+  border: 1px solid #cbd5e1;
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
+}
+
+td {
+  padding: 5px 4px;
+  border: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+.employee {
+  font-weight: 900;
+}
+
+.sub {
+  margin-top: 2px;
+  font-size: 10px;
+  color: #64748b;
+}
+
+.right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.center {
+  text-align: center;
+}
+
+.money-main {
+  font-weight: 900;
+}
+
+.net {
+  font-weight: 900;
+  color: #047857;
+}
+
+.deduction {
+  color: #b91c1c;
+}
+
+.no-data {
+  padding: 24px;
+  text-align: center;
+  color: #6b7280;
+}
+
+@media print {
+  body {
+    padding: 0;
+    background: #fff;
+  }
+
+  .page {
+    max-width: none;
+    border: none;
+    border-radius: 0;
+  }
+
+  .table-wrapper {
+    max-height: none;
+    overflow: visible;
+    border: none;
+  }
+
+  th {
+    position: static;
+  }
+
+  table {
+    min-width: 100%;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="page" th:with="summary=${#lists.isEmpty(rows) ? null : rows[0]}">
+
+  <div class="header">
+    <div class="title">月間労務費一覧</div>
+    <div class="month">
+      対象月：
+      <span th:text="${summary == null ? '' : summary['target_month_label']}"></span>
+    </div>
+  </div>
+
+  <div th:if="${#lists.isEmpty(rows)}" class="no-data">
+    データがありません
+  </div>
+
+  <div class="summary-area" th:if="${!#lists.isEmpty(rows)}">
+    <div class="summary-card">
+      <div class="summary-label">総支給合計</div>
+      <div class="summary-value"
+           th:text="${#numbers.formatDecimal(#aggregates.sum(rows.![gross_amount ?: 0]), 0, 'COMMA', 0, 'POINT')} + '円'"></div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-label">手当合計</div>
+      <div class="summary-value"
+           th:text="${#numbers.formatDecimal(#aggregates.sum(rows.![allowance_total ?: 0]), 0, 'COMMA', 0, 'POINT')} + '円'"></div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-label">控除合計</div>
+      <div class="summary-value deduction"
+           th:text="${#numbers.formatDecimal(#aggregates.sum(rows.![deduction_total ?: 0]), 0, 'COMMA', 0, 'POINT')} + '円'"></div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-label">差引支給合計</div>
+      <div class="summary-value net"
+           th:text="${#numbers.formatDecimal(#aggregates.sum(rows.![net_amount ?: 0]), 0, 'COMMA', 0, 'POINT')} + '円'"></div>
+    </div>
+  </div>
+
+  <div class="table-wrapper" th:if="${!#lists.isEmpty(rows)}">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 150px;">社員</th>
+          <th style="width: 70px;">出勤</th>
+          <th style="width: 70px;">有給</th>
+          <th style="width: 80px;">労働H</th>
+          <th style="width: 80px;">残業H</th>
+          <th style="width: 80px;">深夜H</th>
+
+          <th style="width: 100px;">総支給</th>
+          <th style="width: 100px;">手当合計</th>
+
+          <th style="width: 90px;">健保</th>
+          <th style="width: 90px;">厚年</th>
+          <th style="width: 90px;">雇用</th>
+          <th style="width: 90px;">所得税</th>
+          <th style="width: 90px;">住民税</th>
+
+          <th style="width: 100px;">法定控除</th>
+          <th style="width: 100px;">その他控除</th>
+          <th style="width: 90px;">前払返済</th>
+          <th style="width: 90px;">貯金</th>
+          <th style="width: 100px;">控除合計</th>
+          <th style="width: 110px;">差引支給</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr th:each="row : ${rows}">
+          <td>
+            <div class="employee" th:text="${row['employee_name']}"></div>
+            <div class="sub" th:text="${row['employee_code']}"></div>
+          </td>
+
+          <td class="right" th:text="${#numbers.formatDecimal(row['work_day_count'] ?: 0, 0, 'COMMA', 0, 'POINT')}"></td>
+          <td class="right" th:text="${#numbers.formatDecimal(row['paid_leave_days'] ?: 0, 0, 'COMMA', 2, 'POINT')}"></td>
+          <td class="right" th:text="${#numbers.formatDecimal(row['total_work_hours'] ?: 0, 0, 'COMMA', 2, 'POINT')}"></td>
+          <td class="right" th:text="${#numbers.formatDecimal(row['total_overtime_hours'] ?: 0, 0, 'COMMA', 2, 'POINT')}"></td>
+          <td class="right" th:text="${#numbers.formatDecimal(row['total_night_work_hours'] ?: 0, 0, 'COMMA', 2, 'POINT')}"></td>
+
+          <td class="right money-main" th:text="${#numbers.formatDecimal(row['gross_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + '円'"></td>
+          <td class="right" th:text="${#numbers.formatDecimal(row['allowance_total'] ?: 0, 0, 'COMMA', 0, 'POINT')} + '円'"></td>
+
+          <td class="right" th:text="${#numbers.formatDecimal(row['health_insurance_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + '円'"></td>
+          <td class="right" th:text="${#numbers.formatDecimal(row['pension_insurance_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + '円'"></td>
+          <td class="right" th:text="${#numbers.formatDecimal(row['employment_insurance_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + '円'"></td>
+          <td class="right" th:text="${#numbers.formatDecimal(row['income_tax_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + '円'"></td>
+          <td class="right" th:text="${#numbers.formatDecimal(row['resident_tax_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + '円'"></td>
+
+          <td class="right deduction" th:text="${#numbers.formatDecimal(row['legal_deduction_total'] ?: 0, 0, 'COMMA', 0, 'POINT')} + '円'"></td>
+          <td class="right deduction" th:text="${#numbers.formatDecimal(row['other_deduction_total'] ?: 0, 0, 'COMMA', 0, 'POINT')} + '円'"></td>
+          <td class="right deduction" th:text="${#numbers.formatDecimal(row['loan_repayment_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + '円'"></td>
+          <td class="right deduction" th:text="${#numbers.formatDecimal(row['saving_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + '円'"></td>
+          <td class="right deduction money-main" th:text="${#numbers.formatDecimal(row['deduction_total'] ?: 0, 0, 'COMMA', 0, 'POINT')} + '円'"></td>
+
+          <td class="right net" th:text="${#numbers.formatDecimal(row['net_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + '円'"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</body>
+</html>

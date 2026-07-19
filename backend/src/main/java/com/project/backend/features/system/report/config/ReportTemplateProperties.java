@@ -1,0 +1,16 @@
+package com.project.backend.features.system.report.config;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@Component
+@ConfigurationProperties(prefix = "app.report")
+public class ReportTemplateProperties {
+    private String templateBaseDir;
+    private String historyBaseDir;
+}

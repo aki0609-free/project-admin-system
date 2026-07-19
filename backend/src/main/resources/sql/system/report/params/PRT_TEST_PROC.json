@@ -1,0 +1,7 @@
+{
+  "reportCode": "RPT_TEST_PROC",
+  "params": {
+    "message": "Procedureテストです",
+    "targetName": "AKIさん"
+  }
+}

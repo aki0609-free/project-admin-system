@@ -1,0 +1,7 @@
+{
+  "reportCode": "RPT_TEST_SIMPLE",
+  "params": {
+    "message": "シンプル帳票テスト",
+    "target_name": "AKIさん"
+  }
+}

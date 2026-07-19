@@ -1,0 +1,19 @@
+.rg-table-wrapper {
+  overflow: auto;
+}
+
+.rg-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rg-table th,
+.rg-table td {
+  border: 1px solid #ddd;
+  padding: 6px 8px;
+}
+
+.rg-group-row td {
+  background: #eef2f7;
+  font-weight: 600;
+}

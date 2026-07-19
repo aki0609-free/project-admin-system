@@ -1,0 +1,30 @@
+INSERT INTO daily_closings
+(
+  tenant_id,
+  target_date,
+  attendance_count,
+  work_report_count,
+  payment_amount,
+  status,
+  calculated_at,
+  closed_at,
+  note,
+  created_at,
+  updated_at,
+  deleted_at
+)
+VALUES
+(
+  'default',
+  '2026-05-16',
+  18,
+  12,
+  168000,
+  'OPEN',
+  NULL,
+  NULL,
+  '',
+  NOW(),
+  NOW(),
+  NULL
+);

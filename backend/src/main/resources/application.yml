@@ -1,0 +1,127 @@
+spring:
+  application:
+    name: backend
+  
+  thymeleaf:
+    cache: false
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/ADMIN?useSSL=false&serverTimezone=Asia/Tokyo&characterEncoding=UTF-8}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/admin}
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    show-sql: ${SPRING_JPA_SHOW_SQL:true}
+    properties:
+      "[hibernate.format_sql]": ${SPRING_JPA_FORMAT_SQL:true}
+  
+  batch:
+    jdbc:
+      initialize-schema: ${SPRING_BATCH_JDBC_INITIALIZE_SCHEMA:always}
+    job: 
+      enabled: false
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  
+  ai:
+    model:
+      chat: ${SPRING_AI_MODEL_CHAT:openai}
+    chat:
+      client:
+        enabled: ${SPRING_AI_CHAT_CLIENT_ENABLED:true}
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: gpt-4o-mini
+          temperature: 0.2
+    
+  flyway:
+    enabled: ${SPRING_FLYWAY_ENABLED:false}
+    url: ${SPRING_FLYWAY_URL:${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/ADMIN?useSSL=false&serverTimezone=Asia/Tokyo&characterEncoding=UTF-8}}
+    user: ${SPRING_FLYWAY_USER:${SPRING_DATASOURCE_USERNAME:root}}
+    password: ${SPRING_FLYWAY_PASSWORD:${SPRING_DATASOURCE_PASSWORD:}}
+    locations: classpath:db/migration
+
+  lifecycle:
+    timeout-per-shutdown-phase: 120s
+
+server:
+  shutdown: graceful
+
+management:
+  tracing:
+    enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    "[org.springframework.security]": DEBUG
+
+jwt:
+  secret: ${JWT_SECRET:my-super-secret-key-my-super-secret-key}
+  expiration: 3600000
+
+keystore:
+  path: ${KEYSTORE_PATH:classpath:keystore/admin.p12}
+  password: ${KEYSTORE_PASSWORD:changeit}
+  alias: ${KEYSTORE_ALIAS:admin}
+
+app:
+  ai:
+    enabled: ${APP_AI_ENABLED:true}
+    analysis:
+      prompt-version: v1
+  report:
+    init:
+      enabled: true
+
+project:
+  storage:
+    default-type: ${PROJECT_STORAGE_DEFAULT_TYPE:LOCAL}
+    local-base-path: ${PROJECT_STORAGE_LOCAL_BASE_PATH:storage}
+    template:
+      path: reports
+    output:
+      path: reports-output
+    imports:
+      script:
+        path: imports/scripts
+      csv:
+        path: imports/csv
+    s3:
+      enabled: ${PROJECT_STORAGE_S3_ENABLED:false}
+      bucket: ${PROJECT_STORAGE_S3_BUCKET:}
+      region: ${AWS_REGION:ap-northeast-1}
+  imports:
+    script:
+      python-command: ${PROJECT_IMPORTS_SCRIPT_PYTHON_COMMAND:.venv/bin/python}
+  mail:
+    from-address: ${PROJECT_MAIL_FROM_ADDRESS:${SPRING_MAIL_USERNAME:}}
+    from-name: ${PROJECT_MAIL_FROM_NAME:ProjectAdmin}

@@ -1,0 +1,103 @@
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+*.iml
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Environment
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Node (Vue)
+# =========================
+node_modules/
+dist/
+coverage/
+.npm/
+.pnpm-store/
+.cache/
+*.local
+
+# =========================
+# Java (Spring Boot)
+# =========================
+target/
+build/
+.gradle/
+*.class
+
+# Maven wrapper logs
+.mvn/wrapper/maven-wrapper.jar
+
+# =========================
+# IntelliJ
+# =========================
+out/
+
+# =========================
+# Docker
+# =========================
+docker-data/
+infrastructure/runtime/*/deployment.env
+
+# Terraform local state / plans / variable values
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan*
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+**/backend.hcl
+!**/backend.hcl.example
+.terraform.tfstate.lock.info
+crash.log
+crash.*.log
+
+# =========================
+# Upload / Generated Files
+# =========================
+uploads/
+reports/
+**/reports-output/
+**/report-output-history/
+tmp/
+
+# Environment-specific business data and signing assets
+backend/src/main/resources/env/fuyo/
+backend/src/main/resources/image/sign/*
+!backend/src/main/resources/image/sign/README.md
+
+# =========================
+# Key / Secret
+# =========================
+*.keystore
+*.jks
+*.pem
+*.key
+*.p12
+
+# =========================
+# Database
+# =========================
+*.db
+*.sqlite
+*.sqlite3

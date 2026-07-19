@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      font-family: "Hiragino Sans", sans-serif;
+      margin: 16px;
+      color: #0f172a;
+      background: #fff;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0 0 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 8px;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #f1f5f9;
+      text-align: left;
+    }
+
+    .empty {
+      color: #64748b;
+      padding: 16px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+    }
+  </style>
+</head>
+<body>
+  <h1 th:text="${definition.reportCode}">帳票プレビュー</h1>
+
+  <div th:if="${#lists.isEmpty(rows)}" class="empty">
+    表示対象データがありません。
+  </div>
+
+  <table th:if="${!#lists.isEmpty(rows)}">
+    <thead>
+      <tr>
+        <th th:each="col : ${columns}"
+            th:text="${col.previewName}">
+          表示名
+        </th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr th:each="row : ${rows}">
+        <td th:each="col : ${columns}"
+            th:text="${row[col.columnName]}">
+          value
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>

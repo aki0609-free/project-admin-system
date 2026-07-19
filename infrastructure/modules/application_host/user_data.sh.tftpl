@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euo pipefail
+
+dnf update -y
+dnf install -y docker
+
+systemctl enable --now docker
+
+if systemctl list-unit-files amazon-ssm-agent.service >/dev/null 2>&1; then
+  systemctl enable --now amazon-ssm-agent
+fi
+
+usermod -aG docker ec2-user
+
+install -d -o ec2-user -g ec2-user -m 0750 \
+  /opt/project-admin \
+  /opt/project-admin/config \
+  /opt/project-admin/data \
+  /opt/project-admin/logs
+
+touch /opt/project-admin/.bootstrap-complete
+chown ec2-user:ec2-user /opt/project-admin/.bootstrap-complete

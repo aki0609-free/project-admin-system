@@ -1,0 +1,7 @@
+{
+  "reportCode": "RPT_TEST_SIGN",
+  "params": {
+    "message": "署名付き帳票テストです",
+    "targetName": "AKIさん"
+  }
+}

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>日払給与明細</title>
+
+<style>
+body {
+    margin: 0;
+    padding: 24px;
+    font-family: "Yu Gothic", "Meiryo", sans-serif;
+    font-size: 13px;
+    color: #111827;
+    background: #f3f4f6;
+}
+
+.page {
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+.slip {
+    margin-bottom: 22px;
+    padding: 18px 20px;
+    background: #ffffff;
+    border: 1px solid #111827;
+    border-radius: 8px;
+    page-break-inside: avoid;
+}
+
+.header {
+    display: grid;
+    grid-template-columns: 1fr 180px 220px;
+    gap: 12px;
+    align-items: center;
+    border-bottom: 3px solid #111827;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+}
+
+.title {
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: .12em;
+}
+
+.head-box {
+    font-weight: 800;
+}
+
+.center {
+    text-align: center;
+}
+
+.right {
+    text-align: right;
+}
+
+.section-title {
+    margin-top: 10px;
+    padding: 5px 8px;
+    background: #111827;
+    color: #ffffff;
+    font-weight: 900;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 120px 1fr 120px 1fr;
+    border-left: 1px solid #d1d5db;
+    border-top: 1px solid #d1d5db;
+}
+
+.cell-label,
+.cell-value {
+    min-height: 26px;
+    padding: 6px 8px;
+    border-right: 1px solid #d1d5db;
+    border-bottom: 1px solid #d1d5db;
+}
+
+.cell-label {
+    background: #f3f4f6;
+    font-weight: 800;
+}
+
+.cell-value {
+    background: #ffffff;
+}
+
+.money {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.items {
+    display: grid;
+    grid-template-columns: 1fr 120px 1fr 120px;
+    border-left: 1px solid #d1d5db;
+    border-top: 1px solid #d1d5db;
+}
+
+.item-name,
+.item-value {
+    min-height: 24px;
+    padding: 5px 8px;
+    border-right: 1px solid #d1d5db;
+    border-bottom: 1px solid #d1d5db;
+}
+
+.item-name {
+    background: #f9fafb;
+    font-weight: 700;
+}
+
+.item-value {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.total {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    margin-top: 12px;
+    border: 2px solid #111827;
+}
+
+.total-box {
+    border-right: 1px solid #111827;
+}
+
+.total-box:last-child {
+    border-right: none;
+}
+
+.total-label {
+    padding: 6px 8px;
+    background: #e5e7eb;
+    font-weight: 900;
+    text-align: center;
+}
+
+.total-value {
+    padding: 8px;
+    font-size: 18px;
+    font-weight: 900;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.footer {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 20px;
+    margin-top: 12px;
+}
+
+.note {
+    min-height: 58px;
+    border: 1px solid #d1d5db;
+    padding: 8px;
+}
+
+.receipt {
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.stamp {
+    display: inline-block;
+    width: 34px;
+    height: 34px;
+    margin-left: 8px;
+    border: 1px solid #111827;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 34px;
+}
+
+@media print {
+    body {
+        padding: 0;
+        background: #ffffff;
+    }
+
+    .page {
+        max-width: none;
+    }
+
+    .slip {
+        border-radius: 0;
+        margin-bottom: 10px;
+    }
+}
+</style>
+</head>
+
+<body>
+<div class="page">
+
+<th:block th:each="row : ${rows}">
+    <section class="slip">
+
+        <div class="header">
+            <div class="title">支払明細書</div>
+
+            <div class="head-box center">
+                氏名：
+                <span th:text="${row['employee_name']}"></span>
+            </div>
+
+            <div class="head-box right">
+                支払日：
+                <span th:text="${row['payment_date_label']}"></span>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="cell-label">労務期間</div>
+            <div class="cell-value">
+                <span th:text="${row['work_date_label']}"></span>
+            </div>
+
+            <div class="cell-label">勤務時間</div>
+            <div class="cell-value">
+                <span th:text="${row['work_time_label']}"></span>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="cell-label">勤務先</div>
+            <div class="cell-value">
+                <span th:text="${row['customer_name']}"></span>
+            </div>
+
+            <div class="cell-label">現場</div>
+            <div class="cell-value">
+                <span th:text="${row['site_name']}"></span>
+            </div>
+        </div>
+
+        <div class="section-title">支給</div>
+
+        <div class="row">
+            <div class="cell-label">基本給</div>
+            <div class="cell-value money"
+                 th:text="${#numbers.formatDecimal(row['estimated_gross_pay_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'">
+            </div>
+
+            <div class="cell-label">手当合計</div>
+            <div class="cell-value money"
+                 th:text="${#numbers.formatDecimal(row['allowance_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'">
+            </div>
+        </div>
+
+        <div class="items">
+            <th:block th:each="i : ${#numbers.sequence(1,10)}">
+                <div class="item-name"
+                     th:text="${row['allowance_item_name_' + i] ?: ''}">
+                </div>
+                <div class="item-value"
+                     th:text="${row['allowance_item_value_' + i] == null ? '' : #numbers.formatDecimal(row['allowance_item_value_' + i], 0, 'COMMA', 0, 'POINT') + ' 円'}">
+                </div>
+            </th:block>
+        </div>
+
+        <div class="section-title">控除１　法定控除</div>
+
+        <div class="items">
+            <th:block th:each="i : ${#numbers.sequence(1,10)}">
+                <div class="item-name"
+                     th:text="${row['tax_deduction_item_name_' + i] ?: ''}">
+                </div>
+                <div class="item-value"
+                     th:text="${row['tax_deduction_item_value_' + i] == null ? '' : #numbers.formatDecimal(row['tax_deduction_item_value_' + i], 0, 'COMMA', 0, 'POINT') + ' 円'}">
+                </div>
+            </th:block>
+        </div>
+
+        <div class="section-title">控除２　その他控除</div>
+
+        <div class="items">
+            <th:block th:each="i : ${#numbers.sequence(1,10)}">
+                <div class="item-name"
+                     th:text="${row['deduction_item_name_' + i] ?: ''}">
+                </div>
+                <div class="item-value"
+                     th:text="${row['deduction_item_value_' + i] == null ? '' : #numbers.formatDecimal(row['deduction_item_value_' + i], 0, 'COMMA', 0, 'POINT') + ' 円'}">
+                </div>
+            </th:block>
+        </div>
+
+        <div class="total">
+            <div class="total-box">
+                <div class="total-label">総支給額</div>
+                <div class="total-value"
+                     th:text="${#numbers.formatDecimal(row['estimated_gross_pay_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'">
+                </div>
+            </div>
+
+            <div class="total-box">
+                <div class="total-label">控除額合計</div>
+                <div class="total-value"
+                     th:text="${#numbers.formatDecimal(row['total_deduction_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'">
+                </div>
+            </div>
+
+            <div class="total-box">
+                <div class="total-label">差引支給額</div>
+                <div class="total-value"
+                     th:text="${#numbers.formatDecimal(row['estimated_net_pay_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'">
+                </div>
+            </div>
+        </div>
+
+    </section>
+</th:block>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+CREATE USER 'projectadmin_app'@'10.20.0.%'
+  IDENTIFIED BY RANDOM PASSWORD
+  REQUIRE SSL;
+
+GRANT
+  SELECT,
+  INSERT,
+  UPDATE,
+  DELETE,
+  EXECUTE,
+  SHOW VIEW,
+  CREATE TEMPORARY TABLES
+ON ADMIN.*
+TO 'projectadmin_app'@'10.20.0.%';
+
+SHOW GRANTS FOR 'projectadmin_app'@'10.20.0.%';

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>日別労務費一覧</title>
+
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: "Yu Gothic", "Meiryo", sans-serif;
+        font-size: 13px;
+        color: #111827;
+        background: #f3f4f6;
+      }
+
+      .page {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 24px;
+        background: #fff;
+        border: 1px solid #d1d5db;
+        border-radius: 14px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding-bottom: 10px;
+        margin-bottom: 18px;
+        border-bottom: 3px solid #111827;
+      }
+
+      .title {
+        font-size: 24px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+      }
+
+      .date-box {
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .section {
+        margin-top: 22px;
+      }
+
+      .section-title {
+        padding: 9px 12px;
+        background: #111827;
+        color: #fff;
+        font-weight: 900;
+        font-size: 15px;
+        letter-spacing: 0.08em;
+        border-radius: 8px 8px 0 0;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th {
+        padding: 9px 8px;
+        background: #e5e7eb;
+        border: 1px solid #cbd5e1;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+
+      td {
+        padding: 8px;
+        border: 1px solid #e5e7eb;
+      }
+
+      tbody tr:nth-child(even) {
+        background: #f9fafb;
+      }
+
+      .center {
+        text-align: center;
+      }
+
+      .right {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .money-main {
+        font-weight: 900;
+      }
+
+      .summary-area {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 22px;
+      }
+
+      .summary-card {
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+      }
+
+      .summary-label {
+        padding: 8px 10px;
+        background: #e5e7eb;
+        font-weight: 900;
+      }
+
+      .summary-value {
+        padding: 12px 14px;
+        text-align: right;
+        font-size: 22px;
+        font-weight: 900;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .no-data {
+        padding: 18px;
+        text-align: center;
+        color: #6b7280;
+      }
+
+      @media print {
+        body {
+          padding: 0;
+          background: #fff;
+        }
+
+        .page {
+          max-width: none;
+          border: none;
+          border-radius: 0;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div
+      class="page"
+      th:with="summary=${#lists.isEmpty(rows) ? null : rows[0]}"
+    >
+      <div class="header">
+        <div class="title">日別労務費一覧</div>
+        <div class="date-box">
+          勤務日：
+          <span
+            th:text="${summary == null ? '' : summary['work_date_label']}"
+          ></span>
+        </div>
+      </div>
+
+      <div class="summary-area" th:if="${!#lists.isEmpty(rows)}">
+        <div class="summary-card">
+          <div class="summary-label">発生労務費合計</div>
+          <div
+            class="summary-value"
+            th:text="${#numbers.formatDecimal(summary['total_gross_payment_amount'] ?: 0, 0, 'COMMA', 0, 'POINT') + ' 円'}"
+          ></div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-label">当日支払額合計</div>
+          <div
+            class="summary-value"
+            th:text="${#numbers.formatDecimal(summary['total_payment_amount'] ?: 0, 0, 'COMMA', 0, 'POINT') + ' 円'}"
+          ></div>
+        </div>
+      </div>
+
+      <div th:if="${#lists.isEmpty(rows)}" class="no-data">
+        データがありません
+      </div>
+
+      <!-- 日払い -->
+      <section class="section" th:if="${!#lists.isEmpty(rows)}">
+        <div class="section-title">日払い</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 110px">社員コード</th>
+              <th>氏名</th>
+<th style="width: 160px">発生労務費</th>
+<th style="width: 160px">当日支払額</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              th:each="row : ${rows}"
+              th:if="${row['payment_cycle'] == 'DAILY'}"
+            >
+              <td class="center" th:text="${row['employee_code']}"></td>
+              <td th:text="${row['employee_name']}"></td>
+              <td
+                class="right"
+                th:text="${#numbers.formatDecimal(row['gross_payment_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
+              ></td>
+              <td
+                class="right money-main"
+                th:text="${#numbers.formatDecimal(row['payment_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
+              ></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- 週払い -->
+      <section class="section" th:if="${!#lists.isEmpty(rows)}">
+        <div class="section-title">週払い</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 110px">社員コード</th>
+              <th>氏名</th>
+<th style="width: 160px">発生労務費</th>
+<th style="width: 160px">当日支払額</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              th:each="row : ${rows}"
+              th:if="${row['payment_cycle'] == 'WEEKLY'}"
+            >
+              <td class="center" th:text="${row['employee_code']}"></td>
+              <td th:text="${row['employee_name']}"></td>
+              <td
+                class="right"
+                th:text="${#numbers.formatDecimal(row['gross_payment_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
+              ></td>
+              <td
+                class="right money-main"
+                th:text="${#numbers.formatDecimal(row['payment_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
+              ></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- 月払い -->
+      <section class="section" th:if="${!#lists.isEmpty(rows)}">
+        <div class="section-title">月払い</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 110px">社員コード</th>
+              <th>氏名</th>
+              <th style="width: 160px">発生労務費</th>
+              <th style="width: 160px">当日支払額</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              th:each="row : ${rows}"
+              th:if="${row['payment_cycle'] == 'MONTHLY'}"
+            >
+              <td class="center" th:text="${row['employee_code']}"></td>
+              <td th:text="${row['employee_name']}"></td>
+              <td
+                class="right"
+                th:text="${#numbers.formatDecimal(row['gross_payment_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
+              ></td>
+              <td
+                class="right money-main"
+                th:text="${#numbers.formatDecimal(row['payment_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
+              ></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </body>
+</html>
