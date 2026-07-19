@@ -6,6 +6,21 @@ variable "role_name" {
 variable "github_repository" {
   description = "GitHub repository in owner/name format."
   type        = string
+
+  validation {
+    condition     = length(split("/", var.github_repository)) == 2
+    error_message = "github_repository must use the owner/name format."
+  }
+}
+
+variable "github_repository_owner_id" {
+  description = "Immutable numeric GitHub repository owner ID included in the customized OIDC subject."
+  type        = string
+}
+
+variable "github_repository_id" {
+  description = "Immutable numeric GitHub repository ID included in the customized OIDC subject."
+  type        = string
 }
 
 variable "github_environment" {

@@ -4,6 +4,8 @@ cloudflare_zone_id     = "replace-with-cloudflare-zone-id"
 cloudflare_zone_name   = "example.com"
 cloudflare_tunnel_name = "project-admin-dev-ec2"
 github_repository      = "your-github-owner/project-admin-system"
+github_repository_owner_id = "replace-with-numeric-owner-id"
+github_repository_id       = "replace-with-numeric-repository-id"
 
 # Keep real email addresses out of committed tfvars files.
 cloudflare_allowed_emails = [

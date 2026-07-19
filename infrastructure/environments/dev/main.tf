@@ -156,10 +156,12 @@ module "cloudflare_zero_trust" {
 module "github_actions_deploy_iam" {
   source = "../../modules/github_actions_deploy_iam"
 
-  role_name          = "${local.name_prefix}-github-actions-deploy"
-  github_repository  = var.github_repository
-  github_environment = "dev"
-  aws_region         = "ap-northeast-1"
+  role_name                  = "${local.name_prefix}-github-actions-deploy"
+  github_repository          = var.github_repository
+  github_repository_owner_id = var.github_repository_owner_id
+  github_repository_id       = var.github_repository_id
+  github_environment         = "dev"
+  aws_region                 = "ap-northeast-1"
   ecr_repository_arns = [
     module.backend_container_repository.repository_arn,
     module.frontend_container_repository.repository_arn,
