@@ -1,5 +1,7 @@
-import { useQueryClient } from '@tanstack/vue-query'
-import { useAppMutation } from '@/shared/api/useAppMutation'
+import {
+  useMutation,
+  useQueryClient,
+} from '@tanstack/vue-query'
 import { put } from '@/shared/api/http'
 import { queryKeys } from '@/features/system/import/api/queryKeys'
 import type {
@@ -15,14 +17,17 @@ type Payload = {
 export const useUpdateImportTargetMutation = () => {
   const queryClient = useQueryClient()
 
-  return useAppMutation({
+  return useMutation({
     mutationFn: ({ id, request }: Payload) =>
       put<ImportTargetResponse, ImportTargetSaveRequest>(
         `/api/system/import-targets/${id}`,
         request,
       ),
 
-    onSuccess: async (_data: any, variables: any) => {
+    onSuccess: async (
+      _data,
+      variables,
+    ) => {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.importTargets.all,
       })

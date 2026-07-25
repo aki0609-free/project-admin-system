@@ -97,8 +97,8 @@ const {
             variant="tonal"
             density="compact"
           >
-            outputDir は物理パスではなく保存先キーのプレフィックスです。
-            例：backups/customer
+            保存先は書類管理の「バックアップ → system → テナント」配下です。
+            サブフォルダだけを指定してください。例：master-data
           </v-alert>
         </div>
 
@@ -107,6 +107,14 @@ const {
           class="column-tab-page"
         >
           <GenericToolbar :items="columnToolbarItems" />
+
+          <v-alert
+            type="info"
+            variant="tonal"
+            density="compact"
+          >
+            保存時に実DBのテーブル・カラムと照合します。存在しない項目は登録できません。
+          </v-alert>
 
           <div class="column-pane">
             <div class="column-pane-left">

@@ -34,6 +34,7 @@ export const createEmptyRuleDataSource = (
 ): RuleDataSourceForm => ({
   id: tempDataSourceId--,
   sourceName: '',
+  catalogCode: '',
   tableName: '',
   whereClause: '',
   singleRowFlag: true,
@@ -84,6 +85,7 @@ export const toRuleMasterForm = (
   dataSources: rule.dataSources.map(source => ({
     id: source.id,
     sourceName: source.sourceName,
+    catalogCode: source.catalogCode ?? '',
     tableName: source.tableName,
     whereClause: source.whereClause ?? '',
     singleRowFlag: source.singleRowFlag,
@@ -125,6 +127,7 @@ export const toRuleMasterSaveRequest = (
   dataSources: form.dataSources.map(source => ({
     id: source.id > 0 ? source.id : null,
     sourceName: source.sourceName,
+    catalogCode: source.catalogCode || null,
     tableName: source.tableName,
     whereClause: source.whereClause || null,
     singleRowFlag: source.singleRowFlag,

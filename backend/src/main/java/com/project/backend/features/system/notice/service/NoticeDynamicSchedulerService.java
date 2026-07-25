@@ -13,6 +13,7 @@ import org.springframework.util.StringUtils;
 
 import com.project.backend.features.system.notice.entity.NoticeRule;
 import com.project.backend.features.system.notice.repository.NoticeRuleRepository;
+import com.project.backend.app.tenant.context.TenantContext;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -109,7 +110,11 @@ public class NoticeDynamicSchedulerService {
             CronTrigger trigger = new CronTrigger(rule.getCronExpression());
 
             ScheduledFuture<?> future = noticeTaskScheduler.schedule(
-                    () -> executeRule(rule.getId(), rule.getRuleCode()),
+                    () -> executeRule(
+                            rule.getId(),
+                            rule.getRuleCode(),
+                            rule.getTenantId()
+                    ),
                     trigger
             );
 
@@ -135,8 +140,22 @@ public class NoticeDynamicSchedulerService {
         }
     }
 
-    private void executeRule(Long ruleId, String ruleCode) {
+    private void executeRule(
+            Long ruleId,
+            String ruleCode,
+            String tenantId
+    ) {
+        if (!StringUtils.hasText(tenantId)) {
+            log.error(
+                    "NoticeRule scheduled execution skipped because tenantId is empty. ruleId={}, ruleCode={}",
+                    ruleId,
+                    ruleCode
+            );
+            return;
+        }
+
         try {
+            TenantContext.setTenantId(tenantId);
             log.info("NoticeRule scheduled execution started. ruleId={}, ruleCode={}", ruleId, ruleCode);
 
             noticeAutoGenerateService.generateByRuleId(ruleId);
@@ -150,6 +169,8 @@ public class NoticeDynamicSchedulerService {
                     ruleCode,
                     e
             );
+        } finally {
+            TenantContext.clear();
         }
     }
 }

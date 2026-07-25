@@ -23,7 +23,11 @@ const labelMap: Record<string, string> = {
   info: '情報',
 }
 
-export const useNoticeBoard = (noticesGetter: () => NoticeResponse[], emitCreate: () => void) => {
+export const useNoticeBoard = (
+  noticesGetter: () => NoticeResponse[],
+  emitCreate: () => void,
+  canCreate: () => boolean,
+) => {
   const page = ref(1)
   const itemsPerPage = ref(5)
 
@@ -79,14 +83,18 @@ export const useNoticeBoard = (noticesGetter: () => NoticeResponse[], emitCreate
     },
   ]
 
-  const leftToolbarItems = computed<ToolbarItem[]>(() => [
-    {
-      type: 'button',
-      label: '作成',
-      color: 'primary',
-      onClick: emitCreate,
-    },
-  ])
+  const leftToolbarItems = computed<ToolbarItem[]>(() =>
+    canCreate()
+      ? [
+          {
+            type: 'button',
+            label: '作成',
+            color: 'primary',
+            onClick: emitCreate,
+          },
+        ]
+      : [],
+  )
 
   const rightToolbarItems = computed<ToolbarItem[]>(() => [])
 

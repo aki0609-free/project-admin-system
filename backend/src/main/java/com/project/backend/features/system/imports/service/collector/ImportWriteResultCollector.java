@@ -12,6 +12,7 @@ import com.project.backend.features.system.imports.dto.ImportWriteResult;
 public class ImportWriteResultCollector {
 
     public static final String KEY = "importWriteResult";
+    public static final int MAX_PERSISTED_ERRORS = 1000;
 
     public ImportWriteResult empty() {
         return ImportWriteResult.builder()
@@ -39,6 +40,15 @@ public class ImportWriteResultCollector {
         List<ImportWriteError> errors = new ArrayList<>();
         errors.addAll(current.errors() != null ? current.errors() : List.of());
         errors.addAll(added.errors() != null ? added.errors() : List.of());
+
+        if (errors.size() > MAX_PERSISTED_ERRORS) {
+            errors = new ArrayList<>(
+                    errors.subList(
+                            0,
+                            MAX_PERSISTED_ERRORS
+                    )
+            );
+        }
 
         return ImportWriteResult.builder()
                 .totalCount(current.totalCount() + added.totalCount())

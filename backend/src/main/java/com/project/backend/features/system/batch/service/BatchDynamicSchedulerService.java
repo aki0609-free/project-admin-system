@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 
 import com.project.backend.features.system.batch.entity.BatchJobDefinition;
 import com.project.backend.features.system.batch.enums.BatchScheduleType;
+import com.project.backend.app.tenant.context.TenantContext;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -73,6 +74,11 @@ public class BatchDynamicSchedulerService {
         }
     }
 
+    public synchronized void cancelOwned(Long id) {
+        targetQueryService.requireOwned(id);
+        cancel(id);
+    }
+
     public synchronized void cancelAll() {
         scheduledTasks.values()
                 .forEach(future -> future.cancel(false));
@@ -104,8 +110,9 @@ public class BatchDynamicSchedulerService {
 
             ScheduledFuture<?> future =
                     batchTaskScheduler.schedule(
-                            () -> scheduledExecutionService.execute(
-                                    definition.getJobCode()
+                            () -> executeScheduled(
+                                    definition.getJobCode(),
+                                    definition.getTenantId()
                             ),
                             trigger
                     );
@@ -132,6 +139,26 @@ public class BatchDynamicSchedulerService {
                     definition.getCronExpression(),
                     e
             );
+        }
+    }
+
+    private void executeScheduled(
+            String jobCode,
+            String tenantId
+    ) {
+        if (!StringUtils.hasText(tenantId)) {
+            log.error(
+                    "Scheduled batch skipped because tenantId is empty. jobCode={}",
+                    jobCode
+            );
+            return;
+        }
+
+        try {
+            TenantContext.setTenantId(tenantId);
+            scheduledExecutionService.execute(jobCode);
+        } finally {
+            TenantContext.clear();
         }
     }
 }

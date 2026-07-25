@@ -26,6 +26,9 @@ public class RuleDataSource extends BaseEntity {
     @Column(name = "source_name", nullable = false, length = 150)
     private String sourceName;
 
+    @Column(name = "catalog_code", length = 100)
+    private String catalogCode;
+
     @Column(name = "table_name", nullable = false, length = 200)
     private String tableName;
 

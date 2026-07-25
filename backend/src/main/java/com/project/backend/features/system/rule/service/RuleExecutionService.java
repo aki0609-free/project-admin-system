@@ -12,6 +12,7 @@ import com.project.backend.features.system.rule.entity.RuleMaster;
 import com.project.backend.features.system.rule.service.builder.RuleFactBuilder;
 import com.project.backend.features.system.rule.service.executor.DslExecutorDispatcher;
 import com.project.backend.features.system.rule.service.loader.RuleLoader;
+import com.project.backend.features.system.rule.service.validation.RuleParameterResolver;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -22,6 +23,7 @@ public class RuleExecutionService {
     private final RuleLoader ruleLoader;
     private final RuleFactBuilder factBuilder;
     private final DslExecutorDispatcher dispatcher;
+    private final RuleParameterResolver parameterResolver;
 
     @Transactional(readOnly = true)
     public RuleExecutionResult execute(
@@ -29,17 +31,23 @@ public class RuleExecutionService {
             RuleContextRequest contextRequest
     ) {
         RuleMaster rule = ruleLoader.loadActive(ruleName);
+        Map<String, Object> parameters = parameterResolver.resolve(
+                rule,
+                toParameterMap(contextRequest)
+        );
 
         Map<String, Object> facts =
                 factBuilder.build(
                         rule,
-                        contextRequest
+                        RuleContextRequest.builder()
+                                .parameters(parameters)
+                                .build()
                 );
 
         RuleExecutionContext context =
                 RuleExecutionContext.builder()
                         .rule(rule)
-                        .parameters(toParameterMap(contextRequest))
+                        .parameters(parameters)
                         .facts(facts)
                         .build();
 

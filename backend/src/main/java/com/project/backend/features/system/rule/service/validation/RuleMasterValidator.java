@@ -9,8 +9,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import com.project.backend.features.system.rule.dto.*;
+import com.project.backend.features.system.rule.entity.RuleMaster;
 import com.project.backend.features.system.rule.enums.RuleDslType;
+import com.project.backend.features.system.rule.exception.RuleConflictException;
 import com.project.backend.features.system.rule.repository.RuleMasterRepository;
+import com.project.backend.features.system.rule.service.RuleDataSourceCatalogService;
+import com.project.backend.features.system.rule.service.RuleBeanCatalogService;
+import com.project.backend.features.system.rule.entity.RuleDataSourceCatalog;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,15 +25,39 @@ public class RuleMasterValidator {
 
     private static final Pattern SAFE_IDENTIFIER =
             Pattern.compile("^[a-zA-Z0-9_]+$");
+    private static final Pattern UNSAFE_WHERE_CLAUSE =
+            Pattern.compile(
+                    "(?i)(;|--|/\\*|\\*/|\\b(insert|update|delete|drop|alter|create|grant|revoke|truncate|call|execute|union)\\b)"
+            );
 
     private final RuleMasterRepository repository;
+    private final RuleDataSourceCatalogService catalogService;
+    private final RuleBeanCatalogService beanCatalogService;
 
     public void validateForCreate(RuleMasterSaveRequest request) {
         validate(request, null);
     }
 
-    public void validateForUpdate(Long id, RuleMasterSaveRequest request) {
-        validate(request, id);
+    public void validateForUpdate(
+            RuleMaster entity,
+            RuleMasterSaveRequest request
+    ) {
+        if (entity == null) {
+            throw new IllegalArgumentException(
+                    "更新対象Ruleは必須です。"
+            );
+        }
+
+        validate(request, entity.getId());
+
+        if (!entity.getRuleName().equals(request.ruleName())) {
+            throw new RuleConflictException(
+                    "作成後のruleNameは変更できません。 current="
+                            + entity.getRuleName()
+                            + ", requested="
+                            + request.ruleName()
+            );
+        }
     }
 
     private void validate(RuleMasterSaveRequest request, Long id) {
@@ -38,6 +67,19 @@ public class RuleMasterValidator {
 
         requireText(request.ruleName(), "ruleName");
         requireText(request.ruleDisplayName(), "ruleDisplayName");
+        validateIdentifier(request.ruleName(), "ruleName");
+        validateLength(request.ruleName(), "ruleName", 150);
+        validateLength(
+                request.ruleDisplayName(),
+                "ruleDisplayName",
+                200
+        );
+
+        if (request.ruleType() == null) {
+            throw new IllegalArgumentException(
+                    "ruleType は必須です。"
+            );
+        }
 
         RuleDslType dslType = request.dslType() != null
                 ? request.dslType()
@@ -45,8 +87,29 @@ public class RuleMasterValidator {
 
         if (dslType == RuleDslType.JAVA_BEAN) {
             requireText(request.ruleBeanName(), "ruleBeanName");
+            validateIdentifier(
+                    request.ruleBeanName(),
+                    "ruleBeanName"
+            );
+            beanCatalogService.requireRegistered(
+                    request.ruleBeanName()
+            );
         } else {
             requireText(request.dslText(), "dslText");
+            RuleDslSafety.validate(request.dslText());
+        }
+
+        if (StringUtils.hasText(request.resultFactKey())) {
+            validateIdentifier(
+                    request.resultFactKey(),
+                    "resultFactKey"
+            );
+        }
+
+        if (request.priority() <= 0) {
+            throw new IllegalArgumentException(
+                    "priority は1以上で指定してください。"
+            );
         }
 
         validateDuplicate(request, id);
@@ -71,6 +134,10 @@ public class RuleMasterValidator {
 
         for (RuleParameterSaveRequest parameter : parameters) {
             requireText(parameter.paramName(), "paramName");
+            validateIdentifier(
+                    parameter.paramName(),
+                    "paramName"
+            );
 
             if (!names.add(parameter.paramName())) {
                 throw new RuntimeException("paramName が重複しています。 paramName=" + parameter.paramName());
@@ -93,13 +160,25 @@ public class RuleMasterValidator {
 
         for (RuleDataSourceSaveRequest dataSource : dataSources) {
             requireText(dataSource.sourceName(), "sourceName");
-            requireText(dataSource.tableName(), "tableName");
+            validateIdentifier(
+                    dataSource.sourceName(),
+                    "sourceName"
+            );
 
             if (!names.add(dataSource.sourceName())) {
                 throw new RuntimeException("sourceName が重複しています。 sourceName=" + dataSource.sourceName());
             }
 
-            validateIdentifier(dataSource.tableName(), "tableName");
+            if (StringUtils.hasText(dataSource.catalogCode())) {
+                validateCatalogDataSource(dataSource);
+            } else {
+                requireText(dataSource.tableName(), "tableName");
+                validateIdentifier(
+                        dataSource.tableName(),
+                        "tableName"
+                );
+                validateWhereClause(dataSource.whereClause());
+            }
 
             if (dataSource.orderNo() <= 0) {
                 throw new RuntimeException("dataSource.orderNo は1以上で指定してください。");
@@ -118,6 +197,7 @@ public class RuleMasterValidator {
             requireText(column.columnName(), "columnName");
             requireText(column.factKey(), "factKey");
             validateIdentifier(column.columnName(), "columnName");
+            validateIdentifier(column.factKey(), "factKey");
 
             if (!factKeys.add(column.factKey())) {
                 throw new RuntimeException("factKey が重複しています。 factKey=" + column.factKey());
@@ -142,6 +222,83 @@ public class RuleMasterValidator {
     private void validateIdentifier(String value, String label) {
         if (!SAFE_IDENTIFIER.matcher(value).matches()) {
             throw new RuntimeException(label + " に使用できない文字が含まれています。 value=" + value);
+        }
+    }
+
+    private void validateLength(
+            String value,
+            String label,
+            int maxLength
+    ) {
+        if (value != null && value.length() > maxLength) {
+            throw new IllegalArgumentException(
+                    label
+                            + "は"
+                            + maxLength
+                            + "文字以内で指定してください。"
+            );
+        }
+    }
+
+    private void validateWhereClause(String whereClause) {
+        if (!StringUtils.hasText(whereClause)) {
+            return;
+        }
+
+        if (UNSAFE_WHERE_CLAUSE.matcher(whereClause).find()) {
+            throw new IllegalArgumentException(
+                    "whereClauseに使用できないSQL構文が含まれています。"
+            );
+        }
+    }
+
+    private void validateCatalogDataSource(
+            RuleDataSourceSaveRequest dataSource
+    ) {
+        validateIdentifier(
+                dataSource.catalogCode(),
+                "catalogCode"
+        );
+
+        RuleDataSourceCatalog catalog =
+                catalogService.findRequired(
+                        dataSource.catalogCode()
+                );
+
+        var allowedColumns = catalog.getColumns().stream()
+                .filter(column ->
+                        column.getDeletedAt() == null
+                                && column.isActiveFlag())
+                .collect(java.util.stream.Collectors.toMap(
+                        column -> column.getColumnName(),
+                        column -> column
+                ));
+
+        if (dataSource.columns() == null) {
+            return;
+        }
+
+        for (RuleColumnMappingSaveRequest column :
+                dataSource.columns()) {
+            var catalogColumn =
+                    allowedColumns.get(column.columnName());
+
+            if (catalogColumn == null) {
+                throw new IllegalArgumentException(
+                        "カタログで許可されていないカラムです。 catalogCode="
+                                + dataSource.catalogCode()
+                                + ", columnName="
+                                + column.columnName()
+                );
+            }
+
+            if (catalogColumn.getDataType()
+                    != column.dataType()) {
+                throw new IllegalArgumentException(
+                        "カタログとカラムのdataTypeが一致しません。 columnName="
+                                + column.columnName()
+                );
+            }
         }
     }
 }

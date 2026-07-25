@@ -5,6 +5,7 @@ import java.time.Instant;
 import com.project.backend.app.base.entity.BaseEntity;
 import com.project.backend.app.storage.enums.StorageType;
 import com.project.backend.features.system.batch.enums.BatchExecutionStatus;
+import com.project.backend.features.system.batch.enums.BatchExecutionTrigger;
 import com.project.backend.features.system.batch.enums.BatchJobType;
 
 import jakarta.persistence.Column;
@@ -44,6 +45,19 @@ public class BatchExecutionLog extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
     private BatchExecutionStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "trigger_type", nullable = false, length = 30)
+    private BatchExecutionTrigger triggerType;
+
+    @Column(name = "executed_by", nullable = false, length = 100)
+    private String executedBy;
+
+    @Column(name = "parameters_json", columnDefinition = "TEXT")
+    private String parametersJson;
+
+    @Column(name = "retry_source_log_id")
+    private Long retrySourceLogId;
 
     @Column(name = "started_at", nullable = false)
     private Instant startedAt;

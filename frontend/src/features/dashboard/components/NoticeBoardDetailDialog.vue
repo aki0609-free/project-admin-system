@@ -6,6 +6,8 @@ defineProps<{
   modelValue: boolean
   deleteConfirm: boolean
   notice: NoticeResponse | null
+  canEdit: boolean
+  canDelete: boolean
   getColor: (notice: NoticeResponse) => string
   getLabel: (notice: NoticeResponse) => string
   formatPeriod: (notice: NoticeResponse) => string
@@ -23,10 +25,12 @@ const emit = defineEmits<{
   <NoticeDetailDialog
     :model-value="modelValue"
     :notice="notice"
+    :can-edit="canEdit"
+    :can-delete="canDelete"
     :get-color="getColor"
     :get-label="getLabel"
     :format-period="formatPeriod"
-    show-actions
+    :show-actions="canEdit || canDelete"
     @update:model-value="emit('update:modelValue', $event)"
     @edit="emit('edit')"
     @delete="emit('update:deleteConfirm', true)"

@@ -3,7 +3,9 @@ package com.project.backend.features.system.backup.service.builder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import com.project.backend.app.storage.properties.StorageProperties;
+import com.project.backend.app.tenant.context.TenantContext;
+import com.project.backend.features.admin.document.enums.DocumentArea;
+import com.project.backend.features.admin.document.service.DocumentStorageKeyResolver;
 
 import lombok.RequiredArgsConstructor;
 
@@ -11,51 +13,41 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BackupFileKeyBuilder {
 
-    private final StorageProperties storageProperties;
+    private final DocumentStorageKeyResolver documentStorageKeyResolver;
 
     public String build(
             String outputDir,
             String fileName
     ) {
-        return joinPath(
-                storageProperties.getOutput().getPath(),
-                outputDir,
-                fileName
+        validateFileName(fileName);
+
+        String tenantId = requireTenantId();
+        String relativePath = StringUtils.hasText(outputDir)
+                ? "system/" + tenantId + "/" + outputDir + "/" + fileName
+                : "system/" + tenantId + "/" + fileName;
+
+        return documentStorageKeyResolver.resolve(
+                DocumentArea.BACKUPS,
+                relativePath
         );
     }
 
-    private String joinPath(String... values) {
-        StringBuilder builder = new StringBuilder();
-
-        for (String value : values) {
-            if (!StringUtils.hasText(value)) {
-                continue;
-            }
-
-            String normalized = value
-                    .replace("\\", "/")
-                    .replace("..", "_")
-                    .trim();
-
-            while (normalized.startsWith("/")) {
-                normalized = normalized.substring(1);
-            }
-
-            while (normalized.endsWith("/")) {
-                normalized = normalized.substring(0, normalized.length() - 1);
-            }
-
-            if (normalized.isBlank()) {
-                continue;
-            }
-
-            if (!builder.isEmpty()) {
-                builder.append("/");
-            }
-
-            builder.append(normalized);
+    private void validateFileName(String fileName) {
+        if (!StringUtils.hasText(fileName)) {
+            throw new RuntimeException("バックアップファイル名が未設定です。");
         }
+        if (fileName.contains("/") || fileName.contains("\\")) {
+            throw new RuntimeException(
+                    "バックアップファイル名にパスを含めることはできません。"
+            );
+        }
+    }
 
-        return builder.toString();
+    private String requireTenantId() {
+        String tenantId = TenantContext.getTenantId();
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new RuntimeException("テナント情報を取得できません。");
+        }
+        return tenantId;
     }
 }

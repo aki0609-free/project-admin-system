@@ -12,6 +12,9 @@ import com.project.backend.features.system.backup.dto.SingleBackupFile;
 import com.project.backend.features.system.backup.service.BackupDefinitionService;
 import com.project.backend.features.system.backup.service.fetcher.BackupDataFetcher;
 import com.project.backend.features.system.backup.service.resolver.BackupExportColumnResolver;
+import com.project.backend.features.system.backup.service.validation.BackupSchemaInspector;
+import com.project.backend.features.system.backup.dto.BackupSourceSchema;
+import com.project.backend.app.tenant.context.TenantContext;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +29,7 @@ public class BackupSingleFileBuilder {
     private final BackupSqlBuilder sqlBuilder;
     private final BackupFileNameBuilder fileNameBuilder;
     private final BackupCsvDataBuilder csvDataBuilder;
+    private final BackupSchemaInspector schemaInspector;
 
     public SingleBackupFile build(String targetCode) {
         BackupTargetDefinition target =
@@ -34,13 +38,23 @@ public class BackupSingleFileBuilder {
         List<BackupColumnDefinition> columns =
                 exportColumnResolver.resolve(target);
 
+        BackupSourceSchema sourceSchema =
+                schemaInspector.inspect(target.tableName());
+
         String sql = sqlBuilder.buildSelectSql(
                 target.tableName(),
-                columns
+                columns,
+                sourceSchema.tenantScoped()
         );
 
         List<Map<String, Object>> rows =
-                dataFetcher.fetch(sql);
+                dataFetcher.fetch(
+                        sql,
+                        sqlBuilder.buildParameters(
+                                sourceSchema.tenantScoped(),
+                                TenantContext.getTenantId()
+                        )
+                );
 
         List<String> columnKeys = columns.stream()
                 .map(BackupColumnDefinition::columnName)

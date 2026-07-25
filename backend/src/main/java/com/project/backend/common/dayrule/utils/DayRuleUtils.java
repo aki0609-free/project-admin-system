@@ -63,7 +63,7 @@ public class DayRuleUtils {
             DayRuleType type,
             Integer value
     ) {
-        return toLabel(type, value, 0);
+        return toDayLabel(type, value);
     }
 
     public static String toLabel(
@@ -82,19 +82,19 @@ public class DayRuleUtils {
             default -> (monthOffset + "ヶ月後");
         };
 
-        String dayLabel = switch (type) {
-            case DAY_OF_MONTH -> value == null ? "" : value + "日";
-            case END_OF_MONTH -> "末日";
-        };
-
-        return prefix + dayLabel;
+        return prefix + toDayLabel(type, value);
     }
 
     public static DayRuleResponse toResponse(
             DayRuleType type,
             Integer value
     ) {
-        return toResponse(type, value, 0);
+        return DayRuleResponse.builder()
+                .type(type)
+                .value(value)
+                .monthOffset(0)
+                .label(toLabel(type, value))
+                .build();
     }
 
     public static DayRuleResponse toResponse(
@@ -108,5 +108,19 @@ public class DayRuleUtils {
                 .monthOffset(monthOffset == null ? 0 : monthOffset)
                 .label(toLabel(type, value, monthOffset))
                 .build();
+    }
+
+    private static String toDayLabel(
+            DayRuleType type,
+            Integer value
+    ) {
+        if (type == null) {
+            return "";
+        }
+
+        return switch (type) {
+            case DAY_OF_MONTH -> value == null ? "" : value + "日";
+            case END_OF_MONTH -> "末日";
+        };
     }
 }

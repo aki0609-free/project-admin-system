@@ -8,6 +8,7 @@ import {
   createEmptyImportTargetForm,
   toImportTargetDialogForm,
 } from '@/features/system/import/utils/importFormFactory'
+import { useImportTargetCatalogsQuery } from '@/features/system/import/api/useImportTargetCatalogsQuery'
 
 export const importTargetSchema = z.object({
   id: z.number(),
@@ -20,7 +21,12 @@ export const importTargetSchema = z.object({
   scriptType: z.enum(['NONE', 'SHELL', 'PYTHON']),
   scriptPath: z.string(),
   scriptArgs: z.string(),
-  importMode: z.enum(['INSERT_ONLY', 'UPDATE_ONLY', 'UPSERT']),
+  importMode: z.enum([
+    'INSERT_ONLY',
+    'UPDATE_ONLY',
+    'UPSERT',
+    'DELETE_INSERT',
+  ]),
   headerRowNumber: z.number().min(1),
   dataStartRowNumber: z.number().min(1),
   charset: z.string().min(1),
@@ -37,6 +43,7 @@ export const useImportTargetEditDialog = (
 ) => {
   const activeTab = ref<'basic' | 'columns'>('basic')
   const formModel = reactive<ImportTargetDialogForm>(createEmptyImportTargetForm())
+  const catalogQuery = useImportTargetCatalogsQuery()
 
   const resetForm = () => {
     Object.assign(formModel, createEmptyImportTargetForm())
@@ -74,11 +81,22 @@ export const useImportTargetEditDialog = (
     { label: 'Column', value: 'columns' },
   ]
 
-  const basicFields: GridFormFieldDef<ImportTargetDialogForm>[] = [
+  const basicFields = computed<GridFormFieldDef<ImportTargetDialogForm>[]>(() => [
     { key: 'id', label: 'ID', type: 'number', gridColumn: '1 / span 1' },
     { key: 'targetCode', label: 'targetCode', type: 'text', gridColumn: '2 / span 3' },
     { key: 'targetName', label: 'targetName', type: 'text', gridColumn: '1 / span 2' },
-    { key: 'tableName', label: 'tableName', type: 'text', gridColumn: '3 / span 2' },
+    {
+      key: 'tableName',
+      label: '取込先テーブル',
+      type: 'select',
+      gridColumn: '3 / span 2',
+      options: catalogQuery.catalogs.value.map(
+        catalog => ({
+          title: `${catalog.displayName} (${catalog.tableName})`,
+          value: catalog.tableName,
+        }),
+      ),
+    },
     {
       key: 'sourceType',
       label: 'sourceType',
@@ -118,7 +136,7 @@ export const useImportTargetEditDialog = (
     { key: 'dataStartRowNumber', label: 'dataStartRow', type: 'number' },
     { key: 'charset', label: 'charset', type: 'text' },
     { key: 'delimiter', label: 'delimiter', type: 'text' },
-  ]
+  ])
 
   const save = () => {
     emitSave({
@@ -179,5 +197,8 @@ export const useImportTargetEditDialog = (
     basicFields,
     schema: importTargetSchema,
     footerItems,
+    catalogs: catalogQuery.catalogs,
+    catalogLoading: catalogQuery.isLoading,
+    catalogError: catalogQuery.error,
   }
 }

@@ -48,6 +48,11 @@ public interface DailyReportMapper {
 
     @Mapping(target = "estimatedGrossPayAmount", ignore = true)
     @Mapping(target = "estimatedNetPayAmount", ignore = true)
+    /*
+     * V1では承認フローを使用しないため、クライアントから承認情報を更新しない。
+     */
+    @Mapping(target = "approvalStatus", ignore = true)
+    @Mapping(target = "approvalComment", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
     void updateEntityFromRequest(
             DailyReportSaveRequest request,
@@ -86,7 +91,7 @@ public interface DailyReportMapper {
             entity.setMileage(BigDecimal.ZERO);
 
             entity.setPaidLeaveDays(BigDecimal.ZERO);
-            entity.setApprovalStatus(ApprovalStatus.PENDING);
+            applyV1Approval(entity);
 
             return;
         }
@@ -141,11 +146,17 @@ public interface DailyReportMapper {
                 nvl(request.paidLeaveDays())
         );
 
-        entity.setApprovalStatus(
-                request.approvalStatus() != null
-                        ? request.approvalStatus()
-                        : ApprovalStatus.PENDING
-        );
+        applyV1Approval(entity);
+    }
+
+    /*
+     * V1は承認フローを持たない。
+     * 新規・更新を問わず日報は承認済みとして保存し、
+     * 承認状態の遷移と承認コメントはV2で実装する。
+     */
+    default void applyV1Approval(DailyReport entity) {
+        entity.setApprovalStatus(ApprovalStatus.APPROVED);
+        entity.setApprovalComment(null);
     }
 
     default BigDecimal nvl(BigDecimal value) {

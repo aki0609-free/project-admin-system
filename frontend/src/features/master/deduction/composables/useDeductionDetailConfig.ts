@@ -2,7 +2,6 @@ import { computed, type Ref } from 'vue'
 import type { DeductionDetailViewType } from '@/features/master/deduction/types/deductionTypes'
 import { useIncomeTaxDetailConfig } from '@/features/master/deduction/composables/details/useIncomeTaxDetailConfig'
 import { useResidentTaxDetailConfig } from '@/features/master/deduction/composables/details/useResidentTaxDetailConfig'
-import { useGenericDeductionDetailConfig } from '@/features/master/deduction/composables/details/useGenericDeductionDetailConfig'
 import { useInsuranceRateDetailConfig } from './details/useInsuranceRateDetailConfig'
 import { useStandardSalaryDetailConfig } from './details/useStandardSalaryDetailConfig'
 
@@ -11,7 +10,6 @@ export const useDeductionDetailConfig = (
 ) => {
   const incomeTax = useIncomeTaxDetailConfig()
   const residentTax = useResidentTaxDetailConfig()
-  const generic = useGenericDeductionDetailConfig()
   const insuranceRate = useInsuranceRateDetailConfig()
   const standardSalary = useStandardSalaryDetailConfig()
 
@@ -30,16 +28,8 @@ export const useDeductionDetailConfig = (
       case 'PENSION':
         return standardSalary
 
-      case 'GENERIC':
-      case 'ADVANCE_PAYMENT':
-      case 'DORMITORY':
-      case 'MOBILE_PHONE':
-      case 'WIFI':
-      case 'SAVINGS':
-      case 'LOAN_REPAYMENT':
-      case 'LEGAL_DEPOSIT':
       default:
-        return generic
+        return incomeTax
     }
   })
 

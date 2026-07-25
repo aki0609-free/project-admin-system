@@ -12,4 +12,8 @@ export const queryKeys = {
     errors: (historyId: number | null) =>
       ['importHistories', 'errors', historyId] as const,
   },
+
+  importTargetCatalogs: {
+    active: ['importTargetCatalogs', 'active'] as const,
+  },
 }

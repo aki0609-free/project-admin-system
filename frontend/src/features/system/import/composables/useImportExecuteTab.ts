@@ -23,7 +23,8 @@ export const useImportExecuteTab = () => {
     lastJobExecutionId.value = ''
 
     try {
-      const result = await executeMutation.mutateAsync(payload) as any
+      const result =
+        await executeMutation.mutateAsync(payload)
 
       lastResultMessage.value = result.message ?? ''
       lastJobExecutionId.value = String(result.jobExecutionId ?? '')

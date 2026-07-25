@@ -1,5 +1,7 @@
 package com.project.backend.features.system.notice.config;
 
+import java.time.Clock;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -8,8 +10,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 public class NoticeSchedulerConfig {
 
     @Bean
-    public ThreadPoolTaskScheduler noticeTaskScheduler() {
+    public ThreadPoolTaskScheduler noticeTaskScheduler(
+            Clock applicationClock
+    ) {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setClock(applicationClock);
         scheduler.setPoolSize(4);
         scheduler.setThreadNamePrefix("notice-rule-scheduler-");
         scheduler.setWaitForTasksToCompleteOnShutdown(true);

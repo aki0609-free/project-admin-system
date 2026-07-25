@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.project.backend.features.system.backup.service.BackupExecutionService;
+import com.project.backend.features.system.backup.dto.BackupExecutionResult;
+import com.project.backend.features.system.backup.dto.BackupStoredFile;
 import com.project.backend.features.system.batch.context.BatchJobExecutionContext;
 import com.project.backend.features.system.batch.dto.BatchJobExecutionResult;
 import com.project.backend.features.system.batch.enums.BatchJobType;
@@ -26,10 +28,24 @@ public class BackupBatchJobExecutor implements BatchJobExecutor {
     public BatchJobExecutionResult execute(BatchJobExecutionContext context) {
         String targetCode = context.targetCode();
 
-        backupExecutionService.execute(List.of(targetCode));
+        BackupExecutionResult result =
+                backupExecutionService.execute(List.of(targetCode));
+        BackupStoredFile storedFile = result.storedFile();
 
-        return BatchJobExecutionResult.message(
-                "Backupバッチが完了しました。 targetCode=" + targetCode
-        );
+        if (storedFile == null) {
+            throw new RuntimeException(
+                    "バッチ実行するバックアップ定義は、outputModeをSERVER_FILEまたはBOTHにしてください。 "
+                            + "targetCode=" + targetCode
+            );
+        }
+
+        return BatchJobExecutionResult.builder()
+                .message("Backupバッチが完了しました。 targetCode=" + targetCode)
+                .storageType(storedFile.storageType())
+                .outputFileKey(storedFile.fileKey())
+                .outputFileName(storedFile.fileName())
+                .contentType(storedFile.contentType())
+                .fileSize(storedFile.fileSize())
+                .build();
     }
 }

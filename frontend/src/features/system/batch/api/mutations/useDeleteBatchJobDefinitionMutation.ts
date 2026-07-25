@@ -8,7 +8,7 @@ export const useDeleteBatchJobDefinitionMutation = () => {
 
   return useAppMutation({
     mutationFn: async (id: number) =>
-      await del<void>(`/api/system/batch-jobs/${id}`),
+      await del<unknown>(`/api/system/batch-jobs/${id}`),
 
     onSuccess: async () => {
       await queryClient.invalidateQueries({

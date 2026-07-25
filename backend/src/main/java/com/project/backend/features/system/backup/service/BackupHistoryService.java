@@ -11,6 +11,7 @@ import com.project.backend.features.system.backup.dto.BackupHistoryResponse;
 import com.project.backend.features.system.backup.dto.BackupRequest;
 import com.project.backend.features.system.backup.repository.BackupHistoryRepository;
 import com.project.backend.features.system.backup.service.builder.BackupHistoryBuilder;
+import com.project.backend.app.tenant.context.TenantContext;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,7 +24,10 @@ public class BackupHistoryService {
 
     @Transactional(readOnly = true)
     public List<BackupHistoryResponse> findAll() {
-        return repository.findByDeletedAtIsNullOrderByExecutedAtDesc()
+        return repository
+                .findTop200ByTenantIdAndDeletedAtIsNullOrderByExecutedAtDesc(
+                        requireTenantId()
+                )
                 .stream()
                 .map(BackupHistoryResponse::from)
                 .toList();
@@ -55,5 +59,13 @@ public class BackupHistoryService {
                         exception
                 )
         );
+    }
+
+    private String requireTenantId() {
+        String tenantId = TenantContext.getTenantId();
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new RuntimeException("テナント情報を取得できません。");
+        }
+        return tenantId;
     }
 }

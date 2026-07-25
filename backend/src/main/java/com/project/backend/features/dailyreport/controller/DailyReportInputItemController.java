@@ -1,11 +1,14 @@
 package com.project.backend.features.dailyreport.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.backend.features.dailyreport.dto.DailyReportInputResponse;
 import com.project.backend.features.dailyreport.service.DailyReportInputItemService;
+import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,5 +22,12 @@ public class DailyReportInputItemController {
     @GetMapping
     public DailyReportInputResponse findItems() {
         return service.findItems();
+    }
+
+    @PostMapping("/preview")
+    public DailyReportInputResponse preview(
+            @RequestBody DailyReportSaveRequest request
+    ) {
+        return service.preview(request);
     }
 }

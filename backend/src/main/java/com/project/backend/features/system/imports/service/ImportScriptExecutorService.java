@@ -5,6 +5,8 @@ import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -12,6 +14,7 @@ import org.springframework.util.StringUtils;
 import com.project.backend.features.system.imports.dto.ImportTargetDefinition;
 import com.project.backend.features.system.imports.enums.ImportScriptType;
 import com.project.backend.features.system.imports.properties.ImportScriptProperties;
+import com.project.backend.features.system.imports.service.resolver.ImportCsvPathResolver;
 import com.project.backend.features.system.imports.service.resolver.ImportScriptPathResolver;
 
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,7 @@ public class ImportScriptExecutorService {
 
     private final ImportScriptProperties properties;
     private final ImportScriptPathResolver scriptPathResolver;
+    private final ImportCsvPathResolver csvPathResolver;
 
     public void execute(ImportTargetDefinition target) {
         validate(target);
@@ -39,8 +43,26 @@ public class ImportScriptExecutorService {
 
             Process process = builder.start();
 
-            String output = readOutput(process);
-            int exitCode = process.waitFor();
+            CompletableFuture<String> outputFuture =
+                    CompletableFuture.supplyAsync(
+                            () -> readOutput(process)
+                    );
+
+            boolean finished = process.waitFor(
+                    properties.getTimeoutSeconds(),
+                    TimeUnit.SECONDS
+            );
+
+            if (!finished) {
+                process.destroyForcibly();
+                throw new RuntimeException(
+                        "CSV生成スクリプトがタイムアウトしました。 timeoutSeconds="
+                                + properties.getTimeoutSeconds()
+                );
+            }
+
+            String output = outputFuture.get(5, TimeUnit.SECONDS);
+            int exitCode = process.exitValue();
 
             if (exitCode != 0) {
                 throw new RuntimeException(
@@ -94,7 +116,7 @@ public class ImportScriptExecutorService {
         return command;
     }
 
-    private String readOutput(Process process) throws Exception {
+    private String readOutput(Process process) {
         StringBuilder output = new StringBuilder();
 
         try (BufferedReader reader = new BufferedReader(
@@ -102,8 +124,24 @@ public class ImportScriptExecutorService {
         )) {
             String line;
             while ((line = reader.readLine()) != null) {
-                output.append(line).append(System.lineSeparator());
+                if (output.length()
+                        < properties.getMaxOutputCharacters()) {
+                    output.append(line)
+                            .append(System.lineSeparator());
+                }
             }
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "スクリプトの標準出力を取得できませんでした。",
+                    e
+            );
+        }
+
+        if (output.length() > properties.getMaxOutputCharacters()) {
+            return output.substring(
+                    0,
+                    properties.getMaxOutputCharacters()
+            );
         }
 
         return output.toString();
@@ -114,7 +152,14 @@ public class ImportScriptExecutorService {
 
         for (String arg : args.trim().split("\\s+")) {
             if (!arg.isBlank()) {
-                result.add(arg);
+                result.add(
+                        arg.replace(
+                                "${IMPORT_CSV_DIR}",
+                                csvPathResolver
+                                        .baseDirectory()
+                                        .toString()
+                        )
+                );
             }
         }
 

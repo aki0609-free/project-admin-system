@@ -1,9 +1,19 @@
 <script setup lang="ts">
-import type { RuleColumnMappingForm } from '@/features/system/rule/types/ruleFormTypes'
-import type { RuleDataType } from '../../types/ruleApiTypes';
+import { computed } from 'vue'
 
-defineProps<{
+import type { RuleColumnMappingForm } from '@/features/system/rule/types/ruleFormTypes'
+import type {
+  RuleDataSourceCatalogColumn,
+  RuleDataType,
+} from '../../types/ruleApiTypes'
+
+const props = defineProps<{
   column: RuleColumnMappingForm
+  availableColumns: RuleDataSourceCatalogColumn[]
+}>()
+
+const emit = defineEmits<{
+  selectColumn: [columnName: string, dataType: RuleDataType]
 }>()
 
 const dataTypeItems = [
@@ -15,6 +25,28 @@ const dataTypeItems = [
   'DATE',
   'DATETIME',
 ]
+
+const columnItems = computed(() =>
+  props.availableColumns.map(item => ({
+    title: item.displayName,
+    value: item.columnName,
+    dataType: item.dataType,
+  })),
+)
+
+const selectColumn = (columnName: string) => {
+  const selected = props.availableColumns.find(
+    item => item.columnName === columnName,
+  )
+
+  if (selected) {
+    emit(
+      'selectColumn',
+      selected.columnName,
+      selected.dataType,
+    )
+  }
+}
 </script>
 
 <template>
@@ -25,11 +57,13 @@ const dataTypeItems = [
       </div>
 
       <div class="column-editor-grid">
-        <v-text-field
+        <v-select
           v-model="column.columnName as string"
           label="columnName"
+          :items="columnItems"
           variant="outlined"
           density="comfortable"
+          @update:model-value="selectColumn"
         />
 
         <v-text-field
@@ -43,6 +77,7 @@ const dataTypeItems = [
           v-model="column.dataType as RuleDataType"
           label="dataType"
           :items="dataTypeItems"
+          disabled
           variant="outlined"
           density="comfortable"
         />

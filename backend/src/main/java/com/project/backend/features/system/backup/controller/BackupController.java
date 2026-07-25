@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.project.backend.features.system.backup.dto.BackupExecuteRequest;
@@ -25,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/system/backup")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('SYS_ADMIN')")
 public class BackupController {
 
     private final BackupTargetQueryService targetQueryService;

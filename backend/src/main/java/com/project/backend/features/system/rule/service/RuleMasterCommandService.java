@@ -10,8 +10,11 @@ import com.project.backend.features.system.rule.dto.RuleMasterSaveRequest;
 import com.project.backend.features.system.rule.entity.RuleMaster;
 import com.project.backend.features.system.rule.mapper.RuleMasterMapper;
 import com.project.backend.features.system.rule.repository.RuleMasterRepository;
+import com.project.backend.features.system.rule.exception.RuleConflictException;
+import com.project.backend.features.system.rule.service.validation.RuleReferenceChecker;
 import com.project.backend.features.system.rule.service.validation.RuleMasterValidator;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -21,6 +24,7 @@ public class RuleMasterCommandService {
     private final RuleMasterRepository repository;
     private final RuleMasterMapper mapper;
     private final RuleMasterValidator validator;
+    private final RuleReferenceChecker referenceChecker;
 
     @Transactional
     public RuleMasterResponse create(RuleMasterSaveRequest request) {
@@ -35,13 +39,24 @@ public class RuleMasterCommandService {
     @SuppressWarnings("null")
     @Transactional
     public RuleMasterResponse update(Long id, RuleMasterSaveRequest request) {
-        validator.validateForUpdate(id, request);
-
         RuleMaster entity =
                 repository.findByIdAndDeletedAtIsNull(id)
                         .orElseThrow(() ->
-                                new RuntimeException("Ruleが見つかりません。 id=" + id)
+                                new EntityNotFoundException(
+                                        "Ruleが見つかりません。 id=" + id
+                                )
                         );
+
+        validator.validateForUpdate(entity, request);
+
+        if (entity.isActiveFlag()
+                && !request.activeFlag()
+                && referenceChecker.isReferenced(entity.getRuleName())) {
+            throw new RuleConflictException(
+                    "参照中のRuleは無効化できません。 ruleName="
+                            + entity.getRuleName()
+            );
+        }
 
         mapper.applyRequest(entity, request);
 
@@ -53,8 +68,24 @@ public class RuleMasterCommandService {
         RuleMaster entity =
                 repository.findByIdAndDeletedAtIsNull(id)
                         .orElseThrow(() ->
-                                new RuntimeException("Ruleが見つかりません。 id=" + id)
+                                new EntityNotFoundException(
+                                        "Ruleが見つかりません。 id=" + id
+                                )
                         );
+
+        var referenceTypes =
+                referenceChecker.findReferenceTypes(
+                        entity.getRuleName()
+                );
+
+        if (!referenceTypes.isEmpty()) {
+            throw new RuleConflictException(
+                    "参照中のRuleは削除できません。 ruleName="
+                            + entity.getRuleName()
+                            + ", references="
+                            + referenceTypes
+            );
+        }
 
         Instant now = Instant.now();
 

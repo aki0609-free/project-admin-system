@@ -10,6 +10,7 @@ import com.project.backend.features.system.rule.entity.RuleMaster;
 import com.project.backend.features.system.rule.mapper.RuleMasterMapper;
 import com.project.backend.features.system.rule.repository.RuleMasterRepository;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -38,7 +39,9 @@ public class RuleMasterQueryService {
         RuleMaster entity =
                 repository.findByIdAndDeletedAtIsNull(id)
                         .orElseThrow(() ->
-                                new RuntimeException("Ruleが見つかりません。 id=" + id)
+                                new EntityNotFoundException(
+                                        "Ruleが見つかりません。 id=" + id
+                                )
                         );
 
         return mapper.toResponse(entity);
@@ -49,7 +52,10 @@ public class RuleMasterQueryService {
         RuleMaster entity =
                 repository.findByRuleNameAndDeletedAtIsNull(ruleName)
                         .orElseThrow(() ->
-                                new RuntimeException("Ruleが見つかりません。 ruleName=" + ruleName)
+                                new EntityNotFoundException(
+                                        "Ruleが見つかりません。 ruleName="
+                                                + ruleName
+                                )
                         );
 
         return mapper.toResponse(entity);

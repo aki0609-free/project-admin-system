@@ -2,6 +2,7 @@ package com.project.backend.features.system.backup.service.builder;
 
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
@@ -15,7 +16,8 @@ public class BackupSqlBuilder {
 
     public String buildSelectSql(
             String tableName,
-            List<BackupColumnDefinition> columns
+            List<BackupColumnDefinition> columns,
+            boolean tenantScoped
     ) {
         validateIdentifier(tableName, "tableName");
 
@@ -25,7 +27,26 @@ public class BackupSqlBuilder {
                 .reduce((a, b) -> a + ", " + b)
                 .orElseThrow();
 
-        return "SELECT " + selectColumns + " FROM " + tableName;
+        String sql = "SELECT " + selectColumns + " FROM " + tableName;
+
+        if (tenantScoped) {
+            sql += " WHERE tenant_id = :tenantId";
+        }
+
+        return sql;
+    }
+
+    public Map<String, Object> buildParameters(
+            boolean tenantScoped,
+            String tenantId
+    ) {
+        if (!tenantScoped) {
+            return Map.of();
+        }
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new RuntimeException("テナント情報を取得できません。");
+        }
+        return Map.of("tenantId", tenantId);
     }
 
     private void validateIdentifier(String value, String label) {

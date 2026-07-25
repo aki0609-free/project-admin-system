@@ -11,7 +11,13 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "backup_target")
+@Table(
+        name = "backup_target",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_backup_target_tenant_code",
+                columnNames = {"tenant_id", "target_code"}
+        )
+)
 @Getter
 @Setter
 public class BackupTarget extends BaseEntity {
@@ -20,7 +26,7 @@ public class BackupTarget extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "target_code", nullable = false, unique = true, length = 100)
+    @Column(name = "target_code", nullable = false, length = 100)
     private String targetCode;
 
     @Column(name = "target_name", nullable = false, length = 200)

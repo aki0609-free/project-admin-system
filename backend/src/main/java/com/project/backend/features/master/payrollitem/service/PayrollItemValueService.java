@@ -49,7 +49,7 @@ public class PayrollItemValueService {
         RuleExecutionResult ruleResult = null;
 
         BigDecimal amount = switch (master.calculationType()) {
-            case "MANUAL" -> manualAmount(request);
+            case "MANUAL" -> manualAmount(master, request);
             case "FIXED" -> fixedAmount(master);
             case "AUTO" -> {
                 ruleResult = executeRule(master, request);
@@ -105,8 +105,14 @@ public class PayrollItemValueService {
     }
 
     private BigDecimal manualAmount(
+            PayrollItemMasterSnapshot master,
             PayrollItemValueRequest request
     ) {
+        if (!Boolean.TRUE.equals(master.allowManualInput())) {
+            throw new IllegalStateException(
+                    "手入力が許可されていません。code=" + master.code()
+            );
+        }
         return request.manualAmount() == null
                 ? BigDecimal.ZERO
                 : BigDecimal.valueOf(request.manualAmount());
@@ -130,12 +136,22 @@ public class PayrollItemValueService {
             );
         }
 
-        return ruleExecutionService.execute(
-                master.ruleName(),
-                RuleContextRequest.builder()
-                        .parameters(buildRuleParameters(master, request))
-                        .build()
-        );
+        try {
+            return ruleExecutionService.execute(
+                    master.ruleName(),
+                    RuleContextRequest.builder()
+                            .parameters(buildRuleParameters(master, request))
+                            .build()
+            );
+        } catch (RuntimeException exception) {
+            throw new IllegalStateException(
+                    "給与項目のRule計算に失敗しました。code="
+                            + master.code()
+                            + ", ruleName="
+                            + master.ruleName(),
+                    exception
+            );
+        }
     }
 
     private Map<String, Object> buildRuleParameters(
@@ -186,6 +202,9 @@ public class PayrollItemValueService {
             Integer maxAmount
     ) {
         BigDecimal result = amount != null ? amount : BigDecimal.ZERO;
+        if (result.signum() < 0) {
+            throw new IllegalArgumentException("給与項目の計算結果は0以上である必要があります。");
+        }
 
         if (minAmount != null) {
             BigDecimal min = BigDecimal.valueOf(minAmount);
@@ -216,7 +235,11 @@ public class PayrollItemValueService {
         }
 
         if (value instanceof Number number) {
-            return BigDecimal.valueOf(number.doubleValue());
+            double doubleValue = number.doubleValue();
+            if (!Double.isFinite(doubleValue)) {
+                throw new IllegalArgumentException("Rule計算結果が有限の数値ではありません。");
+            }
+            return BigDecimal.valueOf(doubleValue);
         }
 
         return new BigDecimal(String.valueOf(value));

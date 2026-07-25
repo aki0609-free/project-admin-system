@@ -1,10 +1,10 @@
 package com.project.backend;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class BackendApplicationTests {
+import com.project.backend.testsupport.ContainerIntegrationTest;
+
+class BackendApplicationTests extends ContainerIntegrationTest {
 
 	@Test
 	void contextLoads() {

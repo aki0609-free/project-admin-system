@@ -3,6 +3,8 @@ package com.project.backend.features.master.deduction.controller;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.project.backend.features.master.deduction.dto.DeductionDetailResponse;
 import com.project.backend.features.master.deduction.dto.DeductionListItemResponse;
@@ -15,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/master/deductions")
+@PreAuthorize("hasAuthority('master:view')")
 @RequiredArgsConstructor
 public class DeductionController {
 
@@ -34,6 +37,7 @@ public class DeductionController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('master:manage')")
     public Long create(
             @Valid @RequestBody DeductionSaveRequest request
     ) {
@@ -41,6 +45,7 @@ public class DeductionController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('master:manage')")
     public void update(
             @PathVariable Long id,
             @Valid @RequestBody DeductionSaveRequest request
@@ -52,9 +57,11 @@ public class DeductionController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(
+    @PreAuthorize("hasAuthority('master:manage')")
+    public ResponseEntity<Void> delete(
             @PathVariable Long id
     ) {
         deductionCommandService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

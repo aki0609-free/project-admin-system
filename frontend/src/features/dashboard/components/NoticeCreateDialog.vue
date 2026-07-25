@@ -6,7 +6,7 @@ import type {
   NoticeCreateRequest,
   NoticeResponse,
 } from '@/features/dashboard/types/dashboardTypes'
-import NoticeContentPreviwe from '@/shared/components/notice/NoticeContentPreviwe.vue';
+import NoticeContentPreview from '@/shared/components/notice/NoticeContentPreview.vue'
 import NoticeRichEditor from '@/shared/components/notice/NoticeRichEditor.vue'
 
 const props = defineProps<{
@@ -158,7 +158,7 @@ const {
           </v-window-item>
 
           <v-window-item value="preview">
-            <NoticeContentPreviwe
+            <NoticeContentPreview
               class="mt-4"
               :content="form.content"
               :content-format="form.contentFormat"

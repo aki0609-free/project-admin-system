@@ -41,6 +41,10 @@ public interface BackupTargetMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "target", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "deletedAt", ignore = true)
+    @Mapping(target = "tenantId", ignore = true)
     @Mapping(target = "exportFlag", expression = "java(request.exportFlag() == null || request.exportFlag())")
     @Mapping(target = "orderNo", expression = "java(request.orderNo() != null ? request.orderNo() : 1)")
     BackupColumn toColumnEntity(BackupColumnSaveRequest request);
@@ -50,13 +54,18 @@ public interface BackupTargetMapper {
     @Mapping(target = "deletedAt", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "tenantId", ignore = true)
     @Mapping(target = "description", source = "description")
     @Mapping(target = "backupEnabled", expression = "java(request.backupEnabled() == null || request.backupEnabled())")
     @Mapping(target = "activeFlag", expression = "java(request.activeFlag() == null || request.activeFlag())")
     @Mapping(target = "outputMode", expression = "java(request.outputMode() != null ? request.outputMode() : com.project.backend.features.system.backup.enums.BackupOutputMode.DOWNLOAD)")
-    @Mapping(target = "outputDir", source = "outputDir", qualifiedByName = "normalizeBlank")
+    @Mapping(
+            target = "outputDir",
+            expression = "java(request.outputMode() == com.project.backend.features.system.backup.enums.BackupOutputMode.SERVER_FILE || request.outputMode() == com.project.backend.features.system.backup.enums.BackupOutputMode.BOTH ? normalizeBlank(request.outputDir()) : null)"
+    )
     @Mapping(target = "fileNamePattern", source = "fileNamePattern", qualifiedByName = "normalizeBlank")
     @Mapping(target = "zipRequired", expression = "java(Boolean.TRUE.equals(request.zipRequired()))")
+    @Mapping(target = "includeHeader", expression = "java(request.includeHeader() == null || request.includeHeader())")
     void updateEntityFromRequest(
             BackupTargetSaveRequest request,
             @MappingTarget BackupTarget entity

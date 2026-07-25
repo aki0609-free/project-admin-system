@@ -31,19 +31,12 @@ jobs:
       - name: Make Gradle wrapper executable
         working-directory: backend
         run: chmod +x gradlew
-      - name: Run stable backend tests
-        working-directory: backend
-        run: >-
-          ./gradlew --no-daemon test
-          --tests 'com.project.backend.app.openai.*'
-          --tests 'com.project.backend.app.storage.*'
-          --tests 'com.project.backend.common.sanitizer.*'
-          --tests 'com.project.backend.features.system.mail.*'
-          --tests 'com.project.backend.features.system.report.*'
-      - name: Observe full backend test baseline
-        continue-on-error: true
+      - name: Run backend unit tests
         working-directory: backend
         run: ./gradlew --no-daemon test
+      - name: Run infrastructure integration tests
+        working-directory: backend
+        run: ./gradlew --no-daemon integrationTest
       - name: Package backend
         working-directory: backend
         run: ./gradlew --no-daemon clean bootJar -x test

@@ -1,6 +1,7 @@
 package com.project.backend.features.system.backup.service.resolver;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
@@ -38,14 +39,20 @@ public class BackupOutputResolver {
     public String resolveZipOutputDir(
             List<SingleBackupFile> files
     ) {
-        return files.stream()
+        Set<String> outputDirectories = files.stream()
                 .map(SingleBackupFile::outputDir)
                 .filter(v -> v != null && !v.isBlank())
-                .findFirst()
-                .orElseThrow(
-                        () -> new RuntimeException(
-                                "ZIP保存先 outputDir が設定されていません。"
-                        )
-                );
+                .collect(java.util.stream.Collectors.toSet());
+
+        if (outputDirectories.isEmpty()) {
+            throw new RuntimeException("ZIP保存先 outputDir が設定されていません。");
+        }
+        if (outputDirectories.size() > 1) {
+            throw new RuntimeException(
+                    "同時にZIP保存する対象の outputDir は統一してください。"
+            );
+        }
+
+        return outputDirectories.iterator().next();
     }
 }

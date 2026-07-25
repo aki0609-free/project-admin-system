@@ -18,6 +18,11 @@ export type BatchExecutionStatus =
   | 'COMPLETED'
   | 'FAILED'
 
+export type BatchExecutionTrigger =
+  | 'MANUAL'
+  | 'SCHEDULED'
+  | 'RETRY'
+
 export type BatchJobDefinitionResponse = {
   id: number
   jobCode: string
@@ -67,6 +72,9 @@ export type BatchExecutionLogResponse = {
   jobType: BatchJobType
   targetCode: string
   status: BatchExecutionStatus
+  triggerType: BatchExecutionTrigger
+  executedBy: string
+  retrySourceLogId: number | null
 
   startedAt: string | null
   finishedAt: string | null

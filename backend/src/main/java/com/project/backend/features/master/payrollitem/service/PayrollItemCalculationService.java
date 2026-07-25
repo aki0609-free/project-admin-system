@@ -27,8 +27,15 @@ public class PayrollItemCalculationService {
     private final PayrollItemValueService payrollItemValueService;
 
     @SuppressWarnings("null")
-public List<PayrollItemCalculationResult> calculate(
+    public List<PayrollItemCalculationResult> calculate(
             PayrollItemCalculationRequest request
+    ) {
+        return calculate(request, Map.of());
+    }
+
+    public List<PayrollItemCalculationResult> calculate(
+            PayrollItemCalculationRequest request,
+            Map<Long, Integer> manualAmounts
     ) {
         if (request == null) {
             throw new IllegalArgumentException("PayrollItemCalculationRequest は必須です。");
@@ -49,7 +56,8 @@ public List<PayrollItemCalculationResult> calculate(
         return snapshots.stream()
                 .map(snapshot -> calculateOne(
                         snapshot,
-                        request.parameters()
+                        request.parameters(),
+                        manualAmounts
                 ))
                 .sorted(Comparator.comparing(
                         PayrollItemCalculationResult::displayOrder,
@@ -60,7 +68,8 @@ public List<PayrollItemCalculationResult> calculate(
 
     private PayrollItemCalculationResult calculateOne(
             PayrollItemMasterSnapshot snapshot,
-            Map<String, Object> parameters
+            Map<String, Object> parameters,
+            Map<Long, Integer> manualAmounts
     ) {
         PayrollItemValueResult valueResult =
                 payrollItemValueService.calculate(
@@ -68,7 +77,7 @@ public List<PayrollItemCalculationResult> calculate(
                                 snapshot.targetType(),
                                 snapshot.id(),
                                 snapshot.code(),
-                                resolveManualAmount(snapshot),
+                                resolveManualAmount(snapshot, manualAmounts),
                                 parameters
                         )
                 );
@@ -93,9 +102,13 @@ public List<PayrollItemCalculationResult> calculate(
     }
 
     private Integer resolveManualAmount(
-            PayrollItemMasterSnapshot snapshot
+            PayrollItemMasterSnapshot snapshot,
+            Map<Long, Integer> manualAmounts
     ) {
         if (Boolean.TRUE.equals(snapshot.allowManualInput())) {
+            if (manualAmounts != null && manualAmounts.containsKey(snapshot.id())) {
+                return manualAmounts.get(snapshot.id());
+            }
             return snapshot.defaultAmount();
         }
 

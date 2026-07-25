@@ -8,7 +8,7 @@ export const useReloadNoticeRuleSchedulesMutation = () => {
         ? `/api/system/notice-rules/schedules/${ruleId}/reload`
         : '/api/system/notice-rules/schedules/reload'
 
-      return await post<void, undefined>(path, undefined)
+      return await post<undefined, undefined>(path, undefined)
     },
   })
 }

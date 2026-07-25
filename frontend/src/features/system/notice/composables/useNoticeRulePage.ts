@@ -9,6 +9,7 @@ import { useGenerateNoticeRulesMutation } from '@/features/system/notice/api/mut
 import { useReloadNoticeRuleSchedulesMutation } from '@/features/system/notice/api/mutations/useReloadNoticeRuleSchedulesMutation'
 import { toNoticeRuleSaveRequest } from '@/features/system/notice/utils/noticeRuleConverters'
 import type { NoticeRuleForm } from '@/features/system/notice/types/noticeRuleFormTypes'
+import type { NoticeGenerateResult } from '@/features/system/notice/types/noticeRuleApiTypes'
 import type { NoticeRuleTableRow } from '@/features/system/notice/composables/useNoticeRuleTableConfig'
 
 export const useNoticeRulePage = () => {
@@ -84,7 +85,9 @@ export const useNoticeRulePage = () => {
   }
 
   const generateAll = async () => {
-    const result = await generateMutation.mutateAsync(undefined) as any
+    const result = await generateMutation.mutateAsync(
+      undefined,
+    ) as NoticeGenerateResult
     alert(result.message)
   }
 

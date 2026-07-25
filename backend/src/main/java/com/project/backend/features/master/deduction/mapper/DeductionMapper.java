@@ -12,6 +12,7 @@ import com.project.backend.features.master.deduction.dto.DeductionListItemRespon
 import com.project.backend.features.master.deduction.dto.DeductionSaveRequest;
 import com.project.backend.features.master.deduction.entity.DeductionMaster;
 import com.project.backend.features.master.deduction.enums.DeductionDetailViewType;
+import com.project.backend.features.master.deduction.enums.DeductionCalculationType;
 
 @Component
 public class DeductionMapper {
@@ -37,7 +38,11 @@ public class DeductionMapper {
                         : request.detailViewType()
         );
 
-        entity.setRuleName(request.ruleName());
+        entity.setRuleName(
+                request.calculationType() == DeductionCalculationType.AUTO
+                        ? request.ruleName()
+                        : null
+        );
         entity.setDefaultAmount(request.defaultAmount());
         entity.setAllowManualInput(Boolean.TRUE.equals(request.allowManualInput()));
         entity.setMinAmount(request.minAmount());

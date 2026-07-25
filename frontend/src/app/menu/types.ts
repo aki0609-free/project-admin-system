@@ -1,4 +1,5 @@
 import type { Component } from 'vue'
+import type { Role } from '@/shared/auth/types/types'
 
 export interface MenuItem {
   title: string
@@ -8,4 +9,5 @@ export interface MenuItem {
   component?: Component
   resource?: string
   action?: string
+  roles?: Role[]
 }

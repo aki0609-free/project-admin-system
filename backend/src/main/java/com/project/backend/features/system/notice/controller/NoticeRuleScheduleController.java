@@ -1,6 +1,7 @@
 package com.project.backend.features.system.notice.controller;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.project.backend.features.system.notice.service.NoticeDynamicSchedulerService;
 
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/system/notice-rules/schedules")
+@PreAuthorize("hasRole('SYS_ADMIN')")
 @RequiredArgsConstructor
 public class NoticeRuleScheduleController {
 

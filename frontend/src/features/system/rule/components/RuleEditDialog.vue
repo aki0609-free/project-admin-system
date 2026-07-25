@@ -16,6 +16,7 @@ import {
 import RuleParameterTab from '@/features/system/rule/components/RuleParameterTab.vue'
 import RuleDataSourceTab from '@/features/system/rule/components/RuleDataSourceTab.vue'
 import RuleTestTab from '@/features/system/rule/components/RuleTestTab.vue'
+import { useRuleBeansQuery } from '@/features/system/rule/api/useRuleBeansQuery'
 
 const props = defineProps<{
   modelValue: boolean
@@ -33,8 +34,9 @@ const visible = computed({
   set: value => emit('update:modelValue', value),
 })
 
-const activeTab = ref<'basic' | 'dsl' | 'parameters' | 'datasources'>('basic')
+const activeTab = ref<'basic' | 'dsl' | 'parameters' | 'datasources' | 'test'>('basic')
 const form = ref<RuleMasterForm>(createEmptyRuleMasterForm())
+const ruleBeansQuery = useRuleBeansQuery()
 
 const isEdit = computed(() => form.value.id > 0)
 
@@ -43,6 +45,7 @@ const tabs = [
   { label: 'DSL', value: 'dsl' },
   { label: 'Parameter', value: 'parameters' },
   { label: 'DataSource', value: 'datasources' },
+  { label: 'Test', value: 'test' },
 ]
 
 const ruleTypeItems = [
@@ -126,6 +129,7 @@ const footerItems = computed<ToolbarItem[]>(() => {
         <v-text-field
           v-model="form.ruleName"
           label="ruleName"
+          :disabled="isEdit"
           variant="outlined"
           density="comfortable"
         />
@@ -202,11 +206,14 @@ const footerItems = computed<ToolbarItem[]>(() => {
                 Ruleは reduction / allowance / daily report などから ruleName で呼び出されます。
               </v-alert>
 
-              <v-text-field
+              <v-select
                 v-if="form.dslType === 'JAVA_BEAN'"
                 v-model="form.ruleBeanName"
                 label="ruleBeanName"
-                variant="outlined"
+                :items="ruleBeansQuery.beanNames.value"
+                hint="デプロイ済みの登録済みBean名だけを指定できます。"
+            persistent-hint
+            variant="outlined"
                 density="comfortable"
               />
             </div>

@@ -14,6 +14,7 @@ import com.project.backend.features.master.allowance.dto.AllowanceSaveRequest;
 import com.project.backend.features.master.allowance.dto.BaseAllowanceDetailResponse;
 import com.project.backend.features.master.allowance.entity.AllowanceMaster;
 import com.project.backend.features.master.allowance.enums.AllowanceDetailViewType;
+import com.project.backend.features.master.allowance.enums.AllowanceCalculationType;
 
 @Mapper(componentModel = "spring")
 public interface AllowanceMapper {
@@ -69,6 +70,9 @@ public interface AllowanceMapper {
 
         if (entity.getDetailViewType() == null) {
             entity.setDetailViewType(AllowanceDetailViewType.NONE);
+        }
+        if (entity.getCalculationType() != AllowanceCalculationType.AUTO) {
+            entity.setRuleName(null);
         }
     }
 }

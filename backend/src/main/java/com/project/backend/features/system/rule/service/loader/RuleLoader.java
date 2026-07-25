@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import com.project.backend.features.system.rule.entity.RuleMaster;
 import com.project.backend.features.system.rule.repository.RuleMasterRepository;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -16,7 +17,10 @@ public class RuleLoader {
     public RuleMaster loadActive(String ruleName) {
         return repository.findByRuleNameAndActiveFlagTrueAndDeletedAtIsNull(ruleName)
                 .orElseThrow(() ->
-                        new RuntimeException("Ruleが見つかりません。 ruleName=" + ruleName)
+                        new EntityNotFoundException(
+                                "Ruleが見つかりません。 ruleName="
+                                        + ruleName
+                        )
                 );
     }
 }

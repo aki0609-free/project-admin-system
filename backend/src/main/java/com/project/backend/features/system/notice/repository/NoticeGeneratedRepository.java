@@ -8,7 +8,8 @@ import com.project.backend.features.system.notice.entity.NoticeGenerated;
 
 public interface NoticeGeneratedRepository extends JpaRepository<NoticeGenerated, Long> {
 
-    boolean existsByRuleCodeAndTargetTableNameAndTargetKeyAndTargetDateAndDeletedAtIsNull(
+    boolean existsByTenantIdAndRuleCodeAndTargetTableNameAndTargetKeyAndTargetDateAndDeletedAtIsNull(
+            String tenantId,
             String ruleCode,
             String targetTableName,
             String targetKey,

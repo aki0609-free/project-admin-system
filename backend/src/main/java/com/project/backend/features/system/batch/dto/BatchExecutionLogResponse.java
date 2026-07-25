@@ -4,6 +4,7 @@ import java.time.Instant;
 
 import com.project.backend.app.storage.enums.StorageType;
 import com.project.backend.features.system.batch.enums.BatchExecutionStatus;
+import com.project.backend.features.system.batch.enums.BatchExecutionTrigger;
 import com.project.backend.features.system.batch.enums.BatchJobType;
 
 import lombok.Builder;
@@ -16,6 +17,9 @@ public record BatchExecutionLogResponse(
         BatchJobType jobType,
         String targetCode,
         BatchExecutionStatus status,
+        BatchExecutionTrigger triggerType,
+        String executedBy,
+        Long retrySourceLogId,
         Instant startedAt,
         Instant finishedAt,
         String message,

@@ -3,6 +3,7 @@ package com.project.backend.features.system.batch.controller;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.project.backend.features.system.batch.dto.BatchJobDefinitionResponse;
 import com.project.backend.features.system.batch.dto.BatchJobDefinitionSaveRequest;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/system/batch-jobs")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('SYS_ADMIN')")
 public class BatchJobDefinitionAdminController {
 
     private final BatchJobDefinitionQueryService queryService;

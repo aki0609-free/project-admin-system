@@ -14,7 +14,7 @@ export const useUpdateAllowanceMutation = () => {
 
   return useAppMutation({
     mutationFn: ({ id, body }: UpdateAllowancePayload) =>
-      put<void, AllowanceSaveRequest>('/api/master/allowances/{id}', body, {
+      put<unknown, AllowanceSaveRequest>('/api/master/allowances/{id}', body, {
         params: {
           path: { id },
         },

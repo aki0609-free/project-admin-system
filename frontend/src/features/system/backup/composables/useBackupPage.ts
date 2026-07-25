@@ -91,21 +91,24 @@ export const useBackupPage = (
     }
 
     try {
-      const blob = await executeBackupMutation.mutateAsync({
+      const download = await executeBackupMutation.mutateAsync({
         targetCodes: selectedCodes.value,
-      }) as Blob
+      }) as { blob: Blob; fileName: string | null }
 
       const timestamp = new Date()
         .toISOString()
         .slice(0, 19)
         .replace(/[-:T]/g, '')
 
-      const fileName =
+      const fallbackFileName =
         selectedCodes.value.length === 1
           ? `${selectedCodes.value[0]}_${timestamp}.csv`
           : `backup_${timestamp}.zip`
 
-      downloadBlob(blob, fileName)
+      downloadBlob(
+        download.blob,
+        download.fileName || fallbackFileName,
+      )
 
       selectedCodes.value = []
 

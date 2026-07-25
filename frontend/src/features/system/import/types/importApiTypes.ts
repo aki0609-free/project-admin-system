@@ -112,6 +112,22 @@ export type ImportScriptFileResponse = {
   extension: string
 }
 
+export type ImportTargetCatalogColumnResponse = {
+  columnName: string
+  displayName: string
+  dataType: ImportDataType
+  orderNo: number
+}
+
+export type ImportTargetCatalogResponse = {
+  tableName: string
+  displayName: string
+  description: string | null
+  tenantScopedFlag: boolean
+  allowDeleteInsertFlag: boolean
+  columns: ImportTargetCatalogColumnResponse[]
+}
+
 export type ImportHistoryResponse = {
   id: number
   targetCode: string

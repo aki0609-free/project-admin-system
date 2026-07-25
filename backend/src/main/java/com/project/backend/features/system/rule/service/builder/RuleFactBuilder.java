@@ -11,6 +11,7 @@ import com.project.backend.features.system.rule.entity.RuleColumnMapping;
 import com.project.backend.features.system.rule.entity.RuleDataSource;
 import com.project.backend.features.system.rule.entity.RuleMaster;
 import com.project.backend.features.system.rule.service.fetcher.GeneralDataFetcher;
+import com.project.backend.features.system.rule.service.converter.RuleValueConverter;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class RuleFactBuilder {
 
     private final GeneralDataFetcher dataFetcher;
+    private final RuleValueConverter valueConverter;
 
     public Map<String, Object> build(
             RuleMaster rule,
@@ -61,6 +63,13 @@ public class RuleFactBuilder {
                 );
 
         if (source.isSingleRowFlag()) {
+            if (rows.size() > 1) {
+                throw new IllegalArgumentException(
+                        "singleRowFlagのデータソースが複数行を返しました。 sourceName="
+                                + source.getSourceName()
+                );
+            }
+
             Map<String, Object> row =
                     rows.isEmpty()
                             ? Map.of()
@@ -72,6 +81,13 @@ public class RuleFactBuilder {
             );
 
             return;
+        }
+
+        if (rows.size() > 1000) {
+            throw new IllegalArgumentException(
+                    "Ruleデータソースの取得件数が上限1000件を超えました。 sourceName="
+                            + source.getSourceName()
+            );
         }
 
         facts.put(
@@ -125,7 +141,11 @@ public class RuleFactBuilder {
 
         mapped.put(
                 column.getFactKey(),
-                value
+                valueConverter.convert(
+                        value,
+                        column.getDataType(),
+                        "Rule Fact " + column.getFactKey()
+                )
         );
     }
 

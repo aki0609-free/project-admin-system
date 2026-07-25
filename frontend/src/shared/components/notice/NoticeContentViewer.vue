@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* eslint-disable vue/no-v-html */
 import { computed } from 'vue'
 import { markdownToHtml } from '@/shared/utils/MarkdownUtils'
 import { plainTextToHtml, sanitizeHtml } from '@/shared/utils/HtmlUtils'
@@ -27,6 +28,7 @@ const html = computed(() => {
 </script>
 
 <template>
+  <!-- html is sanitized for HTML, Markdown, and plain-text input above. -->
   <div
     class="notice-content-viewer"
     v-html="html"

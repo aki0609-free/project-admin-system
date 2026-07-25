@@ -5,11 +5,18 @@ import { usePermission } from '@/shared/auth/composables/usePermission'
 
 export function useFilteredMenu(menu: MenuItem[]) {
   const { can } = usePermission()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, hasRole } = useAuth()
 
   const filterItems = (items: MenuItem[]): MenuItem[] => {
     return items
       .map(item => {
+        if (
+          item.roles
+          && !item.roles.some(role => hasRole(role))
+        ) {
+          return null
+        }
+
         if (item.children) {
           const filteredChildren = filterItems(item.children)
           if (filteredChildren.length > 0) {

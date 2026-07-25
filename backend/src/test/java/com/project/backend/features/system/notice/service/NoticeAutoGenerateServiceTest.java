@@ -1,341 +1,162 @@
 package com.project.backend.features.system.notice.service;
 
-import com.project.backend.features.dashboard.entity.Notice;
-import com.project.backend.features.dashboard.enums.NoticeContentFormat;
-import com.project.backend.features.dashboard.enums.NoticeSourceType;
-import com.project.backend.features.dashboard.enums.NoticeType;
-import com.project.backend.features.dashboard.repository.NoticeRepository;
-import com.project.backend.features.dashboard.service.renderer.NoticeContentRenderer;
-import com.project.backend.features.system.notice.dto.NoticeGenerateResult;
-import com.project.backend.features.system.notice.dto.NoticeTargetRow;
-import com.project.backend.features.system.notice.entity.NoticeGenerated;
-import com.project.backend.features.system.notice.entity.NoticeRule;
-import com.project.backend.features.system.notice.enums.NoticeDateType;
-import com.project.backend.features.system.notice.enums.NoticeSeverity;
-import com.project.backend.features.system.notice.repository.NoticeGeneratedRepository;
-import com.project.backend.features.system.notice.repository.NoticeRuleRepository;
-import com.project.backend.features.system.notice.service.resolver.NoticeTargetResolverDispatcher;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-@ExtendWith(MockitoExtension.class)
+import com.project.backend.features.system.notice.dto.NoticeGenerateResult;
+import com.project.backend.features.system.notice.dto.NoticeTargetRow;
+import com.project.backend.features.system.notice.entity.NoticeRule;
+import com.project.backend.features.system.notice.enums.GenerateResult;
+import com.project.backend.features.system.notice.repository.NoticeRuleRepository;
+import com.project.backend.features.system.notice.service.generator.NoticeGenerator;
+import com.project.backend.features.system.notice.service.resolver.NoticeTargetResolverDispatcher;
+
+import jakarta.persistence.EntityNotFoundException;
+
 class NoticeAutoGenerateServiceTest {
 
-    @Mock
-    NoticeRuleRepository ruleRepository;
+    private static final LocalDate FIXED_BUSINESS_DATE =
+            LocalDate.of(2026, 8, 1);
+    private static final Clock FIXED_CLOCK = Clock.fixed(
+            Instant.parse("2026-07-31T15:30:00Z"),
+            ZoneId.of("Asia/Tokyo")
+    );
 
-    @Mock
-    NoticeGeneratedRepository generatedRepository;
+    private NoticeRuleRepository ruleRepository;
+    private NoticeTargetResolverDispatcher targetResolver;
+    private NoticeGenerator noticeGenerator;
+    private NoticeAutoGenerateService service;
 
-    @Mock
-    NoticeRepository noticeRepository;
+    @BeforeEach
+    void setUp() {
+        ruleRepository = mock(NoticeRuleRepository.class);
+        targetResolver = mock(
+                NoticeTargetResolverDispatcher.class
+        );
+        noticeGenerator = mock(NoticeGenerator.class);
+        service = new NoticeAutoGenerateService(
+                ruleRepository,
+                targetResolver,
+                noticeGenerator,
+                FIXED_CLOCK
+        );
+    }
 
-    @Mock
-    NoticeTargetResolverDispatcher noticeTargetResolver;
-
-    @Mock
-    NoticeContentRenderer noticeContentRenderer;
-
-    @InjectMocks
-    NoticeAutoGenerateService service;
-
-    @SuppressWarnings("null")
     @Test
-    void generateByRuleId_shouldGenerateNotice_whenTargetMatchesRule() {
-        NoticeRule rule = validBeforeDaysRule();
-
-        NoticeTargetRow targetRow = NoticeTargetRow.builder()
-                .targetKey("1")
-                .targetDate(LocalDate.now().plusDays(3))
-                .targetLabel("株式会社A")
-                .build();
-
-        Notice savedNotice = new Notice();
-        savedNotice.setId(100L);
+    void generateByRuleId_shouldDelegateEachTargetAndCountResults() {
+        NoticeRule rule = rule(1L, "CLOSING_NOTICE");
+        NoticeTargetRow generatedTarget = target("1");
+        NoticeTargetRow skippedTarget = target("2");
 
         when(ruleRepository.findByIdAndDeletedAtIsNull(1L))
                 .thenReturn(Optional.of(rule));
+        when(targetResolver.resolve(rule))
+                .thenReturn(List.of(
+                        generatedTarget,
+                        skippedTarget
+                ));
+        when(noticeGenerator.generate(
+                org.mockito.ArgumentMatchers.eq(rule),
+                org.mockito.ArgumentMatchers.eq(generatedTarget),
+                org.mockito.ArgumentMatchers.any(LocalDate.class)
+        )).thenReturn(GenerateResult.GENERATED);
+        when(noticeGenerator.generate(
+                org.mockito.ArgumentMatchers.eq(rule),
+                org.mockito.ArgumentMatchers.eq(skippedTarget),
+                org.mockito.ArgumentMatchers.any(LocalDate.class)
+        )).thenReturn(GenerateResult.SKIPPED);
 
-        when(noticeTargetResolver.resolve(rule))
-                .thenReturn(List.of(targetRow));
-
-        when(generatedRepository.existsByRuleCodeAndTargetTableNameAndTargetKeyAndTargetDateAndDeletedAtIsNull(
-                rule.getRuleCode(),
-                rule.getTargetTableName(),
-                "1",
-                targetRow.targetDate()
-        )).thenReturn(false);
-
-        when(noticeContentRenderer.render(
-                NoticeContentFormat.PLAIN_TEXT,
-                "株式会社A の締め日は " + targetRow.targetDate() + " です。"
-        )).thenReturn("株式会社A の締め日は " + targetRow.targetDate() + " です。");
-
-        when(noticeRepository.save(any(Notice.class)))
-                .thenReturn(savedNotice);
-
-        NoticeGenerateResult result = service.generateByRuleId(1L);
+        NoticeGenerateResult result =
+                service.generateByRuleId(1L);
 
         assertThat(result.ruleCount()).isEqualTo(1);
-        assertThat(result.targetCount()).isEqualTo(1);
+        assertThat(result.targetCount()).isEqualTo(2);
         assertThat(result.generatedCount()).isEqualTo(1);
-        assertThat(result.skippedCount()).isEqualTo(0);
-
-        ArgumentCaptor<Notice> noticeCaptor = ArgumentCaptor.forClass(Notice.class);
-        verify(noticeRepository).save(noticeCaptor.capture());
-
-        Notice notice = noticeCaptor.getValue();
-
-        assertThat(notice.getTitle()).isEqualTo("株式会社A の締め日が近づいています");
-        assertThat(notice.getContent()).isEqualTo("株式会社A の締め日は " + targetRow.targetDate() + " です。");
-        assertThat(notice.getStartDate()).isEqualTo(LocalDate.now());
-        assertThat(notice.getEndDate()).isEqualTo(targetRow.targetDate());
-        assertThat(notice.getType()).isEqualTo(NoticeType.INFO);
-        assertThat(notice.getColor()).isEqualTo("blue");
-        assertThat(notice.getContentFormat()).isEqualTo(NoticeContentFormat.PLAIN_TEXT);
-        assertThat(notice.getSourceType()).isEqualTo(NoticeSourceType.AUTO);
-        assertThat(notice.getSourceRuleCode()).isEqualTo(rule.getRuleCode());
-        assertThat(notice.isPinnedFlag()).isFalse();
-        assertThat(notice.isActiveFlag()).isTrue();
-
-        verify(noticeContentRenderer).render(
-                NoticeContentFormat.PLAIN_TEXT,
-                "株式会社A の締め日は " + targetRow.targetDate() + " です。"
+        assertThat(result.skippedCount()).isEqualTo(1);
+        verify(targetResolver).resolve(rule);
+        verify(noticeGenerator).generate(
+                rule,
+                generatedTarget,
+                FIXED_BUSINESS_DATE
         );
-
-        ArgumentCaptor<NoticeGenerated> generatedCaptor =
-                ArgumentCaptor.forClass(NoticeGenerated.class);
-
-        verify(generatedRepository).save(generatedCaptor.capture());
-
-        NoticeGenerated generated = generatedCaptor.getValue();
-
-        assertThat(generated.getRuleCode()).isEqualTo(rule.getRuleCode());
-        assertThat(generated.getTargetTableName()).isEqualTo(rule.getTargetTableName());
-        assertThat(generated.getTargetKey()).isEqualTo("1");
-        assertThat(generated.getTargetDate()).isEqualTo(targetRow.targetDate());
-        assertThat(generated.getGeneratedNoticeId()).isEqualTo(100L);
-    }
-
-    @SuppressWarnings("null")
-    @Test
-    void generateByRuleId_shouldGenerateHtmlNotice_whenRuleContentFormatIsHtml() {
-        NoticeRule rule = validBeforeDaysRule();
-        rule.setNoticeContentFormat(NoticeContentFormat.HTML);
-        rule.setNoticeBodyTemplate("<p><b>{label}</b> の締め日は {date} です。</p>");
-
-        NoticeTargetRow targetRow = NoticeTargetRow.builder()
-                .targetKey("1")
-                .targetDate(LocalDate.now().plusDays(3))
-                .targetLabel("株式会社A")
-                .build();
-
-        Notice savedNotice = new Notice();
-        savedNotice.setId(101L);
-
-        String rendered = "<p><b>株式会社A</b> の締め日は " + targetRow.targetDate() + " です。</p>";
-
-        when(ruleRepository.findByIdAndDeletedAtIsNull(1L))
-                .thenReturn(Optional.of(rule));
-
-        when(noticeTargetResolver.resolve(rule))
-                .thenReturn(List.of(targetRow));
-
-        when(generatedRepository.existsByRuleCodeAndTargetTableNameAndTargetKeyAndTargetDateAndDeletedAtIsNull(
-                rule.getRuleCode(),
-                rule.getTargetTableName(),
-                "1",
-                targetRow.targetDate()
-        )).thenReturn(false);
-
-        when(noticeContentRenderer.render(
-                NoticeContentFormat.HTML,
-                rendered
-        )).thenReturn(rendered);
-
-        when(noticeRepository.save(any(Notice.class)))
-                .thenReturn(savedNotice);
-
-        NoticeGenerateResult result = service.generateByRuleId(1L);
-
-        assertThat(result.generatedCount()).isEqualTo(1);
-
-        ArgumentCaptor<Notice> noticeCaptor = ArgumentCaptor.forClass(Notice.class);
-        verify(noticeRepository).save(noticeCaptor.capture());
-
-        Notice notice = noticeCaptor.getValue();
-
-        assertThat(notice.getContentFormat()).isEqualTo(NoticeContentFormat.HTML);
-        assertThat(notice.getContent()).isEqualTo(rendered);
-
-        verify(noticeContentRenderer).render(
-                NoticeContentFormat.HTML,
-                rendered
+        verify(noticeGenerator).generate(
+                rule,
+                skippedTarget,
+                FIXED_BUSINESS_DATE
         );
     }
 
-    @SuppressWarnings("null")
     @Test
-    void generateByRuleId_shouldSkip_whenTargetDoesNotMatchRule() {
-        NoticeRule rule = validBeforeDaysRule();
+    void generateAll_shouldAggregateAllActiveRules() {
+        NoticeRule first = rule(1L, "FIRST");
+        NoticeRule second = rule(2L, "SECOND");
+        NoticeTargetRow firstTarget = target("1");
+        NoticeTargetRow secondTarget = target("2");
 
-        NoticeTargetRow targetRow = NoticeTargetRow.builder()
-                .targetKey("1")
-                .targetDate(LocalDate.now().plusDays(10))
-                .targetLabel("株式会社A")
-                .build();
-
-        when(ruleRepository.findByIdAndDeletedAtIsNull(1L))
-                .thenReturn(Optional.of(rule));
-
-        when(noticeTargetResolver.resolve(rule))
-                .thenReturn(List.of(targetRow));
-
-        NoticeGenerateResult result = service.generateByRuleId(1L);
-
-        assertThat(result.generatedCount()).isEqualTo(0);
-        assertThat(result.skippedCount()).isEqualTo(1);
-
-        verify(noticeRepository, never()).save(any());
-        verify(generatedRepository, never()).save(any());
-        verify(noticeContentRenderer, never()).render(any(), any());
-    }
-
-    @SuppressWarnings("null")
-    @Test
-    void generateByRuleId_shouldSkip_whenAlreadyGenerated() {
-        NoticeRule rule = validBeforeDaysRule();
-
-        NoticeTargetRow targetRow = NoticeTargetRow.builder()
-                .targetKey("1")
-                .targetDate(LocalDate.now().plusDays(3))
-                .targetLabel("株式会社A")
-                .build();
-
-        when(ruleRepository.findByIdAndDeletedAtIsNull(1L))
-                .thenReturn(Optional.of(rule));
-
-        when(noticeTargetResolver.resolve(rule))
-                .thenReturn(List.of(targetRow));
-
-        when(generatedRepository.existsByRuleCodeAndTargetTableNameAndTargetKeyAndTargetDateAndDeletedAtIsNull(
-                rule.getRuleCode(),
-                rule.getTargetTableName(),
-                "1",
-                targetRow.targetDate()
-        )).thenReturn(true);
-
-        NoticeGenerateResult result = service.generateByRuleId(1L);
-
-        assertThat(result.generatedCount()).isEqualTo(0);
-        assertThat(result.skippedCount()).isEqualTo(1);
-
-        verify(noticeRepository, never()).save(any());
-        verify(generatedRepository, never()).save(any(NoticeGenerated.class));
-        verify(noticeContentRenderer, never()).render(any(), any());
-    }
-
-    @SuppressWarnings("null")
-    @Test
-    void generateByRuleId_shouldSkip_whenTargetKeyIsNull() {
-        NoticeRule rule = validBeforeDaysRule();
-
-        NoticeTargetRow targetRow = NoticeTargetRow.builder()
-                .targetKey(null)
-                .targetDate(LocalDate.now().plusDays(3))
-                .targetLabel("株式会社A")
-                .build();
-
-        when(ruleRepository.findByIdAndDeletedAtIsNull(1L))
-                .thenReturn(Optional.of(rule));
-
-        when(noticeTargetResolver.resolve(rule))
-                .thenReturn(List.of(targetRow));
-
-        NoticeGenerateResult result = service.generateByRuleId(1L);
-
-        assertThat(result.generatedCount()).isEqualTo(0);
-        assertThat(result.skippedCount()).isEqualTo(1);
-
-        verify(noticeRepository, never()).save(any());
-        verify(generatedRepository, never()).save(any());
-        verify(noticeContentRenderer, never()).render(any(), any());
-    }
-
-    @SuppressWarnings("null")
-    @Test
-    void generateAll_shouldGenerateNoticesForActiveRules() {
-        NoticeRule rule = validBeforeDaysRule();
-
-        NoticeTargetRow targetRow = NoticeTargetRow.builder()
-                .targetKey("1")
-                .targetDate(LocalDate.now().plusDays(3))
-                .targetLabel("株式会社A")
-                .build();
-
-        Notice savedNotice = new Notice();
-        savedNotice.setId(100L);
-
-        when(ruleRepository.findByActiveFlagTrueAndDeletedAtIsNullOrderByIdAsc())
-                .thenReturn(List.of(rule));
-
-        when(noticeTargetResolver.resolve(rule))
-                .thenReturn(List.of(targetRow));
-
-        when(generatedRepository.existsByRuleCodeAndTargetTableNameAndTargetKeyAndTargetDateAndDeletedAtIsNull(
-                rule.getRuleCode(),
-                rule.getTargetTableName(),
-                "1",
-                targetRow.targetDate()
-        )).thenReturn(false);
-
-        when(noticeContentRenderer.render(
-                NoticeContentFormat.PLAIN_TEXT,
-                "株式会社A の締め日は " + targetRow.targetDate() + " です。"
-        )).thenReturn("株式会社A の締め日は " + targetRow.targetDate() + " です。");
-
-        when(noticeRepository.save(any(Notice.class)))
-                .thenReturn(savedNotice);
+        when(ruleRepository
+                .findByActiveFlagTrueAndDeletedAtIsNullOrderByIdAsc())
+                .thenReturn(List.of(first, second));
+        when(targetResolver.resolve(first))
+                .thenReturn(List.of(firstTarget));
+        when(targetResolver.resolve(second))
+                .thenReturn(List.of(secondTarget));
+        when(noticeGenerator.generate(
+                org.mockito.ArgumentMatchers.eq(first),
+                org.mockito.ArgumentMatchers.eq(firstTarget),
+                org.mockito.ArgumentMatchers.any(LocalDate.class)
+        )).thenReturn(GenerateResult.GENERATED);
+        when(noticeGenerator.generate(
+                org.mockito.ArgumentMatchers.eq(second),
+                org.mockito.ArgumentMatchers.eq(secondTarget),
+                org.mockito.ArgumentMatchers.any(LocalDate.class)
+        )).thenReturn(GenerateResult.SKIPPED);
 
         NoticeGenerateResult result = service.generateAll();
 
-        assertThat(result.ruleCount()).isEqualTo(1);
-        assertThat(result.targetCount()).isEqualTo(1);
+        assertThat(result.ruleCount()).isEqualTo(2);
+        assertThat(result.targetCount()).isEqualTo(2);
         assertThat(result.generatedCount()).isEqualTo(1);
-        assertThat(result.skippedCount()).isEqualTo(0);
-
-        verify(noticeRepository, times(1)).save(any(Notice.class));
-        verify(generatedRepository, times(1)).save(any(NoticeGenerated.class));
+        assertThat(result.skippedCount()).isEqualTo(1);
     }
 
-    private NoticeRule validBeforeDaysRule() {
+    @Test
+    void generateByRuleId_shouldReturnNotFound() {
+        when(ruleRepository.findByIdAndDeletedAtIsNull(99L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() ->
+                service.generateByRuleId(99L))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    private NoticeRule rule(
+            Long id,
+            String ruleCode
+    ) {
         NoticeRule rule = new NoticeRule();
-        rule.setRuleCode("CUSTOMER_CLOSING_NOTICE");
-        rule.setRuleName("顧客締め日通知");
-        rule.setTargetTableName("customers");
-        rule.setTargetKeyColumnName("id");
-        rule.setTargetDateColumnName("closing_date");
-        rule.setTargetLabelColumnName("name");
-        rule.setNoticeTitleTemplate("{label} の締め日が近づいています");
-        rule.setNoticeBodyTemplate("{label} の締め日は {date} です。");
-        rule.setNoticeContentFormat(NoticeContentFormat.PLAIN_TEXT);
-        rule.setNoticeSeverity(NoticeSeverity.INFO);
-        rule.setDateType(NoticeDateType.BEFORE_DAYS);
-        rule.setDaysBefore(3);
-        rule.setActiveFlag(true);
+        rule.setId(id);
+        rule.setRuleCode(ruleCode);
         return rule;
+    }
+
+    private NoticeTargetRow target(String key) {
+        return NoticeTargetRow.builder()
+                .targetKey(key)
+                .targetDate(LocalDate.of(2026, 7, 31))
+                .targetLabel("対象" + key)
+                .build();
     }
 }

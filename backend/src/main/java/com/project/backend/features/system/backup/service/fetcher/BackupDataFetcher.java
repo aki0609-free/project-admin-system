@@ -16,11 +16,12 @@ public class BackupDataFetcher {
 
     @SuppressWarnings("null")
 public List<Map<String, Object>> fetch(
-            String sql
+            String sql,
+            Map<String, Object> parameters
     ) {
         return jdbcTemplate.queryForList(
                 sql,
-                Map.of()
+                parameters
         );
     }
 }

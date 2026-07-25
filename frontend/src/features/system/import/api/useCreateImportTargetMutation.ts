@@ -1,5 +1,7 @@
-import { useQueryClient } from '@tanstack/vue-query'
-import { useAppMutation } from '@/shared/api/useAppMutation'
+import {
+  useMutation,
+  useQueryClient,
+} from '@tanstack/vue-query'
 import { post } from '@/shared/api/http'
 import { queryKeys } from '@/features/system/import/api/queryKeys'
 import type {
@@ -10,7 +12,7 @@ import type {
 export const useCreateImportTargetMutation = () => {
   const queryClient = useQueryClient()
 
-  return useAppMutation({
+  return useMutation({
     mutationFn: (request: ImportTargetSaveRequest) =>
       post<ImportTargetResponse, ImportTargetSaveRequest>(
         '/api/system/import-targets',

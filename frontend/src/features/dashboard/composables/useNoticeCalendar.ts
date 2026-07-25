@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { computed, ref, watch, type Ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 
 import type { NoticeResponse } from '../types/dashboardTypes'
 
@@ -14,10 +14,8 @@ type CalendarNoticeEvent = Omit<NoticeResponse, 'start' | 'end'> & {
 
 export const useNoticeCalendar = (
   notices: Ref<NoticeResponse[]>,
-  selectedNotice: Ref<NoticeResponse | null>,
+  calendarDate: Ref<string>,
 ) => {
-  const calendarDate = ref(new Date().toISOString().slice(0, 10))
-
   const dayDialog = ref(false)
 
   const selectedDate = ref<string | null>(null)
@@ -25,6 +23,7 @@ export const useNoticeCalendar = (
   const selectedNoticeDetail = ref<NoticeResponse | null>(null)
 
   const detailDialog = ref(false)
+  const deleteConfirmDialog = ref(false)
 
   const calendarEvents = computed<CalendarNoticeEvent[]>(() =>
     notices.value.map((notice) => ({
@@ -48,16 +47,6 @@ export const useNoticeCalendar = (
     const date = new Date(calendarDate.value)
 
     return `${date.getFullYear()}年 ${date.getMonth() + 1}月`
-  })
-
-  watch(selectedNotice, (notice) => {
-    if (!notice) {
-      return
-    }
-
-    calendarDate.value = notice.start
-
-    openDayDialog(notice.start)
   })
 
   const formatDate = (date: Date) => {
@@ -137,6 +126,7 @@ export const useNoticeCalendar = (
 
     dayDialog,
     detailDialog,
+    deleteConfirmDialog,
 
     selectedDate,
     selectedNotices,

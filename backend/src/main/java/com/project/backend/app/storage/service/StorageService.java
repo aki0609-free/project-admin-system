@@ -8,6 +8,8 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import com.project.backend.app.storage.enums.StorageType;
+import com.project.backend.app.storage.model.StorageEntry;
+import com.project.backend.app.storage.model.StorageListPage;
 import com.project.backend.app.storage.properties.StorageProperties;
 
 @Service
@@ -50,6 +52,10 @@ public class StorageService {
         return load(type(), key);
     }
 
+    public boolean directoryExists(String key) {
+        return directoryExists(type(), key);
+    }
+
     public String save(
             String key,
             InputStream inputStream,
@@ -81,6 +87,13 @@ public class StorageService {
         return backend(storageType).load(key);
     }
 
+    public boolean directoryExists(
+            StorageType storageType,
+            String key
+    ) {
+        return backend(storageType).directoryExists(key);
+    }
+
     public String save(
             StorageType storageType,
             String key,
@@ -108,6 +121,69 @@ public class StorageService {
             String prefix
     ) {
         return backend(storageType).list(prefix);
+    }
+
+    public StorageListPage listDirectory(
+            String prefix,
+            String continuationToken,
+            int maxKeys
+    ) {
+        return listDirectory(
+                type(),
+                prefix,
+                continuationToken,
+                maxKeys
+        );
+    }
+
+    public StorageListPage listDirectory(
+            StorageType storageType,
+            String prefix,
+            String continuationToken,
+            int maxKeys
+    ) {
+        return backend(storageType).listDirectory(
+                prefix,
+                continuationToken,
+                maxKeys
+        );
+    }
+
+    public List<StorageEntry> listRecursively(String prefix) {
+        return listRecursively(type(), prefix);
+    }
+
+    public List<StorageEntry> listRecursively(
+            StorageType storageType,
+            String prefix
+    ) {
+        return backend(storageType).listRecursively(prefix);
+    }
+
+    public void createDirectory(String key) {
+        createDirectory(type(), key);
+    }
+
+    public void createDirectory(
+            StorageType storageType,
+            String key
+    ) {
+        backend(storageType).createDirectory(key);
+    }
+
+    public void copy(
+            String sourceKey,
+            String targetKey
+    ) {
+        copy(type(), sourceKey, targetKey);
+    }
+
+    public void copy(
+            StorageType storageType,
+            String sourceKey,
+            String targetKey
+    ) {
+        backend(storageType).copy(sourceKey, targetKey);
     }
 
     private StorageBackend backend(StorageType storageType) {

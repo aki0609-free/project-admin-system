@@ -8,6 +8,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.project.backend.features.dailyreport.dto.DailyReportResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
+import com.project.backend.features.dailyreport.dto.DailyReportInputResponse;
+import com.project.backend.features.dailyreport.dto.DailyReportAllowanceSaveRequest;
+import com.project.backend.features.dailyreport.dto.DailyReportDeductionSaveRequest;
+import com.project.backend.features.dailyreport.dto.DailyReportInputItemResponse;
 import com.project.backend.features.dailyreport.entity.DailyReport;
 import com.project.backend.features.dailyreport.mapper.DailyReportMapper;
 import com.project.backend.features.dailyreport.repository.DailyReportRepository;
@@ -35,6 +39,7 @@ public class DailyReportCommandService {
     private final EmployeeFinanceBalanceCommandService financeBalanceCommandService;
     private final DailyReportEstimatedPayService estimatedPayService;
     private final DailyReportBillingRateService billingRateService;
+    private final DailyReportInputItemService inputItemService;
 
     public DailyReportResponse create(
             DailyReportSaveRequest request
@@ -57,27 +62,28 @@ public class DailyReportCommandService {
                 entity
         );
 
-        EmployeeContract contract =
-                findEmployeeContract(
-                        employee.getId()
-                );
-
-        estimatedPayService.applyEstimatedPay(
-                entity,
-                contract
-        );
-
         DailyReport saved =
                 repository.save(entity);
 
+        DailyReportInputResponse calculatedItems =
+                inputItemService.calculate(request);
+
+        applyCalculatedAmounts(saved, calculatedItems);
+
+        EmployeeContract contract =
+                findEmployeeContract(employee.getId());
+
+        estimatedPayService.applyEstimatedPay(saved, contract);
+        saved = repository.save(saved);
+
         allowanceCommandService.replaceAll(
                 saved.getId(),
-                request.allowances()
+                toAllowanceRequests(calculatedItems)
         );
 
         deductionCommandService.replaceAll(
                 saved.getId(),
-                request.deductions()
+                toDeductionRequests(calculatedItems)
         );
 
         financeBalanceCommandService.applyDailyReportAmountDiff(
@@ -125,27 +131,28 @@ public class DailyReportCommandService {
                 entity
         );
 
-        EmployeeContract contract =
-                findEmployeeContract(
-                        employee.getId()
-                );
-
-        estimatedPayService.applyEstimatedPay(
-                entity,
-                contract
-        );
-
         DailyReport saved =
                 repository.save(entity);
 
+        DailyReportInputResponse calculatedItems =
+                inputItemService.calculate(request);
+
+        applyCalculatedAmounts(saved, calculatedItems);
+
+        EmployeeContract contract =
+                findEmployeeContract(employee.getId());
+
+        estimatedPayService.applyEstimatedPay(saved, contract);
+        saved = repository.save(saved);
+
         allowanceCommandService.replaceAll(
                 saved.getId(),
-                request.allowances()
+                toAllowanceRequests(calculatedItems)
         );
 
         deductionCommandService.replaceAll(
                 saved.getId(),
-                request.deductions()
+                toDeductionRequests(calculatedItems)
         );
 
         Long newEmployeeId =
@@ -314,5 +321,47 @@ public class DailyReportCommandService {
         return value != null
                 ? value
                 : BigDecimal.ZERO;
+    }
+
+    private void applyCalculatedAmounts(
+            DailyReport report,
+            DailyReportInputResponse calculatedItems
+    ) {
+        report.setAllowanceAmount(sumAmounts(calculatedItems.allowances()));
+        report.setDeductionAmount(sumAmounts(calculatedItems.deductions()));
+    }
+
+    private BigDecimal sumAmounts(
+            java.util.List<DailyReportInputItemResponse> items
+    ) {
+        return items.stream()
+                .map(item -> BigDecimal.valueOf(item.amount() == null ? 0 : item.amount()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private java.util.List<DailyReportAllowanceSaveRequest> toAllowanceRequests(
+            DailyReportInputResponse calculatedItems
+    ) {
+        return calculatedItems.allowances().stream()
+                .map(item -> new DailyReportAllowanceSaveRequest(
+                        item.masterId(),
+                        item.code(),
+                        item.name(),
+                        item.amount()
+                ))
+                .toList();
+    }
+
+    private java.util.List<DailyReportDeductionSaveRequest> toDeductionRequests(
+            DailyReportInputResponse calculatedItems
+    ) {
+        return calculatedItems.deductions().stream()
+                .map(item -> new DailyReportDeductionSaveRequest(
+                        item.masterId(),
+                        item.code(),
+                        item.name(),
+                        item.amount()
+                ))
+                .toList();
     }
 }

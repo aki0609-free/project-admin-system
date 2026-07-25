@@ -8,7 +8,7 @@ export const useDeleteDeductionMutation = () => {
 
   return useAppMutation({
     mutationFn: (id: number) =>
-      del<void>('/api/master/deductions/{id}', {
+      del<unknown>('/api/master/deductions/{id}', {
         params: {
           path: { id },
         },

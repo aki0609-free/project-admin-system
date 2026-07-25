@@ -16,6 +16,7 @@ import { useAllowancesQuery } from '@/features/master/allowance/api/useAllowance
 import { useCreateAllowanceMutation } from '@/features/master/allowance/api/useCreateAllowanceMutation'
 import { useUpdateAllowanceMutation } from '@/features/master/allowance/api/useUpdateAllowanceMutation'
 import { useDeleteAllowanceMutation } from '@/features/master/allowance/api/useDeleteAllowanceMutation'
+import { usePermission } from '@/shared/auth/composables/usePermission'
 
 import {
   toAllowanceListItem,
@@ -24,6 +25,8 @@ import {
 } from '@/features/master/allowance/mapper/allowanceMapper'
 
 const { columns } = useAllowanceColumns()
+const { can } = usePermission()
+const canManage = computed(() => can('master', 'manage'))
 
 const dialog = ref(false)
 const isCreateMode = ref(false)
@@ -42,14 +45,14 @@ const filterRules = computed(() =>
   createSimpleTableFilterRules<AllowanceListItem>(columns.value),
 )
 
-const toolbarItems = computed<ToolbarItem[]>(() => [
+const toolbarItems = computed<ToolbarItem[]>(() => canManage.value ? [
   {
     type: 'button',
     label: '新規登録',
     color: 'primary',
     onClick: handleCreate,
   },
-])
+] : [])
 
 function createEmptyAllowance(): AllowanceMaster {
   return {
@@ -139,6 +142,7 @@ async function handleDelete(id: number) {
         v-model="dialog"
         :allowance="editingAllowance"
         :is-create-mode="isCreateMode"
+        :can-manage="canManage"
         @save="handleSave"
         @delete="handleDelete"
       />

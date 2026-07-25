@@ -5,7 +5,7 @@ import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
 
-import NoticeContentPreview from '@/shared/components/notice/NoticeContentPreviwe.vue'
+import NoticeContentPreview from '@/shared/components/notice/NoticeContentPreview.vue'
 import NoticeRichEditor from '@/shared/components/notice/NoticeRichEditor.vue'
 
 import type { NoticeRuleResponse } from '@/features/system/notice/types/noticeRuleApiTypes'

@@ -9,6 +9,9 @@ import MultiPositionGenericToolbar from '@/shared/components/toolbar/MultiPositi
 
 const props = defineProps<{
   notices: NoticeResponse[]
+  canCreate: boolean
+  canEdit: (notice: NoticeResponse) => boolean
+  canDelete: (notice: NoticeResponse) => boolean
 }>()
 
 const emit = defineEmits<{
@@ -20,6 +23,7 @@ const emit = defineEmits<{
 const board = useNoticeBoard(
   () => props.notices,
   () => emit('create'),
+  () => props.canCreate,
 )
 
 const handleEdit = () => {
@@ -89,6 +93,12 @@ const handleDelete = () => {
       v-model="board.detailDialog.value"
       v-model:delete-confirm="board.deleteConfirmDialog.value"
       :notice="board.selectedNotice.value"
+      :can-edit="
+        !!board.selectedNotice.value && props.canEdit(board.selectedNotice.value)
+      "
+      :can-delete="
+        !!board.selectedNotice.value && props.canDelete(board.selectedNotice.value)
+      "
       :get-color="board.getColor"
       :get-label="board.getLabel"
       :format-period="board.formatPeriod"

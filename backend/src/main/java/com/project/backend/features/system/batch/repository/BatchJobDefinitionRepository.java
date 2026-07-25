@@ -11,15 +11,28 @@ public interface BatchJobDefinitionRepository extends JpaRepository<BatchJobDefi
 
     List<BatchJobDefinition> findAllByDeletedAtIsNullOrderByIdAsc();
 
-    List<BatchJobDefinition> findByActiveFlagTrueAndDeletedAtIsNullOrderByIdAsc();
+    Optional<BatchJobDefinition> findByIdAndTenantIdAndDeletedAtIsNull(
+            Long id,
+            String tenantId
+    );
 
-    List<BatchJobDefinition> findByScheduleEnabledTrueAndActiveFlagTrueAndDeletedAtIsNullOrderByIdAsc();
+    Optional<BatchJobDefinition> findByTenantIdAndJobCodeAndActiveFlagTrueAndDeletedAtIsNull(
+            String tenantId,
+            String jobCode
+    );
 
-    Optional<BatchJobDefinition> findByIdAndDeletedAtIsNull(Long id);
+    List<BatchJobDefinition> findAllByTenantIdAndDeletedAtIsNullOrderByIdAsc(
+            String tenantId
+    );
 
-    Optional<BatchJobDefinition> findByJobCodeAndActiveFlagTrueAndDeletedAtIsNull(String jobCode);
+    boolean existsByTenantIdAndJobCodeAndDeletedAtIsNull(
+            String tenantId,
+            String jobCode
+    );
 
-    boolean existsByJobCodeAndDeletedAtIsNull(String jobCode);
-
-    boolean existsByJobCodeAndIdNotAndDeletedAtIsNull(String jobCode, Long id);
+    boolean existsByTenantIdAndJobCodeAndIdNotAndDeletedAtIsNull(
+            String tenantId,
+            String jobCode,
+            Long id
+    );
 }

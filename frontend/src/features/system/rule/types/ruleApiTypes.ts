@@ -42,6 +42,7 @@ export type RuleColumnMappingResponse = {
 export type RuleDataSourceResponse = {
   id: number
   sourceName: string
+  catalogCode: string | null
   tableName: string
   whereClause: string | null
   singleRowFlag: boolean
@@ -88,12 +89,29 @@ export type RuleColumnMappingSaveRequest = {
 export type RuleDataSourceSaveRequest = {
   id: number | null
   sourceName: string
+  catalogCode: string | null
   tableName: string
   whereClause: string | null
   singleRowFlag: boolean
   activeFlag: boolean
   orderNo: number
   columns: RuleColumnMappingSaveRequest[]
+}
+
+export type RuleDataSourceCatalogColumn = {
+  columnName: string
+  displayName: string
+  dataType: RuleDataType
+  orderNo: number
+}
+
+export type RuleDataSourceCatalog = {
+  sourceCode: string
+  displayName: string
+  description: string | null
+  tenantScopedFlag: boolean
+  maxRows: number
+  columns: RuleDataSourceCatalogColumn[]
 }
 
 export type RuleMasterSaveRequest = {
@@ -113,7 +131,9 @@ export type RuleMasterSaveRequest = {
 
 export type RuleExecutionRequest = {
   ruleName: string
-  facts: Record<string, unknown>
+  context: {
+    parameters: Record<string, unknown>
+  }
 }
 
 export type RuleExecutionResponse = {

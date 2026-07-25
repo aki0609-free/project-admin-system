@@ -26,6 +26,7 @@ export type RuleColumnMappingForm = {
 export type RuleDataSourceForm = {
   id: number
   sourceName: string
+  catalogCode: string
   tableName: string
   whereClause: string
   singleRowFlag: boolean

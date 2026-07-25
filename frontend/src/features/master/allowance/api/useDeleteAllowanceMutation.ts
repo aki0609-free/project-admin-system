@@ -8,7 +8,7 @@ export const useDeleteAllowanceMutation = () => {
 
   return useAppMutation({
     mutationFn: (id: number) =>
-      del<void>('/api/master/allowances/{id}', {
+      del<unknown>('/api/master/allowances/{id}', {
         params: {
           path: { id },
         },

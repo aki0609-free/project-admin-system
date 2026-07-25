@@ -7,6 +7,7 @@ import ReportMasterPage from '@/features/system/report/page/ReportMasterPage.vue
 import type { MenuItem } from './types'
 import RuleManagementPage from '@/features/system/rule/pages/RuleManagementPage.vue'
 import ExcelBookMasterPage from '@/features/system/excelbook/pages/ExcelBookMasterPage.vue'
+import { Role } from '@/shared/auth/types/types'
 
 export const systemMenu: MenuItem = {
   title: 'システム運用',
@@ -25,6 +26,7 @@ export const systemMenu: MenuItem = {
       component: RuleManagementPage,
       resource: 'system',
       action: 'manage',
+      roles: [Role.SYS_ADMIN],
     },
     {
       title: '台帳管理',
@@ -39,6 +41,7 @@ export const systemMenu: MenuItem = {
       component: BatchPage,
       resource: 'system',
       action: 'manage',
+      roles: [Role.SYS_ADMIN],
     },
     {
       title: '外部データ取込',
@@ -46,6 +49,7 @@ export const systemMenu: MenuItem = {
       component: ImportPage,
       resource: 'system',
       action: 'manage',
+      roles: [Role.SYS_ADMIN],
     },
     {
       title: 'バックアップ',
@@ -53,6 +57,7 @@ export const systemMenu: MenuItem = {
       component: BackupPage,
       resource: 'system',
       action: 'manage',
+      roles: [Role.SYS_ADMIN],
     },
     {
       title: 'メール管理',

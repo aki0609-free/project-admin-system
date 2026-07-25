@@ -3,6 +3,8 @@ package com.project.backend.features.master.allowance.controller;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.project.backend.features.master.allowance.dto.AllowanceDetailResponse;
 import com.project.backend.features.master.allowance.dto.AllowanceListItemResponse;
@@ -15,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/master/allowances")
+@PreAuthorize("hasAuthority('master:view')")
 @RequiredArgsConstructor
 public class AllowanceController {
 
@@ -34,6 +37,7 @@ public class AllowanceController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('master:manage')")
     public Long create(
             @Valid @RequestBody AllowanceSaveRequest request
     ) {
@@ -41,6 +45,7 @@ public class AllowanceController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('master:manage')")
     public void update(
             @PathVariable Long id,
             @Valid @RequestBody AllowanceSaveRequest request
@@ -52,9 +57,11 @@ public class AllowanceController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(
+    @PreAuthorize("hasAuthority('master:manage')")
+    public ResponseEntity<Void> delete(
             @PathVariable Long id
     ) {
         allowanceCommandService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

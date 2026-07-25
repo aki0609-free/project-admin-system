@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.project.backend.features.system.batch.dto.BatchJobDefinitionResponse;
 import com.project.backend.features.system.batch.mapper.BatchJobMapper;
 import com.project.backend.features.system.batch.repository.BatchJobDefinitionRepository;
+import com.project.backend.app.tenant.context.TenantContext;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,7 +23,9 @@ public class BatchJobDefinitionQueryService {
 
     public List<BatchJobDefinitionResponse> findAll() {
         return mapper.toDefinitionResponseList(
-                repository.findAllByDeletedAtIsNullOrderByIdAsc()
+                repository.findAllByTenantIdAndDeletedAtIsNullOrderByIdAsc(
+                        requireTenantId()
+                )
         );
     }
 
@@ -30,5 +33,13 @@ public class BatchJobDefinitionQueryService {
         return mapper.toDefinitionResponse(
                 lookupService.find(id)
         );
+    }
+
+    private String requireTenantId() {
+        String tenantId = TenantContext.getTenantId();
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new RuntimeException("テナント情報を取得できません。");
+        }
+        return tenantId;
     }
 }

@@ -8,6 +8,11 @@ import {
 
 const props = defineProps<{
   items: BatchExecutionLogResponse[]
+  busy?: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'retry' | 'download', item: BatchExecutionLogResponse): void
 }>()
 
 const {
@@ -58,11 +63,42 @@ const {
         -
       </span>
     </template>
+
+    <template #[`item.actions`]="{ item }">
+      <div class="action-buttons">
+        <v-btn
+          v-if="item.raw.status === 'FAILED'"
+          size="small"
+          variant="tonal"
+          color="warning"
+          :disabled="busy"
+          @click.stop="emit('retry', item.raw)"
+        >
+          再実行
+        </v-btn>
+
+        <v-btn
+          v-if="item.raw.outputFileKey"
+          size="small"
+          variant="text"
+          color="primary"
+          :disabled="busy"
+          @click.stop="emit('download', item.raw)"
+        >
+          ダウンロード
+        </v-btn>
+      </div>
+    </template>
   </SimpleTable>
 </template>
 
 <style scoped>
 .empty-text {
   color: #94a3b8;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
 }
 </style>

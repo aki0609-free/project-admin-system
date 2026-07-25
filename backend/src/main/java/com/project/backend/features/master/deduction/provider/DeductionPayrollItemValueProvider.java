@@ -12,6 +12,8 @@ import com.project.backend.features.master.payrollitem.dto.PayrollItemValueReque
 import com.project.backend.features.master.payrollitem.enums.PayrollItemQueryType;
 import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
 import com.project.backend.features.master.payrollitem.provider.PayrollItemValueProvider;
+import com.project.backend.app.tenant.context.TenantContext;
+import com.project.backend.features.master.deduction.enums.DeductionUnit;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,9 +34,13 @@ public class DeductionPayrollItemValueProvider implements PayrollItemValueProvid
             PayrollItemValueRequest request
     ) {
         DeductionMaster master;
+        String tenantId = TenantContext.getTenantId();
 
         if (request.targetMasterId() != null) {
-            master = repository.findById(request.targetMasterId())
+            master = repository.findByIdAndTenantIdAndDeletedAtIsNull(
+                            request.targetMasterId(),
+                            tenantId
+                    )
                     .orElseThrow(() ->
                             new IllegalArgumentException(
                                     "控除マスターが見つかりません。id=" + request.targetMasterId()
@@ -42,7 +48,10 @@ public class DeductionPayrollItemValueProvider implements PayrollItemValueProvid
                     );
 
         } else if (StringUtils.hasText(request.targetCode())) {
-            master = repository.findByDeductionCode(request.targetCode())
+            master = repository.findByTenantIdAndDeductionCodeAndDeletedAtIsNull(
+                            tenantId,
+                            request.targetCode()
+                    )
                     .orElseThrow(() ->
                             new IllegalArgumentException(
                                     "控除マスターが見つかりません。code=" + request.targetCode()
@@ -60,15 +69,21 @@ public class DeductionPayrollItemValueProvider implements PayrollItemValueProvid
     public List<PayrollItemMasterSnapshot> findItems(
             PayrollItemQueryType queryType
     ) {
+        String tenantId = TenantContext.getTenantId();
         return switch (queryType) {
             case DAILY -> repository
-                    .findByShowOnDailyStatementTrueAndEnabledTrueOrderByDisplayOrderAscIdAsc()
+                    .findByTenantIdAndDeductionUnitInAndShowOnDailyStatementTrueAndEnabledTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
+                            tenantId,
+                            List.of(DeductionUnit.DAILY, DeductionUnit.BOTH)
+                    )
                     .stream()
                     .map(this::toSnapshot)
                     .toList();
 
             case MONTHLY -> repository
-                    .findByShowOnMonthlyStatementTrueAndEnabledTrueOrderByDisplayOrderAscIdAsc()
+                    .findByTenantIdAndShowOnMonthlyStatementTrueAndEnabledTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
+                            tenantId
+                    )
                     .stream()
                     .map(this::toSnapshot)
                     .toList();

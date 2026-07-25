@@ -15,6 +15,8 @@ import com.project.backend.features.system.notice.entity.NoticeRule;
 import com.project.backend.features.system.notice.enums.GenerateResult;
 import com.project.backend.features.system.notice.repository.NoticeGeneratedRepository;
 import com.project.backend.features.system.notice.utils.NoticeUtils;
+import com.project.backend.app.tenant.context.TenantContext;
+import org.springframework.util.StringUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -77,12 +79,25 @@ public class NoticeGenerator {
             LocalDate targetDate
     ) {
         return generatedRepository
-                .existsByRuleCodeAndTargetTableNameAndTargetKeyAndTargetDateAndDeletedAtIsNull(
+                .existsByTenantIdAndRuleCodeAndTargetTableNameAndTargetKeyAndTargetDateAndDeletedAtIsNull(
+                        requireTenantId(),
                         rule.getRuleCode(),
                         rule.getTargetTableName(),
                         targetKey,
                         targetDate
                 );
+    }
+
+    private String requireTenantId() {
+        String tenantId = TenantContext.getTenantId();
+
+        if (!StringUtils.hasText(tenantId)) {
+            throw new IllegalStateException(
+                    "Notice生成のtenantIdが未設定です。"
+            );
+        }
+
+        return tenantId;
     }
 
     private Notice buildNotice(

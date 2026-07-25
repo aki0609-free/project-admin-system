@@ -11,7 +11,9 @@ import com.project.backend.features.master.allowance.entity.AllowanceMaster;
 import com.project.backend.features.master.allowance.mapper.AllowanceMapper;
 import com.project.backend.features.master.allowance.repository.AllowanceMasterRepository;
 import com.project.backend.features.master.allowance.service.resolver.AllowanceDetailResolver;
+import com.project.backend.app.tenant.context.TenantContext;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -24,16 +26,21 @@ public class AllowanceQueryService {
     private final AllowanceDetailResolver allowanceDetailResolver;
 
     public List<AllowanceListItemResponse> findAll() {
-        return allowanceMasterRepository.findAll().stream()
+        return allowanceMasterRepository
+                .findByTenantIdAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
+                        TenantContext.getTenantId()
+                )
+                .stream()
                 .map(allowanceMapper::toListItem)
                 .toList();
     }
 
     @SuppressWarnings("null")
     public AllowanceDetailResponse findDetail(Long id) {
-        AllowanceMaster allowance = allowanceMasterRepository.findById(id)
+        AllowanceMaster allowance = allowanceMasterRepository
+                .findByIdAndTenantIdAndDeletedAtIsNull(id, TenantContext.getTenantId())
                 .orElseThrow(() ->
-                        new IllegalArgumentException("手当マスターが見つかりません。id=" + id)
+                        new EntityNotFoundException("手当マスターが見つかりません。id=" + id)
                 );
 
         return allowanceMapper.toDetail(

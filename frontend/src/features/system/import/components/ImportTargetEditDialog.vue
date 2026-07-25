@@ -17,8 +17,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
-  (e: 'save', value: ImportTargetDialogForm): void
-  (e: 'delete', value: ImportTargetDialogForm): void
+  (
+    e: 'save' | 'delete',
+    value: ImportTargetDialogForm,
+  ): void
 }>()
 
 const visible = computed({
@@ -34,6 +36,9 @@ const {
   basicFields,
   schema,
   footerItems,
+  catalogs,
+  catalogLoading,
+  catalogError,
 } = useImportTargetEditDialog(
   visible,
   toRef(props, 'target'),
@@ -50,7 +55,10 @@ const {
   schema: columnSchema,
   toolbarItems: columnToolbarItems,
   selectRow: selectColumnRow,
-} = useImportColumnEditor(formModel)
+} = useImportColumnEditor(
+  formModel,
+  catalogs,
+)
 </script>
 
 <template>
@@ -71,6 +79,30 @@ const {
         <TabLayout v-model="activeTab" :tabs="tabs">
           <template #default="{ active }">
             <div v-if="active === 'basic'" class="tab-page">
+              <v-progress-linear
+                v-if="catalogLoading"
+                indeterminate
+              />
+
+              <v-alert
+                v-if="catalogError"
+                type="error"
+                variant="tonal"
+              >
+                取込先カタログを取得できませんでした。
+              </v-alert>
+
+              <v-alert
+                v-else-if="
+                  !catalogLoading
+                  && catalogs.length === 0
+                "
+                type="warning"
+                variant="tonal"
+              >
+                利用可能な取込先カタログがありません。
+              </v-alert>
+
               <FormLayout v-model="formModel" :schema="schema">
                 <GridBasedForm
                   v-model="formModel"
@@ -94,12 +126,12 @@ const {
               <div class="column-pane">
                 <div class="column-pane-left">
                   <SimpleTable
-                    tableKey="import-target-column-editor"
-                    itemKey="id"
+                    table-key="import-target-column-editor"
+                    item-key="id"
                     :items="columnRows"
                     :columns="columnTableColumns"
-                    :filterRules="columnFilterRules"
-                    enableRowClick
+                    :filter-rules="columnFilterRules"
+                    enable-row-click
                     @row-click="selectColumnRow"
                   />
                 </div>
