@@ -11,7 +11,13 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "batch_job_definition")
+@Table(
+        name = "batch_job_definition",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_batch_job_definition_tenant_code",
+                columnNames = {"tenant_id", "job_code"}
+        )
+)
 @Getter
 @Setter
 public class BatchJobDefinition extends BaseEntity {
@@ -20,7 +26,7 @@ public class BatchJobDefinition extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "job_code", nullable = false, unique = true, length = 100)
+    @Column(name = "job_code", nullable = false, length = 100)
     private String jobCode;
 
     @Column(name = "job_name", nullable = false, length = 200)

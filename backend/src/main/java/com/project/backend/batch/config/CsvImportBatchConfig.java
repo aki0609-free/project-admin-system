@@ -75,7 +75,8 @@ public class CsvImportBatchConfig {
     @StepScope
     public StepExecutionListener csvImportStepListener(
             @Value("#{jobParameters['targetCode']}") String targetCode,
-            @Value("#{jobParameters['fileName']}") String fileName
+            @Value("#{jobParameters['fileName']}") String fileName,
+            @Value("#{jobParameters['executedBy']}") String executedBy
     ) {
         return new StepExecutionListener() {
             @Override
@@ -103,6 +104,7 @@ public class CsvImportBatchConfig {
                             target,
                             fileName,
                             stepExecution.getJobExecutionId(),
+                            executedBy,
                             result
                     );
 
@@ -111,6 +113,7 @@ public class CsvImportBatchConfig {
                             target,
                             fileName,
                             stepExecution.getJobExecutionId(),
+                            executedBy,
                             e
                     );
 
@@ -126,11 +129,17 @@ public class CsvImportBatchConfig {
     @Bean
     @StepScope
     public FlatFileItemReader<String> csvLineReader(
-            @Value("#{jobParameters['filePath']}") String filePath
+            @Value("#{jobParameters['filePath']}") String filePath,
+            @Value("#{jobParameters['charset']}") String charset,
+            @Value("#{jobParameters['dataStartRowNumber']}")
+                    Long dataStartRowNumber
     ) {
         FlatFileItemReader<String> reader = new FlatFileItemReader<>();
         reader.setResource(new FileSystemResource(filePath));
-        reader.setLinesToSkip(1);
+        reader.setEncoding(charset);
+        reader.setLinesToSkip(
+                Math.toIntExact(dataStartRowNumber - 1)
+        );
         reader.setLineMapper(new PassThroughLineMapper());
         reader.setRecordSeparatorPolicy(new DefaultRecordSeparatorPolicy());
         return reader;
@@ -139,9 +148,18 @@ public class CsvImportBatchConfig {
     @Bean
     @StepScope
     public ItemProcessor<String, Map<String, String>> csvLineProcessor(
-            @Value("#{jobParameters['filePath']}") String filePath
+            @Value("#{jobParameters['filePath']}") String filePath,
+            @Value("#{jobParameters['charset']}") String charset,
+            @Value("#{jobParameters['delimiter']}") String delimiter,
+            @Value("#{jobParameters['headerRowNumber']}")
+                    Long headerRowNumber
     ) {
-        return new CsvLineToMapProcessor(filePath);
+        return new CsvLineToMapProcessor(
+                filePath,
+                charset,
+                delimiter.charAt(0),
+                Math.toIntExact(headerRowNumber)
+        );
     }
 
     @Bean

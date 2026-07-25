@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import type {
   RuleColumnMappingForm,
   RuleDataSourceForm,
   RuleMasterForm,
 } from '@/features/system/rule/types/ruleFormTypes'
+import type { RuleDataType } from '@/features/system/rule/types/ruleApiTypes'
 
 import RuleDataSourceList from './rule_datasource/RuleDataSourceList.vue'
 import RuleDataSourceEditor from './rule_datasource/RuleDataSourceEditor.vue'
 import RuleColumnList from './rule_datasource/RuleColumnList.vue'
 import RuleColumnEditor from './rule_datasource/RuleColumnEditor.vue'
+import { useRuleDataSourceCatalogsQuery } from '@/features/system/rule/api/useRuleDataSourceCatalogsQuery'
+
+const catalogsQuery = useRuleDataSourceCatalogsQuery()
 
 const props = defineProps<{
   form: RuleMasterForm
@@ -18,6 +22,12 @@ const props = defineProps<{
 
 const selectedDataSource = ref<RuleDataSourceForm | null>(null)
 const selectedColumn = ref<RuleColumnMappingForm | null>(null)
+const selectedCatalog = computed(() =>
+  catalogsQuery.catalogs.value.find(
+    catalog =>
+      catalog.sourceCode === selectedDataSource.value?.catalogCode,
+  ) ?? null,
+)
 
 const selectDataSource = (source: RuleDataSourceForm | null) => {
   selectedDataSource.value = source
@@ -26,6 +36,16 @@ const selectDataSource = (source: RuleDataSourceForm | null) => {
 
 const selectColumn = (column: RuleColumnMappingForm | null) => {
   selectedColumn.value = column
+}
+
+const applyCatalogColumn = (
+  columnName: string,
+  dataType: RuleDataType,
+) => {
+  if (!selectedColumn.value) return
+
+  selectedColumn.value.columnName = columnName
+  selectedColumn.value.dataType = dataType
 }
 </script>
 
@@ -42,6 +62,7 @@ const selectColumn = (column: RuleColumnMappingForm | null) => {
     <section class="datasource-work-pane">
       <RuleDataSourceEditor
         :data-source="selectedDataSource as RuleDataSourceForm"
+        :catalogs="catalogsQuery.catalogs.value"
       />
 
       <div class="column-work-area">
@@ -53,6 +74,8 @@ const selectColumn = (column: RuleColumnMappingForm | null) => {
 
         <RuleColumnEditor
           :column="selectedColumn as RuleColumnMappingForm"
+          :available-columns="selectedCatalog?.columns ?? []"
+          @select-column="applyCatalogColumn"
         />
       </div>
     </section>

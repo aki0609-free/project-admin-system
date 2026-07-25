@@ -4,9 +4,13 @@ import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.scheduling.support.CronExpression;
 
 import com.project.backend.features.system.notice.dto.NoticeRuleSaveRequest;
+import com.project.backend.features.system.notice.entity.NoticeRule;
 import com.project.backend.features.system.notice.enums.NoticeDateType;
+import com.project.backend.features.system.notice.enums.NoticeTargetDateSourceType;
+import com.project.backend.features.system.notice.exception.NoticeRuleConflictException;
 import com.project.backend.features.system.notice.repository.NoticeRuleRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -30,13 +34,29 @@ public class NoticeRuleValidator {
     }
 
     public void validateForUpdate(
-            Long id,
+            NoticeRule entity,
             NoticeRuleSaveRequest request
     ) {
+        if (entity == null) {
+            throw new IllegalArgumentException(
+                    "更新対象NoticeRuleは必須です。"
+            );
+        }
+
         validate(
                 request,
-                id
+                entity.getId()
         );
+
+        if (!entity.getRuleCode().equals(
+                request.ruleCode())) {
+            throw new NoticeRuleConflictException(
+                    "作成後のruleCodeは変更できません。 current="
+                            + entity.getRuleCode()
+                            + ", requested="
+                            + request.ruleCode()
+            );
+        }
     }
 
     private void validate(
@@ -46,6 +66,10 @@ public class NoticeRuleValidator {
         validateRequired(request);
         validateIdentifiers(request);
         validateDateSetting(request);
+        NoticeSqlSafety.validateWhereClause(
+                request.whereClause()
+        );
+        validateCronExpression(request.cronExpression());
         validateDuplicate(request, id);
     }
 
@@ -53,24 +77,53 @@ public class NoticeRuleValidator {
             NoticeRuleSaveRequest request
     ) {
         if (request == null) {
-            throw new RuntimeException("リクエストが不正です。");
+            throw new IllegalArgumentException("リクエストが不正です。");
         }
 
         requireText(request.ruleCode(), "ruleCode");
         requireText(request.ruleName(), "ruleName");
         requireText(request.targetTableName(), "targetTableName");
         requireText(request.targetKeyColumnName(), "targetKeyColumnName");
-        requireText(request.targetDateColumnName(), "targetDateColumnName");
         requireText(request.noticeTitleTemplate(), "noticeTitleTemplate");
         requireText(request.noticeBodyTemplate(), "noticeBodyTemplate");
+
+        NoticeTargetDateSourceType sourceType =
+                request.targetDateSourceType() != null
+                        ? request.targetDateSourceType()
+                        : NoticeTargetDateSourceType.DATE_COLUMN;
+
+        if (sourceType
+                == NoticeTargetDateSourceType.DATE_COLUMN) {
+            requireText(
+                    request.targetDateColumnName(),
+                    "targetDateColumnName"
+            );
+        } else {
+            requireText(
+                    request.targetDayTypeColumnName(),
+                    "targetDayTypeColumnName"
+            );
+            requireText(
+                    request.targetDayValueColumnName(),
+                    "targetDayValueColumnName"
+            );
+        }
     }
 
     private void validateIdentifiers(
             NoticeRuleSaveRequest request
     ) {
+        validateIdentifier(request.ruleCode(), "ruleCode");
         validateIdentifier(request.targetTableName(), "targetTableName");
         validateIdentifier(request.targetKeyColumnName(), "targetKeyColumnName");
-        validateIdentifier(request.targetDateColumnName(), "targetDateColumnName");
+
+        if (StringUtils.hasText(
+                request.targetDateColumnName())) {
+            validateIdentifier(
+                    request.targetDateColumnName(),
+                    "targetDateColumnName"
+            );
+        }
 
         if (StringUtils.hasText(request.targetLabelColumnName())) {
             validateIdentifier(
@@ -106,33 +159,36 @@ public class NoticeRuleValidator {
                 dateType == NoticeDateType.BEFORE_DAYS
                         && request.daysBefore() == null
         ) {
-            throw new RuntimeException("BEFORE_DAYS の場合 daysBefore は必須です。");
+            throw new IllegalArgumentException("BEFORE_DAYS の場合 daysBefore は必須です。");
         }
 
         if (
                 dateType == NoticeDateType.AFTER_DAYS
                         && request.daysBefore() == null
         ) {
-            throw new RuntimeException("AFTER_DAYS の場合 daysBefore は必須です。");
+            throw new IllegalArgumentException("AFTER_DAYS の場合 daysBefore は必須です。");
         }
 
         if (
                 request.daysBefore() != null
-                        && request.daysBefore() < 0
+                        && (request.daysBefore() < 0
+                        || request.daysBefore() > 3650)
         ) {
-            throw new RuntimeException("daysBefore は0以上で指定してください。");
+            throw new IllegalArgumentException(
+                    "daysBefore は0以上3650以下で指定してください。"
+            );
         }
 
         if (dateType == NoticeDateType.DAY_OF_MONTH) {
             if (request.dayOfMonth() == null) {
-                throw new RuntimeException("DAY_OF_MONTH の場合 dayOfMonth は必須です。");
+                throw new IllegalArgumentException("DAY_OF_MONTH の場合 dayOfMonth は必須です。");
             }
 
             if (
                     request.dayOfMonth() < 1
                             || request.dayOfMonth() > 31
             ) {
-                throw new RuntimeException("dayOfMonth は 1〜31 で指定してください。");
+                throw new IllegalArgumentException("dayOfMonth は 1〜31 で指定してください。");
             }
         }
     }
@@ -152,7 +208,7 @@ public class NoticeRuleValidator {
                         );
 
         if (exists) {
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "ruleCode が重複しています。 ruleCode="
                             + request.ruleCode()
             );
@@ -164,7 +220,7 @@ public class NoticeRuleValidator {
             String label
     ) {
         if (!StringUtils.hasText(value)) {
-            throw new RuntimeException(label + " は必須です。");
+            throw new IllegalArgumentException(label + " は必須です。");
         }
     }
 
@@ -173,12 +229,27 @@ public class NoticeRuleValidator {
             String label
     ) {
         if (!StringUtils.hasText(value)) {
-            throw new RuntimeException(label + " は必須です。");
+            throw new IllegalArgumentException(label + " は必須です。");
         }
 
         if (!SAFE_IDENTIFIER.matcher(value).matches()) {
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     label + " に使用できない文字が含まれています。 value=" + value
+            );
+        }
+    }
+
+    private void validateCronExpression(
+            String cronExpression
+    ) {
+        if (!StringUtils.hasText(cronExpression)) {
+            return;
+        }
+
+        if (!CronExpression.isValidExpression(
+                cronExpression.trim())) {
+            throw new IllegalArgumentException(
+                    "cronExpressionの形式が不正です。"
             );
         }
     }

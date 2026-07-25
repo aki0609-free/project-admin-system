@@ -123,6 +123,9 @@ dependencies {
 
 	// Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+	testImplementation 'org.testcontainers:mysql'
+	testImplementation 'org.testcontainers:mongodb'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 	// logstash
@@ -156,7 +159,30 @@ tasks.named('bootJar') {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeTags 'integration'
+	}
+
+	testLogging {
+		events "PASSED", "FAILED", "SKIPPED"
+		showExceptions true
+		showCauses true
+		showStackTraces true
+	}
+}
+
+tasks.register('integrationTest', Test) {
+	description = 'Runs Testcontainers-based integration tests.'
+	group = 'verification'
+
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+
+	useJUnitPlatform {
+		includeTags 'integration'
+	}
+
+	shouldRunAfter tasks.named('test')
 
 	testLogging {
 		events "PASSED", "FAILED", "SKIPPED"

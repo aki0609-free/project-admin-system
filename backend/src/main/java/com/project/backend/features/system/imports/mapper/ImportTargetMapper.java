@@ -35,11 +35,12 @@ public interface ImportTargetMapper {
     @Mapping(target = "deletedAt", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "tenantId", ignore = true)
     @Mapping(target = "sourceType", expression = "java(resolveSourceType(request))")
-    @Mapping(target = "fixedFilePath", expression = "java(normalizeBlank(request.fixedFilePath()))")
+    @Mapping(target = "fixedFilePath", expression = "java(resolveFixedFilePath(request))")
     @Mapping(target = "scriptType", expression = "java(resolveScriptType(request))")
-    @Mapping(target = "scriptPath", expression = "java(normalizeBlank(request.scriptPath()))")
-    @Mapping(target = "scriptArgs", expression = "java(normalizeBlank(request.scriptArgs()))")
+    @Mapping(target = "scriptPath", expression = "java(resolveScriptPath(request))")
+    @Mapping(target = "scriptArgs", expression = "java(resolveScriptArgs(request))")
     @Mapping(target = "importMode", expression = "java(resolveImportMode(request))")
     @Mapping(target = "headerRowNumber", expression = "java(request.headerRowNumber() != null ? request.headerRowNumber() : 1)")
     @Mapping(target = "dataStartRowNumber", expression = "java(request.dataStartRowNumber() != null ? request.dataStartRowNumber() : 2)")
@@ -56,6 +57,7 @@ public interface ImportTargetMapper {
     @Mapping(target = "deletedAt", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "tenantId", ignore = true)
     @Mapping(target = "columnName", expression = "java(normalizeBlank(request.columnName()))")
     @Mapping(target = "csvHeaderName", expression = "java(normalizeBlank(request.csvHeaderName()))")
     @Mapping(target = "dataType", source = "dataType")
@@ -97,9 +99,34 @@ public interface ImportTargetMapper {
     default ImportScriptType resolveScriptType(
             ImportTargetSaveRequest request
     ) {
-        return request.scriptType() != null
+        return request.sourceType() == ImportSourceType.SCRIPT
+                && request.scriptType() != null
                 ? request.scriptType()
                 : ImportScriptType.NONE;
+    }
+
+    default String resolveFixedFilePath(
+            ImportTargetSaveRequest request
+    ) {
+        return request.sourceType() == ImportSourceType.UPLOAD
+                ? null
+                : normalizeBlank(request.fixedFilePath());
+    }
+
+    default String resolveScriptPath(
+            ImportTargetSaveRequest request
+    ) {
+        return request.sourceType() == ImportSourceType.SCRIPT
+                ? normalizeBlank(request.scriptPath())
+                : null;
+    }
+
+    default String resolveScriptArgs(
+            ImportTargetSaveRequest request
+    ) {
+        return request.sourceType() == ImportSourceType.SCRIPT
+                ? normalizeBlank(request.scriptArgs())
+                : null;
     }
 
     default ImportMode resolveImportMode(

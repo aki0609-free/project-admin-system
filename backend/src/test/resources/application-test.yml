@@ -1,0 +1,38 @@
+spring:
+  ai:
+    model:
+      chat: none
+      embedding: none
+      image: none
+      audio:
+        transcription: none
+        speech: none
+      moderation: none
+    chat:
+      client:
+        enabled: false
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+
+  flyway:
+    enabled: false
+
+app:
+  ai:
+    enabled: false
+
+project:
+  storage:
+    default-type: LOCAL
+    local-base-path: ${java.io.tmpdir}/project-admin-test-storage
+    s3:
+      enabled: false

@@ -39,9 +39,7 @@ public class ImportCsvPathResolver {
                 .toAbsolutePath()
                 .normalize();
 
-        Path csvBasePath = basePath
-                .resolve(storageProperties.getImports().getCsv().getPath())
-                .normalize();
+        Path csvBasePath = baseDirectory();
 
         Path resolvedPath = csvBasePath
                 .resolve(fixedFilePath)
@@ -52,5 +50,15 @@ public class ImportCsvPathResolver {
         }
 
         return resolvedPath;
+    }
+
+    public Path baseDirectory() {
+        Path basePath = Path.of(storageProperties.getLocalBasePath())
+                .toAbsolutePath()
+                .normalize();
+
+        return basePath
+                .resolve(storageProperties.getImports().getCsv().getPath())
+                .normalize();
     }
 }

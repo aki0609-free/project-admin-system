@@ -37,6 +37,10 @@ export const permissionMap: PermissionMap = {
       Role.MANAGER,
       Role.OPERATOR,
     ],
+    [PermissionAction.MANAGE]: [
+      Role.SYS_ADMIN,
+      Role.ADMIN,
+    ],
   },
 
   [PermissionResource.EMPLOYEE]: {
@@ -52,6 +56,10 @@ export const permissionMap: PermissionMap = {
       Role.SYS_ADMIN,
       Role.ADMIN,
       Role.MANAGER,
+    ],
+    [PermissionAction.MANAGE]: [
+      Role.SYS_ADMIN,
+      Role.ADMIN,
     ],
   },
 

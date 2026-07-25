@@ -4,14 +4,38 @@ import { toRef } from 'vue'
 import type { NoticeResponse } from '@/features/dashboard/types/dashboardTypes'
 import { useNoticeCalendar } from '@/features/dashboard/composables/useNoticeCalendar'
 import NoticeCalendarDayDialog from '@/features/dashboard/components/NoticeCalendarDayDialog.vue'
-import NoticeDetailDialog from '@/features/dashboard/components/NoticeDetailDialog.vue'
+import NoticeBoardDetailDialog from '@/features/dashboard/components/NoticeBoardDetailDialog.vue'
 
 const props = defineProps<{
   notices: NoticeResponse[]
-  selectedNotice: NoticeResponse | null
+  canEdit: (notice: NoticeResponse) => boolean
+  canDelete: (notice: NoticeResponse) => boolean
 }>()
 
-const calendar = useNoticeCalendar(toRef(props, 'notices'), toRef(props, 'selectedNotice'))
+const emit = defineEmits<{
+  edit: [notice: NoticeResponse]
+  delete: [notice: NoticeResponse]
+}>()
+
+const calendarDate = defineModel<string>('calendarDate', { required: true })
+
+const calendar = useNoticeCalendar(
+  toRef(props, 'notices'),
+  calendarDate,
+)
+
+const handleEdit = () => {
+  if (!calendar.selectedNoticeDetail.value) return
+  emit('edit', calendar.selectedNoticeDetail.value)
+  calendar.detailDialog.value = false
+}
+
+const handleDelete = () => {
+  if (!calendar.selectedNoticeDetail.value) return
+  emit('delete', calendar.selectedNoticeDetail.value)
+  calendar.deleteConfirmDialog.value = false
+  calendar.detailDialog.value = false
+}
 </script>
 
 <template>
@@ -81,13 +105,23 @@ const calendar = useNoticeCalendar(toRef(props, 'notices'), toRef(props, 'select
       @open="calendar.openNoticeDetail"
     />
 
-    <NoticeDetailDialog
+    <NoticeBoardDetailDialog
       v-model="calendar.detailDialog.value"
+      v-model:delete-confirm="calendar.deleteConfirmDialog.value"
       :notice="calendar.selectedNoticeDetail.value"
+      :can-edit="
+        !!calendar.selectedNoticeDetail.value &&
+        props.canEdit(calendar.selectedNoticeDetail.value)
+      "
+      :can-delete="
+        !!calendar.selectedNoticeDetail.value &&
+        props.canDelete(calendar.selectedNoticeDetail.value)
+      "
       :get-color="calendar.getColor"
       :get-label="calendar.getLabel"
       :format-period="calendar.formatPeriod"
-      :show-actions="false"
+      @edit="handleEdit"
+      @delete="handleDelete"
     />
   </v-card>
 </template>

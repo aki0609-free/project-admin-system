@@ -30,6 +30,8 @@ public class StorageProperties {
 
     private Import imports = new Import();
 
+    private Document document = new Document();
+
     private S3 s3 = new S3();
 
     /**
@@ -80,6 +82,16 @@ public class StorageProperties {
     @Setter
     public static class Csv {
         private String path = "imports/csv";
+    }
+
+    @Getter
+    @Setter
+    public static class Document {
+        private String rootPath = "documents";
+        private String generalPath = "general";
+        private String generatedReportsPath = "generated-reports";
+        private String backupsPath = "backups";
+        private String templatesPath = "templates";
     }
 
     @Getter

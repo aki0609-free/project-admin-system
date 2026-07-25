@@ -1,10 +1,21 @@
 <script setup lang="ts">
-import DslEditor from '@/shared/components/editor/DslEditor.vue'
-import type { RuleDataSourceForm } from '@/features/system/rule/types/ruleFormTypes'
+import { computed } from 'vue'
 
-defineProps<{
+import type { RuleDataSourceForm } from '@/features/system/rule/types/ruleFormTypes'
+import type { RuleDataSourceCatalog } from '@/features/system/rule/types/ruleApiTypes'
+
+const props = defineProps<{
   dataSource: RuleDataSourceForm
+  catalogs: RuleDataSourceCatalog[]
 }>()
+
+const catalogItems = computed(() =>
+  props.catalogs.map(catalog => ({
+    title: catalog.displayName,
+    value: catalog.sourceCode,
+    subtitle: catalog.sourceCode,
+  })),
+)
 </script>
 
 <template>
@@ -22,9 +33,10 @@ defineProps<{
           density="comfortable"
         />
 
-        <v-text-field
-          v-model="dataSource.tableName as string"
-          label="tableName"
+        <v-select
+          v-model="dataSource.catalogCode as string"
+          label="データソースカタログ"
+          :items="catalogItems"
           variant="outlined"
           density="comfortable"
         />
@@ -52,12 +64,13 @@ defineProps<{
         />
       </div>
 
-      <DslEditor
-        v-model="dataSource.whereClause as string"
-        label="whereClause"
-        hint="WHERE は不要です。例：employee_id = :employeeId"
-        :rows="5"
-      />
+      <v-alert
+        type="info"
+        variant="tonal"
+        density="compact"
+      >
+        物理テーブルと抽出条件はデータソースカタログ側で管理されます。
+      </v-alert>
     </template>
 
     <div

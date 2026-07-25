@@ -3,6 +3,8 @@ package com.project.backend.features.system.notice.controller;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.project.backend.features.system.notice.dto.NoticeRuleResponse;
 import com.project.backend.features.system.notice.dto.NoticeRuleSaveRequest;
@@ -13,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/system/notice-rules")
+@PreAuthorize("hasRole('SYS_ADMIN')")
 @RequiredArgsConstructor
 public class NoticeRuleController {
 
@@ -50,9 +53,10 @@ public class NoticeRuleController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(
+    public ResponseEntity<Void> delete(
             @PathVariable Long id
     ) {
         commandService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

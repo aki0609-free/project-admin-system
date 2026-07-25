@@ -1,8 +1,7 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
-import { ref, computed, inject } from 'vue'
+import { ref, computed } from 'vue'
 import EditableFormCell from '../base/EditableFormCell.vue'
-import { TabbedFormFieldDef } from '@/shared/components/form/tabbed_form/types/types'
-import { FormContextKey } from '@/shared/components/form/base/types/types'
+import type { TabbedFormFieldDef } from '@/shared/components/form/tabbed_form/types/types'
 
 const props = defineProps<{
   modelValue: T
@@ -33,7 +32,9 @@ const tabFields = computed(() => {
   props.fields.forEach(field => {
     const tabName = field.tab ?? props.tabs[0] as string
     if (!map[tabName]) map[tabName] = []
-    map[tabName].push(field)
+    if (!field.visible || field.visible(model.value)) {
+      map[tabName].push(field)
+    }
   })
 
   return map

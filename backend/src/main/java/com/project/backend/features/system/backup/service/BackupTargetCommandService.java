@@ -1,5 +1,6 @@
 package com.project.backend.features.system.backup.service;
 
+import java.time.Clock;
 import java.time.Instant;
 
 import org.springframework.stereotype.Service;
@@ -22,10 +23,11 @@ public class BackupTargetCommandService {
     private final BackupTargetLookupService lookupService;
     private final BackupTargetValidator validator;
     private final BackupTargetMapper mapper;
+    private final Clock clock;
 
     @Transactional
     public BackupTargetResponse create(BackupTargetSaveRequest request) {
-        validator.validate(request);
+        validator.validate(request, null);
 
         BackupTarget entity = new BackupTarget();
 
@@ -45,9 +47,9 @@ public class BackupTargetCommandService {
             Long id,
             BackupTargetSaveRequest request
     ) {
-        validator.validate(request);
-
         BackupTarget entity = lookupService.find(id);
+
+        validator.validate(request, id);
 
         mapper.updateEntityFromRequest(
                 request,
@@ -63,7 +65,7 @@ public class BackupTargetCommandService {
     public void delete(Long id) {
         BackupTarget entity = lookupService.find(id);
 
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
 
         entity.setDeletedAt(now);
 

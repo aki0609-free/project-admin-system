@@ -17,6 +17,9 @@ export type BatchExecutionLogTableRow = SimpleTableEditableRow & {
   targetCode: string
   status: string
   statusColor: string
+  triggerType: string
+  executedBy: string
+  retrySourceLogId: string
   startedAt: string
   finishedAt: string
   message: string
@@ -26,6 +29,7 @@ export type BatchExecutionLogTableRow = SimpleTableEditableRow & {
   outputFileName: string
   contentType: string
   fileSizeText: string
+  actions: string
   raw: BatchExecutionLogResponse
 }
 
@@ -64,6 +68,9 @@ export const useBatchExecutionLogTableConfig = (
       targetCode: item.targetCode,
       status: item.status,
       statusColor: resolveStatusColor(item.status),
+      triggerType: item.triggerType,
+      executedBy: item.executedBy,
+      retrySourceLogId: item.retrySourceLogId?.toString() ?? '',
       startedAt: item.startedAt ?? '',
       finishedAt: item.finishedAt ?? '',
       message: item.message ?? '',
@@ -73,6 +80,7 @@ export const useBatchExecutionLogTableConfig = (
       outputFileName: item.outputFileName ?? '',
       contentType: item.contentType ?? '',
       fileSizeText: formatFileSize(item.fileSize),
+      actions: '',
       raw: item,
     })),
   )
@@ -84,6 +92,9 @@ export const useBatchExecutionLogTableConfig = (
       { title: 'jobType', key: 'jobType', width: '200px', filter: { type: 'text' } },
       { title: 'targetCode', key: 'targetCode', width: '220px', filter: { type: 'text' } },
       { title: 'status', key: 'status', width: '200px', filter: { type: 'text' } },
+      { title: '起動方法', key: 'triggerType', width: '160px', filter: { type: 'text' } },
+      { title: '実行者', key: 'executedBy', width: '200px', filter: { type: 'text' } },
+      { title: '再実行元ID', key: 'retrySourceLogId', width: '140px', filter: { type: 'text' } },
       { title: 'startedAt', key: 'startedAt', width: '300px', filter: { type: 'text' } },
       { title: 'finishedAt', key: 'finishedAt', width: '300px', filter: { type: 'text' } },
       { title: 'message', key: 'message', width: '300px', filter: { type: 'text' } },
@@ -91,6 +102,7 @@ export const useBatchExecutionLogTableConfig = (
       { title: 'storage', key: 'storageType', width: '200px', filter: { type: 'text' } },
       { title: 'file', key: 'outputFileName', width: '400px', filter: { type: 'text' } },
       { title: 'size', key: 'fileSizeText', width: '150px', filter: { type: 'text' } },
+      { title: '操作', key: 'actions', width: '200px' },
     ]
 
     return defs

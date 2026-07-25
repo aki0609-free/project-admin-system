@@ -8,7 +8,19 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "backup_column")
+@Table(
+        name = "backup_column",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_backup_column_target_column",
+                        columnNames = {"target_id", "column_name"}
+                ),
+                @UniqueConstraint(
+                        name = "uk_backup_column_target_order",
+                        columnNames = {"target_id", "order_no"}
+                )
+        }
+)
 @Getter
 @Setter
 public class BackupColumn extends BaseEntity {

@@ -26,6 +26,7 @@ type ImportHistoryTableRow = SimpleTableEditableRow & {
   updatedCount: number
   skippedCount: number
   errorCount: number
+  executedBy: string
   executedAt: string
   errorMessage: string
   raw: ImportHistoryResponse
@@ -53,6 +54,7 @@ const rows = computed<ImportHistoryTableRow[]>(() =>
     updatedCount: item.updatedCount,
     skippedCount: item.skippedCount,
     errorCount: item.errorCount,
+    executedBy: item.executedBy ?? '',
     executedAt: item.executedAt,
     errorMessage: item.errorMessage ?? '',
     raw: item,
@@ -136,6 +138,13 @@ const columns = computed(() => {
       key: 'errorCount',
       type: 'number',
       width: '100px',
+      filter: { type: 'text' },
+    },
+    {
+      title: '実行者',
+      key: 'executedBy',
+      type: 'text',
+      width: '160px',
       filter: { type: 'text' },
     },
     {

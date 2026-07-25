@@ -6,6 +6,8 @@ defineProps<{
   modelValue: boolean
   notice: NoticeResponse | null
   showActions?: boolean
+  canEdit?: boolean
+  canDelete?: boolean
   getColor: (notice: NoticeResponse) => string
   getLabel: (notice: NoticeResponse) => string
   formatPeriod: (notice: NoticeResponse) => string
@@ -122,13 +124,14 @@ const emit = defineEmits<{
         </div>
       </v-card-text>
 
-      <v-divider v-if="showActions" />
+      <v-divider v-if="showActions && (canEdit || canDelete)" />
 
       <v-card-actions
-        v-if="showActions"
+        v-if="showActions && (canEdit || canDelete)"
         class="detail-actions"
       >
         <v-btn
+          v-if="canDelete"
           color="error"
           variant="text"
           prepend-icon="mdi-delete-outline"
@@ -147,6 +150,7 @@ const emit = defineEmits<{
         </v-btn>
 
         <v-btn
+          v-if="canEdit"
           color="primary"
           variant="flat"
           prepend-icon="mdi-pencil-outline"

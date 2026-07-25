@@ -64,12 +64,12 @@ const onRowClick = (row: Row) => {
 
 <template>
   <SimpleTable
-    tableKey="import-target-list"
-    itemKey="id"
+    table-key="import-target-list"
+    item-key="id"
     :items="rows"
     :columns="columns"
-    :filterRules="filterRules"
-    enableRowClick
+    :filter-rules="filterRules"
+    enable-row-click
     @row-click="onRowClick"
   />
 </template>

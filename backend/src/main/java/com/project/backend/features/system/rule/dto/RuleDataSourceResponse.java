@@ -8,6 +8,7 @@ import lombok.Builder;
 public record RuleDataSourceResponse(
         Long id,
         String sourceName,
+        String catalogCode,
         String tableName,
         String whereClause,
         boolean singleRowFlag,

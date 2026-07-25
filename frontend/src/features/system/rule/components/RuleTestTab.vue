@@ -63,15 +63,17 @@ const parseInput = () => {
 }
 
 const execute = async () => {
-  const facts = parseInput()
+  const parameters = parseInput()
 
-  if (!facts) return
+  if (!parameters) return
 
   result.value = null
 
   const response = await executeMutation.mutateAsync({
     ruleName: props.form.ruleName,
-    facts,
+    context: {
+      parameters,
+    },
   })
 
   result.value = response
@@ -127,8 +129,8 @@ const toolbarItems = computed<ToolbarItem[]>(() => [
       <div class="test-pane">
         <DslEditor
           v-model="inputJson"
-          label="Input Facts(JSON)"
-          hint="RuleExecutionServiceへ渡すfactsをJSONで入力します。"
+          label="Input Parameters (JSON)"
+          hint="RuleExecutionServiceへ渡すparametersをJSONで入力します。"
           :rows="18"
         />
       </div>

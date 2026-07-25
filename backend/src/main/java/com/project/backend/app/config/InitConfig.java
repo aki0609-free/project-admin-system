@@ -37,6 +37,7 @@ public class InitConfig {
                                         Map.entry("dashboard:view", "ダッシュボード / 閲覧"),
                                         Map.entry("customer:view", "顧客管理 / 閲覧"),
                                         Map.entry("master:view", "マスター管理 / 閲覧"),
+                                        Map.entry("master:manage", "マスター管理 / 管理"),
                                         Map.entry("application:view", "HR分析 / 閲覧"),
                                         Map.entry("employee:view", "従業員管理 / 閲覧"),
                                         Map.entry("operation:view", "書類管理 / 閲覧"),

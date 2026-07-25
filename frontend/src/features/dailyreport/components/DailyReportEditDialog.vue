@@ -9,7 +9,6 @@ import type { DailyReportForm } from '@/features/dailyreport/types/dailyReportFo
 import type { EmployeeListItemResponse } from '@/features/employees/types/employeeApiTypes'
 
 import { useDailyReportEditDialog } from '@/features/dailyreport/composables/useDailyReportEditDialog'
-import { useDailyReportInputItemsQuery } from '@/features/dailyreport/api/useDailyReportInputItemsQuery'
 import type { DailyReportCreateParams } from '@/features/dailyreport/composables/useDailyReportDialog'
 
 const props = defineProps<{
@@ -30,9 +29,6 @@ const visible = computed({
     emit('update:modelValue', value),
 })
 
-const inputItemsQuery =
-  useDailyReportInputItemsQuery()
-
 const {
   activeTab,
   formModel,
@@ -44,12 +40,13 @@ const {
   schema,
   footerItems,
   billingRateLoading,
+  payrollItemsLoading,
+  payrollItemsError,
 } = useDailyReportEditDialog(
   visible,
   toRef(props, 'dailyReport'),
   toRef(props, 'createParams'),
   toRef(props, 'employees'),
-  inputItemsQuery.inputItems,
   form => emit('save', form),
   form => emit('delete', form),
 )
@@ -123,6 +120,18 @@ const {
           v-else-if="active === 'allowance'"
           class="amount-panel"
         >
+          <v-progress-linear
+            v-if="payrollItemsLoading"
+            indeterminate
+          />
+
+          <v-alert
+            v-if="payrollItemsError"
+            type="error"
+            variant="tonal"
+          >
+            {{ payrollItemsError }}
+          </v-alert>
           <div class="amount-panel-header">
             <div>
               <div class="amount-panel-title">
@@ -182,6 +191,18 @@ const {
           v-else-if="active === 'deduction'"
           class="amount-panel"
         >
+          <v-progress-linear
+            v-if="payrollItemsLoading"
+            indeterminate
+          />
+
+          <v-alert
+            v-if="payrollItemsError"
+            type="error"
+            variant="tonal"
+          >
+            {{ payrollItemsError }}
+          </v-alert>
           <div class="amount-panel-header">
             <div>
               <div class="amount-panel-title">
@@ -243,41 +264,6 @@ const {
           :schema="schema"
           :fields="financeFields"
         />
-
-        <div
-          v-else-if="active === 'approval'"
-          class="approval-panel"
-        >
-          <v-select
-            v-model="formModel.approvalStatus"
-            label="承認状態"
-            :items="[
-              {
-                title: '未承認',
-                value: 'PENDING',
-              },
-              {
-                title: '承認済',
-                value: 'APPROVED',
-              },
-              {
-                title: '却下',
-                value: 'REJECTED',
-              },
-            ]"
-            variant="outlined"
-            hide-details
-          />
-
-          <v-textarea
-            v-model="formModel.approvalComment"
-            label="承認コメント"
-            variant="outlined"
-            rows="3"
-            auto-grow
-            hide-details
-          />
-        </div>
       </template>
     </TabLayout>
   </DetailDialogLayout>
@@ -285,8 +271,7 @@ const {
 
 <style scoped>
 .billing-panel,
-.amount-panel,
-.approval-panel {
+.amount-panel {
   display: grid;
   gap: 16px;
   padding: 16px;

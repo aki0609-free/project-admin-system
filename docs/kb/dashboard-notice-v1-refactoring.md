@@ -1,0 +1,256 @@
+# ダッシュボード・お知らせ V1リファクタリング
+
+## 1. 目的
+
+ダッシュボードで、手動作成またはお知らせRuleから自動生成されたお知らせを、安全に閲覧・管理できるようにする。
+
+本KBの対象：
+
+- ダッシュボードのお知らせ概要
+- お知らせカレンダー
+- 手動お知らせの作成・更新・削除
+- 自動生成お知らせの操作制限
+- テナント分離
+- 表示期間・カレンダー検索
+
+## 2. 権限
+
+| 操作 | SYS_ADMIN | ADMIN | MANAGER | OPERATOR |
+|---|---:|---:|---:|---:|
+| お知らせ閲覧 | 可 | 可 | 可 | 可 |
+| 手動作成 | 可 | 可 | 不可 | 不可 |
+| 手動更新 | 可 | 可 | 不可 | 不可 |
+| 手動削除 | 可 | 可 | 不可 | 不可 |
+| 自動生成のお知らせ更新 | 不可 | 不可 | 不可 | 不可 |
+| 自動生成のお知らせ削除 | 可 | 不可 | 不可 | 不可 |
+
+バックエンドでは、登録系APIを次のロールへ限定する。
+
+```text
+SYS_ADMIN
+ADMIN
+```
+
+フロントエンドでも権限に応じて作成・編集・削除ボタンを非表示にする。
+
+画面の非表示だけに依存せず、バックエンドでも同じ制約を検証する。
+
+## 3. お知らせ種別
+
+### MANUAL
+
+ダッシュボードから管理者が作成したお知らせ。
+
+- SYS_ADMIN／ADMINが作成可能
+- SYS_ADMIN／ADMINが更新可能
+- SYS_ADMIN／ADMINが削除可能
+
+### AUTO
+
+システム運用のお知らせRuleから生成されたお知らせ。
+
+- 画面から編集不可
+- 内容を変更する場合はお知らせRuleを変更する
+- SYS_ADMINだけ論理削除可能
+- ADMIN以下は削除不可
+
+自動生成履歴は別テーブルで管理されるため、お知らせを削除しても同じ生成単位が自動的に再生成される仕様にはしない。
+
+## 4. 概要画面の表示条件
+
+概要画面には、現在有効なお知らせだけを表示する。
+
+```text
+active_flag = true
+deleted_at IS NULL
+start_date <= 今日
+end_date >= 今日
+```
+
+表示順：
+
+```text
+固定表示
+開始日降順
+ID降順
+```
+
+一度に取得する上限は1000件。
+
+期限切れ・将来のお知らせは概要画面へ表示せず、カレンダーから確認する。
+
+## 5. カレンダー
+
+初期表示は利用時点の現在月。
+
+月移動時は、表示月の月初・月末をAPIへ渡して再取得する。
+
+検索条件は「開始日が検索期間内」ではなく、期間が1日以上重なること。
+
+```text
+notice.start_date <= 検索終了日
+notice.end_date >= 検索開始日
+```
+
+これにより、前月から当月へまたがるお知らせも当月カレンダーへ表示される。
+
+APIで指定できる検索期間は366日以内、取得上限は1000件。
+
+## 6. テナント分離
+
+Repositoryの検索条件へ`tenantId`を明示する。
+
+```text
+tenant_id = TenantContext.tenantId
+```
+
+次のすべてで同一テナントを検証する。
+
+- 現在有効なお知らせ一覧
+- カレンダー期間検索
+- 更新対象取得
+- 削除対象取得
+- 新規作成
+
+Hibernate Filterも引き続き有効だが、重要な検索は暗黙フィルターだけに依存しない。
+
+## 7. 入力検証
+
+| 項目 | 制約 |
+|---|---|
+| タイトル | 必須、300文字以内 |
+| 開始日 | 必須 |
+| 終了日 | 必須、開始日以降 |
+| 表示色 | blue／red／orange／green／purple |
+| 内容 | 60000文字以内 |
+| 本文形式 | PLAIN_TEXT／HTML／MARKDOWN |
+
+HTML本文は保存前にサニタイズする。
+
+## 8. API
+
+| Method | Path | 用途 | 権限 |
+|---|---|---|---|
+| GET | `/api/notices` | 今日有効なお知らせ | ログインユーザー |
+| GET | `/api/notices/calendar?from=&to=` | 期間が重なるお知らせ | ログインユーザー |
+| POST | `/api/notices` | 手動作成 | SYS_ADMIN／ADMIN |
+| PUT | `/api/notices/{id}` | 手動更新 | SYS_ADMIN／ADMIN |
+| DELETE | `/api/notices/{id}` | 論理削除 | SYS_ADMIN／ADMIN |
+
+AUTOのお知らせ削除は、DELETE API内部でSYS_ADMINか再検証する。
+
+削除成功時はHTTP 204を返す。
+
+## 9. エラー
+
+| 状況 | HTTP Status |
+|---|---:|
+| 入力・期間不正 | 400 |
+| 権限不足 | 403 |
+| AUTOのお知らせ更新 | 409 |
+| お知らせ未存在 | 404 |
+| 内部エラー | 500 |
+
+## 10. テスト
+
+対象テスト：
+
+```text
+NoticeContentRendererTest
+NoticeCommandServiceTest
+NoticeQueryServiceTest
+NoticeAccessPolicyTest
+NoticeValidatorTest
+```
+
+主な確認項目：
+
+- 作成時のテナントID強制
+- MANUAL固定
+- AUTO更新拒否
+- AUTO削除のSYS_ADMIN／ADMIN境界
+- 現在日による概要検索
+- 期間重複によるカレンダー検索
+- テナントID強制
+- 不正期間・過大期間拒否
+- 表示色・文字数検証
+- HTMLサニタイズ
+
+## 11. DB変更
+
+今回のリファクタリングに伴うDDL変更はない。
+
+既存の次のカラムを使用する。
+
+```text
+tenant_id
+start_date
+end_date
+active_flag
+deleted_at
+source_type
+source_rule_code
+pinned_flag
+```
+
+## 12. V1で追加しない機能
+
+- 利用者単位・ロール単位の配信先指定
+- 既読／未読管理
+- 添付ファイル
+- メール・プッシュ通知との連動
+- お知らせ専用の履歴管理画面
+
+必要になった場合はV2候補として別途影響範囲を整理する。
+
+## 13. 業務日時とClock
+
+お知らせ機能の業務日付は`Asia/Tokyo`を基準とする。
+
+アプリケーション共通の`Clock`をSpring Beanとして提供し、次の直接呼び出しをお知らせ領域から除去した。
+
+```text
+LocalDate.now()
+YearMonth.now()
+Instant.now()
+```
+
+適用対象：
+
+- ダッシュボードの当日お知らせ取得
+- お知らせ自動生成の基準日
+- DayRule通知の対象年月
+- 手動お知らせの論理削除日時
+- NoticeRuleの論理削除日時
+
+DBに保存する削除日時は`Instant`のままとし、業務日付と対象年月は共通Clockの`Asia/Tokyo`で解決する。
+
+### 13.1 UTCとの月境界
+
+例えば次の時刻は、UTCでは1月31日、日本時間では2月1日となる。
+
+```text
+2026-01-31T15:30:00Z
+```
+
+DayRule通知は日本時間の2月を対象月として解決する。31日指定の場合、平年のため対象日は2月28日となる。
+
+### 13.2 追加テスト
+
+```text
+NoticeQueryServiceTest
+NoticeCommandServiceTest
+NoticeAutoGenerateServiceTest
+NoticeRuleCommandServiceTest
+DayRuleNoticeTargetResolverTest
+```
+
+確認項目：
+
+- 当日お知らせ検索へ固定した日本時間の日付を渡す
+- 自動生成処理へ固定した基準日を渡す
+- UTCと日本時間の月境界で対象年月を誤らない
+- お知らせ削除日時が共通Clockと一致する
+- NoticeRule削除日時が共通Clockと一致する
+
+API、DBカラム、画面仕様の変更はない。

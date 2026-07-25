@@ -1,15 +1,20 @@
 package com.project.backend.features.master.allowance.service;
 
+import java.time.Instant;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
+import com.project.backend.app.tenant.context.TenantContext;
 import com.project.backend.features.master.allowance.dto.AllowanceSaveRequest;
 import com.project.backend.features.master.allowance.entity.AllowanceMaster;
-import com.project.backend.features.master.allowance.enums.AllowanceCalculationType;
 import com.project.backend.features.master.allowance.mapper.AllowanceMapper;
 import com.project.backend.features.master.allowance.repository.AllowanceMasterRepository;
+import com.project.backend.features.master.payrollitem.exception.PayrollItemMasterConflictException;
+import com.project.backend.features.master.payrollitem.service.validation.PayrollItemMasterValidator;
 
+import jakarta.persistence.EntityNotFoundException;
+import com.project.backend.features.system.rule.enums.RuleType;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -17,79 +22,81 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class AllowanceCommandService {
 
-    private final AllowanceMasterRepository allowanceMasterRepository;
-    private final AllowanceMapper allowanceMapper;
+    private final AllowanceMasterRepository repository;
+    private final AllowanceMapper mapper;
+    private final PayrollItemMasterValidator validator;
 
-    @SuppressWarnings("null")
     public Long create(AllowanceSaveRequest request) {
-        validateForCreate(request);
-
-        AllowanceMaster entity = allowanceMapper.toEntity(request);
-        return allowanceMasterRepository.save(entity).getId();
-    }
-
-    @SuppressWarnings("null")
-    public void update(Long id, AllowanceSaveRequest request) {
-        AllowanceMaster entity = allowanceMasterRepository.findById(id)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("手当マスターが見つかりません。id=" + id)
-                );
-
-        validateForUpdate(id, request);
-
-        allowanceMapper.update(entity, request);
-        allowanceMasterRepository.save(entity);
-    }
-
-    @SuppressWarnings("null")
-    public void delete(Long id) {
-        @SuppressWarnings("null")
-        AllowanceMaster entity = allowanceMasterRepository.findById(id)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("手当マスターが見つかりません。id=" + id)
-                );
-
-        allowanceMasterRepository.delete(entity);
-    }
-
-    private void validateForCreate(AllowanceSaveRequest request) {
         validateRequest(request);
+        String tenantId = TenantContext.getTenantId();
+        String code = validator.normalizeCode(request.allowanceCode());
 
-        if (allowanceMasterRepository.existsByAllowanceCode(request.allowanceCode())) {
-            throw new IllegalArgumentException(
-                    "同じ手当コードが既に存在します。allowanceCode=" + request.allowanceCode()
+        if (repository.existsByTenantIdAndAllowanceCodeAndDeletedAtIsNull(tenantId, code)) {
+            throw new PayrollItemMasterConflictException(
+                    "同じ手当コードが既に存在します。allowanceCode=" + code
             );
         }
+
+        AllowanceMaster entity = mapper.toEntity(request);
+        normalize(entity, request);
+        entity.setTenantId(tenantId);
+        return repository.save(entity).getId();
     }
 
-    private void validateForUpdate(Long id, AllowanceSaveRequest request) {
-        validateRequest(request);
+    public void update(Long id, AllowanceSaveRequest request) {
+        String tenantId = TenantContext.getTenantId();
+        AllowanceMaster entity = repository
+                .findByIdAndTenantIdAndDeletedAtIsNull(id, tenantId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "手当マスターが見つかりません。id=" + id
+                ));
 
-        allowanceMasterRepository.findByAllowanceCode(request.allowanceCode())
-                .filter(existing -> !existing.getId().equals(id))
-                .ifPresent(existing -> {
-                    throw new IllegalArgumentException(
-                            "同じ手当コードが既に存在します。allowanceCode=" + request.allowanceCode()
-                    );
-                });
+        validateRequest(request);
+        String code = validator.normalizeCode(request.allowanceCode());
+        if (!entity.getAllowanceCode().equals(code)) {
+            throw new PayrollItemMasterConflictException("手当コードは作成後に変更できません。");
+        }
+
+        mapper.update(entity, request);
+        normalize(entity, request);
+        repository.save(entity);
+    }
+
+    public void delete(Long id) {
+        String tenantId = TenantContext.getTenantId();
+        AllowanceMaster entity = repository
+                .findByIdAndTenantIdAndDeletedAtIsNull(id, tenantId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "手当マスターが見つかりません。id=" + id
+                ));
+
+        entity.setEnabled(false);
+        entity.setDeletedAt(Instant.now());
+        repository.save(entity);
     }
 
     private void validateRequest(AllowanceSaveRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("リクエストが不正です。");
         }
+        validator.validate(
+                request.allowanceCode(),
+                request.allowanceName(),
+                request.calculationType() == null ? null : request.calculationType().name(),
+                request.ruleName(),
+                request.defaultAmount(),
+                request.allowManualInput(),
+                request.minAmount(),
+                request.maxAmount(),
+                request.displayOrder(),
+                RuleType.ALLOWANCE
+        );
+    }
 
-        if (!StringUtils.hasText(request.allowanceCode())) {
-            throw new IllegalArgumentException("allowanceCode は必須です。");
-        }
-
-        if (!StringUtils.hasText(request.allowanceName())) {
-            throw new IllegalArgumentException("allowanceName は必須です。");
-        }
-
-        if (request.calculationType() == AllowanceCalculationType.AUTO
-                && !StringUtils.hasText(request.ruleName())) {
-            throw new IllegalArgumentException("AUTO計算の場合 ruleName は必須です。");
-        }
+    private void normalize(AllowanceMaster entity, AllowanceSaveRequest request) {
+        String calculationType = request.calculationType().name();
+        entity.setAllowanceCode(validator.normalizeCode(request.allowanceCode()));
+        entity.setAllowanceName(request.allowanceName().trim());
+        entity.setRuleName(validator.normalizeRuleName(calculationType, request.ruleName()));
     }
 }

@@ -16,7 +16,7 @@ export const useBatchExecutionLogsQuery = (
     queryFn: async () => {
       if (jobCode?.value) {
         return await get<BatchExecutionLogResponse[]>(
-          `/api/system/batch/logs/${encodeURIComponent(jobCode.value)}`,
+          `/api/system/batch/logs/job/${encodeURIComponent(jobCode.value)}`,
         )
       }
 

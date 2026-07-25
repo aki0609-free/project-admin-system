@@ -1,5 +1,6 @@
 package com.project.backend.features.system.batch.service;
 
+import java.time.Clock;
 import java.time.Instant;
 
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class BatchJobDefinitionCommandService {
     private final BatchJobDefinitionValidator validator;
     private final BatchJobDefinitionLookupService lookupService;
     private final BatchDynamicSchedulerService schedulerService;
+    private final Clock clock;
 
     @Transactional
     public BatchJobDefinitionResponse create(
@@ -78,7 +80,7 @@ public class BatchJobDefinitionCommandService {
                 lookupService.find(id);
 
         entity.setDeletedAt(
-                Instant.now()
+                Instant.now(clock)
         );
 
         schedulerService.cancel(id);

@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, type Ref } from 'vue'
 import type { TabbedFormFieldDef } from '@/shared/components/form/tabbed_form/types/types'
 import type { DeductionMaster } from '@/features/master/deduction/types/deductionTypes'
 import {
@@ -10,10 +10,22 @@ import {
 
 export const deductionFormTabs = ['基本情報', '計算設定', '表示設定'] as const
 
-export const useDeductionFormFields = () => {
+type DeductionFormFieldOptions = {
+  isCreateMode: Ref<boolean>
+  canManage: Ref<boolean>
+  ruleOptions: Ref<{ title: string; value: string }[]>
+}
+
+export const useDeductionFormFields = (formOptions: DeductionFormFieldOptions) => {
   const fields = computed<TabbedFormFieldDef<DeductionMaster>[]>(() => [
-    { key: 'code', label: '控除コード', type: 'text', tab: '基本情報' },
-    { key: 'name', label: '控除名', type: 'text', tab: '基本情報' },
+    {
+      key: 'code',
+      label: '控除コード',
+      type: 'text',
+      tab: '基本情報',
+      editable: formOptions.canManage.value && formOptions.isCreateMode.value,
+    },
+    { key: 'name', label: '控除名', type: 'text', tab: '基本情報', editable: formOptions.canManage.value },
 
     {
       key: 'deductionType',
@@ -21,6 +33,7 @@ export const useDeductionFormFields = () => {
       type: 'select',
       tab: '基本情報',
       options: [...deductionTypeOptions],
+      editable: formOptions.canManage.value,
     },
     {
       key: 'calculationType',
@@ -28,6 +41,7 @@ export const useDeductionFormFields = () => {
       type: 'select',
       tab: '基本情報',
       options: [...deductionCalculationTypeOptions],
+      editable: formOptions.canManage.value,
     },
     {
       key: 'deductionUnit',
@@ -35,6 +49,7 @@ export const useDeductionFormFields = () => {
       type: 'select',
       tab: '基本情報',
       options: [...deductionUnitOptions],
+      editable: formOptions.canManage.value,
     },
     {
       key: 'detailViewType',
@@ -42,20 +57,43 @@ export const useDeductionFormFields = () => {
       type: 'select',
       tab: '基本情報',
       options: [...deductionDetailViewTypeOptions],
+      editable: formOptions.canManage.value,
     },
 
-    { key: 'ruleName', label: 'Rule名', type: 'text', tab: '計算設定' },
-    { key: 'defaultAmount', label: '初期金額', type: 'number', tab: '計算設定' },
-    { key: 'allowManualInput', label: '手入力許可', type: 'checkbox', tab: '計算設定' },
-    { key: 'minAmount', label: '下限金額', type: 'number', tab: '計算設定' },
-    { key: 'maxAmount', label: '上限金額', type: 'number', tab: '計算設定' },
+    {
+      key: 'ruleName',
+      label: 'Rule',
+      type: 'select',
+      tab: '計算設定',
+      options: formOptions.ruleOptions.value,
+      editable: formOptions.canManage.value,
+      visible: model => model.calculationType === 'AUTO',
+    },
+    {
+      key: 'defaultAmount',
+      label: '固定金額',
+      type: 'number',
+      tab: '計算設定',
+      editable: formOptions.canManage.value,
+      visible: model => model.calculationType === 'FIXED',
+    },
+    {
+      key: 'allowManualInput',
+      label: '手入力許可',
+      type: 'checkbox',
+      tab: '計算設定',
+      editable: formOptions.canManage.value,
+      visible: model => model.calculationType === 'MANUAL',
+    },
+    { key: 'minAmount', label: '下限金額', type: 'number', tab: '計算設定', editable: formOptions.canManage.value },
+    { key: 'maxAmount', label: '上限金額', type: 'number', tab: '計算設定', editable: formOptions.canManage.value },
 
-    { key: 'showOnDailyStatement', label: '日払い明細に表示', type: 'checkbox', tab: '表示設定' },
-    { key: 'showOnMonthlyStatement', label: '月次給与明細に表示', type: 'checkbox', tab: '表示設定' },
-    { key: 'carryToMonthlySettlement', label: '月次精算対象', type: 'checkbox', tab: '表示設定' },
-    { key: 'displayOrder', label: '表示順', type: 'number', tab: '表示設定' },
-    { key: 'enabled', label: '有効', type: 'checkbox', tab: '表示設定' },
-    { key: 'note', label: '備考', type: 'text', tab: '表示設定' },
+    { key: 'showOnDailyStatement', label: '日払い明細に表示', type: 'checkbox', tab: '表示設定', editable: formOptions.canManage.value },
+    { key: 'showOnMonthlyStatement', label: '月次給与明細に表示', type: 'checkbox', tab: '表示設定', editable: formOptions.canManage.value },
+    { key: 'carryToMonthlySettlement', label: '月次精算対象', type: 'checkbox', tab: '表示設定', editable: formOptions.canManage.value },
+    { key: 'displayOrder', label: '表示順', type: 'number', tab: '表示設定', editable: formOptions.canManage.value },
+    { key: 'enabled', label: '有効', type: 'checkbox', tab: '表示設定', editable: formOptions.canManage.value },
+    { key: 'note', label: '備考', type: 'text', tab: '表示設定', editable: formOptions.canManage.value },
   ])
 
   return {

@@ -24,12 +24,12 @@ const {
 
 <template>
   <SimpleTable
-    tableKey="notice-rule-list"
-    itemKey="id"
+    table-key="notice-rule-list"
+    item-key="id"
     :items="rows"
     :columns="columns"
-    :filterRules="filterRules"
-    enableRowClick
+    :filter-rules="filterRules"
+    enable-row-click
     @row-click="emit('row-click', $event)"
   />
 </template>

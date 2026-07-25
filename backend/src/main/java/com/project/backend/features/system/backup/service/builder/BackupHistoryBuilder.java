@@ -1,8 +1,11 @@
 package com.project.backend.features.system.backup.service.builder;
 
+import java.time.Clock;
 import java.time.Instant;
 
 import org.springframework.stereotype.Component;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.project.backend.features.system.backup.dto.BackupExecutionResult;
 import com.project.backend.features.system.backup.dto.BackupRequest;
@@ -10,11 +13,15 @@ import com.project.backend.features.system.backup.dto.BackupStoredFile;
 import com.project.backend.features.system.backup.entity.BackupHistory;
 import com.project.backend.features.system.backup.enums.BackupHistoryStatus;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class BackupHistoryBuilder {
 
     private static final int ERROR_MESSAGE_MAX_LENGTH = 4000;
-    private static final String DEFAULT_EXECUTED_BY = "system";
+
+    private final Clock clock;
 
     public BackupHistory buildSuccess(
             BackupRequest request,
@@ -38,8 +45,8 @@ public class BackupHistoryBuilder {
         }
 
         history.setStatus(BackupHistoryStatus.SUCCESS);
-        history.setExecutedBy(DEFAULT_EXECUTED_BY);
-        history.setExecutedAt(Instant.now());
+        history.setExecutedBy(currentUsername());
+        history.setExecutedAt(Instant.now(clock));
         history.setErrorMessage(null);
 
         return history;
@@ -53,8 +60,8 @@ public class BackupHistoryBuilder {
 
         history.setTargetCodes(joinTargetCodes(request));
         history.setStatus(BackupHistoryStatus.FAILED);
-        history.setExecutedBy(DEFAULT_EXECUTED_BY);
-        history.setExecutedAt(Instant.now());
+        history.setExecutedBy(currentUsername());
+        history.setExecutedAt(Instant.now(clock));
         history.setErrorMessage(limit(
                 exception != null ? exception.getMessage() : null,
                 ERROR_MESSAGE_MAX_LENGTH
@@ -82,5 +89,18 @@ public class BackupHistoryBuilder {
         return value.length() <= maxLength
                 ? value
                 : value.substring(0, maxLength);
+    }
+
+    private String currentUsername() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null
+                || authentication.getName() == null
+                || authentication.getName().isBlank()) {
+            return "system";
+        }
+
+        return authentication.getName();
     }
 }

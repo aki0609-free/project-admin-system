@@ -1,5 +1,6 @@
 package com.project.backend.features.system.notice.service;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -15,6 +16,7 @@ import com.project.backend.features.system.notice.service.generator.NoticeGenera
 import com.project.backend.features.system.notice.service.resolver.NoticeTargetResolverDispatcher;
 
 import lombok.RequiredArgsConstructor;
+import jakarta.persistence.EntityNotFoundException;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +25,7 @@ public class NoticeAutoGenerateService {
     private final NoticeRuleRepository ruleRepository;
     private final NoticeTargetResolverDispatcher noticeTargetResolver;
     private final NoticeGenerator noticeGenerator;
+    private final Clock clock;
 
     @Transactional
     public NoticeGenerateResult generateAll() {
@@ -33,7 +36,7 @@ public class NoticeAutoGenerateService {
                 new NoticeGenerateCounter();
 
         LocalDate today =
-                LocalDate.now();
+                LocalDate.now(clock);
 
         for (NoticeRule rule : rules) {
             List<NoticeTargetRow> rows =
@@ -65,7 +68,7 @@ public class NoticeAutoGenerateService {
         NoticeRule rule =
                 ruleRepository.findByIdAndDeletedAtIsNull(ruleId)
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new EntityNotFoundException(
                                         "NoticeRuleが見つかりません。 id=" + ruleId
                                 )
                         );
@@ -77,7 +80,7 @@ public class NoticeAutoGenerateService {
                 new NoticeGenerateCounter();
 
         LocalDate today =
-                LocalDate.now();
+                LocalDate.now(clock);
 
         counter.addTargetCount(rows.size());
 

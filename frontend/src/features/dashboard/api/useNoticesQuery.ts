@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { useAppQuery } from '@/shared/api/useAppQuery'
 import { get } from '@/shared/api/http'
 import { queryKeys } from './queryKeys'
-import { NoticeResponse } from '../types/dashboardTypes'
+import type { NoticeResponse } from '../types/dashboardTypes'
 
 export const useNoticesQuery = () => {
   const query = useAppQuery({

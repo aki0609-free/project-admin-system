@@ -1,4 +1,4 @@
-import { useAppMutation } from '@/shared/api/useAppMutation'
+import { useMutation } from '@tanstack/vue-query'
 import { post } from '@/shared/api/http'
 import type {
   ImportExecuteResponse,
@@ -12,7 +12,7 @@ type Payload = {
 }
 
 export const useExecuteImportMutation = () => {
-  return useAppMutation({
+  return useMutation({
     mutationFn: async ({ targetCode, sourceType, file }: Payload) => {
       if (sourceType === 'UPLOAD') {
         if (!file) {

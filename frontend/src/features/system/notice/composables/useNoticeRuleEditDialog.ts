@@ -80,10 +80,16 @@ export const useNoticeRuleEditDialog = (
 
   const isEdit = computed(() => formModel.id > 0)
 
-  const fields: GridFormFieldDef<NoticeRuleForm>[] = [
+  const fields = computed<GridFormFieldDef<NoticeRuleForm>[]>(() => [
     { key: 'id', label: 'ID', type: 'number', width: 100 },
 
-    { key: 'ruleCode', label: 'ruleCode', type: 'text', gridColumn: '2 / span 2' },
+    {
+      key: 'ruleCode',
+      label: 'ruleCode',
+      type: 'text',
+      gridColumn: '2 / span 2',
+      editable: !isEdit.value,
+    },
     { key: 'ruleName', label: 'ルール名', type: 'text', gridColumn: '1 / span 3' },
     { key: 'activeFlag', label: '有効', type: 'checkbox', width: 100 },
 
@@ -135,7 +141,7 @@ export const useNoticeRuleEditDialog = (
 
     { key: 'cronExpression', label: 'cron', type: 'text', gridColumn: '1 / span 4' },
     { key: 'noticeTitleTemplate', label: 'タイトルテンプレート', type: 'text', gridColumn: '1 / span 4' },
-  ]
+  ])
 
   const close = () => {
     visible.value = false

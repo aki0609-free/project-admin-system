@@ -3,6 +3,8 @@ package com.project.backend.features.system.rule.controller;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.project.backend.features.system.rule.dto.RuleMasterResponse;
 import com.project.backend.features.system.rule.dto.RuleMasterSaveRequest;
@@ -13,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/system/rules")
+@PreAuthorize("hasRole('SYS_ADMIN')")
 @RequiredArgsConstructor
 public class RuleMasterController {
 
@@ -53,7 +56,8 @@ public class RuleMasterController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         commandService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -1,4 +1,9 @@
-import { computed, ref, watch } from 'vue'
+import {
+  computed,
+  ref,
+  watch,
+  type Ref,
+} from 'vue'
 import { z } from 'zod'
 import type {
   SimpleTableColumnDef,
@@ -8,7 +13,10 @@ import { createSimpleTableFilterRules } from '@/shared/components/table/simple_t
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
 import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
 import type { ImportColumnForm, ImportTargetDialogForm } from '@/features/system/import/types/importFormTypes'
-import type { ImportDataType } from '@/features/system/import/types/importApiTypes'
+import type {
+  ImportDataType,
+  ImportTargetCatalogResponse,
+} from '@/features/system/import/types/importApiTypes'
 import { createEmptyImportColumn } from '@/features/system/import/utils/importFormFactory'
 
 export type ImportColumnTableRow = SimpleTableEditableRow & {
@@ -41,6 +49,9 @@ export const importColumnSchema = z.object({
 
 export const useImportColumnEditor = (
   formModel: ImportTargetDialogForm,
+  catalogs: Ref<
+    ImportTargetCatalogResponse[]
+  >,
 ) => {
   const selectedColumnId = ref<number | null>(null)
 
@@ -118,8 +129,29 @@ export const useImportColumnEditor = (
     },
   })
 
-  const fields: GridFormFieldDef<ImportColumnForm>[] = [
-    { key: 'columnName', label: 'columnName', type: 'text', gridColumn: '1 / span 4' },
+  const selectedCatalog = computed(
+    () =>
+      catalogs.value.find(
+        catalog =>
+          catalog.tableName
+          === formModel.tableName,
+      ) ?? null,
+  )
+
+  const fields = computed<GridFormFieldDef<ImportColumnForm>[]>(() => [
+    {
+      key: 'columnName',
+      label: '取込先カラム',
+      type: 'select',
+      options:
+        selectedCatalog.value?.columns.map(
+          column => ({
+            title: `${column.displayName} (${column.columnName})`,
+            value: column.columnName,
+          }),
+        ) ?? [],
+      gridColumn: '1 / span 4',
+    },
     { key: 'csvHeaderName', label: 'csvHeaderName', type: 'text', gridColumn: '1 / span 4' },
     {
       key: 'dataType',
@@ -144,7 +176,27 @@ export const useImportColumnEditor = (
     { key: 'nullableFlag', label: 'nullable', type: 'checkbox', gridColumn: '1 / span 2'},
     { key: 'trimFlag', label: 'trim', type: 'checkbox', gridColumn: '3 / span 2' },
     { key: 'updatableFlag', label: 'updatable', type: 'checkbox', gridColumn: '1 / span 4' },
-  ]
+  ])
+
+  watch(
+    () => selectedColumn.value?.columnName,
+    (columnName) => {
+      if (!selectedColumn.value || !columnName) {
+        return
+      }
+
+      const catalogColumn =
+        selectedCatalog.value?.columns.find(
+          column =>
+            column.columnName === columnName,
+        )
+
+      if (catalogColumn) {
+        selectedColumn.value.dataType =
+          catalogColumn.dataType
+      }
+    },
+  )
 
   const selectRow = (row: ImportColumnTableRow) => {
     selectedColumnId.value = row.id
@@ -159,6 +211,27 @@ export const useImportColumnEditor = (
 
   const add = () => {
     const next = createEmptyImportColumn(formModel.columns.length + 1)
+
+    const usedNames = new Set(
+      formModel.columns.map(
+        column => column.columnName,
+      ),
+    )
+    const firstUnused =
+      selectedCatalog.value?.columns.find(
+        column =>
+          !usedNames.has(column.columnName),
+      )
+
+    if (firstUnused) {
+      next.columnName =
+        firstUnused.columnName
+      next.csvHeaderName =
+        firstUnused.columnName
+      next.dataType =
+        firstUnused.dataType
+    }
+
     formModel.columns = resequence([...formModel.columns, next])
     selectedColumnId.value = next.id
   }

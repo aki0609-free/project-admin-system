@@ -14,7 +14,7 @@ export const useUpdateDeductionMutation = () => {
 
   return useAppMutation({
     mutationFn: ({ id, body }: UpdateDeductionPayload) =>
-      put<void, DeductionSaveRequest>('/api/master/deductions/{id}', body, {
+      put<unknown, DeductionSaveRequest>('/api/master/deductions/{id}', body, {
         params: {
           path: { id },
         },

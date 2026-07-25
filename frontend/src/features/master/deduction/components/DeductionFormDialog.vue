@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, toRef, watch } from 'vue'
 import { z } from 'zod'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
@@ -8,12 +8,14 @@ import DeductionDetailTable from '@/features/master/deduction/components/Deducti
 import type { DeductionMaster } from '@/features/master/deduction/types/deductionTypes'
 import type { DeductionDetailResponse } from '@/features/master/deduction/types/deductionApiTypes'
 import { useDeductionFormFields } from '@/features/master/deduction/composables/useDeductionFormFields'
+import { usePayrollRuleOptionsQuery } from '@/features/master/payrollitem/api/usePayrollRuleOptionsQuery'
 
 const props = defineProps<{
   modelValue: boolean
   deduction: DeductionMaster | null
   detailResponse: DeductionDetailResponse | null
   isCreateMode: boolean
+  canManage: boolean
 }>()
 
 const emit = defineEmits<{
@@ -108,7 +110,14 @@ watch(
   },
 )
 
-const { tabs: formTabs, fields } = useDeductionFormFields()
+const saveError = ref('')
+const canLoadRules = computed(() => props.modelValue && props.canManage)
+const ruleOptionsQuery = usePayrollRuleOptionsQuery(canLoadRules, 'DEDUCTION')
+const { tabs: formTabs, fields } = useDeductionFormFields({
+  isCreateMode: toRef(props, 'isCreateMode'),
+  canManage: toRef(props, 'canManage'),
+  ruleOptions: ruleOptionsQuery.options,
+})
 
 const schema = z.object({
   code: z.string().trim().min(1, '控除コードは必須です'),
@@ -120,7 +129,31 @@ function handleClose() {
 }
 
 function handleSave() {
+  saveError.value = validateForm()
+  if (saveError.value) return
   emit('save', { ...form })
+}
+
+function validateForm(): string {
+  const code = form.code.trim().toUpperCase()
+  if (!/^[A-Z][A-Z0-9_]{0,49}$/.test(code)) {
+    return '控除コードは英大文字で始まる50文字以内の英大文字・数字・_で入力してください。'
+  }
+  form.code = code
+  if (!form.name.trim()) return '控除名は必須です。'
+  if (form.calculationType === 'AUTO' && !form.ruleName) {
+    return '自動計算ではRuleを選択してください。'
+  }
+  if (form.calculationType === 'FIXED' && form.defaultAmount == null) {
+    return '固定計算では固定金額を入力してください。'
+  }
+  if (form.calculationType === 'MANUAL' && !form.allowManualInput) {
+    return '手入力計算では手入力許可を有効にしてください。'
+  }
+  if (form.minAmount != null && form.maxAmount != null && form.minAmount > form.maxAmount) {
+    return '下限金額は上限金額以下にしてください。'
+  }
+  return ''
 }
 
 function handleDelete() {
@@ -138,6 +171,9 @@ function handleDelete() {
       </v-card-title>
 
       <v-card-text>
+        <v-alert v-if="saveError" type="error" variant="tonal" class="mb-4">
+          {{ saveError }}
+        </v-alert>
         <TabLayout v-model="activeTab" :tabs="pageTabs">
           <template #default="{ active }">
             <div v-if="active === 'basic'">
@@ -165,7 +201,7 @@ function handleDelete() {
 
       <v-card-actions>
         <v-btn
-          v-if="!isCreateMode"
+          v-if="canManage && !isCreateMode"
           color="error"
           variant="text"
           @click="handleDelete"
@@ -179,7 +215,7 @@ function handleDelete() {
           キャンセル
         </v-btn>
 
-        <v-btn color="primary" @click="handleSave">
+        <v-btn v-if="canManage" color="primary" @click="handleSave">
           保存
         </v-btn>
       </v-card-actions>

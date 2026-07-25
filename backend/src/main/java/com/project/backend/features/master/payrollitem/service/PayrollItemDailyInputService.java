@@ -26,31 +26,49 @@ public class PayrollItemDailyInputService {
     public List<DailyReportInputItemResponse> findAllowanceItems(
             Map<String, Object> parameters
     ) {
+        return findAllowanceItems(parameters, Map.of());
+    }
+
+    public List<DailyReportInputItemResponse> findAllowanceItems(
+            Map<String, Object> parameters,
+            Map<Long, Integer> manualAmounts
+    ) {
         return findItems(
                 PayrollItemTargetType.ALLOWANCE,
-                parameters
+                parameters,
+                manualAmounts
         );
     }
 
     public List<DailyReportInputItemResponse> findDeductionItems(
             Map<String, Object> parameters
     ) {
+        return findDeductionItems(parameters, Map.of());
+    }
+
+    public List<DailyReportInputItemResponse> findDeductionItems(
+            Map<String, Object> parameters,
+            Map<Long, Integer> manualAmounts
+    ) {
         return findItems(
                 PayrollItemTargetType.DEDUCTION,
-                parameters
+                parameters,
+                manualAmounts
         );
     }
 
     private List<DailyReportInputItemResponse> findItems(
             PayrollItemTargetType targetType,
-            Map<String, Object> parameters
+            Map<String, Object> parameters,
+            Map<Long, Integer> manualAmounts
     ) {
         return calculationService.calculate(
                         new PayrollItemCalculationRequest(
                                 PayrollItemQueryType.DAILY,
                                 targetType,
                                 parameters
-                        )
+                ),
+                        manualAmounts
                 )
                 .stream()
                 .map(this::toDailyInputItem)
@@ -70,7 +88,10 @@ public class PayrollItemDailyInputService {
                         result.allowManualInput()
                 ))
                 .amount(result.amount() == null ? 0 : result.amount().intValue())
-                .editable(Boolean.TRUE.equals(result.allowManualInput()))
+                .editable(
+                        "MANUAL".equals(result.calculationType())
+                                && Boolean.TRUE.equals(result.allowManualInput())
+                )
                 .displayOrder(result.displayOrder())
                 .build();
     }
@@ -92,10 +113,12 @@ public class PayrollItemDailyInputService {
             return DailyReportInputMode.AUTO_CALCULATED;
         }
 
-        if (Boolean.TRUE.equals(allowManualInput)) {
-            return DailyReportInputMode.MANUAL;
+        if ("FIXED".equals(calculationType)) {
+            return DailyReportInputMode.FIXED;
         }
 
-        return DailyReportInputMode.FIXED;
+        return Boolean.TRUE.equals(allowManualInput)
+                ? DailyReportInputMode.MANUAL
+                : DailyReportInputMode.FIXED;
     }
 }

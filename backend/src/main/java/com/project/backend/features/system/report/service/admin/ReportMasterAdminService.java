@@ -1,5 +1,6 @@
 package com.project.backend.features.system.report.service.admin;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 
@@ -27,6 +28,7 @@ public class ReportMasterAdminService {
     private final ReportMasterValidator validator;
     private final ReportMasterUpdater updater;
     private final ReportParamSyncService paramSyncService;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public List<ReportMasterListResponse> findAll() {
@@ -78,6 +80,6 @@ public class ReportMasterAdminService {
         ReportMaster entity = reportMasterRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("帳票定義が見つかりません。 id=" + id));
 
-        entity.setDeletedAt(Instant.now());
+        entity.setDeletedAt(Instant.now(clock));
     }
 }

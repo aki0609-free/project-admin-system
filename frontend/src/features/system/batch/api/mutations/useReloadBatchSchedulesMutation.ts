@@ -8,7 +8,7 @@ export const useReloadBatchSchedulesMutation = () => {
         ? `/api/system/batch/schedules/${id}/reload`
         : '/api/system/batch/schedules/reload'
 
-      return await post<void, undefined>(path, undefined)
+      return await post<unknown, undefined>(path, undefined)
     },
   })
 }

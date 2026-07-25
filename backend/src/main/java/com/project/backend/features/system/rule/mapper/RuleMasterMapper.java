@@ -11,9 +11,15 @@ import com.project.backend.features.system.rule.entity.*;
 import com.project.backend.features.system.rule.enums.RuleDataType;
 import com.project.backend.features.system.rule.enums.RuleDslType;
 import com.project.backend.features.system.rule.enums.RuleType;
+import com.project.backend.features.system.rule.service.RuleDataSourceCatalogService;
+
+import lombok.RequiredArgsConstructor;
 
 @Component
+@RequiredArgsConstructor
 public class RuleMasterMapper {
+
+    private final RuleDataSourceCatalogService catalogService;
 
     public RuleMasterResponse toResponse(RuleMaster entity) {
         return RuleMasterResponse.builder()
@@ -82,8 +88,21 @@ public class RuleMasterMapper {
         RuleDataSource entity = new RuleDataSource();
 
         entity.setSourceName(request.sourceName());
-        entity.setTableName(request.tableName());
-        entity.setWhereClause(request.whereClause());
+        entity.setCatalogCode(request.catalogCode());
+
+        if (StringUtils.hasText(request.catalogCode())) {
+            RuleDataSourceCatalog catalog =
+                    catalogService.findRequired(
+                            request.catalogCode()
+                    );
+            entity.setTableName(catalog.getPhysicalName());
+            entity.setWhereClause(
+                    catalog.getWhereClauseTemplate()
+            );
+        } else {
+            entity.setTableName(request.tableName());
+            entity.setWhereClause(request.whereClause());
+        }
         entity.setSingleRowFlag(request.singleRowFlag());
         entity.setActiveFlag(request.activeFlag());
         entity.setOrderNo(request.orderNo() > 0 ? request.orderNo() : 1);
@@ -135,6 +154,7 @@ public class RuleMasterMapper {
                 .map(item -> RuleDataSourceResponse.builder()
                         .id(item.getId())
                         .sourceName(item.getSourceName())
+                        .catalogCode(item.getCatalogCode())
                         .tableName(item.getTableName())
                         .whereClause(item.getWhereClause())
                         .singleRowFlag(item.isSingleRowFlag())

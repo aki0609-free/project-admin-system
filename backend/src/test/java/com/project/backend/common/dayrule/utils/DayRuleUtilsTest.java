@@ -192,4 +192,22 @@ class DayRuleUtilsTest {
         assertThat(response.value()).isEqualTo(15);
         assertThat(response.label()).isEqualTo("15日");
     }
+
+    /**
+     * monthOffset を明示した場合は、対象月を含む表示ラベルを返す。
+     */
+    @Test
+    void toLabel_shouldIncludeMonthLabel_whenMonthOffsetIsSpecified() {
+        assertThat(DayRuleUtils.toLabel(
+                DayRuleType.DAY_OF_MONTH,
+                25,
+                0
+        )).isEqualTo("当月25日");
+
+        assertThat(DayRuleUtils.toLabel(
+                DayRuleType.END_OF_MONTH,
+                null,
+                1
+        )).isEqualTo("翌月末日");
+    }
 }

@@ -1,5 +1,6 @@
 package com.project.backend.features.system.notice.service;
 
+import java.time.Clock;
 import java.time.Instant;
 
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import com.project.backend.features.system.notice.mapper.NoticeRuleMapper;
 import com.project.backend.features.system.notice.repository.NoticeRuleRepository;
 import com.project.backend.features.system.notice.service.validation.NoticeRuleValidator;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -22,6 +24,7 @@ public class NoticeRuleCommandService {
     private final NoticeRuleMapper mapper;
     private final NoticeRuleValidator validator;
     private final NoticeDynamicSchedulerService schedulerService;
+    private final Clock clock;
 
     @Transactional
     public NoticeRuleResponse create(
@@ -52,18 +55,15 @@ public class NoticeRuleCommandService {
             Long id,
             NoticeRuleSaveRequest request
     ) {
-        validator.validateForUpdate(
-                id,
-                request
-        );
-
         NoticeRule entity =
                 repository.findByIdAndDeletedAtIsNull(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new EntityNotFoundException(
                                         "NoticeRuleが見つかりません。 id=" + id
                                 )
                         );
+
+        validator.validateForUpdate(entity, request);
 
         mapper.applyRequest(
                 request,
@@ -87,13 +87,13 @@ public class NoticeRuleCommandService {
         NoticeRule entity =
                 repository.findByIdAndDeletedAtIsNull(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new EntityNotFoundException(
                                         "NoticeRuleが見つかりません。 id=" + id
                                 )
                         );
 
         entity.setDeletedAt(
-                Instant.now()
+                Instant.now(clock)
         );
 
         schedulerService.cancel(id);

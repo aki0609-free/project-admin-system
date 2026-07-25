@@ -10,6 +10,7 @@ import com.project.backend.features.master.deduction.entity.DeductionMaster;
 import com.project.backend.features.master.deduction.enums.DeductionDetailViewType;
 import com.project.backend.features.tax.mapper.DeductionTaxDetailMapper;
 import com.project.backend.features.tax.repository.InsuranceRateRepository;
+import com.project.backend.features.tax.enums.InsuranceType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,7 +31,10 @@ public class InsuranceRateDeductionDetailProvider implements DeductionDetailProv
         int year = LocalDate.now().getYear();
 
         return insuranceRateRepository
-                .findByYearOrderByInsuranceTypeAsc(year)
+                .findByInsuranceTypeAndYearOrderByIdAsc(
+                        InsuranceType.HEALTH_INSURANCE,
+                        year
+                )
                 .stream()
                 .map(mapper::toInsuranceRateDetailResponse)
                 .toList();

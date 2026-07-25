@@ -12,7 +12,7 @@ export const useDeleteBackupTargetMutation = () => {
 
   return useAppMutation({
     mutationFn: async ({ id }: Payload) =>
-      await del<void>(`/api/system/backup/targets/${id}`),
+      await del<unknown>(`/api/system/backup/targets/${id}`),
 
     onSuccess: async () => {
       await queryClient.invalidateQueries({

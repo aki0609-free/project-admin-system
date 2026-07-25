@@ -3,6 +3,7 @@ package com.project.backend.batch.processor;
 import java.io.BufferedReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.charset.Charset;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -16,12 +17,36 @@ public class CsvLineToMapProcessor implements ItemProcessor<String, Map<String, 
     private final String[] headers;
     private final CSVParser parser;
 
-    public CsvLineToMapProcessor(String filePath) {
-        try (BufferedReader reader = Files.newBufferedReader(Path.of(filePath))) {
+    public CsvLineToMapProcessor(
+            String filePath,
+            String charset,
+            char delimiter,
+            int headerRowNumber
+    ) {
+        try (BufferedReader reader = Files.newBufferedReader(
+                Path.of(filePath),
+                Charset.forName(charset)
+        )) {
+            for (int rowNo = 1; rowNo < headerRowNumber; rowNo++) {
+                if (reader.readLine() == null) {
+                    throw new IllegalArgumentException(
+                            "CSVのヘッダー行が存在しません。 headerRowNumber="
+                                    + headerRowNumber
+                    );
+                }
+            }
+
             String headerLine = reader.readLine();
 
+            if (headerLine == null) {
+                throw new IllegalArgumentException(
+                        "CSVのヘッダー行が存在しません。 headerRowNumber="
+                                + headerRowNumber
+                );
+            }
+
             this.parser = new CSVParserBuilder()
-                    .withSeparator(',')
+                    .withSeparator(delimiter)
                     .build();
 
             this.headers = parser.parseLine(headerLine);

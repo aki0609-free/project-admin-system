@@ -52,4 +52,17 @@ public class BackupFileStorageService {
                 (long) data.length
         );
     }
+
+    public void delete(BackupStoredFile storedFile) {
+        if (storedFile == null
+                || storedFile.storageType() == null
+                || !StringUtils.hasText(storedFile.fileKey())) {
+            return;
+        }
+
+        storageService.delete(
+                storedFile.storageType(),
+                storedFile.fileKey()
+        );
+    }
 }

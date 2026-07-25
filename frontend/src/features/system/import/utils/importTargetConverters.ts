@@ -3,7 +3,7 @@ import type {
 } from '@/features/system/import/types/importApiTypes'
 import type {
   ImportTargetDialogForm,
-} from '@/features/system/import/components/ImportTargetEditDialog.vue'
+} from '@/features/system/import/types/importFormTypes'
 
 const nullable = (value: string | null | undefined): string | null => {
   if (value == null) return null

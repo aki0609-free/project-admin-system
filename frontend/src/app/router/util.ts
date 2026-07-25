@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { MenuItem } from "./routes/menuItem"
+import type { MenuItem } from '@/app/menu/types'
 
 export const generateRoutesFromMenu = (menuItems: MenuItem[]): any[] => {
   const routes: any[] = []
@@ -13,6 +13,7 @@ export const generateRoutesFromMenu = (menuItems: MenuItem[]): any[] => {
           meta: {
             resource: item.resource,
             action: item.action,
+            roles: item.roles,
             requiresAuth: true,
           },
         })

@@ -1,5 +1,6 @@
 package com.project.backend.features.operation.monthly.service.executor;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,6 +24,7 @@ public class MonthlyClosingJobExecutor {
 
         private final BatchExecutionService batchExecutionService;
         private final MonthlyClosingReportFileRepository reportFileRepository;
+        private final Clock clock;
 
         public void execute(
                         Long monthlyClosingId,
@@ -77,7 +79,7 @@ public class MonthlyClosingJobExecutor {
 
                 file.setBatchExecutionLogId(runResult.executionLogId());
 
-                file.setGeneratedAt(Instant.now());
+                file.setGeneratedAt(Instant.now(clock));
 
                 if (result != null) {
                         file.setStorageType(result.storageType());

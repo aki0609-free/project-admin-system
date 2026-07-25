@@ -22,8 +22,14 @@ import lombok.Setter;
 @Table(
         name = "backup_history",
         indexes = {
-                @Index(name = "idx_backup_history_status", columnList = "status"),
-                @Index(name = "idx_backup_history_executed_at", columnList = "executed_at"),
+                @Index(
+                        name = "idx_backup_history_tenant_status",
+                        columnList = "tenant_id,status"
+                ),
+                @Index(
+                        name = "idx_backup_history_tenant_executed",
+                        columnList = "tenant_id,executed_at"
+                ),
                 @Index(name = "idx_backup_history_storage_type", columnList = "storage_type")
         }
 )

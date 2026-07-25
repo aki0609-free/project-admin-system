@@ -7,6 +7,8 @@ import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.project.backend.features.system.imports.dto.ImportExecuteResult;
 import com.project.backend.features.system.imports.dto.ImportTargetDefinition;
@@ -32,6 +34,8 @@ public class ImportCsvJobLauncherService {
                     new JobParametersBuilder()
                             .addString("targetCode", target.targetCode())
                             .addString("filePath", csvPath.toAbsolutePath().toString())
+                            .addString("fileName", fileName)
+                            .addString("executedBy", currentUsername())
                             .addString("charset", target.charset())
                             .addString("delimiter", target.delimiter())
                             .addLong("headerRowNumber", target.headerRowNumber().longValue())
@@ -51,5 +55,18 @@ public class ImportCsvJobLauncherService {
         } catch (Exception e) {
             throw new RuntimeException("CSVインポートJobの起動に失敗しました。", e);
         }
+    }
+
+    private String currentUsername() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null
+                || authentication.getName() == null
+                || authentication.getName().isBlank()) {
+            return "system";
+        }
+
+        return authentication.getName();
     }
 }

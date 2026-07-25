@@ -9,6 +9,7 @@ import com.project.backend.features.system.backup.dto.BackupTargetDefinition;
 import com.project.backend.features.system.backup.dto.BackupTargetSummary;
 import com.project.backend.features.system.backup.mapper.BackupTargetMapper;
 import com.project.backend.features.system.backup.repository.BackupTargetRepository;
+import com.project.backend.app.tenant.context.TenantContext;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,7 +23,10 @@ public class BackupDefinitionService {
     @Transactional(readOnly = true)
     public BackupTargetDefinition getBackupTargetDefinition(String targetCode) {
         return repository
-                .findByTargetCodeAndBackupEnabledTrueAndActiveFlagTrueAndDeletedAtIsNull(targetCode)
+                .findByTenantIdAndTargetCodeAndBackupEnabledTrueAndActiveFlagTrueAndDeletedAtIsNull(
+                        requireTenantId(),
+                        targetCode
+                )
                 .map(mapper::toDefinition)
                 .orElseThrow(
                         () -> new RuntimeException(
@@ -34,9 +38,19 @@ public class BackupDefinitionService {
     @Transactional(readOnly = true)
     public List<BackupTargetSummary> findBackupEnabledTargets() {
         return repository
-                .findByBackupEnabledTrueAndActiveFlagTrueAndDeletedAtIsNullOrderByIdAsc()
+                .findByTenantIdAndBackupEnabledTrueAndActiveFlagTrueAndDeletedAtIsNullOrderByIdAsc(
+                        requireTenantId()
+                )
                 .stream()
                 .map(mapper::toSummary)
                 .toList();
+    }
+
+    private String requireTenantId() {
+        String tenantId = TenantContext.getTenantId();
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new RuntimeException("テナント情報を取得できません。");
+        }
+        return tenantId;
     }
 }

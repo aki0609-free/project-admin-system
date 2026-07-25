@@ -17,6 +17,7 @@ import { useDeductionDetailQuery } from '@/features/master/deduction/api/useDedu
 import { useCreateDeductionMutation } from '@/features/master/deduction/api/useCreateDeductionMutation'
 import { useUpdateDeductionMutation } from '@/features/master/deduction/api/useUpdateDeductionMutation'
 import { useDeleteDeductionMutation } from '@/features/master/deduction/api/useDeleteDeductionMutation'
+import { usePermission } from '@/shared/auth/composables/usePermission'
 
 import {
   toDeductionListItem,
@@ -25,6 +26,8 @@ import {
 } from '@/features/master/deduction/mapper/deductionMapper'
 
 const { columns } = useDeductionColumns()
+const { can } = usePermission()
+const canManage = computed(() => can('master', 'manage'))
 
 const dialog = ref(false)
 const isCreateMode = ref(false)
@@ -48,14 +51,14 @@ const filterRules = computed(() =>
   createSimpleTableFilterRules<DeductionListItem>(columns.value),
 )
 
-const toolbarItems = computed<ToolbarItem[]>(() => [
+const toolbarItems = computed<ToolbarItem[]>(() => canManage.value ? [
   {
     type: 'button',
     label: '新規登録',
     color: 'primary',
     onClick: handleCreate,
   },
-])
+] : [])
 
 function createEmptyDeduction(): DeductionMaster {
   return {
@@ -150,6 +153,7 @@ async function handleDelete(id: number) {
         :deduction="editingDeduction"
         :detail-response="detail"
         :is-create-mode="isCreateMode"
+        :can-manage="canManage"
         @save="handleSave"
         @delete="handleDelete"
       />

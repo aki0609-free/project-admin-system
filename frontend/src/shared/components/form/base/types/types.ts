@@ -26,6 +26,7 @@ export interface FormFieldDef<T> {
   autoGrow?: boolean
   required?: boolean
   editable?: boolean
+  visible?: (model: T) => boolean
   formatter?: (value: any, row: T) => string
 }
 

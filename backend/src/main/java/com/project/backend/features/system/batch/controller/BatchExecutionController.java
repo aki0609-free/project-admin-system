@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.project.backend.features.system.batch.dto.BatchExecuteRequest;
@@ -24,6 +25,7 @@ public class BatchExecutionController {
     private final BatchExecutionFileService batchExecutionFileService;
 
     @PostMapping("/execute/{jobCode}")
+    @PreAuthorize("isAuthenticated()")
     public BatchExecuteResponse executeNow(
             @PathVariable String jobCode,
             @RequestBody(required = false) BatchExecuteRequest request
@@ -36,7 +38,14 @@ public class BatchExecutionController {
         );
     }
 
+    @PostMapping("/retry/{logId}")
+    @PreAuthorize("hasRole('SYS_ADMIN')")
+    public BatchExecuteResponse retry(@PathVariable Long logId) {
+        return batchExecutionService.retry(logId);
+    }
+
     @PostMapping("/scheduled-execute/{jobCode}")
+    @PreAuthorize("hasRole('SYS_ADMIN')")
     public BatchExecuteResponse executeScheduledManually(
             @PathVariable String jobCode
     ) {
@@ -44,11 +53,13 @@ public class BatchExecutionController {
     }
 
     @GetMapping("/logs")
+    @PreAuthorize("hasRole('SYS_ADMIN')")
     public List<BatchExecutionLogResponse> findLogs() {
         return batchExecutionService.findLogs();
     }
 
     @GetMapping("/logs/{logId}/file")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ByteArrayResource> downloadLogFile(
             @PathVariable Long logId
     ) {
@@ -56,6 +67,7 @@ public class BatchExecutionController {
     }
 
     @GetMapping("/logs/job/{jobCode}")
+    @PreAuthorize("hasRole('SYS_ADMIN')")
     public List<BatchExecutionLogResponse> findLogsByJobCode(
             @PathVariable String jobCode
     ) {

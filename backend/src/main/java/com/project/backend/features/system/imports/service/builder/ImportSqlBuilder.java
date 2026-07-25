@@ -16,7 +16,8 @@ public class ImportSqlBuilder {
 
     public String buildInsertSql(
             String tableName,
-            List<ImportColumnDefinition> columns
+            List<ImportColumnDefinition> columns,
+            boolean tenantScoped
     ) {
         validateIdentifier(tableName, "tableName");
 
@@ -30,6 +31,11 @@ public class ImportSqlBuilder {
                 .map(columnName -> ":" + columnName)
                 .collect(Collectors.joining(", "));
 
+        if (tenantScoped) {
+            columnNames += ", tenant_id, created_at, updated_at";
+            paramNames += ", :__tenantId, :__now, :__now";
+        }
+
         return "INSERT INTO " + tableName
                 + " (" + columnNames + ") VALUES (" + paramNames + ")";
     }
@@ -37,7 +43,8 @@ public class ImportSqlBuilder {
     public String buildUpdateSql(
             String tableName,
             List<ImportColumnDefinition> keyColumns,
-            List<ImportColumnDefinition> updateColumns
+            List<ImportColumnDefinition> updateColumns,
+            boolean tenantScoped
     ) {
         validateIdentifier(tableName, "tableName");
 
@@ -47,7 +54,14 @@ public class ImportSqlBuilder {
                 .map(columnName -> columnName + " = :" + columnName)
                 .collect(Collectors.joining(", "));
 
-        String whereClause = buildWhereClause(keyColumns);
+        if (tenantScoped) {
+            setClause += ", updated_at = :__now";
+        }
+
+        String whereClause = buildWhereClause(
+                keyColumns,
+                tenantScoped
+        );
 
         return "UPDATE " + tableName
                 + " SET " + setClause
@@ -56,29 +70,44 @@ public class ImportSqlBuilder {
 
     public String buildExistsSql(
             String tableName,
-            List<ImportColumnDefinition> keyColumns
+            List<ImportColumnDefinition> keyColumns,
+            boolean tenantScoped
     ) {
         validateIdentifier(tableName, "tableName");
 
         return "SELECT COUNT(*) FROM "
                 + tableName
                 + " WHERE "
-                + buildWhereClause(keyColumns);
+                + buildWhereClause(
+                        keyColumns,
+                        tenantScoped
+                );
     }
 
-    public String buildDeleteAllSql(String tableName) {
+    public String buildDeleteSql(
+            String tableName,
+            boolean tenantScoped
+    ) {
         validateIdentifier(tableName, "tableName");
-        return "DELETE FROM " + tableName;
+        return tenantScoped
+                ? "DELETE FROM " + tableName
+                        + " WHERE tenant_id = :tenantId"
+                : "DELETE FROM " + tableName;
     }
 
     private String buildWhereClause(
-            List<ImportColumnDefinition> keyColumns
+            List<ImportColumnDefinition> keyColumns,
+            boolean tenantScoped
     ) {
-        return keyColumns.stream()
+        String keyClause = keyColumns.stream()
                 .map(ImportColumnDefinition::columnName)
                 .peek(columnName -> validateIdentifier(columnName, "columnName"))
                 .map(columnName -> columnName + " = :" + columnName)
                 .collect(Collectors.joining(" AND "));
+
+        return tenantScoped
+                ? keyClause + " AND tenant_id = :__tenantId"
+                : keyClause;
     }
 
     private void validateIdentifier(String value, String label) {

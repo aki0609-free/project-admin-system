@@ -5,6 +5,7 @@ import java.util.List;
 public record RuleDataSourceSaveRequest(
         Long id,
         String sourceName,
+        String catalogCode,
         String tableName,
         String whereClause,
         boolean singleRowFlag,

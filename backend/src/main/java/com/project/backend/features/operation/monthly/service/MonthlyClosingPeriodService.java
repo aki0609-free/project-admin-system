@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.project.backend.common.closing.service.ClosingSettingQueryService;
 import com.project.backend.common.dayrule.dto.DayRule;
 import com.project.backend.common.dayrule.enums.DayRuleType;
+import com.project.backend.common.dayrule.utils.DayRuleUtils;
 import com.project.backend.features.operation.monthly.dto.MonthlyClosingPeriod;
 import com.project.backend.features.operation.monthly.utils.MonthlyOperationDateUtil;
 
@@ -41,16 +42,20 @@ public class MonthlyClosingPeriodService {
             YearMonth previousMonth = targetMonth.minusMonths(1);
 
             LocalDate previousClosingDate =
-                    previousMonth.atDay(
-                            Math.min(closingDay, previousMonth.lengthOfMonth())
+                    DayRuleUtils.resolve(
+                            DayRuleType.DAY_OF_MONTH,
+                            closingDay,
+                            previousMonth
                     );
 
             LocalDate startDate =
                     previousClosingDate.plusDays(1);
 
             LocalDate endDate =
-                    targetMonth.atDay(
-                            Math.min(closingDay, targetMonth.lengthOfMonth())
+                    DayRuleUtils.resolve(
+                            DayRuleType.DAY_OF_MONTH,
+                            closingDay,
+                            targetMonth
                     );
 
             return new MonthlyClosingPeriod(

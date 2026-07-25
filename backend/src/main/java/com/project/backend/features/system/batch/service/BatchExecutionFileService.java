@@ -16,6 +16,7 @@ import com.project.backend.app.storage.enums.StorageType;
 import com.project.backend.app.storage.service.StorageService;
 import com.project.backend.features.system.batch.entity.BatchExecutionLog;
 import com.project.backend.features.system.batch.repository.BatchExecutionLogRepository;
+import com.project.backend.app.tenant.context.TenantContext;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,7 +30,10 @@ public class BatchExecutionFileService {
     @SuppressWarnings("null")
     public ResponseEntity<ByteArrayResource> download(Long logId) {
         @SuppressWarnings("null")
-        BatchExecutionLog log = repository.findById(logId)
+        BatchExecutionLog log = repository.findByIdAndTenantIdAndDeletedAtIsNull(
+                        logId,
+                        requireTenantId()
+                )
                 .orElseThrow(() -> new RuntimeException("log not found. id=" + logId));
 
         validateDownloadable(log);
@@ -99,5 +103,13 @@ public class BatchExecutionFileService {
                     e
             );
         }
+    }
+
+    private String requireTenantId() {
+        String tenantId = TenantContext.getTenantId();
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new RuntimeException("テナント情報を取得できません。");
+        }
+        return tenantId;
     }
 }

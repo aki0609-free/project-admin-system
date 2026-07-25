@@ -8,7 +8,7 @@ export const useDeleteNoticeRuleMutation = () => {
 
   return useAppMutation({
     mutationFn: async (id: number) =>
-      await del<void>(`/api/system/notice-rules/${id}`),
+      await del<undefined>(`/api/system/notice-rules/${id}`),
 
     onSuccess: async () => {
       await queryClient.invalidateQueries({

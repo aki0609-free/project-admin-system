@@ -3,7 +3,6 @@ package com.project.backend.features.system.backup.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.project.backend.features.system.backup.dto.BackupExecutionResult;
 import com.project.backend.features.system.backup.dto.BackupRequest;
@@ -24,8 +23,8 @@ public class BackupExecutionService {
     private final BackupHistoryService historyService;
     private final BackupExecutionValidator validator;
     private final BackupOutputResolver outputResolver;
+    private final BackupFileStorageService fileStorageService;
 
-    @Transactional
     public BackupExecutionResult execute(List<String> targetCodes) {
         return execute(
                 BackupRequest.builder()
@@ -36,14 +35,14 @@ public class BackupExecutionService {
         );
     }
 
-    @Transactional
     public BackupExecutionResult execute(BackupRequest request) {
         validator.validate(request);
+        BackupExecutionResult result = null;
 
         try {
             List<SingleBackupFile> files = buildFiles(request);
 
-            BackupExecutionResult result = buildResult(
+            result = buildResult(
                     request,
                     files
             );
@@ -56,12 +55,32 @@ public class BackupExecutionService {
             return result;
 
         } catch (Exception e) {
-            historyService.saveFailure(
-                    request,
-                    e
-            );
+            cleanupStoredFile(result);
+            saveFailureHistory(request, e);
 
             throw e;
+        }
+    }
+
+    private void cleanupStoredFile(BackupExecutionResult result) {
+        if (result == null || result.storedFile() == null) {
+            return;
+        }
+        try {
+            fileStorageService.delete(result.storedFile());
+        } catch (Exception ignored) {
+            // 元の例外を優先する。孤立ファイルはS3運用点検で検知する。
+        }
+    }
+
+    private void saveFailureHistory(
+            BackupRequest request,
+            Exception exception
+    ) {
+        try {
+            historyService.saveFailure(request, exception);
+        } catch (Exception ignored) {
+            // 元のバックアップ例外を優先する。
         }
     }
 

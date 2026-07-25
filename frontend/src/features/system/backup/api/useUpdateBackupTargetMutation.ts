@@ -22,7 +22,7 @@ export const useUpdateBackupTargetMutation = () => {
         request,
       ),
 
-    onSuccess: async (_data: any, variables: any) => {
+    onSuccess: async (_data: unknown, variables: Payload) => {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.backup.all,
       })

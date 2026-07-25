@@ -3,6 +3,7 @@ import {
   reactive,
   ref,
   watch,
+  onBeforeUnmount,
   type Ref,
 } from 'vue'
 
@@ -21,10 +22,6 @@ import type {
 import type {
   DailyReportForm,
 } from '@/features/dailyreport/types/dailyReportFormTypes'
-
-import type {
-  DailyReportInputResponse,
-} from '@/features/dailyreport/types/dailyReportInputItemTypes'
 
 import {
   createEmptyDailyReportForm,
@@ -58,6 +55,8 @@ import {
 import {
   dailyReportSchema,
 } from '@/features/dailyreport/schemas/dailyReportSchema'
+import { useDailyReportInputItemsPreviewMutation } from '@/features/dailyreport/api/useDailyReportInputItemsPreviewMutation'
+import { toDailyReportSaveRequest } from '@/features/dailyreport/utils/dailyReportConverters'
 
 import {
   useDailyReportBilling,
@@ -77,14 +76,12 @@ type DailyReportTab =
   | 'allowance'
   | 'deduction'
   | 'finance'
-  | 'approval'
 
 export const useDailyReportEditDialog = (
   visible: Ref<boolean>,
   dailyReport: Ref<DailyReportDetailResponse | null>,
   createParams: Ref<DailyReportCreateParams | null>,
   employees: Ref<EmployeeListItemResponse[]>,
-  inputItems: Ref<DailyReportInputResponse>,
   emitSave: (form: DailyReportForm) => void,
   emitDelete: (form: DailyReportForm) => void,
 ) => {
@@ -100,6 +97,19 @@ export const useDailyReportEditDialog = (
 
   const applyingDetail =
     ref(false)
+
+  const payrollItemsError =
+    ref('')
+
+  const payrollItemsPreview =
+    useDailyReportInputItemsPreviewMutation()
+
+  const payrollItemsLoading =
+    computed(
+      () =>
+        payrollItemsPreview
+          .isPending.value,
+    )
 
   const formModel =
     reactive<DailyReportForm>(
@@ -283,54 +293,99 @@ export const useDailyReportEditDialog = (
     recalculateEstimatedPay()
   }
 
-  const applyDefaultInputItems = () => {
+  let previewTimer:
+    ReturnType<typeof setTimeout>
+    | undefined
+
+  let previewSequence = 0
+
+  const applyPreviewItems = (
+    response: Awaited<
+      ReturnType<
+        typeof payrollItemsPreview.mutateAsync
+      >
+    >,
+  ) => {
     formModel.allowances =
-      inputItems.value.allowances.map(
-        item => ({
-          ...item,
-          amount: item.amount ?? 0,
-        }),
-      )
+      response.allowances.map(item => ({
+        ...item,
+        amount: item.amount ?? 0,
+      }))
 
     formModel.deductions =
-      inputItems.value.deductions.map(
-        item => ({
-          ...item,
-          amount: item.amount ?? 0,
-        }),
-      )
+      response.deductions.map(item => ({
+        ...item,
+        amount: item.amount ?? 0,
+      }))
   }
 
-  const applySavedOrDefaultInputItems =
-    () => {
+  const previewPayrollItems =
+    async () => {
       if (
-        formModel.allowances.length
-        === 0
+        !visible.value
+        || applyingDetail.value
+        || formModel.employeeId == null
+        || !formModel.workDate.trim()
       ) {
-        formModel.allowances =
-          inputItems.value.allowances.map(
-            item => ({
-              ...item,
-              amount:
-                item.amount ?? 0,
-            }),
-          )
+        return
       }
 
-      if (
-        formModel.deductions.length
-        === 0
-      ) {
-        formModel.deductions =
-          inputItems.value.deductions.map(
-            item => ({
-              ...item,
-              amount:
-                item.amount ?? 0,
-            }),
-          )
+      const sequence =
+        ++previewSequence
+
+      payrollItemsError.value = ''
+
+      try {
+        const response =
+          await payrollItemsPreview
+            .mutateAsync(
+              toDailyReportSaveRequest(
+                formModel,
+              ),
+            )
+
+        if (
+          sequence
+          !== previewSequence
+        ) {
+          return
+        }
+
+        applyPreviewItems(response)
+      } catch (error) {
+        if (
+          sequence
+          !== previewSequence
+        ) {
+          return
+        }
+
+        payrollItemsError.value =
+          error instanceof Error
+            ? error.message
+            : '手当・控除の自動計算に失敗しました。'
       }
     }
+
+  const schedulePayrollItemPreview =
+    () => {
+      if (previewTimer) {
+        clearTimeout(previewTimer)
+      }
+
+      previewTimer = setTimeout(
+        () => {
+          void previewPayrollItems()
+        },
+        400,
+      )
+    }
+
+  onBeforeUnmount(() => {
+    if (previewTimer) {
+      clearTimeout(previewTimer)
+    }
+  })
 
   const applyCustomerSnapshot = () => {
     const customer =
@@ -378,12 +433,11 @@ export const useDailyReportEditDialog = (
 
     activeTab.value = 'basic'
 
-    applyDefaultInputItems()
-
     applyingDetail.value = false
 
     calculateWorkTimes()
     recalculateEstimatedPay()
+    schedulePayrollItemPreview()
   }
 
   watch(
@@ -435,8 +489,6 @@ export const useDailyReportEditDialog = (
         )
 
       applyCustomerSnapshot()
-      applySavedOrDefaultInputItems()
-
       activeTab.value = 'basic'
 
       applyingDetail.value = false
@@ -445,29 +497,9 @@ export const useDailyReportEditDialog = (
        * 編集データの保存済み時間を維持する。
        */
       recalculateEstimatedPay()
+      schedulePayrollItemPreview()
     },
     {
-      immediate: true,
-    },
-  )
-
-  watch(
-    () => inputItems.value,
-    () => {
-      if (!visible.value) {
-        return
-      }
-
-      if (!dailyReport.value) {
-        applyDefaultInputItems()
-      } else {
-        applySavedOrDefaultInputItems()
-      }
-
-      recalculateEstimatedPay()
-    },
-    {
-      deep: true,
       immediate: true,
     },
   )
@@ -603,6 +635,26 @@ export const useDailyReportEditDialog = (
   )
 
   watch(
+    () => [
+      formModel.employeeId,
+      formModel.workDate,
+      formModel.paymentDate,
+      formModel.customerId,
+      formModel.customerSiteId,
+      formModel.jobCode,
+      formModel.siteRoleCode,
+      formModel.workHours,
+      formModel.overtimeHours,
+      formModel.nightWorkHours,
+      formModel.holidayWorkHours,
+      formModel.vehicleUsedFlag,
+      formModel.mileage,
+      formModel.paidLeaveDays,
+    ],
+    schedulePayrollItemPreview,
+  )
+
+  watch(
     () =>
       formModel.allowances.map(
         item => item.amount,
@@ -702,10 +754,6 @@ export const useDailyReportEditDialog = (
     {
       label: '貯蓄・借入',
       value: 'finance',
-    },
-    {
-      label: '承認',
-      value: 'approval',
     },
   ]
 
@@ -812,6 +860,8 @@ export const useDailyReportEditDialog = (
     footerItems,
 
     billingRateLoading,
+    payrollItemsLoading,
+    payrollItemsError,
 
     applicableSiteBillingRates:
       applicableBillingRates,

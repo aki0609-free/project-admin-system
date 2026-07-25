@@ -13,6 +13,8 @@ import com.project.backend.common.util.ApplicationDbUtils;
 import com.project.backend.common.util.ApplicationValidationUtils;
 import com.project.backend.features.system.notice.dto.NoticeTargetRow;
 import com.project.backend.features.system.notice.entity.NoticeRule;
+import com.project.backend.features.system.notice.service.validation.NoticeSqlSafety;
+import com.project.backend.app.tenant.context.TenantContext;
 
 import lombok.RequiredArgsConstructor;
 
@@ -44,13 +46,35 @@ public class DateColumnNoticeTargetResolver implements NoticeTargetResolver {
         }
 
         sql.append(" FROM ").append(rule.getTargetTableName());
-        sql.append(" WHERE ").append(dateColumn).append(" IS NOT NULL");
+        sql.append(" WHERE tenant_id = :tenantId");
+        sql.append(" AND ").append(dateColumn).append(" IS NOT NULL");
 
         if (StringUtils.hasText(rule.getWhereClause())) {
+            NoticeSqlSafety.validateWhereClause(
+                    rule.getWhereClause()
+            );
             sql.append(" AND (").append(rule.getWhereClause()).append(")");
         }
 
-        return jdbcTemplate.queryForList(sql.toString(), Map.of()).stream()
+        sql.append(" LIMIT 1001");
+
+        List<Map<String, Object>> rows =
+                jdbcTemplate.queryForList(
+                        sql.toString(),
+                        Map.of(
+                                "tenantId",
+                                requireTenantId()
+                        )
+                );
+
+        if (rows.size() > 1000) {
+            throw new IllegalArgumentException(
+                    "Notice対象の取得件数が上限1000件を超えました。 ruleCode="
+                            + rule.getRuleCode()
+            );
+        }
+
+        return rows.stream()
                 .map(this::toRow)
                 .toList();
     }
@@ -71,6 +95,18 @@ public class DateColumnNoticeTargetResolver implements NoticeTargetResolver {
         if (StringUtils.hasText(rule.getTargetLabelColumnName())) {
             ApplicationValidationUtils.validateIdentifier(rule.getTargetLabelColumnName(), "targetLabelColumnName", SAFE_IDENTIFIER);
         }
+    }
+
+    private String requireTenantId() {
+        String tenantId = TenantContext.getTenantId();
+
+        if (!StringUtils.hasText(tenantId)) {
+            throw new IllegalStateException(
+                    "Notice対象取得のtenantIdが未設定です。"
+            );
+        }
+
+        return tenantId;
     }
 
 }

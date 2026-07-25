@@ -14,7 +14,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Document(collation = "audit_logs")
+@Document(collection = "audit_logs")
 @Getter
 @Setter
 @NoArgsConstructor

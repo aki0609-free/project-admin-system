@@ -26,6 +26,8 @@ public class ImportExecutionService {
             String targetCode,
             MultipartFile file
     ) {
+        Path tempFile = null;
+
         try {
             ImportTargetDefinition target =
                     importTargetAdminService.findByTargetCode(targetCode);
@@ -34,11 +36,10 @@ public class ImportExecutionService {
                 throw new RuntimeException("この定義はUPLOAD取込ではありません。 targetCode=" + targetCode);
             }
 
-            Path tempFile = uploadFileService.saveToTempFile(file);
+            tempFile = uploadFileService.saveToTempFile(file);
 
-            String originalFileName = file.getOriginalFilename() != null
-                    ? file.getOriginalFilename()
-                    : "upload.csv";
+            String originalFileName =
+                    tempFile.getFileName().toString();
 
             return csvJobLauncherService.run(
                     target,
@@ -48,6 +49,8 @@ public class ImportExecutionService {
 
         } catch (Exception e) {
             throw new RuntimeException("CSVインポートに失敗しました。", e);
+        } finally {
+            uploadFileService.deleteTempFile(tempFile);
         }
     }
 

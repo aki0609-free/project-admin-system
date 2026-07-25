@@ -27,12 +27,14 @@ public class ImportHistoryService {
             ImportTargetDefinition target,
             String fileName,
             Long jobExecutionId,
+            String executedBy,
             ImportWriteResult result
     ) {
         ImportHistory history = buildBaseHistory(
                 target,
                 fileName,
                 jobExecutionId,
+                executedBy,
                 result
         );
 
@@ -51,6 +53,7 @@ public class ImportHistoryService {
             ImportTargetDefinition target,
             String fileName,
             Long jobExecutionId,
+            String executedBy,
             Exception exception
     ) {
         ImportHistory history = new ImportHistory();
@@ -70,7 +73,7 @@ public class ImportHistoryService {
         history.setErrorCount(1);
 
         history.setStatus(ImportHistoryStatus.FAILED);
-        history.setExecutedBy("system");
+        history.setExecutedBy(normalizeExecutedBy(executedBy));
         history.setExecutedAt(Instant.now());
         history.setErrorMessage(limit(exception.getMessage(), 4000));
 
@@ -81,6 +84,7 @@ public class ImportHistoryService {
             ImportTargetDefinition target,
             String fileName,
             Long jobExecutionId,
+            String executedBy,
             ImportWriteResult result
     ) {
         ImportHistory history = new ImportHistory();
@@ -99,7 +103,7 @@ public class ImportHistoryService {
         history.setSkippedCount(result.skippedCount());
         history.setErrorCount(result.errorCount());
 
-        history.setExecutedBy("system");
+        history.setExecutedBy(normalizeExecutedBy(executedBy));
         history.setExecutedAt(Instant.now());
 
         return history;
@@ -137,5 +141,11 @@ public class ImportHistoryService {
         return value.length() <= max
                 ? value
                 : value.substring(0, max);
+    }
+
+    private String normalizeExecutedBy(String executedBy) {
+        return executedBy == null || executedBy.isBlank()
+                ? "system"
+                : limit(executedBy, 100);
     }
 }

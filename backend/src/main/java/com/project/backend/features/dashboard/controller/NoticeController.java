@@ -3,6 +3,8 @@ package com.project.backend.features.dashboard.controller;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.project.backend.features.dashboard.dto.NoticeResponse;
@@ -15,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/notices")
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 public class NoticeController {
 
     private final NoticeQueryService queryService;
@@ -37,6 +40,7 @@ public class NoticeController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('SYS_ADMIN', 'ADMIN')")
     public NoticeResponse create(
             @RequestBody NoticeSaveRequest request
     ) {
@@ -44,6 +48,7 @@ public class NoticeController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SYS_ADMIN', 'ADMIN')")
     public NoticeResponse update(
             @PathVariable Long id,
             @RequestBody NoticeSaveRequest request
@@ -55,6 +60,8 @@ public class NoticeController {
     }
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('SYS_ADMIN', 'ADMIN')")
     public void delete(
             @PathVariable Long id
     ) {

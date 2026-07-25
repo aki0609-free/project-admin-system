@@ -11,7 +11,9 @@ import com.project.backend.features.master.deduction.entity.DeductionMaster;
 import com.project.backend.features.master.deduction.mapper.DeductionMapper;
 import com.project.backend.features.master.deduction.repository.DeductionMasterRepository;
 import com.project.backend.features.master.deduction.service.resolver.DeductionDetailResolver;
+import com.project.backend.app.tenant.context.TenantContext;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -24,15 +26,22 @@ public class DeductionQueryService {
     private final DeductionDetailResolver deductionDetailResolver;
 
     public List<DeductionListItemResponse> findAll() {
-        return deductionMasterRepository.findAll().stream()
+        return deductionMasterRepository
+                .findByTenantIdAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
+                        TenantContext.getTenantId()
+                )
+                .stream()
                 .map(deductionMapper::toListItem)
                 .toList();
     }
 
     @SuppressWarnings("null")
     public DeductionDetailResponse findDetail(Long id) {
-        DeductionMaster deduction = deductionMasterRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("控除マスターが見つかりません。id=" + id));
+        DeductionMaster deduction = deductionMasterRepository
+                .findByIdAndTenantIdAndDeletedAtIsNull(id, TenantContext.getTenantId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "控除マスターが見つかりません。id=" + id
+                ));
 
         return deductionMapper.toDetail(
                 deduction,

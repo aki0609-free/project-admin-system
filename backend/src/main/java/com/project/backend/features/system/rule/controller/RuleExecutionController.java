@@ -1,6 +1,7 @@
 package com.project.backend.features.system.rule.controller;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.project.backend.features.system.rule.dto.RuleExecutionRequest;
 import com.project.backend.features.system.rule.dto.RuleExecutionResult;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/system/rules/execution")
+@PreAuthorize("hasRole('SYS_ADMIN')")
 @RequiredArgsConstructor
 public class RuleExecutionController {
 
