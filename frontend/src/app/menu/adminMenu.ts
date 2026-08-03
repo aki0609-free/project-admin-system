@@ -1,5 +1,11 @@
+import { defineAsyncComponent } from 'vue'
 import DeductionPage from '@/features/master/deduction/page/DeductionPage.vue'
+import { Role } from '@/shared/auth/types/types'
 import type { MenuItem } from './types'
+
+const DocumentManagementPage = defineAsyncComponent(
+  () => import('@/features/admin/document/pages/DocumentManagementPage.vue'),
+)
 
 export const adminMenu: MenuItem = {
   title: '管理者メニュー',
@@ -13,11 +19,12 @@ export const adminMenu: MenuItem = {
       action: 'view',
     },
     {
-      title: '書類閲覧',
+      title: '書類管理',
       to: '/admin/document',
-      component: DeductionPage,
+      component: DocumentManagementPage,
       resource: 'admin',
       action: 'view',
+      roles: [Role.SYS_ADMIN],
     },
   ],
 }

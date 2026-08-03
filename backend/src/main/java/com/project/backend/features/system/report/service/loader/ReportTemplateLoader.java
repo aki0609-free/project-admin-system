@@ -19,7 +19,20 @@ public class ReportTemplateLoader {
     private final ReportTemplateKeyBuilder keyBuilder;
 
     public String load(String templateFileName) {
-        validator.validateFileName(templateFileName);
+        validator.validateJrxmlFileName(templateFileName);
+
+        return new String(
+                loadBytes(templateFileName),
+                StandardCharsets.UTF_8
+        );
+    }
+
+    public byte[] loadExcel(String templateFileName) {
+        validator.validateExcelFileName(templateFileName);
+        return loadBytes(templateFileName);
+    }
+
+    private byte[] loadBytes(String templateFileName) {
 
         String fileKey = keyBuilder.build(templateFileName);
 
@@ -28,10 +41,7 @@ public class ReportTemplateLoader {
         }
 
         try (var inputStream = storageService.load(fileKey)) {
-            return new String(
-                    inputStream.readAllBytes(),
-                    StandardCharsets.UTF_8
-            );
+            return inputStream.readAllBytes();
         } catch (Exception e) {
             throw new RuntimeException("テンプレート読み込みに失敗しました。 fileKey=" + fileKey, e);
         }

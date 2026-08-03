@@ -27,6 +27,7 @@ const visible = computed({
 const mailDialog = ref(false)
 const successSnackbar = ref(false)
 const successMessage = ref('')
+const pdfFrame = ref<HTMLIFrameElement | null>(null)
 
 const canSendMail = computed(() => !!props.pdfFileKey)
 
@@ -36,6 +37,10 @@ const close = () => {
 
 const openMailDialog = () => {
   mailDialog.value = true
+}
+
+const printPdf = () => {
+  pdfFrame.value?.contentWindow?.print()
 }
 
 const handleMailSent = (result: MailSendResult) => {
@@ -69,6 +74,18 @@ const handleMailSent = (result: MailSendResult) => {
           color="primary"
           variant="flat"
           size="small"
+          prepend-icon="mdi-printer"
+          :disabled="!pdfUrl"
+          @click="printPdf"
+        >
+          印刷
+        </v-btn>
+
+        <v-btn
+          class="ml-2"
+          color="primary"
+          variant="outlined"
+          size="small"
           prepend-icon="mdi-email-outline"
           :disabled="!canSendMail"
           @click="openMailDialog"
@@ -91,6 +108,7 @@ const handleMailSent = (result: MailSendResult) => {
       <div class="pdf-body">
         <iframe
           v-if="pdfUrl"
+          ref="pdfFrame"
           :src="pdfUrl"
           class="pdf-frame"
         />

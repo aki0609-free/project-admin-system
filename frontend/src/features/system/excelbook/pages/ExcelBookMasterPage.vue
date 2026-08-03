@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 import ListDetailPageLayout from '@/toolbox/pages/ListDetailPageLayout.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
 import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
@@ -9,7 +9,6 @@ import { useExcelBookMastersQuery } from '../api/useExcelBookMastersQuery'
 import { useCreateExcelBookMasterMutation } from '../api/useCreateExcelBookMasterMutation'
 import { useUpdateExcelBookMasterMutation } from '../api/useUpdateExcelBookMasterMutation'
 import { useDeleteExcelBookMasterMutation } from '../api/useDeleteExcelBookMasterMutation'
-import { useUpdateExcelBookMutation } from '../api/useUpdateExcelBookMutation'
 import { useExcelBookMasterColumns } from '../composables/useExcelBookMasterColumns'
 import type {
   ExcelBookMasterForm,
@@ -20,17 +19,20 @@ import {
   toExcelBookForm,
   toExcelBookRequest,
 } from '../utils/excelBookFactory'
-import { downloadBlob } from '@/shared/utils/BusinessUtils.js'
+
+const SpreadsheetTemplateEditorDialog = defineAsyncComponent(
+  () => import('../components/SpreadsheetTemplateEditorDialog.vue'),
+)
 
 const dialog = ref(false)
+const spreadsheetDialog = ref(false)
 const selectedItem = ref<ExcelBookMasterForm | null>(null)
-const targetMonth = ref(new Date().toISOString().slice(0, 7))
+const spreadsheetMaster = ref<ExcelBookMasterResponse | null>(null)
 
 const excelBookMastersQuery = useExcelBookMastersQuery()
 const createMutation = useCreateExcelBookMasterMutation()
 const updateMutation = useUpdateExcelBookMasterMutation()
 const deleteMutation = useDeleteExcelBookMasterMutation()
-const updateBookMutation = useUpdateExcelBookMutation()
 
 const { columns } = useExcelBookMasterColumns()
 
@@ -44,7 +46,6 @@ const saving = computed(
     deleteMutation.isPending.value,
 )
 
-const updatingBook = computed(() => updateBookMutation.isPending.value)
 
 const filterRules = computed(() =>
   createSimpleTableFilterRules<ExcelBookMasterResponse>(columns.value),
@@ -66,18 +67,7 @@ const leftToolbarItems = computed<ToolbarItem[]>(() => [
   },
 ])
 
-const rightToolbarItems = computed<ToolbarItem[]>(() => [
-  {
-    type: 'button',
-    label: '選択台帳を更新',
-    color: 'primary',
-    disabled:
-      !selectedItem.value ||
-      selectedItem.value._isNew ||
-      updatingBook.value,
-    onClick: handleUpdateBook,
-  },
-])
+const rightToolbarItems = computed<ToolbarItem[]>(() => [])
 
 function openCreate() {
   selectedItem.value = createEmptyExcelBookForm()
@@ -87,6 +77,14 @@ function openCreate() {
 function handleRowClick(row: ExcelBookMasterResponse) {
   selectedItem.value = toExcelBookForm(row)
   dialog.value = true
+}
+
+function handleEditSpreadsheetTemplate(form: ExcelBookMasterForm) {
+  if (form._isNew) return
+
+  spreadsheetMaster.value = form
+  dialog.value = false
+  spreadsheetDialog.value = true
 }
 
 async function handleSave(form: ExcelBookMasterForm) {
@@ -117,49 +115,20 @@ async function handleDelete(form: ExcelBookMasterForm) {
   selectedItem.value = null
 }
 
-async function handleUpdateBook() {
-  if (!selectedItem.value || selectedItem.value._isNew) return
-
-  const ok = window.confirm(
-    `「${selectedItem.value.bookName}」の ${targetMonth.value} シートを更新しますか？`,
-  )
-  if (!ok) return
-
-  const blob = await updateBookMutation.mutateAsync({
-    bookCode: selectedItem.value.bookCode,
-    request: {
-      targetMonth: targetMonth.value,
-    },
-  }) as Blob
-
-  downloadBlob(blob, `${selectedItem.value.bookCode}_${targetMonth.value}.xlsx`)
-}
 </script>
 
 <template>
   <ListDetailPageLayout
-    title="Excel台帳マスタ"
-    description="テンプレートExcelとSnapshotを紐づけて、既存Excel台帳を更新します。"
+    title="台帳マスタ"
+    description="締め処理で使用するデータソースとSpreadsheetテンプレートを管理します。"
     :left-toolbar-items="leftToolbarItems"
     :right-toolbar-items="rightToolbarItems"
   >
     <template #search>
-      <v-card variant="tonal" class="pa-3">
-        <div class="d-flex align-center ga-3">
-          <v-text-field
-            v-model="targetMonth"
-            label="更新対象月"
-            type="month"
-            density="compact"
-            hide-details
-            style="max-width: 180px"
-          />
-
-          <div class="text-caption text-medium-emphasis">
-            行を選択してから「選択台帳を更新」を実行してください。
-          </div>
-        </div>
-      </v-card>
+      <v-alert type="info" variant="tonal" density="compact">
+        行を選択すると、マスター設定とSpreadsheetテンプレートを編集できます。
+        台帳の生成は「締め処理 → 台帳」から実行します。
+      </v-alert>
     </template>
 
     <v-alert
@@ -167,7 +136,7 @@ async function handleUpdateBook() {
       type="error"
       variant="tonal"
     >
-      Excel台帳マスタの取得に失敗しました。
+      台帳マスタの取得に失敗しました。
     </v-alert>
 
     <v-alert
@@ -195,6 +164,11 @@ async function handleUpdateBook() {
         :saving="saving"
         @save="handleSave"
         @delete="handleDelete"
+        @edit-template="handleEditSpreadsheetTemplate"
+      />
+      <SpreadsheetTemplateEditorDialog
+        v-model="spreadsheetDialog"
+        :master="spreadsheetMaster"
       />
     </template>
   </ListDetailPageLayout>

@@ -199,15 +199,33 @@ tenant_id = :tenantId
 backend/src/main/resources/sql/system/rule/catalog_v1.sql
 ```
 
-現在の開発・AWS環境は`Hibernate ddl-auto=update`方針のため、Entity追加による自動作成が可能。
+ローカル初期構築では`Hibernate ddl-auto=update`を利用できるが、AWS DEVの通常起動は`ddl-auto=validate`である。したがって、AWS DEVではEntity追加だけでテーブルやカラムは自動作成されない。
 
 本DDLは次の場合に使用する。
 
-- 自動DDLを無効化した環境
+- AWS DEVなど`ddl-auto=validate`の環境
 - 本番移行前のDB資産整理
 - Confluence上でのDB定義レビュー
 
 既存DBへ手動適用する場合は、Hibernateがすでに同じテーブル／カラムを作成していないことを確認する。
+
+### 10.1 AWS DEV適用記録
+
+2026-07-27にAWS DEVのRDSへ`catalog_v1.sql`を適用した。
+
+- 対象DB：`project-admin-dev-mysql` / `ADMIN`
+- 適用前スナップショット：`project-admin-dev-before-rule-catalog-v1-20260727-143816z`
+- 適用前の`rule_data_source`：0件
+- 作成したテーブル：
+  - `rule_data_source_catalog`
+  - `rule_data_source_catalog_column`
+- `rule_data_source.catalog_code`：NULL許可の`VARCHAR(100)`として追加
+- `tenant_id, catalog_code`の検索インデックス：追加済み
+- 一意制約、CHECK制約、外部キー：確認済み
+- 既存Ruleデータの更新：なし
+- DDL適用に使用した一時IAM権限、S3一時ファイル、EC2一時ファイル：削除済み
+
+適用後、最新バックエンド・フロントエンドをAWS DEVへデプロイし、backend、frontend、Redis、Cloudflare Tunnelの正常起動とActuatorの`UP`を確認した。
 
 ## 11. テスト
 

@@ -5,6 +5,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_root="$(cd "${script_dir}/../../.." && pwd)"
 frontend_dir="${project_root}/frontend"
 terraform_dir="${project_root}/infrastructure/environments/dev"
+frontend_env_file="${frontend_dir}/.env.local"
 
 export AWS_PROFILE="${AWS_PROFILE:-project-admin-terraform}"
 export AWS_REGION="${AWS_REGION:-ap-northeast-1}"
@@ -44,10 +45,25 @@ aws ecr get-login-password \
 
 image_reference="${repository_url}:${image_tag}"
 
+syncfusion_license_key="${VITE_SYNCFUSION_LICENSE_KEY:-}"
+if [[ -z "${syncfusion_license_key}" && -f "${frontend_env_file}" ]]; then
+  syncfusion_license_key="$(
+    sed -n 's/^VITE_SYNCFUSION_LICENSE_KEY=//p' "${frontend_env_file}" \
+      | tail -n 1
+  )"
+fi
+
+if [[ -z "${syncfusion_license_key}" ]]; then
+  echo "VITE_SYNCFUSION_LICENSE_KEY is required." >&2
+  echo "Set it in the environment or frontend/.env.local." >&2
+  exit 1
+fi
+
 echo "Building and pushing linux/amd64 frontend image..."
 docker buildx build \
   --platform linux/amd64 \
   --provenance=false \
+  --build-arg "VITE_SYNCFUSION_LICENSE_KEY=${syncfusion_license_key}" \
   --tag "${image_reference}" \
   --push \
   "${frontend_dir}"

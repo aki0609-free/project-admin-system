@@ -7,9 +7,8 @@ export function useExcelBookMasterColumns() {
     { title: 'Book Code', key: 'bookCode', width: '180px', filter: { type: 'text' } },
     { title: '名称', key: 'bookName', width: '220px', filter: { type: 'text' } },
     { title: 'Source', key: 'sourceType', width: '120px', filter: { type: 'text' } },
-    { title: 'Source Name', key: 'sourceName', width: '240px', filter: { type: 'text' } },
-    { title: 'Template', key: 'templateFilePath', width: '320px', filter: { type: 'text' } },
-    { title: 'Output', key: 'outputFilePath', width: '320px', filter: { type: 'text' } },
+    { title: 'レイアウト', key: 'layoutType', width: '170px', filter: { type: 'text' } },
+    { title: 'データソース', key: 'dataSourceCode', width: '260px', filter: { type: 'text' } },
     {
       title: '有効',
       key: 'activeFlag',

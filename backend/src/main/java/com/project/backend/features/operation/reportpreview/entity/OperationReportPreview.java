@@ -30,6 +30,9 @@ public class OperationReportPreview extends BaseEntity {
     @Column(name = "report_code", nullable = false, length = 100)
     private String reportCode;
 
+    @Column(name = "report_name", length = 200)
+    private String reportName;
+
     @Column(name = "job_code", length = 100)
     private String jobCode;
 
@@ -38,6 +41,29 @@ public class OperationReportPreview extends BaseEntity {
 
     @Column(name = "template_name", nullable = false, length = 255)
     private String templateName;
+
+    @Column(name = "html_template_key", length = 1000)
+    private String htmlTemplateKey;
+
+    @Column(name = "html_template_version")
+    private Integer htmlTemplateVersion = 1;
+
+    @Column(name = "html_template_hash", length = 128)
+    private String htmlTemplateHash;
+
+    /**
+     * 対象日・対象月を絞り込むView側の列名。
+     * 画面入力ではなく、管理済みの帳票定義だけから解決する。
+     */
+    @Column(name = "filter_column_name", length = 100)
+    private String filterColumnName;
+
+    /**
+     * 帳票実行時に対象日・対象月を渡すReportParam.paramName。
+     * 未設定の場合は画面側で targetDate / targetMonth を使用する。
+     */
+    @Column(name = "target_param_name", length = 100)
+    private String targetParamName;
 
     @Column(name = "order_by", length = 500)
     private String orderBy;

@@ -2,6 +2,8 @@ package com.project.backend.app.security.jwt.filter;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -13,6 +15,8 @@ import com.project.backend.app.security.jwt.services.CustomUserDetailsService;
 import com.project.backend.app.security.jwt.services.JwtService;
 import com.project.backend.app.tenant.context.TenantContext;
 
+import io.jsonwebtoken.JwtException;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +26,10 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(
+        JwtAuthenticationFilter.class
+    );
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
@@ -42,42 +50,61 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            String jwt = authHeader.substring(7);
-            String username = jwtService.extractUsername(jwt);
-            String tenantId = jwtService.extractTenantId(jwt);
+            try {
+                String jwt = authHeader.substring(7);
+                String username = jwtService.extractUsername(jwt);
+                String tenantId = jwtService.extractTenantId(jwt);
 
-            if (tenantId != null && !tenantId.isBlank()) {
-                TenantContext.setTenantId(tenantId);
-            }
+                if (tenantId != null && !tenantId.isBlank()) {
+                    TenantContext.setTenantId(tenantId);
+                }
 
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                SecurityUser userDetails =
-                    (SecurityUser) userDetailsService.loadUserByUsernameAndTenantId(username, tenantId);
+                    SecurityUser userDetails =
+                        (SecurityUser) userDetailsService.loadUserByUsernameAndTenantId(username, tenantId);
 
-                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    if (jwtService.isTokenValid(jwt, userDetails)) {
 
-                    UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
+                        UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                            );
+
+                        authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
                         );
 
-                    authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
-
-                    SecurityContextHolder
-                        .getContext()
-                        .setAuthentication(authToken);
+                        SecurityContextHolder
+                            .getContext()
+                            .setAuthentication(authToken);
+                    }
                 }
+            } catch (JwtException | IllegalArgumentException exception) {
+                rejectAuthentication(response, exception);
+                return;
             }
 
             filterChain.doFilter(request, response);
         } finally {
             TenantContext.clear();
         }
+    }
+
+    private void rejectAuthentication(
+        HttpServletResponse response,
+        RuntimeException exception
+    ) throws IOException {
+        SecurityContextHolder.clearContext();
+        log.debug("JWT authentication was rejected: {}", exception.getMessage());
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json");
+        response.getWriter().write(
+            "{\"message\":\"認証トークンが無効または期限切れです。\"}"
+        );
     }
 
     @SuppressWarnings("null")

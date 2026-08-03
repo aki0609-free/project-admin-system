@@ -1,6 +1,7 @@
 FROM node:22-alpine AS builder
 
 WORKDIR /workspace
+ENV NODE_OPTIONS=--max-old-space-size=4096
 
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -9,6 +10,9 @@ COPY . .
 
 ARG VITE_API_BASE_URL=""
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
+ARG VITE_SYNCFUSION_LICENSE_KEY=""
+ENV VITE_SYNCFUSION_LICENSE_KEY=${VITE_SYNCFUSION_LICENSE_KEY}
 
 RUN npm run build-only
 

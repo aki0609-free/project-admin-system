@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport
+    xmlns="http://jasperreports.sourceforge.net/jasperreports"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+    name="daily_work_order"
+    pageWidth="842"
+    pageHeight="595"
+    orientation="Landscape"
+    columnWidth="814"
+    leftMargin="14"
+    rightMargin="14"
+    topMargin="14"
+    bottomMargin="14"
+    whenNoDataType="NoPages"
+>
+    <property name="net.sf.jasperreports.default.font.name" value="IPAexGothic"/>
+    <property name="net.sf.jasperreports.export.pdf.tagged" value="true"/>
+
+    <style name="Base" fontName="IPAexGothic" fontSize="7.5" pdfFontName="fonts/ipaexg.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+    <style name="Title" style="Base" fontSize="20" isBold="true"/>
+    <style name="Cell" style="Base" vTextAlign="Middle">
+        <box><pen lineWidth="0.65" lineColor="#27272A"/></box>
+    </style>
+    <style name="CellCenter" style="Cell" hTextAlign="Center"/>
+    <style name="CellRight" style="Cell" hTextAlign="Right"/>
+    <style name="Header" style="CellCenter" fontSize="7" isBold="true" backcolor="#FFF8C5" mode="Opaque"/>
+    <style name="Small" style="Base" fontSize="6.5"/>
+
+    <parameter name="DATE_FORMAT" class="java.text.SimpleDateFormat" isForPrompting="false">
+        <defaultValueExpression><![CDATA[new java.text.SimpleDateFormat("yyyy年 M月 d日")]]></defaultValueExpression>
+    </parameter>
+
+    <field name="target_date" class="java.sql.Date"/>
+    <field name="weekday_label" class="java.lang.String"/>
+    <field name="customer_name" class="java.lang.String"/>
+    <field name="site_name" class="java.lang.String"/>
+    <field name="page_no" class="java.lang.Long"/>
+    <field name="total_pages" class="java.lang.Long"/>
+    <field name="page_worker_count" class="java.lang.Long"/>
+    <field name="distance_from_company_km" class="java.lang.Integer"/>
+    <field name="vehicle_count" class="java.lang.Integer"/>
+    <field name="company_name" class="java.lang.String"/>
+    <field name="company_phone" class="java.lang.String"/>
+    <field name="company_fax" class="java.lang.String"/>
+    <field name="employee_name_1" class="java.lang.String"/>
+    <field name="employee_name_2" class="java.lang.String"/>
+    <field name="employee_name_3" class="java.lang.String"/>
+    <field name="employee_name_4" class="java.lang.String"/>
+    <field name="employee_name_5" class="java.lang.String"/>
+    <field name="employee_name_6" class="java.lang.String"/>
+    <field name="employee_name_7" class="java.lang.String"/>
+    <field name="employee_name_8" class="java.lang.String"/>
+    <field name="employee_name_9" class="java.lang.String"/>
+    <field name="employee_name_10" class="java.lang.String"/>
+    <field name="work_description_1" class="java.lang.String"/>
+    <field name="work_description_2" class="java.lang.String"/>
+    <field name="work_description_3" class="java.lang.String"/>
+    <field name="work_description_4" class="java.lang.String"/>
+    <field name="work_description_5" class="java.lang.String"/>
+    <field name="work_description_6" class="java.lang.String"/>
+    <field name="work_description_7" class="java.lang.String"/>
+    <field name="work_description_8" class="java.lang.String"/>
+    <field name="work_description_9" class="java.lang.String"/>
+    <field name="work_description_10" class="java.lang.String"/>
+
+    <detail>
+        <band height="556" splitType="Prevent">
+            <rectangle>
+                <reportElement x="0" y="0" width="814" height="556" backcolor="#FFFDF0" mode="Opaque"/>
+                <graphicElement><pen lineWidth="0.6" lineColor="#0F766E"/></graphicElement>
+            </rectangle>
+
+            <staticText><reportElement style="Title" x="12" y="7" width="260" height="34"/><textElement verticalAlignment="Middle"/><text><![CDATA[作 業 証 明 伝 票]]></text></staticText>
+            <textField><reportElement style="Base" x="276" y="10" width="260" height="26"/><textElement textAlignment="Center" verticalAlignment="Middle"/><textFieldExpression><![CDATA[$P{DATE_FORMAT}.format($F{target_date}) + "（" + $F{weekday_label} + "）"]]></textFieldExpression></textField>
+            <textField><reportElement style="Base" x="548" y="10" width="150" height="26"/><textElement textAlignment="Center" verticalAlignment="Middle"/><textFieldExpression><![CDATA["（全 " + $F{total_pages} + " 枚中 " + $F{page_no} + " 枚目）"]]></textFieldExpression></textField>
+            <staticText><reportElement style="Base" x="708" y="5" width="94" height="18"/><textElement textAlignment="Center"/><text><![CDATA[（当　社　控）]]></text></staticText>
+
+            <staticText><reportElement style="Header" x="12" y="44" width="62" height="38"/><text><![CDATA[工事番号]]></text></staticText>
+            <staticText><reportElement style="Cell" x="74" y="44" width="88" height="38"/><text><![CDATA[]]></text></staticText>
+            <staticText><reportElement style="Header" x="162" y="44" width="62" height="38"/><text><![CDATA[得意先]]></text></staticText>
+            <textField isBlankWhenNull="true"><reportElement style="Cell" x="224" y="44" width="236" height="38"/><textElement verticalAlignment="Middle"><paragraph leftIndent="6"/></textElement><textFieldExpression><![CDATA[$F{customer_name} + "　様"]]></textFieldExpression></textField>
+            <staticText><reportElement style="Header" x="460" y="44" width="58" height="38"/><text><![CDATA[現場名]]></text></staticText>
+            <textField isBlankWhenNull="true"><reportElement style="Cell" x="518" y="44" width="180" height="38"/><textElement verticalAlignment="Middle"><paragraph leftIndent="6"/></textElement><textFieldExpression><![CDATA[$F{site_name}]]></textFieldExpression></textField>
+            <staticText><reportElement style="Header" x="708" y="32" width="46" height="50"/><text><![CDATA[所属長
+承認欄]]></text></staticText>
+            <staticText><reportElement style="Cell" x="754" y="32" width="48" height="50"/><text><![CDATA[]]></text></staticText>
+
+            <staticText><reportElement style="Header" x="12" y="90" width="28" height="28"/><text><![CDATA[No.]]></text></staticText>
+            <staticText><reportElement style="Header" x="40" y="90" width="74" height="28"/><text><![CDATA[職　種]]></text></staticText>
+            <staticText><reportElement style="Header" x="114" y="90" width="132" height="28"/><text><![CDATA[作　業　員　名]]></text></staticText>
+            <staticText><reportElement style="Header" x="246" y="90" width="135" height="28"/><text><![CDATA[始　業 ～ 終　業]]></text></staticText>
+            <staticText><reportElement style="Header" x="381" y="90" width="56" height="28"/><text><![CDATA[作業時間]]></text></staticText>
+            <staticText><reportElement style="Header" x="437" y="90" width="56" height="28"/><text><![CDATA[時間外
+(×1.25)]]></text></staticText>
+            <staticText><reportElement style="Header" x="493" y="90" width="56" height="28"/><text><![CDATA[深夜
+(×1.5)]]></text></staticText>
+            <staticText><reportElement style="Header" x="549" y="90" width="62" height="28"/><text><![CDATA[自家用車
+使用]]></text></staticText>
+            <staticText><reportElement style="Header" x="611" y="90" width="58" height="28"/><text><![CDATA[同乗者人数]]></text></staticText>
+            <staticText><reportElement style="Header" x="669" y="90" width="133" height="28"/><text><![CDATA[作業内容]]></text></staticText>
+
+            <!-- 10名固定行。空き行は手書き用として残す。 -->
+            <staticText><reportElement style="CellCenter" x="12" y="118" width="28" height="25"/><text><![CDATA[1]]></text></staticText>
+            <staticText><reportElement style="Cell" x="40" y="118" width="74" height="25"/><text><![CDATA[]]></text></staticText>
+            <textField isBlankWhenNull="true"><reportElement style="Cell" x="114" y="118" width="132" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{employee_name_1}]]></textFieldExpression></textField>
+            <staticText><reportElement style="CellCenter" x="246" y="118" width="135" height="25"/><text><![CDATA[　　　　～]]></text></staticText>
+            <staticText><reportElement style="CellRight" x="381" y="118" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="437" y="118" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="493" y="118" width="56" height="25"/><text><![CDATA[　h]]></text></staticText>
+            <staticText><reportElement style="CellCenter" x="549" y="118" width="62" height="25"/><text><![CDATA[有・無]]></text></staticText><staticText><reportElement style="CellRight" x="611" y="118" width="58" height="25"/><text><![CDATA[　人]]></text></staticText>
+            <textField isBlankWhenNull="true"><reportElement style="Cell" x="669" y="118" width="133" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{work_description_1}]]></textFieldExpression></textField>
+
+            <staticText><reportElement style="CellCenter" x="12" y="143" width="28" height="25"/><text><![CDATA[2]]></text></staticText><staticText><reportElement style="Cell" x="40" y="143" width="74" height="25"/><text><![CDATA[]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="114" y="143" width="132" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{employee_name_2}]]></textFieldExpression></textField><staticText><reportElement style="CellCenter" x="246" y="143" width="135" height="25"/><text><![CDATA[　　　　～]]></text></staticText><staticText><reportElement style="CellRight" x="381" y="143" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="437" y="143" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="493" y="143" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellCenter" x="549" y="143" width="62" height="25"/><text><![CDATA[有・無]]></text></staticText><staticText><reportElement style="CellRight" x="611" y="143" width="58" height="25"/><text><![CDATA[　人]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="669" y="143" width="133" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{work_description_2}]]></textFieldExpression></textField>
+            <staticText><reportElement style="CellCenter" x="12" y="168" width="28" height="25"/><text><![CDATA[3]]></text></staticText><staticText><reportElement style="Cell" x="40" y="168" width="74" height="25"/><text><![CDATA[]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="114" y="168" width="132" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{employee_name_3}]]></textFieldExpression></textField><staticText><reportElement style="CellCenter" x="246" y="168" width="135" height="25"/><text><![CDATA[　　　　～]]></text></staticText><staticText><reportElement style="CellRight" x="381" y="168" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="437" y="168" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="493" y="168" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellCenter" x="549" y="168" width="62" height="25"/><text><![CDATA[有・無]]></text></staticText><staticText><reportElement style="CellRight" x="611" y="168" width="58" height="25"/><text><![CDATA[　人]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="669" y="168" width="133" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{work_description_3}]]></textFieldExpression></textField>
+            <staticText><reportElement style="CellCenter" x="12" y="193" width="28" height="25"/><text><![CDATA[4]]></text></staticText><staticText><reportElement style="Cell" x="40" y="193" width="74" height="25"/><text><![CDATA[]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="114" y="193" width="132" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{employee_name_4}]]></textFieldExpression></textField><staticText><reportElement style="CellCenter" x="246" y="193" width="135" height="25"/><text><![CDATA[　　　　～]]></text></staticText><staticText><reportElement style="CellRight" x="381" y="193" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="437" y="193" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="493" y="193" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellCenter" x="549" y="193" width="62" height="25"/><text><![CDATA[有・無]]></text></staticText><staticText><reportElement style="CellRight" x="611" y="193" width="58" height="25"/><text><![CDATA[　人]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="669" y="193" width="133" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{work_description_4}]]></textFieldExpression></textField>
+            <staticText><reportElement style="CellCenter" x="12" y="218" width="28" height="25"/><text><![CDATA[5]]></text></staticText><staticText><reportElement style="Cell" x="40" y="218" width="74" height="25"/><text><![CDATA[]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="114" y="218" width="132" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{employee_name_5}]]></textFieldExpression></textField><staticText><reportElement style="CellCenter" x="246" y="218" width="135" height="25"/><text><![CDATA[　　　　～]]></text></staticText><staticText><reportElement style="CellRight" x="381" y="218" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="437" y="218" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="493" y="218" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellCenter" x="549" y="218" width="62" height="25"/><text><![CDATA[有・無]]></text></staticText><staticText><reportElement style="CellRight" x="611" y="218" width="58" height="25"/><text><![CDATA[　人]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="669" y="218" width="133" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{work_description_5}]]></textFieldExpression></textField>
+            <staticText><reportElement style="CellCenter" x="12" y="243" width="28" height="25"/><text><![CDATA[6]]></text></staticText><staticText><reportElement style="Cell" x="40" y="243" width="74" height="25"/><text><![CDATA[]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="114" y="243" width="132" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{employee_name_6}]]></textFieldExpression></textField><staticText><reportElement style="CellCenter" x="246" y="243" width="135" height="25"/><text><![CDATA[　　　　～]]></text></staticText><staticText><reportElement style="CellRight" x="381" y="243" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="437" y="243" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="493" y="243" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellCenter" x="549" y="243" width="62" height="25"/><text><![CDATA[有・無]]></text></staticText><staticText><reportElement style="CellRight" x="611" y="243" width="58" height="25"/><text><![CDATA[　人]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="669" y="243" width="133" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{work_description_6}]]></textFieldExpression></textField>
+            <staticText><reportElement style="CellCenter" x="12" y="268" width="28" height="25"/><text><![CDATA[7]]></text></staticText><staticText><reportElement style="Cell" x="40" y="268" width="74" height="25"/><text><![CDATA[]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="114" y="268" width="132" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{employee_name_7}]]></textFieldExpression></textField><staticText><reportElement style="CellCenter" x="246" y="268" width="135" height="25"/><text><![CDATA[　　　　～]]></text></staticText><staticText><reportElement style="CellRight" x="381" y="268" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="437" y="268" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="493" y="268" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellCenter" x="549" y="268" width="62" height="25"/><text><![CDATA[有・無]]></text></staticText><staticText><reportElement style="CellRight" x="611" y="268" width="58" height="25"/><text><![CDATA[　人]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="669" y="268" width="133" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{work_description_7}]]></textFieldExpression></textField>
+            <staticText><reportElement style="CellCenter" x="12" y="293" width="28" height="25"/><text><![CDATA[8]]></text></staticText><staticText><reportElement style="Cell" x="40" y="293" width="74" height="25"/><text><![CDATA[]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="114" y="293" width="132" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{employee_name_8}]]></textFieldExpression></textField><staticText><reportElement style="CellCenter" x="246" y="293" width="135" height="25"/><text><![CDATA[　　　　～]]></text></staticText><staticText><reportElement style="CellRight" x="381" y="293" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="437" y="293" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="493" y="293" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellCenter" x="549" y="293" width="62" height="25"/><text><![CDATA[有・無]]></text></staticText><staticText><reportElement style="CellRight" x="611" y="293" width="58" height="25"/><text><![CDATA[　人]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="669" y="293" width="133" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{work_description_8}]]></textFieldExpression></textField>
+            <staticText><reportElement style="CellCenter" x="12" y="318" width="28" height="25"/><text><![CDATA[9]]></text></staticText><staticText><reportElement style="Cell" x="40" y="318" width="74" height="25"/><text><![CDATA[]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="114" y="318" width="132" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{employee_name_9}]]></textFieldExpression></textField><staticText><reportElement style="CellCenter" x="246" y="318" width="135" height="25"/><text><![CDATA[　　　　～]]></text></staticText><staticText><reportElement style="CellRight" x="381" y="318" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="437" y="318" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="493" y="318" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellCenter" x="549" y="318" width="62" height="25"/><text><![CDATA[有・無]]></text></staticText><staticText><reportElement style="CellRight" x="611" y="318" width="58" height="25"/><text><![CDATA[　人]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="669" y="318" width="133" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{work_description_9}]]></textFieldExpression></textField>
+            <staticText><reportElement style="CellCenter" x="12" y="343" width="28" height="25"/><text><![CDATA[10]]></text></staticText><staticText><reportElement style="Cell" x="40" y="343" width="74" height="25"/><text><![CDATA[]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="114" y="343" width="132" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{employee_name_10}]]></textFieldExpression></textField><staticText><reportElement style="CellCenter" x="246" y="343" width="135" height="25"/><text><![CDATA[　　　　～]]></text></staticText><staticText><reportElement style="CellRight" x="381" y="343" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="437" y="343" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="493" y="343" width="56" height="25"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellCenter" x="549" y="343" width="62" height="25"/><text><![CDATA[有・無]]></text></staticText><staticText><reportElement style="CellRight" x="611" y="343" width="58" height="25"/><text><![CDATA[　人]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="Cell" x="669" y="343" width="133" height="25"/><textElement><paragraph leftIndent="4"/></textElement><textFieldExpression><![CDATA[$F{work_description_10}]]></textFieldExpression></textField>
+
+            <staticText><reportElement style="Header" x="12" y="368" width="369" height="28"/><text><![CDATA[計]]></text></staticText>
+            <textField><reportElement style="CellRight" x="381" y="368" width="56" height="28"/><textFieldExpression><![CDATA[$F{page_worker_count} + " 人"]]></textFieldExpression></textField>
+            <staticText><reportElement style="CellRight" x="437" y="368" width="56" height="28"/><text><![CDATA[　h]]></text></staticText><staticText><reportElement style="CellRight" x="493" y="368" width="56" height="28"/><text><![CDATA[　h]]></text></staticText>
+            <staticText><reportElement style="Header" x="549" y="368" width="62" height="28"/><text><![CDATA[通勤費]]></text></staticText><staticText><reportElement style="CellRight" x="611" y="368" width="58" height="28"/><text><![CDATA[　円]]></text></staticText>
+            <staticText><reportElement style="Header" x="669" y="368" width="58" height="28"/><text><![CDATA[使用車両]]></text></staticText><textField isBlankWhenNull="true"><reportElement style="CellCenter" x="727" y="368" width="75" height="28"/><textFieldExpression><![CDATA[$F{vehicle_count} == null ? "" : "配車 " + $F{vehicle_count} + " 台"]]></textFieldExpression></textField>
+
+            <staticText><reportElement style="Header" x="12" y="414" width="300" height="24"/><text><![CDATA[機 材 ・ 資 材 ・ 納 入 品]]></text></staticText><staticText><reportElement style="Header" x="312" y="414" width="58" height="24"/><text><![CDATA[数量]]></text></staticText><staticText><reportElement style="Header" x="370" y="414" width="54" height="24"/><text><![CDATA[単位]]></text></staticText>
+            <staticText><reportElement style="Cell" x="12" y="438" width="300" height="25"/><text><![CDATA[]]></text></staticText><staticText><reportElement style="Cell" x="312" y="438" width="58" height="25"/><text><![CDATA[]]></text></staticText><staticText><reportElement style="Cell" x="370" y="438" width="54" height="25"/><text><![CDATA[]]></text></staticText>
+            <staticText><reportElement style="Cell" x="12" y="463" width="300" height="25"/><text><![CDATA[]]></text></staticText><staticText><reportElement style="Cell" x="312" y="463" width="58" height="25"/><text><![CDATA[]]></text></staticText><staticText><reportElement style="Cell" x="370" y="463" width="54" height="25"/><text><![CDATA[]]></text></staticText>
+            <staticText><reportElement style="Header" x="434" y="414" width="58" height="42"/><text><![CDATA[通勤経路]]></text></staticText><staticText><reportElement style="CellCenter" x="492" y="414" width="180" height="42"/><text><![CDATA[　　　　　　－　　　　　　－]]></text></staticText><staticText><reportElement style="Header" x="672" y="414" width="54" height="42"/><text><![CDATA[片道]]></text></staticText>
+            <textField isBlankWhenNull="true"><reportElement style="CellRight" x="726" y="414" width="76" height="42"/><textFieldExpression><![CDATA[$F{distance_from_company_km} == null ? "　km" : $F{distance_from_company_km} + " km"]]></textFieldExpression></textField>
+            <staticText><reportElement style="Base" x="440" y="462" width="66" height="18"/><textElement><font isItalic="true" isBold="true"/></textElement><text><![CDATA[Memo]]></text></staticText><line><reportElement x="438" y="482" width="364" height="1"/><graphicElement><pen lineWidth="0.5"/></graphicElement></line>
+
+            <textField isBlankWhenNull="true"><reportElement style="Base" x="18" y="505" width="360" height="27"/><textElement verticalAlignment="Middle"><font size="16" isBold="true"/></textElement><textFieldExpression><![CDATA[$F{company_name}]]></textFieldExpression></textField>
+            <staticText><reportElement style="Small" x="18" y="532" width="360" height="14"/><text><![CDATA[作業内容を確認のうえ、所属長承認欄へご記入ください。]]></text></staticText>
+            <staticText><reportElement style="Base" x="490" y="500" width="110" height="18"/><textElement><font isBold="true"/></textElement><text><![CDATA[統 括 管 理 セ ン タ ー]]></text></staticText>
+            <staticText><reportElement style="Base" x="490" y="520" width="46" height="18"/><textElement><font size="9" isBold="true"/></textElement><text><![CDATA[TEL]]></text></staticText>
+            <textField isBlankWhenNull="true"><reportElement style="Base" x="536" y="520" width="266" height="18"/><textElement><font size="10" isBold="true"/></textElement><textFieldExpression><![CDATA[$F{company_phone}]]></textFieldExpression></textField>
+            <staticText><reportElement style="Base" x="490" y="538" width="46" height="18"/><textElement><font size="9" isBold="true"/></textElement><text><![CDATA[FAX]]></text></staticText>
+            <textField isBlankWhenNull="true"><reportElement style="Base" x="536" y="538" width="266" height="18"/><textElement><font size="10" isBold="true"/></textElement><textFieldExpression><![CDATA[$F{company_fax}]]></textFieldExpression></textField>
+        </band>
+    </detail>
+</jasperReport>

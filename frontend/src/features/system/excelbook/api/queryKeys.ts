@@ -10,4 +10,14 @@ export const queryKeys = {
     update: (bookCode: string | null, targetMonth: string | null) =>
       ['excelBooks', 'update', bookCode, targetMonth] as const,
   },
+
+  spreadsheetTemplates: {
+    all: ['spreadsheetTemplates'] as const,
+    detail: (masterId: number | null) =>
+      ['spreadsheetTemplates', 'detail', masterId] as const,
+  },
+
+  dataSourceCatalogs: {
+    active: ['excelBookDataSourceCatalogs', 'active'] as const,
+  },
 } as const

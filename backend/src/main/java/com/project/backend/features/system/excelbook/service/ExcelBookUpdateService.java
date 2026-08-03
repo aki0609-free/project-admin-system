@@ -22,6 +22,7 @@ public class ExcelBookUpdateService {
     private final ExcelBookMasterRepository repository;
     private final SnapshotMapQueryService snapshotMapQueryService;
     private final ExcelTemplateParser excelTemplateParser;
+    private final ExcelBookDataSourceCatalogService catalogService;
 
     public Path updateBook(
             String bookCode,
@@ -43,8 +44,15 @@ public class ExcelBookUpdateService {
             throw new UnsupportedOperationException("現在は SNAPSHOT のみ対応しています。");
         }
 
+        String physicalName = catalogService
+                .findRequired(master.getSourceName())
+                .getPhysicalName();
+
         List<Map<String, Object>> rows =
-                snapshotMapQueryService.findRows(master.getSourceName(), targetMonth);
+                snapshotMapQueryService.findRows(
+                        physicalName,
+                        targetMonth
+                );
 
         Map<String, Object> context =
                 snapshotMapQueryService.buildContext(targetMonth, rows);

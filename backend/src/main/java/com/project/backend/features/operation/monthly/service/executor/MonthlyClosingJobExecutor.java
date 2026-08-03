@@ -15,6 +15,7 @@ import com.project.backend.features.operation.reportpreview.entity.OperationRepo
 import com.project.backend.features.system.batch.dto.BatchJobExecutionResult;
 import com.project.backend.features.system.batch.dto.BatchJobRunResult;
 import com.project.backend.features.system.batch.service.BatchExecutionService;
+import com.project.backend.features.system.batch.service.executor.ReportBatchJobExecutor;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,12 +33,35 @@ public class MonthlyClosingJobExecutor {
                         MonthlyClosingPeriod period,
                         Integer closingVersion,
                         MonthlyClosingReportTarget target) {
+                execute(
+                                monthlyClosingId,
+                                preview,
+                                period,
+                                closingVersion,
+                                target,
+                                null);
+        }
+
+        public void execute(
+                        Long monthlyClosingId,
+                        OperationReportPreview preview,
+                        MonthlyClosingPeriod period,
+                        Integer closingVersion,
+                        MonthlyClosingReportTarget target,
+                        String resolvedReportCode) {
                 Map<String, Object> parameters = new HashMap<>();
 
                 parameters.put("targetMonth", period.targetMonth());
                 parameters.put("closingStartDate", period.startDate().toString());
                 parameters.put("closingEndDate", period.endDate().toString());
+                parameters.put("periodFrom", period.startDate().toString());
+                parameters.put("periodTo", period.endDate().toString());
                 parameters.put("closingVersion", closingVersion);
+                parameters.put(
+                                "executionMode",
+                                closingVersion != null && closingVersion > 1
+                                                ? "RECLOSE"
+                                                : "INITIAL");
 
                 if (target != null) {
                         parameters.put("targetType", target.targetType());
@@ -55,6 +79,13 @@ public class MonthlyClosingJobExecutor {
                         }
                 }
 
+                if (resolvedReportCode != null
+                                && !resolvedReportCode.isBlank()) {
+                        parameters.put(
+                                        ReportBatchJobExecutor.RESOLVED_REPORT_CODE_PARAM,
+                                        resolvedReportCode);
+                }
+
                 BatchJobRunResult runResult = batchExecutionService.executeNowForResult(
                                 preview.getJobCode(),
                                 parameters);
@@ -65,7 +96,11 @@ public class MonthlyClosingJobExecutor {
                 file.setMonthlyClosingId(monthlyClosingId);
                 file.setTargetMonth(period.targetMonth());
                 file.setClosingVersion(closingVersion);
-                file.setReportCode(preview.getReportCode());
+                file.setReportCode(
+                                resolvedReportCode != null
+                                                && !resolvedReportCode.isBlank()
+                                                                ? resolvedReportCode
+                                                                : preview.getReportCode());
                 file.setJobCode(preview.getJobCode());
 
                 if (target != null) {

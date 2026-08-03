@@ -2,6 +2,8 @@ package com.project.backend.features.operation.reportpreview.enums;
 
 public enum OperationReportOutputType {
     NONE,
+    HTML_PREVIEW,
+    HTML_PRINT,
     PDF,
     CSV,
     EXCEL,

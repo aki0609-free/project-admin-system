@@ -99,6 +99,8 @@ services:
     build:
       context: frontend
       dockerfile: Dockerfile
+      args:
+        VITE_SYNCFUSION_LICENSE_KEY: ${VITE_SYNCFUSION_LICENSE_KEY:-}
     depends_on:
       backend:
         condition: service_healthy

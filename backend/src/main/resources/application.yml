@@ -1,6 +1,11 @@
 spring:
   application:
     name: backend
+
+  servlet:
+    multipart:
+      max-file-size: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:50MB}
+      max-request-size: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:55MB}
   
   thymeleaf:
     cache: false
@@ -103,6 +108,9 @@ app:
     analysis:
       prompt-version: v1
   report:
+    init:
+      enabled: true
+  spreadsheet:
     init:
       enabled: true
 

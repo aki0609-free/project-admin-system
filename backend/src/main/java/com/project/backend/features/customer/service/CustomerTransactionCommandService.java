@@ -81,6 +81,44 @@ public class CustomerTransactionCommandService {
 
         CustomerTransaction entity = findOwnedTransaction(customerId, transactionId);
 
+        applyPaymentConfirmation(entity, request);
+        repository.save(entity);
+    }
+
+    public void confirmPaymentFromLedger(
+            Long customerId,
+            Long transactionId,
+            String targetMonth,
+            CustomerPaymentConfirmRequest request
+    ) {
+        validateCustomerExists(customerId);
+        if (targetMonth == null || targetMonth.isBlank()) {
+            throw new IllegalArgumentException("targetMonth は必須です。");
+        }
+        CustomerTransaction entity = findOwnedTransaction(
+                customerId,
+                transactionId
+        );
+        if (!targetMonth.equals(entity.getTargetMonth())) {
+            throw new IllegalArgumentException(
+                    "入金確認表の対象月と取引の対象月が一致しません。id="
+                            + transactionId
+            );
+        }
+        applyPaymentConfirmation(entity, request);
+        repository.save(entity);
+    }
+
+    private void applyPaymentConfirmation(
+            CustomerTransaction entity,
+            CustomerPaymentConfirmRequest request
+    ) {
+        if (request == null) {
+            throw new IllegalArgumentException(
+                    "CustomerPaymentConfirmRequest は必須です。"
+            );
+        }
+
         entity.setConfirmedPaymentDate(request.confirmedPaymentDate());
         entity.setPaidAmount(toZero(request.paidAmount()));
         entity.setFee(toZero(request.fee()));
@@ -90,9 +128,9 @@ public class CustomerTransactionCommandService {
 
         if (request.note() != null && !request.note().isBlank()) {
             entity.setNote(request.note());
+        } else {
+            entity.setNote(null);
         }
-
-        repository.save(entity);
     }
 
     @SuppressWarnings("null")
@@ -109,11 +147,25 @@ public class CustomerTransactionCommandService {
         int paidAmount = toZero(entity.getPaidAmount());
         int offsetAmount = toZero(entity.getOffsetAmount());
 
-        int receivableAmount = billingAmount + fee;
-        int collectedAmount = paidAmount + offsetAmount;
-        int remainingAmount = receivableAmount - collectedAmount;
+        /*
+         * 振込手数料と相殺は、銀行への実入金額と合わせて
+         * 請求額に対する決済済み金額として扱う。
+         */
+        int collectedAmount;
+        try {
+            collectedAmount = Math.addExact(
+                    Math.addExact(paidAmount, fee),
+                    offsetAmount
+            );
+        } catch (ArithmeticException exception) {
+            throw new IllegalArgumentException(
+                    "入金額・手数料・相殺の合計が上限を超えています。",
+                    exception
+            );
+        }
+        int remainingAmount = billingAmount - collectedAmount;
 
-        entity.setTotalAmount(remainingAmount);
+        entity.setTotalAmount(collectedAmount);
 
         if (collectedAmount <= 0) {
             entity.setPaymentStatus(CustomerPaymentStatus.UNPAID);

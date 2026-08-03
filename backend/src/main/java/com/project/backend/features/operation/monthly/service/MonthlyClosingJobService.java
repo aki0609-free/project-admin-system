@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.project.backend.features.customer.entity.Customer;
 import com.project.backend.features.customer.repository.CustomerRepository;
+import com.project.backend.features.customer.service.resolver.InvoiceReportCodeResolver;
 import com.project.backend.features.operation.monthly.dto.MonthlyClosingPeriod;
 import com.project.backend.features.operation.monthly.dto.MonthlyClosingReportTarget;
 import com.project.backend.features.operation.monthly.service.executor.MonthlyClosingJobExecutor;
@@ -26,6 +27,7 @@ public class MonthlyClosingJobService {
 
     private final OperationReportPreviewRepository previewRepository;
     private final CustomerRepository customerRepository;
+    private final InvoiceReportCodeResolver invoiceReportCodeResolver;
     private final MonthlyClosingJobExecutor executor;
 
     public void executeClosing(
@@ -78,6 +80,10 @@ public class MonthlyClosingJobService {
                         .findByDeletedAtIsNullOrderByIdAsc();
 
         for (Customer customer : customers) {
+            String reportCode = invoiceReportCodeResolver.resolve(
+                    customer.getInvoiceType()
+            );
+
             executor.execute(
                     monthlyClosingId,
                     preview,
@@ -86,7 +92,8 @@ public class MonthlyClosingJobService {
                     MonthlyClosingReportTarget.customer(
                             customer.getId(),
                             customer.getName()
-                    )
+                    ),
+                    reportCode
             );
         }
     }

@@ -23,10 +23,12 @@ public class OperationReportPreviewMapper {
                 .id(entity.getId())
                 .operationType(entity.getOperationType())
                 .reportCode(entity.getReportCode())
-                .reportName(reportMaster != null ? reportMaster.getReportName() : entity.getReportCode())
+                .reportName(resolveReportName(entity, reportMaster))
                 .jobCode(entity.getJobCode())
                 .tableName(entity.getTableName())
                 .templateName(entity.getTemplateName())
+                .targetParamName(entity.getTargetParamName())
+                .htmlTemplateVersion(entity.getHtmlTemplateVersion())
                 .displayOrder(entity.getDisplayOrder())
                 .outputType(entity.getOutputType() == null
                         ? OperationReportOutputType.NONE
@@ -35,6 +37,19 @@ public class OperationReportPreviewMapper {
                         .map(this::toColumnResponse)
                         .toList())
                 .build();
+    }
+
+    private String resolveReportName(
+            OperationReportPreview entity,
+            ReportMaster reportMaster
+    ) {
+        if (entity.getReportName() != null
+                && !entity.getReportName().isBlank()) {
+            return entity.getReportName();
+        }
+        return reportMaster != null
+                ? reportMaster.getReportName()
+                : entity.getReportCode();
     }
 
     private OperationReportPreviewColumnResponse toColumnResponse(

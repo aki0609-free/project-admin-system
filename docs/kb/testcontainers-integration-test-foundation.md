@@ -348,3 +348,59 @@ Asia/Tokyo
 この時刻は日本時間では2027年1月1日0時0分1秒となる。ファイル名の日付部分が`20270101`となり、年境界でUTC日付を誤って使用しないことを確認する。
 
 ファイル名のランダム部分は固定せず、日時部分と既存フォーマットを正規表現で検証する。
+
+## 14. Spreadsheet台帳生成の統合テスト
+
+2026-07-29に、締め処理のSpreadsheet台帳生成をTestcontainersの実MySQLとLOCALストレージで統合確認した。
+
+対象テスト：
+
+```text
+backend/src/test/java/com/project/backend/features/operation/book/service/SpreadsheetLedgerGenerationIntegrationTest.java
+```
+
+実行方法：
+
+```bash
+cd /Users/tatsukiakiyama/Documents/ProjectAdmin/public-repository/backend
+
+./gradlew --no-daemon integrationTest \
+  --tests 'com.project.backend.features.operation.book.service.SpreadsheetLedgerGenerationIntegrationTest'
+```
+
+### 14.1 テストデータ
+
+テスト専用テーブルとViewをMySQLコンテナ内に作成し、次の4件を登録する。
+
+| データ | 件数 | 期待 |
+| --- | ---: | --- |
+| 対象テナント・対象月 | 2 | 生成対象 |
+| 別テナント・対象月 | 1 | 除外 |
+| 対象テナント・別月 | 1 | 除外 |
+
+テスト終了時に、テスト用View、テーブル、台帳マスタ、カタログ、テンプレートJSON、生成JSONを削除する。ローカルDocker Compose、AWS、RDS、S3のデータは使用しない。
+
+### 14.2 確認項目
+
+- MySQLの台帳専用Viewからデータを取得できる
+- `:tenantId`で別テナントを除外する
+- `:targetMonth`で別月を除外する
+- 対象2件だけを`ROW`変数へ展開する
+- 従業員コード・従業員名を文字列として維持する
+- 金額をJSON数値として維持する
+- 2件目の相対参照数式を`=C2*2`から`=C3*2`へシフトする
+- 生成JSONを`GENERATED_REPORTS`領域へ保存する
+- 保存JSONを再読込できる
+- 保存JSONに未展開の`${...}`が残っていない
+- Workbookのlocaleが`ja`になる
+
+### 14.3 実行結果
+
+```text
+SpreadsheetLedgerGenerationIntegrationTest
+  generate_shouldQueryTenantRowsExpandWorkbookAndSaveJson PASSED
+
+BUILD SUCCESSFUL
+```
+
+初回テストでは、JSON内の同じ数値が`9.8E+2`と`980.0`で表現される差をオブジェクト全体の一致判定が検出した。業務値としては同じため、文字列表現ではなく`BigDecimal`の数値比較へ変更した。生成処理の不具合ではない。

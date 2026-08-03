@@ -1,35 +1,35 @@
 package com.project.backend.features.dailyreport.service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-
 import org.springframework.stereotype.Service;
 
+import com.project.backend.features.dailyreport.dto.DailyPayComponentAmounts;
 import com.project.backend.features.dailyreport.dto.DailyReportEstimatedPayPreviewResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
 import com.project.backend.features.dailyreport.entity.DailyReport;
 import com.project.backend.features.employee.entity.EmployeeContract;
-import com.project.backend.features.employee.enums.SalaryType;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class DailyReportEstimatedPayService {
+
+    private final DailyPayComponentCalculationService componentService;
 
     public void applyEstimatedPay(
             DailyReport report,
             EmployeeContract contract
     ) {
-        DailyReportEstimatedPayPreviewResponse preview =
-                calculatePreview(
-                        contract,
-                        report.getWorkHours(),
-                        report.getOvertimeHours(),
-                        report.getNightWorkHours(),
-                        report.getAllowanceAmount(),
-                        report.getDeductionAmount(),
-                        report.getSavingAmount(),
-                        report.getLoanRepaymentAmount()
-                );
+        DailyReportEstimatedPayPreviewResponse preview = calculatePreview(
+                report,
+                contract
+        );
 
+        report.setNormalPayAmount(preview.normalPayAmount());
+        report.setOvertimePayAmount(preview.overtimePayAmount());
+        report.setNightPayAmount(preview.nightPayAmount());
+        report.setHolidayPayAmount(preview.holidayPayAmount());
         report.setEstimatedGrossPayAmount(preview.estimatedGrossPayAmount());
         report.setEstimatedNetPayAmount(preview.estimatedNetPayAmount());
     }
@@ -38,120 +38,62 @@ public class DailyReportEstimatedPayService {
             DailyReportSaveRequest request,
             EmployeeContract contract
     ) {
-        return calculatePreview(
-                contract,
-                request.workHours(),
-                request.overtimeHours(),
-                request.nightWorkHours(),
-                request.allowanceAmount(),
-                request.deductionAmount(),
-                request.savingAmount(),
-                request.loanRepaymentAmount()
-        );
+        DailyReport report = new DailyReport();
+        report.setWorkDate(request.workDate());
+        report.setPaymentDate(request.paymentDate());
+        report.setCustomerId(request.customerId());
+        report.setCustomerSiteId(request.customerSiteId());
+        report.setJobCode(request.jobCode());
+        report.setSiteRoleCode(request.siteRoleCode());
+        report.setWorkHours(nvl(request.workHours()));
+        report.setOvertimeHours(nvl(request.overtimeHours()));
+        report.setNightWorkHours(nvl(request.nightWorkHours()));
+        report.setHolidayWorkHours(nvl(request.holidayWorkHours()));
+        report.setMileage(nvl(request.mileage()));
+        report.setAllowanceAmount(nvl(request.allowanceAmount()));
+        report.setDeductionAmount(nvl(request.deductionAmount()));
+        report.setSavingAmount(nvl(request.savingAmount()));
+        report.setLoanRepaymentAmount(nvl(request.loanRepaymentAmount()));
+        return calculatePreview(report, contract, request.employeeId());
     }
 
     private DailyReportEstimatedPayPreviewResponse calculatePreview(
-            EmployeeContract contract,
-            BigDecimal workHours,
-            BigDecimal overtimeHours,
-            BigDecimal nightWorkHours,
-            BigDecimal allowanceAmount,
-            BigDecimal deductionAmount,
-            BigDecimal savingAmount,
-            BigDecimal loanRepaymentAmount
+            DailyReport report,
+            EmployeeContract contract
     ) {
-        BigDecimal estimatedBasePayAmount =
-                calculateBasePayAmount(
-                        contract,
-                        workHours,
-                        overtimeHours,
-                        nightWorkHours
-                );
+        Long employeeId = report.getEmployee() == null
+                ? null
+                : report.getEmployee().getId();
+        return calculatePreview(report, contract, employeeId);
+    }
+
+    private DailyReportEstimatedPayPreviewResponse calculatePreview(
+            DailyReport report,
+            EmployeeContract contract,
+            Long employeeId
+    ) {
+        DailyPayComponentAmounts components =
+                componentService.calculate(report, contract, employeeId);
+        BigDecimal estimatedBasePayAmount = components.total();
 
         BigDecimal estimatedGrossPayAmount =
-                estimatedBasePayAmount.add(nvl(allowanceAmount));
+                estimatedBasePayAmount.add(nvl(report.getAllowanceAmount()));
 
         BigDecimal estimatedNetPayAmount =
                 estimatedGrossPayAmount
-                        .subtract(nvl(deductionAmount))
-                        .subtract(nvl(savingAmount))
-                        .subtract(nvl(loanRepaymentAmount));
+                        .subtract(nvl(report.getDeductionAmount()))
+                        .subtract(nvl(report.getSavingAmount()))
+                        .subtract(nvl(report.getLoanRepaymentAmount()));
 
         return DailyReportEstimatedPayPreviewResponse.builder()
                 .estimatedBasePayAmount(estimatedBasePayAmount)
+                .normalPayAmount(components.normalPayAmount())
+                .overtimePayAmount(components.overtimePayAmount())
+                .nightPayAmount(components.nightPayAmount())
+                .holidayPayAmount(components.holidayPayAmount())
                 .estimatedGrossPayAmount(estimatedGrossPayAmount)
                 .estimatedNetPayAmount(estimatedNetPayAmount)
                 .build();
-    }
-
-    private BigDecimal calculateBasePayAmount(
-            EmployeeContract contract,
-            BigDecimal workHours,
-            BigDecimal overtimeHours,
-            BigDecimal nightWorkHours
-    ) {
-        if (contract == null || contract.getSalaryType() == null) {
-            return BigDecimal.ZERO;
-        }
-
-        SalaryType salaryType = contract.getSalaryType();
-
-        return switch (salaryType) {
-            case MONTHLY -> BigDecimal.ZERO;
-
-            case WEEKLY -> calculateWeeklyBasePayAmount(
-                    contract,
-                    workHours,
-                    overtimeHours,
-                    nightWorkHours
-            );
-
-            case DAILY -> nvl(contract.getDailyWage());
-
-            case HOURLY -> nvl(contract.getHourlyWage())
-                    .multiply(
-                            nvl(workHours)
-                                    .add(nvl(overtimeHours))
-                                    .add(nvl(nightWorkHours))
-                    );
-        };
-    }
-
-    private BigDecimal calculateWeeklyBasePayAmount(
-            EmployeeContract contract,
-            BigDecimal workHours,
-            BigDecimal overtimeHours,
-            BigDecimal nightWorkHours
-    ) {
-        BigDecimal weeklyWage = nvl(contract.getWeeklyWage());
-
-        if (weeklyWage.compareTo(BigDecimal.ZERO) <= 0) {
-            return BigDecimal.ZERO;
-        }
-
-        BigDecimal totalHours =
-                nvl(workHours)
-                        .add(nvl(overtimeHours))
-                        .add(nvl(nightWorkHours));
-
-        if (totalHours.compareTo(BigDecimal.ZERO) <= 0) {
-            return BigDecimal.ZERO;
-        }
-
-        BigDecimal standardWeeklyHours =
-                contract.getStandardWorkingHours() != null
-                        && contract.getStandardWorkingHours().compareTo(BigDecimal.ZERO) > 0
-                                ? contract.getStandardWorkingHours()
-                                : BigDecimal.valueOf(40);
-
-        BigDecimal weekRate =
-                totalHours.divide(
-                        standardWeeklyHours,
-                        4,
-                        RoundingMode.HALF_UP
-                );
-
-        return weeklyWage.multiply(weekRate);
     }
 
     private BigDecimal nvl(BigDecimal value) {

@@ -5,6 +5,7 @@ import java.util.regex.Pattern;
 
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ public class ProcedureExecutorService {
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @SuppressWarnings("null")
+    @Transactional
     public void executeByExecutionId(String procedureName, String executionId) {
         validateProcedureName(procedureName);
 

@@ -2,6 +2,8 @@ export type OperationType = 'PREPARATION' | 'DAILY' | 'MONTHLY' | 'BOOK'
 
 export type OperationReportOutputType =
   | 'NONE'
+  | 'HTML_PREVIEW'
+  | 'HTML_PRINT'
   | 'PDF'
   | 'CSV'
   | 'EXCEL'
@@ -23,6 +25,8 @@ export type OperationReportPreviewResponse = {
   jobCode: string | null
   tableName: string
   templateName: string
+  targetParamName: string | null
+  htmlTemplateVersion: number | null
   displayOrder: number
   outputType: OperationReportOutputType
   columns: OperationReportPreviewColumnResponse[]

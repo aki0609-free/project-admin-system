@@ -30,16 +30,14 @@ const form = reactive<CustomerPaymentConfirmPayload>({
 
 const billingAmount = computed(() => props.transaction?.billingAmount ?? 0)
 
-const receivableAmount = computed(() =>
-  billingAmount.value + (form.fee ?? 0),
-)
-
 const collectedAmount = computed(() =>
-  (form.paidAmount ?? 0) + (form.offsetAmount ?? 0),
+  (form.paidAmount ?? 0)
+  + (form.fee ?? 0)
+  + (form.offsetAmount ?? 0),
 )
 
 const remainingAmount = computed(() =>
-  receivableAmount.value - collectedAmount.value,
+  billingAmount.value - collectedAmount.value,
 )
 
 const expectedStatus = computed(() => {
@@ -86,7 +84,7 @@ function handleConfirm() {
         </div>
 
         <v-alert type="info" variant="tonal" class="mb-4">
-          <div>請求合計：{{ receivableAmount.toLocaleString() }}円</div>
+          <div>請求金額：{{ billingAmount.toLocaleString() }}円</div>
           <div>回収額：{{ collectedAmount.toLocaleString() }}円</div>
           <div>残高：{{ remainingAmount.toLocaleString() }}円</div>
           <div>判定予定：{{ expectedStatus }}</div>

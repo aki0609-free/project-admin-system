@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+ name="monthly_invoice_pattern_2" pageWidth="842" pageHeight="595" orientation="Landscape"
+ columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20"
+ whenNoDataType="NoDataSection">
+    <property name="net.sf.jasperreports.default.font.name" value="IPAexGothic"/>
+    <style name="Base" fontName="IPAexGothic" fontSize="8" pdfFontName="fonts/ipaexg.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+    <style name="Small" style="Base" fontSize="7"/>
+    <style name="Label" style="Base" fontSize="11" isBold="true"/>
+    <style name="InvoiceTitle" style="Base" fontSize="25" isBold="true"/>
+    <style name="Customer" style="Base" fontSize="16" isBold="true"/>
+    <style name="Company" style="Base" fontSize="17" isBold="true"/>
+    <style name="Amount" style="Base" fontSize="21" isBold="true"/>
+    <style name="Header" style="Base" isBold="true" hTextAlign="Center" vTextAlign="Middle" mode="Opaque" backcolor="#E2E8F0"><box><pen lineWidth="0.6"/></box></style>
+    <style name="Cell" style="Base" vTextAlign="Middle"><box><pen lineWidth="0.4"/></box></style>
+    <style name="CellCenter" style="Cell" hTextAlign="Center"/>
+    <style name="CellRight" style="Cell" hTextAlign="Right"/>
+    <style name="Total" style="CellRight" isBold="true" mode="Opaque" backcolor="#CBD5E1"/>
+    <parameter name="MONEY_FORMAT" class="java.text.DecimalFormat"><defaultValueExpression><![CDATA[new java.text.DecimalFormat("#,##0;▲#,##0")]]></defaultValueExpression></parameter>
+    <parameter name="DATE_FORMAT" class="java.text.SimpleDateFormat"><defaultValueExpression><![CDATA[new java.text.SimpleDateFormat("yyyy年M月d日")]]></defaultValueExpression></parameter>
+    <field name="invoice_history_id" class="java.lang.Long"/>
+    <field name="invoice_number" class="java.lang.String"/>
+    <field name="issue_date" class="java.sql.Date"/>
+    <field name="target_month" class="java.sql.Date"/>
+    <field name="customer_name" class="java.lang.String"/>
+    <field name="company_name" class="java.lang.String"/>
+    <field name="company_postal_code" class="java.lang.String"/>
+    <field name="company_address" class="java.lang.String"/>
+    <field name="company_phone" class="java.lang.String"/>
+    <field name="company_fax" class="java.lang.String"/>
+    <field name="qualified_invoice_issuer_number" class="java.lang.String"/>
+    <field name="bank_display_text" class="java.lang.String"/>
+    <field name="invoice_note" class="java.lang.String"/>
+    <field name="tax_rate" class="java.math.BigDecimal"/>
+    <field name="subtotal_amount" class="java.math.BigDecimal"/>
+    <field name="tax_amount" class="java.math.BigDecimal"/>
+    <field name="total_amount" class="java.math.BigDecimal"/>
+    <field name="job_name" class="java.lang.String"/>
+    <field name="site_role_name" class="java.lang.String"/>
+    <field name="metric_order" class="java.lang.Integer"/>
+    <field name="metric_name" class="java.lang.String"/>
+    <field name="metric_total" class="java.math.BigDecimal"/>
+    <field name="unit_price" class="java.math.BigDecimal"/>
+    <field name="metric_amount" class="java.math.BigDecimal"/>
+    <field name="day_01" class="java.math.BigDecimal"/>
+    <field name="day_02" class="java.math.BigDecimal"/>
+    <field name="day_03" class="java.math.BigDecimal"/>
+    <field name="day_04" class="java.math.BigDecimal"/>
+    <field name="day_05" class="java.math.BigDecimal"/>
+    <field name="day_06" class="java.math.BigDecimal"/>
+    <field name="day_07" class="java.math.BigDecimal"/>
+    <field name="day_08" class="java.math.BigDecimal"/>
+    <field name="day_09" class="java.math.BigDecimal"/>
+    <field name="day_10" class="java.math.BigDecimal"/>
+    <field name="day_11" class="java.math.BigDecimal"/>
+    <field name="day_12" class="java.math.BigDecimal"/>
+    <field name="day_13" class="java.math.BigDecimal"/>
+    <field name="day_14" class="java.math.BigDecimal"/>
+    <field name="day_15" class="java.math.BigDecimal"/>
+    <field name="day_16" class="java.math.BigDecimal"/>
+    <field name="day_17" class="java.math.BigDecimal"/>
+    <field name="day_18" class="java.math.BigDecimal"/>
+    <field name="day_19" class="java.math.BigDecimal"/>
+    <field name="day_20" class="java.math.BigDecimal"/>
+    <field name="day_21" class="java.math.BigDecimal"/>
+    <field name="day_22" class="java.math.BigDecimal"/>
+    <field name="day_23" class="java.math.BigDecimal"/>
+    <field name="day_24" class="java.math.BigDecimal"/>
+    <field name="day_25" class="java.math.BigDecimal"/>
+    <field name="day_26" class="java.math.BigDecimal"/>
+    <field name="day_27" class="java.math.BigDecimal"/>
+    <field name="day_28" class="java.math.BigDecimal"/>
+    <field name="day_29" class="java.math.BigDecimal"/>
+    <field name="day_30" class="java.math.BigDecimal"/>
+    <field name="day_31" class="java.math.BigDecimal"/>
+
+    <group name="InvoiceDetail" isStartNewPage="true" isReprintHeaderOnEachPage="true">
+        <groupExpression><![CDATA[$F{invoice_history_id}]]></groupExpression>
+        <groupHeader><band height="55">
+            <textField><reportElement style="Label" x="0" y="0" width="500" height="25"/><textFieldExpression><![CDATA[$F{customer_name} + "　職種別・役職別集計表"]]></textFieldExpression></textField>
+            <staticText><reportElement style="Header" x="0" y="28" width="120" height="27"/><text><![CDATA[職種 / 役職]]></text></staticText>
+            <staticText><reportElement style="Header" x="120" y="28" width="35" height="27"/><text><![CDATA[区分]]></text></staticText>
+            <staticText><reportElement style="Header" x="155" y="28" width="17" height="27"/><text><![CDATA[1]]></text></staticText>
+            <staticText><reportElement style="Header" x="172" y="28" width="17" height="27"/><text><![CDATA[2]]></text></staticText>
+            <staticText><reportElement style="Header" x="189" y="28" width="17" height="27"/><text><![CDATA[3]]></text></staticText>
+            <staticText><reportElement style="Header" x="206" y="28" width="17" height="27"/><text><![CDATA[4]]></text></staticText>
+            <staticText><reportElement style="Header" x="223" y="28" width="17" height="27"/><text><![CDATA[5]]></text></staticText>
+            <staticText><reportElement style="Header" x="240" y="28" width="17" height="27"/><text><![CDATA[6]]></text></staticText>
+            <staticText><reportElement style="Header" x="257" y="28" width="17" height="27"/><text><![CDATA[7]]></text></staticText>
+            <staticText><reportElement style="Header" x="274" y="28" width="17" height="27"/><text><![CDATA[8]]></text></staticText>
+            <staticText><reportElement style="Header" x="291" y="28" width="17" height="27"/><text><![CDATA[9]]></text></staticText>
+            <staticText><reportElement style="Header" x="308" y="28" width="17" height="27"/><text><![CDATA[10]]></text></staticText>
+            <staticText><reportElement style="Header" x="325" y="28" width="17" height="27"/><text><![CDATA[11]]></text></staticText>
+            <staticText><reportElement style="Header" x="342" y="28" width="17" height="27"/><text><![CDATA[12]]></text></staticText>
+            <staticText><reportElement style="Header" x="359" y="28" width="17" height="27"/><text><![CDATA[13]]></text></staticText>
+            <staticText><reportElement style="Header" x="376" y="28" width="17" height="27"/><text><![CDATA[14]]></text></staticText>
+            <staticText><reportElement style="Header" x="393" y="28" width="17" height="27"/><text><![CDATA[15]]></text></staticText>
+            <staticText><reportElement style="Header" x="410" y="28" width="17" height="27"/><text><![CDATA[16]]></text></staticText>
+            <staticText><reportElement style="Header" x="427" y="28" width="17" height="27"/><text><![CDATA[17]]></text></staticText>
+            <staticText><reportElement style="Header" x="444" y="28" width="17" height="27"/><text><![CDATA[18]]></text></staticText>
+            <staticText><reportElement style="Header" x="461" y="28" width="17" height="27"/><text><![CDATA[19]]></text></staticText>
+            <staticText><reportElement style="Header" x="478" y="28" width="17" height="27"/><text><![CDATA[20]]></text></staticText>
+            <staticText><reportElement style="Header" x="495" y="28" width="17" height="27"/><text><![CDATA[21]]></text></staticText>
+            <staticText><reportElement style="Header" x="512" y="28" width="17" height="27"/><text><![CDATA[22]]></text></staticText>
+            <staticText><reportElement style="Header" x="529" y="28" width="17" height="27"/><text><![CDATA[23]]></text></staticText>
+            <staticText><reportElement style="Header" x="546" y="28" width="17" height="27"/><text><![CDATA[24]]></text></staticText>
+            <staticText><reportElement style="Header" x="563" y="28" width="17" height="27"/><text><![CDATA[25]]></text></staticText>
+            <staticText><reportElement style="Header" x="580" y="28" width="17" height="27"/><text><![CDATA[26]]></text></staticText>
+            <staticText><reportElement style="Header" x="597" y="28" width="17" height="27"/><text><![CDATA[27]]></text></staticText>
+            <staticText><reportElement style="Header" x="614" y="28" width="17" height="27"/><text><![CDATA[28]]></text></staticText>
+            <staticText><reportElement style="Header" x="631" y="28" width="17" height="27"/><text><![CDATA[29]]></text></staticText>
+            <staticText><reportElement style="Header" x="648" y="28" width="17" height="27"/><text><![CDATA[30]]></text></staticText>
+            <staticText><reportElement style="Header" x="665" y="28" width="17" height="27"/><text><![CDATA[31]]></text></staticText>
+            <staticText><reportElement style="Header" x="682" y="28" width="40" height="27"/><text><![CDATA[計]]></text></staticText>
+            <staticText><reportElement style="Header" x="722" y="28" width="40" height="27"/><text><![CDATA[単価]]></text></staticText>
+            <staticText><reportElement style="Header" x="762" y="28" width="40" height="27"/><text><![CDATA[金額]]></text></staticText>
+        </band></groupHeader>
+        <groupFooter><band height="24">
+            <staticText><reportElement style="Header" x="0" y="0" width="682" height="24"/><text><![CDATA[税抜合計 / 税込金額]]></text></staticText>
+            <textField><reportElement style="Total" x="682" y="0" width="60" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{subtotal_amount})]]></textFieldExpression></textField>
+            <textField><reportElement style="Total" x="742" y="0" width="60" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{total_amount})]]></textFieldExpression></textField>
+        </band></groupFooter>
+    </group>
+    <title>
+        <band height="470" splitType="Prevent">
+            <staticText><reportElement style="Small" x="0" y="0" width="80" height="18"/><text><![CDATA[コード]]></text></staticText>
+            <textField><reportElement style="Small" x="650" y="0" width="152" height="20"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA["提出日　" + $P{DATE_FORMAT}.format($F{issue_date})]]></textFieldExpression></textField>
+            <staticText><reportElement style="InvoiceTitle" x="250" y="12" width="302" height="50"/><textElement textAlignment="Center"/><text><![CDATA[請　求　書]]></text></staticText>
+            <staticText><reportElement style="Label" x="0" y="80" width="80" height="24"/><text><![CDATA[得意先]]></text></staticText>
+            <textField><reportElement style="Customer" x="80" y="78" width="320" height="28"/><textFieldExpression><![CDATA[$F{customer_name} + "　御中"]]></textFieldExpression></textField>
+            <line><reportElement x="0" y="107" width="400" height="1"/></line>
+            <staticText><reportElement style="Label" x="0" y="145" width="80" height="25"/><text><![CDATA[金　額]]></text></staticText>
+            <textField><reportElement style="Amount" x="120" y="137" width="280" height="40"/><textFieldExpression><![CDATA["¥" + $P{MONEY_FORMAT}.format($F{total_amount}) + " -"]]></textFieldExpression></textField>
+            <line><reportElement x="0" y="180" width="400" height="1"/></line>
+            <textField isBlankWhenNull="true"><reportElement style="Small" x="80" y="182" width="320" height="30"/><textFieldExpression><![CDATA[$F{invoice_note}]]></textFieldExpression></textField>
+            <staticText><reportElement style="Label" x="0" y="230" width="80" height="24"/><text><![CDATA[振込先]]></text></staticText>
+            <textField isBlankWhenNull="true"><reportElement style="Base" x="80" y="225" width="320" height="36"/><textFieldExpression><![CDATA[$F{bank_display_text}]]></textFieldExpression></textField>
+            <textField><reportElement style="Company" x="520" y="85" width="282" height="42"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA[$F{company_name}]]></textFieldExpression></textField>
+            <textField isBlankWhenNull="true"><reportElement style="Small" x="520" y="132" width="282" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA["〒" + $F{company_postal_code} + "　" + $F{company_address}]]></textFieldExpression></textField>
+            <textField isBlankWhenNull="true"><reportElement style="Small" x="520" y="151" width="282" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA["TEL:" + $F{company_phone} + "　FAX:" + $F{company_fax}]]></textFieldExpression></textField>
+            <textField isBlankWhenNull="true"><reportElement style="Small" x="520" y="170" width="282" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA["登録番号　" + $F{qualified_invoice_issuer_number}]]></textFieldExpression></textField>
+            <textField><reportElement style="Small" x="0" y="285" width="802" height="20"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA["請求書番号　" + $F{invoice_number}]]></textFieldExpression></textField>
+            <staticText><reportElement style="Header" x="0" y="310" width="32" height="24"/><text><![CDATA[NO]]></text></staticText>
+            <staticText><reportElement style="Header" x="32" y="310" width="205" height="24"/><text><![CDATA[品名]]></text></staticText>
+            <staticText><reportElement style="Header" x="237" y="310" width="205" height="24"/><text><![CDATA[形状]]></text></staticText>
+            <staticText><reportElement style="Header" x="442" y="310" width="40" height="24"/><text><![CDATA[単位]]></text></staticText>
+            <staticText><reportElement style="Header" x="482" y="310" width="65" height="24"/><text><![CDATA[数量]]></text></staticText>
+            <staticText><reportElement style="Header" x="547" y="310" width="75" height="24"/><text><![CDATA[単価]]></text></staticText>
+            <staticText><reportElement style="Header" x="622" y="310" width="100" height="24"/><text><![CDATA[金額]]></text></staticText>
+            <staticText><reportElement style="Header" x="722" y="310" width="80" height="24"/><text><![CDATA[摘要]]></text></staticText>
+            <staticText><reportElement style="CellCenter" x="0" y="334" width="32" height="80"/><text><![CDATA[1]]></text></staticText>
+            <staticText><reportElement style="Cell" x="32" y="334" width="410" height="80"/><text><![CDATA[業務請負代金として]]></text></staticText>
+            <staticText><reportElement style="CellCenter" x="442" y="334" width="40" height="80"/><text><![CDATA[式]]></text></staticText>
+            <staticText><reportElement style="CellRight" x="482" y="334" width="65" height="80"/><text><![CDATA[1.0]]></text></staticText>
+            <staticText><reportElement style="Cell" x="547" y="334" width="75" height="80"/><text><![CDATA[]]></text></staticText>
+            <textField><reportElement style="CellRight" x="622" y="334" width="100" height="80"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{subtotal_amount})]]></textFieldExpression></textField>
+            <staticText><reportElement style="Cell" x="722" y="334" width="80" height="80"/><text><![CDATA[]]></text></staticText>
+            <staticText><reportElement style="Header" x="0" y="414" width="622" height="18"/><text><![CDATA[計]]></text></staticText>
+            <textField><reportElement style="CellRight" x="622" y="414" width="100" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{subtotal_amount})]]></textFieldExpression></textField>
+            <staticText><reportElement style="Cell" x="722" y="414" width="80" height="18"/><text><![CDATA[]]></text></staticText>
+            <staticText><reportElement style="Header" x="0" y="432" width="622" height="18"/><text><![CDATA[消費税]]></text></staticText>
+            <textField><reportElement style="CellRight" x="622" y="432" width="100" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{tax_amount})]]></textFieldExpression></textField>
+            <staticText><reportElement style="Cell" x="722" y="432" width="80" height="18"/><text><![CDATA[]]></text></staticText>
+            <staticText><reportElement style="Header" x="0" y="450" width="622" height="18"/><text><![CDATA[合計]]></text></staticText>
+            <textField><reportElement style="Total" x="622" y="450" width="100" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{total_amount})]]></textFieldExpression></textField>
+            <staticText><reportElement style="Cell" x="722" y="450" width="80" height="18"/><text><![CDATA[]]></text></staticText>
+            <break type="Page"><reportElement x="0" y="469" width="1" height="1"/></break>
+        </band>
+    </title>
+    <detail><band height="9">
+        <textField isBlankWhenNull="true"><reportElement style="Cell" x="0" y="0" width="120" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[($F{job_name} == null ? "" : $F{job_name}) + " / " + ($F{site_role_name} == null ? "" : $F{site_role_name})]]></textFieldExpression></textField>
+        <textField><reportElement style="CellCenter" x="120" y="0" width="35" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{metric_name}]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="155" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_01}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_01}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="172" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_02}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_02}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="189" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_03}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_03}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="206" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_04}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_04}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="223" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_05}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_05}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="240" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_06}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_06}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="257" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_07}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_07}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="274" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_08}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_08}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="291" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_09}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_09}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="308" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_10}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_10}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="325" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_11}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_11}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="342" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_12}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_12}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="359" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_13}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_13}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="376" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_14}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_14}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="393" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_15}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_15}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="410" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_16}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_16}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="427" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_17}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_17}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="444" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_18}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_18}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="461" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_19}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_19}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="478" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_20}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_20}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="495" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_21}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_21}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="512" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_22}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_22}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="529" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_23}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_23}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="546" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_24}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_24}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="563" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_25}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_25}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="580" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_26}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_26}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="597" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_27}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_27}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="614" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_28}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_28}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="631" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_29}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_29}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="648" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_30}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_30}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="CellRight" x="665" y="0" width="17" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{day_31}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{day_31}.stripTrailingZeros().toPlainString()]]></textFieldExpression></textField>
+        <textField><reportElement style="CellRight" x="682" y="0" width="40" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$F{metric_total}]]></textFieldExpression></textField>
+        <textField><reportElement style="CellRight" x="722" y="0" width="40" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{unit_price})]]></textFieldExpression></textField>
+        <textField><reportElement style="CellRight" x="762" y="0" width="40" height="9"/><textElement><font size="5"/></textElement><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{metric_amount})]]></textFieldExpression></textField>
+    </band></detail>
+    <noData><band height="60"><staticText><reportElement style="Label" x="0" y="10" width="802" height="30"/><textElement textAlignment="Center"/><text><![CDATA[請求対象データがありません。]]></text></staticText></band></noData>
+</jasperReport>

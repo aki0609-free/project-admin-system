@@ -14,6 +14,8 @@ public record ReportMasterListResponse(
         String workTable,
         String inputTable,
         String outputTable,
+        String sourceViewName,
+        String historyTable,
         ReportPreProcessType preProcessType,
         String preProcessSql,
         String procedureName,

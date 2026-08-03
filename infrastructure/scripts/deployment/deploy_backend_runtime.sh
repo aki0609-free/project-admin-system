@@ -120,7 +120,7 @@ uploaded=true
 
 remote_archive="/tmp/project-admin-runtime-bundle.tar.gz"
 remote_dir="/tmp/project-admin-runtime-bundle"
-remote_command="set -euo pipefail; rm -rf ${remote_dir}; install -d -m 0700 ${remote_dir}; aws s3 cp ${bundle_uri} ${remote_archive}; tar -xzf ${remote_archive} -C ${remote_dir}; bash ${remote_dir}/scripts/deployment/install_runtime_bundle.sh"
+remote_command="set -euo pipefail; rm -rf ${remote_dir}; install -d -m 0700 ${remote_dir}; aws s3 cp ${bundle_uri} ${remote_archive}; tar -xzf ${remote_archive} -C ${remote_dir}; bash ${remote_dir}/scripts/deployment/install_runtime_bundle.sh; cd /opt/project-admin/runtime; docker compose --env-file deployment.env up -d --remove-orphans --wait --wait-timeout 360; curl --fail --silent --show-error http://127.0.0.1:8080/actuator/health; docker compose --env-file deployment.env ps"
 
 echo "Deploying runtime bundle through SSM..."
 command_id="$(aws ssm send-command \
@@ -131,12 +131,32 @@ command_id="$(aws ssm send-command \
   --query 'Command.CommandId' \
   --output text)"
 
-set +e
-aws ssm wait command-executed \
-  --command-id "${command_id}" \
-  --instance-id "${instance_id}"
-wait_result=$?
-set -e
+command_status="Pending"
+command_deadline=$((SECONDS + 480))
+while true; do
+  command_status="$(aws ssm get-command-invocation \
+    --command-id "${command_id}" \
+    --instance-id "${instance_id}" \
+    --query 'Status' \
+    --output text 2>/dev/null || true)"
+
+  case "${command_status}" in
+    Success|Failed|Cancelled|TimedOut|Cancelling)
+      break
+      ;;
+    Pending|InProgress|Delayed|"")
+      if ((SECONDS >= command_deadline)); then
+        command_status="ClientTimeout"
+        break
+      fi
+      sleep 5
+      ;;
+    *)
+      echo "Unexpected SSM command status: ${command_status}" >&2
+      exit 1
+      ;;
+  esac
+done
 
 aws ssm get-command-invocation \
   --command-id "${command_id}" \
@@ -144,8 +164,8 @@ aws ssm get-command-invocation \
   --query '{Status:Status,Output:StandardOutputContent,Error:StandardErrorContent}' \
   --output json
 
-if [[ ${wait_result} -ne 0 ]]; then
-  echo "Runtime deployment failed. Command ID: ${command_id}" >&2
+if [[ "${command_status}" != "Success" ]]; then
+  echo "Runtime deployment failed with status ${command_status}. Command ID: ${command_id}" >&2
   exit 1
 fi
 

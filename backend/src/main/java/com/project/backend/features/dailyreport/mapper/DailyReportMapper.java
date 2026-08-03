@@ -48,6 +48,10 @@ public interface DailyReportMapper {
 
     @Mapping(target = "estimatedGrossPayAmount", ignore = true)
     @Mapping(target = "estimatedNetPayAmount", ignore = true)
+    @Mapping(target = "normalPayAmount", ignore = true)
+    @Mapping(target = "overtimePayAmount", ignore = true)
+    @Mapping(target = "nightPayAmount", ignore = true)
+    @Mapping(target = "holidayPayAmount", ignore = true)
     /*
      * V1では承認フローを使用しないため、クライアントから承認情報を更新しない。
      */

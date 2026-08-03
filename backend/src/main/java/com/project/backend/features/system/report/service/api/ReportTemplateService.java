@@ -22,11 +22,17 @@ public class ReportTemplateService {
     public List<ReportTemplateResponse> findAll() {
         return storageService.list(keyBuilder.templatePrefix())
                 .stream()
-                .filter(name -> name.endsWith(".jrxml"))
+                .filter(this::isSupportedTemplate)
                 .sorted()
                 .map(name -> ReportTemplateResponse.builder()
                         .fileName(name)
                         .build())
                 .toList();
+    }
+
+    private boolean isSupportedTemplate(String name) {
+        String lowerName = name.toLowerCase();
+        return lowerName.endsWith(".jrxml")
+                || lowerName.endsWith(".xlsx");
     }
 }

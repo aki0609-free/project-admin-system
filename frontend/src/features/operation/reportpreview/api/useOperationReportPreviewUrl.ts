@@ -4,8 +4,6 @@ import type {
   OperationType,
 } from '../types/operationReportPreviewTypes'
 
-const API_BASE_URL = 'http://localhost:8080'
-
 export const useOperationReportPreviewUrl = ({
   operationType,
   selectedReport,
@@ -33,7 +31,7 @@ export const useOperationReportPreviewUrl = ({
       params.set('targetMonth', targetMonth.value)
     }
 
-    return `${API_BASE_URL}/api/operation/report-previews/html?${params.toString()}`
+    return `/api/operation/report-previews/html?${params.toString()}`
   })
 
   return {

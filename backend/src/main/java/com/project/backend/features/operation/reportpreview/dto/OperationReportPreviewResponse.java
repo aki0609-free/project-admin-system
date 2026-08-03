@@ -16,6 +16,8 @@ public record OperationReportPreviewResponse(
         String jobCode,
         String tableName,
         String templateName,
+        String targetParamName,
+        Integer htmlTemplateVersion,
         Integer displayOrder,
         OperationReportOutputType outputType,
         List<OperationReportPreviewColumnResponse> columns

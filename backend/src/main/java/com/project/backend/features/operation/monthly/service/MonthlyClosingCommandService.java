@@ -1,5 +1,6 @@
 package com.project.backend.features.operation.monthly.service;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -27,6 +28,7 @@ public class MonthlyClosingCommandService {
     private final MonthlyClosingMapper mapper;
     private final MonthlyClosingJobService monthlyClosingJobService;
     private final MonthlyClosingPeriodService monthlyClosingPeriodService;
+    private final Clock clock;
 
     public MonthlyClosingResponse close(String targetMonthText) {
         YearMonth targetMonth = MonthlyOperationDateUtil.parseTargetMonth(targetMonthText);
@@ -65,7 +67,7 @@ public class MonthlyClosingCommandService {
 
         entity.setClosingVersion(nextVersion);
         entity.setStatus(MonthlyClosingStatus.CLOSED);
-        entity.setClosedAt(Instant.now());
+        entity.setClosedAt(Instant.now(clock));
 
         entity =
                 monthlyClosingRepository.save(entity);
@@ -106,7 +108,7 @@ public class MonthlyClosingCommandService {
 
         entity.setClosingVersion(nextVersion);
         entity.setStatus(MonthlyClosingStatus.CLOSED);
-        entity.setClosedAt(Instant.now());
+        entity.setClosedAt(Instant.now(clock));
 
         entity =
                 monthlyClosingRepository.save(entity);

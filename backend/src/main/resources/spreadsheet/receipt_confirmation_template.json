@@ -1,0 +1,65 @@
+{
+  "Workbook": {
+    "locale": "ja",
+    "sheets": [
+      {
+        "name": "TEMPLATE",
+        "showGridLines": false,
+        "columns": [
+          { "width": 140 },
+          { "width": 24 },
+          { "width": 54 },
+          { "width": 38 },
+          { "width": 24 },
+          { "width": 46 },
+          { "width": 38 },
+          { "width": 24 },
+          { "width": 92 },
+          { "width": 82 },
+          { "width": 92 },
+          { "width": 62 },
+          { "width": 62 },
+          { "width": 92 },
+          { "width": 190 }
+        ],
+        "rows": [
+          {
+            "height": 28,
+            "cells": [
+              { "index": 1, "style": { "fontFamily": "Noto Sans JP", "fontSize": "15pt", "fontWeight": "bold", "textAlign": "left" } },
+              { "index": 10, "style": { "fontFamily": "Noto Sans JP", "fontSize": "11pt", "fontWeight": "bold", "textAlign": "center" } },
+              { "index": 13, "style": { "fontFamily": "Noto Sans JP", "fontSize": "11pt", "fontWeight": "bold", "textAlign": "center" } }
+            ]
+          },
+          { "height": 8, "cells": [] },
+          {
+            "height": 26,
+            "cells": [
+              { "index": 0, "style": { "fontFamily": "Noto Sans JP", "fontWeight": "bold", "textAlign": "center", "backgroundColor": "#F2F2F2", "border": "1px solid #333333" } },
+              { "index": 2, "style": { "fontFamily": "Noto Sans JP", "fontWeight": "bold", "textAlign": "center", "backgroundColor": "#F2F2F2", "border": "1px solid #333333" } },
+              { "index": 5, "style": { "fontFamily": "Noto Sans JP", "fontWeight": "bold", "textAlign": "center", "backgroundColor": "#F2F2F2", "border": "1px solid #333333" } },
+              { "index": 8, "style": { "fontFamily": "Noto Sans JP", "fontWeight": "bold", "textAlign": "center", "backgroundColor": "#F2F2F2", "border": "1px solid #333333" } },
+              { "index": 9, "style": { "fontFamily": "Noto Sans JP", "fontWeight": "bold", "textAlign": "center", "backgroundColor": "#F2F2F2", "border": "1px solid #333333" } },
+              { "index": 10, "style": { "fontFamily": "Noto Sans JP", "fontWeight": "bold", "textAlign": "center", "backgroundColor": "#F2F2F2", "border": "1px solid #333333" } },
+              { "index": 11, "style": { "fontFamily": "Noto Sans JP", "fontWeight": "bold", "textAlign": "center", "backgroundColor": "#F2F2F2", "border": "1px solid #333333" } },
+              { "index": 12, "style": { "fontFamily": "Noto Sans JP", "fontWeight": "bold", "textAlign": "center", "backgroundColor": "#F2F2F2", "border": "1px solid #333333" } },
+              { "index": 13, "style": { "fontFamily": "Noto Sans JP", "fontWeight": "bold", "textAlign": "center", "backgroundColor": "#F2F2F2", "border": "1px solid #333333" } },
+              { "index": 14, "style": { "fontFamily": "Noto Sans JP", "fontWeight": "bold", "textAlign": "center", "backgroundColor": "#F2F2F2", "border": "1px solid #333333" } }
+            ]
+          },
+          { "height": 23, "cells": [] },
+          { "cells": [] },
+          { "cells": [] },
+          { "cells": [] },
+          { "cells": [] },
+          { "cells": [] },
+          { "height": 23, "cells": [] },
+          { "cells": [] },
+          { "cells": [] },
+          { "cells": [] },
+          { "height": 25, "cells": [] }
+        ]
+      }
+    ]
+  }
+}

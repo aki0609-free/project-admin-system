@@ -103,6 +103,11 @@ export type DailyReportResponse = {
   loanRepaymentAmount: number
   savingAmount: number
 
+  normalPayAmount: number
+  overtimePayAmount: number
+  nightPayAmount: number
+  holidayPayAmount: number
+
   estimatedGrossPayAmount: number
   estimatedNetPayAmount: number
 
@@ -230,6 +235,10 @@ export type DailyReportMonthlyAttendanceResponse = {
 
 export type DailyReportEstimatedPayPreviewResponse = {
   estimatedBasePayAmount: number
+  normalPayAmount: number
+  overtimePayAmount: number
+  nightPayAmount: number
+  holidayPayAmount: number
   estimatedGrossPayAmount: number
   estimatedNetPayAmount: number
 }

@@ -11,6 +11,7 @@ import com.project.backend.features.system.report.entity.ReportMaster;
 import com.project.backend.features.system.report.enums.ReportOutputFormat;
 import com.project.backend.features.system.report.service.builder.ReportFileNameBuilder;
 import com.project.backend.features.system.report.service.loader.ReportOutputRowLoader;
+import com.project.backend.features.system.report.service.loader.ReportTemplateLoader;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +22,8 @@ public class ExcelReportExporter implements ReportExporter {
     private final ExcelFileWriter excelFileWriter;
     private final ReportOutputRowLoader rowLoader;
     private final ReportFileNameBuilder fileNameBuilder;
+    private final ReportTemplateLoader reportTemplateLoader;
+    private final ExcelTemplateReportRendererRegistry templateRendererRegistry;
 
     @Override
     public boolean supports(ReportMaster reportMaster) {
@@ -34,15 +37,26 @@ public class ExcelReportExporter implements ReportExporter {
             List<Map<String, Object>> rows
     ) {
 
-        List<String> headers =
-                rowLoader.extractHeaders(rows);
-
-        byte[] data =
-                excelFileWriter.write(
-                        rows,
-                        headers,
-                        reportMaster.getReportCode()
-                );
+        byte[] data;
+        if (reportMaster.getTemplateFileName() != null
+                && reportMaster.getTemplateFileName()
+                        .toLowerCase()
+                        .endsWith(".xlsx")) {
+            data = templateRendererRegistry.resolve(reportMaster).render(
+                    reportMaster,
+                    reportTemplateLoader.loadExcel(
+                            reportMaster.getTemplateFileName()
+                    ),
+                    rows
+            );
+        } else {
+            List<String> headers = rowLoader.extractHeaders(rows);
+            data = excelFileWriter.write(
+                    rows,
+                    headers,
+                    reportMaster.getReportCode()
+            );
+        }
 
         return new FileExportResult(
                 fileNameBuilder.build(reportMaster, "xlsx"),

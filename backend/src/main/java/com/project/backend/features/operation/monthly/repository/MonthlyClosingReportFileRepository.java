@@ -1,5 +1,6 @@
 package com.project.backend.features.operation.monthly.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,9 @@ public interface MonthlyClosingReportFileRepository
                     Long monthlyClosingId,
                     Integer closingVersion,
                     String reportCode);
+
+    List<MonthlyClosingReportFile>
+            findAllByTargetMonthAndClosingVersionAndDeletedAtIsNullOrderByTargetNameAscIdAsc(
+                    String targetMonth,
+                    Integer closingVersion);
 }

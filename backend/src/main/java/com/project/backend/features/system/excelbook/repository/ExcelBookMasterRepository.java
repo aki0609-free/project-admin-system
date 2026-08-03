@@ -11,6 +11,8 @@ public interface ExcelBookMasterRepository extends JpaRepository<ExcelBookMaster
 
     List<ExcelBookMaster> findByDeletedAtIsNullOrderByIdDesc();
 
+    List<ExcelBookMaster> findByActiveFlagTrueAndDeletedAtIsNullOrderByBookNameAsc();
+
     Optional<ExcelBookMaster> findByIdAndDeletedAtIsNull(Long id);
 
     Optional<ExcelBookMaster> findFirstByBookCodeAndActiveFlagTrueAndDeletedAtIsNull(String bookCode);

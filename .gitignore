@@ -81,6 +81,7 @@ reports/
 !backend/src/main/resources/reports/**
 **/reports-output/
 **/report-output-history/
+/output/
 tmp/
 __pycache__/
 *.py[cod]

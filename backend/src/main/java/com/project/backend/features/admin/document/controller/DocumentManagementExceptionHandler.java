@@ -12,7 +12,10 @@ import com.project.backend.common.error.dto.ErrorResponse;
 import com.project.backend.features.admin.document.exception.DocumentOperationNotAllowedException;
 
 @RestControllerAdvice(
-        assignableTypes = DocumentManagementController.class
+        assignableTypes = {
+                DocumentManagementController.class,
+                SyncfusionFileManagerController.class
+        }
 )
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class DocumentManagementExceptionHandler {
