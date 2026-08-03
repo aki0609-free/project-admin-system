@@ -357,6 +357,19 @@ public class DailyReportQueryService {
                         entity.getSavingAmount()
                 )
 
+                .normalPayAmount(
+                        entity.getNormalPayAmount()
+                )
+                .overtimePayAmount(
+                        entity.getOvertimePayAmount()
+                )
+                .nightPayAmount(
+                        entity.getNightPayAmount()
+                )
+                .holidayPayAmount(
+                        entity.getHolidayPayAmount()
+                )
+
                 .estimatedGrossPayAmount(
                         entity.getEstimatedGrossPayAmount()
                 )

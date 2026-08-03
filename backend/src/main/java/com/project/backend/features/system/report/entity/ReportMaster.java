@@ -64,6 +64,21 @@ public class ReportMaster extends BaseEntity {
     @Column(name = "output_table", length = 200)
     private String outputTable;
 
+    @Column(name = "source_view_name", length = 200)
+    private String sourceViewName;
+
+    @Column(name = "history_table", length = 200)
+    private String historyTable;
+
+    @Column(name = "html_template_key", length = 1000)
+    private String htmlTemplateKey;
+
+    @Column(name = "html_template_version")
+    private Integer htmlTemplateVersion;
+
+    @Column(name = "html_template_hash", length = 128)
+    private String htmlTemplateHash;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "pre_process_type", nullable = false, length = 30)
     private ReportPreProcessType preProcessType = ReportPreProcessType.NONE;
@@ -149,5 +164,12 @@ public class ReportMaster extends BaseEntity {
             return outputTable;
         }
         return workTable + "_output";
+    }
+
+    public String resolveHistoryTableName() {
+        if (historyTable != null && !historyTable.isBlank()) {
+            return historyTable;
+        }
+        return workTable + "_history";
     }
 }

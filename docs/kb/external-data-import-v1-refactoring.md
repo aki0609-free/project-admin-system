@@ -386,6 +386,23 @@ resident_tax_monthly
 
 プロジェクト全体のTypeScript型チェックには、応募者、顧客、日報既存箇所、メール、帳票、共通テーブル等の別ドメインの既存エラーが残っている。
 
+### 8.1 AWS DEV適用記録
+
+2026-07-27にAWS DEVのRDSへ`catalog_v1.sql`を適用した。
+
+- 対象DB：`project-admin-dev-mysql` / `ADMIN`
+- 適用前スナップショット：`project-admin-dev-before-import-catalog-v1-20260727-141123z`
+- 適用前の有効な`import_target`：0件
+- 適用前の有効な`import_column`：0件
+- 作成したテーブル：
+  - `import_target_catalog`
+  - `import_target_catalog_column`
+- 初期移行件数：0件
+- 一意制約、外部キー、インデックス：確認済み
+- DDL適用に使用した一時IAM権限、S3一時ファイル、EC2一時ファイル：削除済み
+
+最新バックエンドによるHibernateスキーマ検証では、外部データ取込カタログの不足は解消した。次に検出された不足は別ドメインであるRule管理の`rule_data_source.catalog_code`であり、外部データ取込の適用結果とは分離して扱う。
+
 ## 9. 本番データを使う前の確認項目
 
 - RDSスナップショットを取得した

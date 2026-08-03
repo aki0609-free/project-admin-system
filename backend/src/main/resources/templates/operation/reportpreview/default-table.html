@@ -41,7 +41,7 @@
   </style>
 </head>
 <body>
-  <h1 th:text="${definition.reportCode}">帳票プレビュー</h1>
+  <h1 th:text="${definition.reportName != null && !definition.reportName.isBlank() ? definition.reportName : definition.reportCode}">帳票プレビュー</h1>
 
   <div th:if="${#lists.isEmpty(rows)}" class="empty">
     表示対象データがありません。

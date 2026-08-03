@@ -59,6 +59,11 @@ public record DailyReportResponse(
         BigDecimal loanRepaymentAmount,
         BigDecimal savingAmount,
 
+        BigDecimal normalPayAmount,
+        BigDecimal overtimePayAmount,
+        BigDecimal nightPayAmount,
+        BigDecimal holidayPayAmount,
+
         BigDecimal estimatedGrossPayAmount,
         BigDecimal estimatedNetPayAmount,
 

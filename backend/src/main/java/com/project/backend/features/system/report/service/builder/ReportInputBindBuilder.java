@@ -1,6 +1,8 @@
 package com.project.backend.features.system.report.service.builder;
 
 import java.util.ArrayList;
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +13,7 @@ import com.project.backend.features.system.report.entity.ReportMaster;
 import com.project.backend.features.system.report.entity.ReportParam;
 import com.project.backend.features.system.report.service.converter.ReportParamValueConverter;
 import com.project.backend.common.util.ApplicationCollectionUtils;
+import com.project.backend.app.tenant.context.TenantContext;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,7 +21,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ReportInputBindBuilder {
 
+    private static final String DEFAULT_TENANT_ID = "default";
+
     private final ReportParamValueConverter reportParamValueConverter;
+    private final Clock clock;
 
     public List<Map<String, Object>> buildRows(
             ReportMaster reportMaster,
@@ -71,7 +77,16 @@ public class ReportInputBindBuilder {
             List<ReportParam> paramDefinitions
     ) {
         Map<String, Object> bind = new LinkedHashMap<>();
+        String tenantId = TenantContext.getTenantId();
+        if (tenantId == null || tenantId.isBlank()) {
+            tenantId = DEFAULT_TENANT_ID;
+        }
+        LocalDateTime now = LocalDateTime.now(clock);
+
         bind.put("execution_id", executionId);
+        bind.put("tenant_id", tenantId);
+        bind.put("created_at", now);
+        bind.put("updated_at", now);
 
         for (ReportParam param : paramDefinitions) {
             if (!Boolean.TRUE.equals(param.getActiveFlag())) {

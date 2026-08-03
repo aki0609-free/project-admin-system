@@ -34,6 +34,7 @@ export const systemMenu: MenuItem = {
       component: ExcelBookMasterPage,
       resource: 'system',
       action: 'manage',
+      roles: [Role.SYS_ADMIN],
     },
     {
       title: 'バッチ処理',

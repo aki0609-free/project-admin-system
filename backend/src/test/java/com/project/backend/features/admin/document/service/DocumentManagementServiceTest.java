@@ -84,6 +84,27 @@ class DocumentManagementServiceTest {
     }
 
     @Test
+    void listRecursively_shouldHidePhysicalRootFromResponse() {
+        when(storageService.listRecursively(
+                "documents/backups/reports/2025"
+        )).thenReturn(List.of(new StorageEntry(
+                "documents/backups/reports/2025/payroll.pdf",
+                "payroll.pdf",
+                false,
+                120L,
+                Instant.parse("2026-07-25T00:00:00Z"),
+                "etag"
+        )));
+
+        assertThat(service.listRecursively(
+                DocumentArea.BACKUPS,
+                "reports/2025"
+        )).singleElement().satisfies(entry ->
+                assertThat(entry.path())
+                        .isEqualTo("reports/2025/payroll.pdf"));
+    }
+
+    @Test
     void upload_shouldBeAllowedOnlyInGeneralArea()
             throws Exception {
         MockMultipartFile file = new MockMultipartFile(

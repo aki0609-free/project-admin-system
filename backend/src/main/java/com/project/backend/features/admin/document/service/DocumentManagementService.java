@@ -79,6 +79,19 @@ public class DocumentManagementService {
                 .toList();
     }
 
+    public List<DocumentEntryResponse> listRecursively(
+            DocumentArea area,
+            String relativePath
+    ) {
+        areaPolicy.requireAllowed(area, DocumentOperation.READ);
+        String root = keyResolver.resolve(area, relativePath);
+
+        return storageService.listRecursively(root).stream()
+                .map(entry -> toResponse(area, entry))
+                .sorted(Comparator.comparing(DocumentEntryResponse::path))
+                .toList();
+    }
+
     public DocumentDownload download(
             DocumentArea area,
             String relativePath

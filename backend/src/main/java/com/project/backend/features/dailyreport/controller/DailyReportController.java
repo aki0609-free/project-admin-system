@@ -95,6 +95,10 @@ public class DailyReportController {
         if (request == null || request.employeeId() == null) {
             return DailyReportEstimatedPayPreviewResponse.builder()
                     .estimatedBasePayAmount(BigDecimal.ZERO)
+                    .normalPayAmount(BigDecimal.ZERO)
+                    .overtimePayAmount(BigDecimal.ZERO)
+                    .nightPayAmount(BigDecimal.ZERO)
+                    .holidayPayAmount(BigDecimal.ZERO)
                     .estimatedGrossPayAmount(BigDecimal.ZERO)
                     .estimatedNetPayAmount(BigDecimal.ZERO)
                     .build();

@@ -1,5 +1,8 @@
 import type { Ref } from 'vue'
-import type { CustomerTransaction } from '@/features/master/customer/types/customerTypes'
+import type {
+  CustomerPaymentStatus,
+  CustomerTransaction,
+} from '@/features/customer/types/customerTypes'
 
 export type ConfirmPaymentInput = {
   paidAmount: number | null
@@ -30,14 +33,27 @@ export const useCustomerTransactionActions = (
     const paidAmount = input.paidAmount ?? 0
     const fee = input.fee ?? 0
     const billingAmount = current.billingAmount ?? 0
+    const collectedAmount =
+      paidAmount
+      + fee
+      + (current.offsetAmount ?? 0)
+    const paymentStatus: CustomerPaymentStatus =
+      collectedAmount <= 0
+        ? 'UNPAID'
+        : collectedAmount < billingAmount
+          ? 'PARTIAL'
+          : collectedAmount === billingAmount
+            ? 'PAID'
+            : 'OVERPAID'
 
     const updatedRow: CustomerTransaction = {
       ...current,
       paidAmount,
       fee,
       confirmedPaymentDate: input.confirmedPaymentDate,
-      totalAmount: paidAmount + fee,
-      isPaid: paidAmount >= billingAmount,
+      receivableAmount: billingAmount,
+      totalAmount: collectedAmount,
+      paymentStatus,
       _isUpdated: current._isNew ? current._isUpdated : true,
     }
 
@@ -45,7 +61,10 @@ export const useCustomerTransactionActions = (
       item.id === id ? updatedRow : item,
     )
 
-    if (updatedRow.isPaid) {
+    if (
+      updatedRow.paymentStatus === 'PAID'
+      || updatedRow.paymentStatus === 'OVERPAID'
+    ) {
       nextRows = addNextMonthRow(nextRows, updatedRow)
     }
 
@@ -73,15 +92,17 @@ export const useCustomerTransactionActions = (
         id: Date.now(),
         customerId: current.customerId,
         targetMonth: nextMonth,
-        closingDay: current.closingDay,
-        paymentDay: current.paymentDay,
+        closingDayRule: current.closingDayRule,
+        paymentDayRule: current.paymentDayRule,
         billingAmount: null,
         expectedPaymentDate: null,
         confirmedPaymentDate: null,
         paidAmount: null,
         fee: null,
+        receivableAmount: null,
+        offsetAmount: null,
         totalAmount: null,
-        isPaid: false,
+        paymentStatus: 'UNPAID',
         note: '',
         deleteSelected: false,
         _isNew: true,

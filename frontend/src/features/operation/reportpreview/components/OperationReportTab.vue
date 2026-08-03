@@ -8,15 +8,19 @@ import type {
 } from '../types/operationReportPreviewTypes'
 import { useOperationReportPreviewsQuery } from '../api/useOperationReportPreviewsQuery'
 import { useOperationReportPreviewUrl } from '../api/useOperationReportPreviewUrl'
+import { useOperationReportPreviewHtml } from '../api/useOperationReportPreviewHtml'
 import { useExecuteBatchMutation } from '@/features/system/batch/api/mutations/useExecuteBatchMutation'
 import { useDownloadBatchLogFileMutation } from '@/features/system/batch/api/mutations/useDownloadBatchLogFileMutation'
 import type { BatchExecuteResponse } from '@/features/system/batch/types/batchApiTypes'
 import PdfPreviewDialog from '@/shared/components/pdf/PdfPreviewDialog.vue'
+import { getMonthlyClosingReportFiles } from '@/features/operation/monthly/api/getMonthlyClosingReportFiles'
+import type { MonthlyClosingReportFileResponse } from '@/features/operation/monthly/types/monthlyReportFileTypes'
 
 const props = defineProps<{
   operationType: OperationType
   targetDate?: string | null
   targetMonth?: string | null
+  closingVersion?: number | null
 }>()
 
 const dialog = ref(false)
@@ -32,6 +36,19 @@ const { previewUrl } = useOperationReportPreviewUrl({
   targetDate: computed(() => props.targetDate),
   targetMonth: computed(() => props.targetMonth),
 })
+const htmlPreviewUrl = computed(() => {
+  const outputType = selectedReport.value?.outputType
+  return outputType && outputType !== 'NONE' && outputType !== 'EXCEL_BOOK'
+    ? previewUrl.value
+    : ''
+})
+const {
+  previewHtml,
+  isPreviewLoading,
+  previewError,
+  reloadPreview,
+} = useOperationReportPreviewHtml(htmlPreviewUrl)
+const previewIframe = ref<HTMLIFrameElement | null>(null)
 
 const pdfPreviewDialog = ref(false)
 const pdfPreviewUrl = ref<string | null>(null)
@@ -41,6 +58,10 @@ const pdfStorageType = ref<'LOCAL' | 'S3'>('LOCAL')
 
 const executeBatchMutation = useExecuteBatchMutation()
 const downloadBatchLogFileMutation = useDownloadBatchLogFileMutation()
+const monthlyFilesDialog = ref(false)
+const monthlyFiles = ref<MonthlyClosingReportFileResponse[]>([])
+const outputMessage = ref('')
+const outputSnackbar = ref(false)
 
 const selectReport = (report: OperationReportPreviewResponse) => {
   selectedReport.value = report
@@ -53,6 +74,8 @@ const closeDialog = () => {
 
 const outputButtonLabel = computed(() => {
   switch (selectedReport.value?.outputType) {
+    case 'HTML_PRINT':
+      return 'ブラウザ印刷'
     case 'PDF':
       return '印刷'
     case 'CSV':
@@ -70,6 +93,8 @@ const outputButtonLabel = computed(() => {
 
 const outputButtonIcon = computed(() => {
   switch (selectedReport.value?.outputType) {
+    case 'HTML_PRINT':
+      return 'mdi-printer-outline'
     case 'PDF':
       return 'mdi-printer'
     case 'CSV':
@@ -85,26 +110,48 @@ const outputButtonIcon = computed(() => {
 })
 
 const canOutput = computed(() => {
-  return !!selectedReport.value?.jobCode && selectedReport.value.outputType !== 'NONE'
+  if (selectedReport.value?.outputType === 'HTML_PRINT') {
+    return !!previewHtml.value && !isPreviewLoading.value
+  }
+
+  if (props.operationType === 'MONTHLY') {
+    return !!props.targetMonth && !!props.closingVersion
+  }
+
+  return !!selectedReport.value?.jobCode &&
+    selectedReport.value.outputType !== 'NONE' &&
+    selectedReport.value.outputType !== 'HTML_PREVIEW'
+})
+
+const showOutputButton = computed(() => {
+  const outputType = selectedReport.value?.outputType
+  return outputType !== undefined &&
+    outputType !== 'NONE' &&
+    outputType !== 'HTML_PREVIEW'
 })
 
 const executeReport = async () => {
+  if (selectedReport.value?.outputType === 'HTML_PRINT') {
+    previewIframe.value?.contentWindow?.print()
+    return
+  }
+
+  if (props.operationType === 'MONTHLY') {
+    await openMonthlyStoredReport()
+    return
+  }
+
   if (!selectedReport.value?.jobCode) return
   if (selectedReport.value.outputType === 'NONE') return
 
-  const params =
-    props.operationType === 'MONTHLY'
-      ? {
-          target_month: props.targetMonth ?? null,
-          history_version: null,
-          view_name: selectedReport.value.tableName,
-          work_table: selectedReport.value.templateName,
-        }
-      : {
-          target_date: props.targetDate ?? null,
-          view_name: selectedReport.value.tableName,
-          work_table: selectedReport.value.templateName,
-        }
+  const targetParamName = selectedReport.value.targetParamName ||
+    (props.operationType === 'MONTHLY' ? 'targetMonth' : 'targetDate')
+  const targetValue = props.operationType === 'MONTHLY'
+    ? props.targetMonth
+    : props.targetDate
+  const params = {
+    [targetParamName]: targetValue ?? null,
+  }
 
   const result = (await executeBatchMutation.mutateAsync({
     jobCode: selectedReport.value.jobCode,
@@ -135,6 +182,64 @@ const executeReport = async () => {
       pdfPreviewDialog.value = true
       return
   }
+}
+
+const openMonthlyStoredReport = async () => {
+  if (!selectedReport.value || !props.targetMonth || !props.closingVersion) {
+    showOutputMessage('締め処理後に印刷・出力できます。')
+    return
+  }
+
+  const files = await getMonthlyClosingReportFiles(
+    props.targetMonth,
+    props.closingVersion,
+    selectedReport.value.reportCode,
+  )
+
+  if (files.length === 0) {
+    showOutputMessage('この締めVersionには保存済み帳票がありません。再締め後に確認してください。')
+    return
+  }
+
+  if (files.length === 1) {
+    await openStoredFile(files[0])
+    return
+  }
+
+  monthlyFiles.value = files
+  monthlyFilesDialog.value = true
+}
+
+const openStoredFile = async (file: MonthlyClosingReportFileResponse) => {
+  if (!file.batchExecutionLogId) {
+    showOutputMessage('保存済み帳票のダウンロード情報がありません。')
+    return
+  }
+
+  const blob = (await downloadBatchLogFileMutation.mutateAsync(
+    file.batchExecutionLogId,
+  )) as Blob
+  const outputType = selectedReport.value?.outputType ?? 'CUSTOM'
+  const fileName = file.outputFileName ||
+    `${file.reportCode}.${resolveExtension(outputType)}`
+
+  if (outputType === 'PDF') {
+    if (pdfPreviewUrl.value) URL.revokeObjectURL(pdfPreviewUrl.value)
+    pdfPreviewUrl.value = URL.createObjectURL(blob)
+    pdfFileKey.value = file.outputFileKey
+    pdfFileName.value = fileName
+    pdfStorageType.value = file.storageType ?? 'LOCAL'
+    pdfPreviewDialog.value = true
+    monthlyFilesDialog.value = false
+    return
+  }
+
+  downloadBlob(blob, fileName)
+}
+
+const showOutputMessage = (message: string) => {
+  outputMessage.value = message
+  outputSnackbar.value = true
 }
 
 function resolveExtension(outputType: string): string {
@@ -245,7 +350,7 @@ function downloadBlob(blob: Blob, fileName: string) {
           <v-spacer />
 
           <v-btn
-            v-if="selectedReport?.outputType !== 'NONE'"
+            v-if="showOutputButton"
             color="primary"
             :prepend-icon="outputButtonIcon"
             :disabled="!canOutput"
@@ -260,14 +365,29 @@ function downloadBlob(blob: Blob, fileName: string) {
         <v-divider />
 
         <v-card-text class="preview-body">
+          <div v-if="isPreviewLoading" class="preview-state">
+            <v-progress-circular indeterminate color="primary" />
+            <span>プレビューを生成しています。</span>
+          </div>
+
+          <div v-else-if="previewError" class="preview-state preview-error">
+            <span>{{ previewError }}</span>
+            <v-btn size="small" variant="tonal" @click="reloadPreview">
+              再試行
+            </v-btn>
+          </div>
+
           <iframe
-            v-if="selectedReport"
+            v-else-if="selectedReport && previewHtml"
+            ref="previewIframe"
             class="preview-iframe"
-            :src="previewUrl"
+            :srcdoc="previewHtml"
+            sandbox="allow-same-origin allow-modals"
+            title="帳票プレビュー"
           />
 
           <div v-else class="empty-preview">
-            帳票を選択してください。
+            この出力形式は帳票プレビューの対象外です。
           </div>
         </v-card-text>
       </v-card>
@@ -281,6 +401,39 @@ function downloadBlob(blob: Blob, fileName: string) {
       :pdf-file-name="pdfFileName"
       :storage-type="pdfStorageType"
     />
+
+    <v-dialog v-model="monthlyFilesDialog" max-width="720">
+      <v-card>
+        <v-card-title>保存済み帳票を選択</v-card-title>
+        <v-card-subtitle>
+          {{ targetMonth }} / Version {{ closingVersion }}
+        </v-card-subtitle>
+        <v-list lines="two">
+          <v-list-item
+            v-for="file in monthlyFiles"
+            :key="file.id"
+            :title="file.targetName || file.outputFileName || file.reportCode"
+            :subtitle="file.outputFileName || file.reportCode"
+            prepend-icon="mdi-file-document-outline"
+            @click="openStoredFile(file)"
+          >
+            <template #append>
+              <v-btn size="small" color="primary" variant="tonal">
+                開く
+              </v-btn>
+            </template>
+          </v-list-item>
+        </v-list>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="monthlyFilesDialog = false">閉じる</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-snackbar v-model="outputSnackbar" color="info" timeout="3500">
+      {{ outputMessage }}
+    </v-snackbar>
   </div>
 </template>
 
@@ -383,5 +536,18 @@ function downloadBlob(blob: Blob, fileName: string) {
   place-items: center;
   height: 100%;
   color: #64748b;
+}
+
+.preview-state {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  min-height: calc(90vh - 72px);
+  color: #64748b;
+}
+
+.preview-error {
+  color: #b91c1c;
 }
 </style>

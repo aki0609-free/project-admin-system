@@ -66,6 +66,36 @@ export const useReportMasterBasicFields = (
       gridColumn: '4 / span 1',
     },
     {
+      key: 'sourceViewName',
+      label: '締め元View',
+      type: 'text',
+      gridColumn: '1 / span 2',
+    },
+    {
+      key: 'historyTable',
+      label: 'historyTable',
+      type: 'text',
+      gridColumn: '3 / span 2',
+    },
+    {
+      key: 'htmlTemplateKey',
+      label: 'HTMLテンプレート S3キー',
+      type: 'text',
+      gridColumn: '1 / span 3',
+    },
+    {
+      key: 'htmlTemplateVersion',
+      label: 'HTML Version',
+      type: 'number',
+      gridColumn: '4 / span 1',
+    },
+    {
+      key: 'htmlTemplateHash',
+      label: 'HTML SHA-256',
+      type: 'text',
+      gridColumn: '1 / span 4',
+    },
+    {
       key: 'layoutType',
       label: 'レイアウト種別',
       type: 'select',

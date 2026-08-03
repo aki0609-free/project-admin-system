@@ -41,7 +41,7 @@ const hasDispatchValue = (row: DailyPreparationDispatchTableRow) =>
 
 export const useDailyPreparationPage = () => {
   const targetDate = ref(tomorrow())
-  const activeTab = ref<'assignments' | 'dispatches'>('assignments')
+  const activeTab = ref<'assignments' | 'dispatches' | 'reports'>('assignments')
 
   const assignmentRows = ref<DailyPreparationAssignmentTableRow[]>([])
   const dispatchRows = ref<DailyPreparationDispatchTableRow[]>([])
@@ -316,7 +316,9 @@ export const useDailyPreparationPage = () => {
       label: '作業伝票出力',
       color: 'secondary',
       disabled: !preparation.value,
-      onClick: () => window.alert('作業伝票出力は次で接続します。'),
+      onClick: () => {
+        activeTab.value = 'reports'
+      },
     },
   ])
 

@@ -39,6 +39,11 @@ export type ReportMasterBase = {
   workTable: string
   inputTable?: string | null
   outputTable?: string | null
+  sourceViewName?: string | null
+  historyTable?: string | null
+  htmlTemplateKey?: string | null
+  htmlTemplateVersion?: number | null
+  htmlTemplateHash?: string | null
   preProcessType: ReportPreProcessType
   preProcessSql?: string | null
   procedureName?: string | null
@@ -68,6 +73,9 @@ export type ReportMasterListItemResponse = Omit<
   | 'layoutType'
   | 'layoutCount'
   | 'fileName'
+  | 'htmlTemplateKey'
+  | 'htmlTemplateVersion'
+  | 'htmlTemplateHash'
 > & {
   id: number
 }

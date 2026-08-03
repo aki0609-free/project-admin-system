@@ -1,3 +1,5 @@
+SET NAMES utf8mb4;
+
 create table if not exists daily_pay_slip_input (
     id bigint auto_increment primary key,
     tenant_id varchar(100) not null,
@@ -7,7 +9,7 @@ create table if not exists daily_pay_slip_input (
 
     execution_id varchar(100) not null,
     payment_date date not null,
-    employee_id bigint null,
+    employee_id bigint not null,
 
     index idx_daily_pay_slip_input_execution (execution_id),
     index idx_daily_pay_slip_input_target (tenant_id, payment_date)
@@ -33,26 +35,72 @@ create table if not exists daily_pay_slip_output (
     mail_type varchar(100) null,
     mail_template_key varchar(100) null,
 
+    work_date date null,
     labor_period_from date null,
     labor_period_to date null,
 
-    basic_salary decimal(15,2) null,
-    overtime_allowance decimal(15,2) null,
-    night_allowance decimal(15,2) null,
-    attendance_allowance decimal(15,2) null,
-    driver_allowance decimal(15,2) null,
-    manager_allowance decimal(15,2) null,
-    other_allowance decimal(15,2) null,
+    work_hours decimal(10,2) null,
+    overtime_hours decimal(10,2) null,
+    night_work_hours decimal(10,2) null,
 
-    legal_withholding_amount decimal(15,2) null,
-    legal_withholding_balance decimal(15,2) null,
+    basic_salary decimal(15,2) null,
+
+    allowance_item_name1 varchar(100) null,
+    allowance_item_value1 decimal(15,2) null,
+    allowance_item_name2 varchar(100) null,
+    allowance_item_value2 decimal(15,2) null,
+    allowance_item_name3 varchar(100) null,
+    allowance_item_value3 decimal(15,2) null,
+    allowance_item_name4 varchar(100) null,
+    allowance_item_value4 decimal(15,2) null,
+    allowance_item_name5 varchar(100) null,
+    allowance_item_value5 decimal(15,2) null,
+    allowance_item_name6 varchar(100) null,
+    allowance_item_value6 decimal(15,2) null,
+    allowance_item_name7 varchar(100) null,
+    allowance_item_value7 decimal(15,2) null,
+    allowance_item_name8 varchar(100) null,
+    allowance_item_value8 decimal(15,2) null,
+    allowance_item_name9 varchar(100) null,
+    allowance_item_value9 decimal(15,2) null,
+    allowance_item_name10 varchar(100) null,
+    allowance_item_value10 decimal(15,2) null,
+
+    deduction_item_name1 varchar(100) null,
+    deduction_item_value1 decimal(15,2) null,
+    deduction_item_name2 varchar(100) null,
+    deduction_item_value2 decimal(15,2) null,
+    deduction_item_name3 varchar(100) null,
+    deduction_item_value3 decimal(15,2) null,
+    deduction_item_name4 varchar(100) null,
+    deduction_item_value4 decimal(15,2) null,
+    deduction_item_name5 varchar(100) null,
+    deduction_item_value5 decimal(15,2) null,
+    deduction_item_name6 varchar(100) null,
+    deduction_item_value6 decimal(15,2) null,
+    deduction_item_name7 varchar(100) null,
+    deduction_item_value7 decimal(15,2) null,
+    deduction_item_name8 varchar(100) null,
+    deduction_item_value8 decimal(15,2) null,
+    deduction_item_name9 varchar(100) null,
+    deduction_item_value9 decimal(15,2) null,
+    deduction_item_name10 varchar(100) null,
+    deduction_item_value10 decimal(15,2) null,
 
     gross_amount decimal(15,2) null,
+    allowance_total decimal(15,2) null,
     deduction_total decimal(15,2) null,
+    daily_payment_amount decimal(15,2) null,
     net_payment_amount decimal(15,2) null,
+    note varchar(1000) null,
 
     index idx_daily_pay_slip_output_execution (execution_id),
-    index idx_daily_pay_slip_output_delivery (execution_id, business_key)
+    index idx_daily_pay_slip_output_delivery (execution_id, business_key),
+    index idx_daily_pay_slip_output_employee (
+        tenant_id,
+        payment_date,
+        employee_id
+    )
 );
 
 create table if not exists monthly_pay_slip_input (
@@ -158,10 +206,11 @@ insert into report_master (
     work_table,
     input_table,
     output_table,
+    source_view_name,
+    history_table,
     pre_process_type,
     pre_process_sql,
     procedure_name,
-    output_path,
     query_sql,
     cleanup_type,
     cleanup_sql,
@@ -182,136 +231,19 @@ insert into report_master (
     'monthly_pay_slip.jrxml',
     'monthly_pay_slip',
     'monthly_pay_slip_input',
-    'monthly_pay_slip_output',
-    'SQL',
-    '
-delete from monthly_pay_slip_output
-where execution_id = :executionId;
-
-insert into monthly_pay_slip_output (
-    tenant_id,
-    created_at,
-    updated_at,
-    execution_id,
-    target_month,
-    employee_id,
-    employee_code,
-    employee_name,
-    recipient_key,
-    recipient_name,
-    recipient_email,
-    business_key,
-    mail_type,
-    mail_template_key,
-    work_day_count,
-    overtime_hours,
-    night_work_hours,
-    basic_salary,
-    overtime_allowance,
-    night_allowance,
-    attendance_allowance,
-    driver_allowance,
-    manager_allowance,
-    other_allowance,
-    health_insurance,
-    child_care_contribution,
-    pension_insurance,
-    employment_insurance,
-    social_insurance_total,
-    taxable_amount,
-    income_tax,
-    resident_tax,
-    other_deduction,
-    gross_amount,
-    deduction_total,
-    net_payment_amount
-)
-select
-    i.tenant_id,
-    now(),
-    now(),
-    i.execution_id,
-    i.target_month,
-    e.id,
-    e.employee_code,
-    e.employee_name,
-    cast(e.id as char),
-    e.employee_name,
-    e.email,
-    concat(
-        ''MONTHLY_PAY_SLIP:'',
-        i.target_month,
-        '':'',
-        e.id
-    ),
-    ''MONTHLY_PAY_SLIP'',
-    ''MONTHLY_PAY_SLIP_NOTICE'',
-
-    coalesce(count(distinct dr.work_date), 0),
-    coalesce(sum(dr.overtime_hours), 0),
-    coalesce(sum(dr.night_work_hours), 0),
-
-    coalesce(sum(dr.estimated_gross_pay_amount), 0),
-    coalesce(sum(dr.overtime_hours), 0) * 0,
-    coalesce(sum(dr.night_work_hours), 0) * 0,
-    coalesce(sum(dr.allowance_amount), 0),
-    0,
-    0,
-    0,
-
-    0,
-    0,
-    0,
-    0,
-    0,
-    coalesce(sum(dr.estimated_gross_pay_amount), 0),
-    0,
-    coalesce(epp.resident_tax_monthly, 0),
-    coalesce(sum(dr.deduction_amount), 0),
-
-    coalesce(sum(dr.estimated_gross_pay_amount), 0),
-    coalesce(sum(dr.deduction_amount), 0)
-        + coalesce(sum(dr.saving_amount), 0)
-        + coalesce(sum(dr.loan_repayment_amount), 0)
-        + coalesce(epp.resident_tax_monthly, 0),
-    coalesce(sum(dr.estimated_gross_pay_amount), 0)
-        - coalesce(sum(dr.deduction_amount), 0)
-        - coalesce(sum(dr.saving_amount), 0)
-        - coalesce(sum(dr.loan_repayment_amount), 0)
-        - coalesce(epp.resident_tax_monthly, 0)
-from monthly_pay_slip_input i
-join employee e
-  on e.tenant_id = i.tenant_id
- and e.deleted_at is null
-left join employee_payroll_profile epp
-  on epp.tenant_id = i.tenant_id
- and epp.employee_id = e.id
- and epp.deleted_at is null
-left join daily_report dr
-  on dr.tenant_id = i.tenant_id
- and dr.employee_id = e.id
- and dr.deleted_at is null
- and date_format(dr.work_date, ''%Y-%m'') = i.target_month
-where i.execution_id = :executionId
-  and i.deleted_at is null
-  and (i.employee_id is null or i.employee_id = e.id)
-group by
-    i.tenant_id,
-    i.execution_id,
-    i.target_month,
-    e.id,
-    e.employee_code,
-    e.employee_name,
-    e.email,
-    epp.resident_tax_monthly
-order by e.employee_code;
-',
+    'monthly_pay_slip_render_output',
+    'vw_monthly_pay_slip_latest',
+    'monthly_pay_slip_history',
+    'PROCEDURE',
     null,
-    'reports/monthly',
+    'sp_monthly_pay_slip_snapshot',
+    'select *
+from vw_monthly_pay_slip_render_flat
+where execution_id = :executionId
+order by employee_code',
+    'PROCEDURE',
     null,
-    'SQL',
-    'delete from monthly_pay_slip_output where execution_id = :executionId',
-    null,
+    'sp_monthly_pay_slip_cleanup',
     'SINGLE',
     1,
     '月給料明細_${targetMonth}',
@@ -385,6 +317,44 @@ insert into report_param (
     'employee_id',
     2,
     true
+),
+(
+    @tenant_id,
+    @now,
+    @now,
+    @monthly_report_master_id,
+    'closingVersion',
+    '締めVersion',
+    'LONG',
+    'NUMBER',
+    true,
+    false,
+    false,
+    false,
+    null,
+    null,
+    'closing_version',
+    3,
+    true
+),
+(
+    @tenant_id,
+    @now,
+    @now,
+    @monthly_report_master_id,
+    'executionMode',
+    '実行モード',
+    'STRING',
+    'TEXT',
+    true,
+    false,
+    false,
+    false,
+    null,
+    null,
+    'execution_mode',
+    4,
+    true
 );
 
 -- =====================================================
@@ -401,10 +371,11 @@ insert into report_master (
     work_table,
     input_table,
     output_table,
+    source_view_name,
+    history_table,
     pre_process_type,
     pre_process_sql,
     procedure_name,
-    output_path,
     query_sql,
     cleanup_type,
     cleanup_sql,
@@ -426,104 +397,18 @@ insert into report_master (
     'daily_pay_slip',
     'daily_pay_slip_input',
     'daily_pay_slip_output',
-    'SQL',
-    '
-delete from daily_pay_slip_output
-where execution_id = :executionId;
-
-insert into daily_pay_slip_output (
-    tenant_id,
-    created_at,
-    updated_at,
-    execution_id,
-    payment_date,
-    employee_id,
-    employee_code,
-    employee_name,
-    recipient_key,
-    recipient_name,
-    recipient_email,
-    business_key,
-    mail_type,
-    mail_template_key,
-    labor_period_from,
-    labor_period_to,
-    basic_salary,
-    overtime_allowance,
-    night_allowance,
-    attendance_allowance,
-    driver_allowance,
-    manager_allowance,
-    other_allowance,
-    legal_withholding_amount,
-    legal_withholding_balance,
-    gross_amount,
-    deduction_total,
-    net_payment_amount
-)
-select
-    i.tenant_id,
-    now(),
-    now(),
-    i.execution_id,
-    i.payment_date,
-    e.id,
-    e.employee_code,
-    e.employee_name,
-    cast(e.id as char),
-    e.employee_name,
-    e.email,
-    concat(
-        ''DAILY_PAY_SLIP:'',
-        date_format(i.payment_date, ''%Y-%m-%d''),
-        '':'',
-        e.id
-    ),
-    ''DAILY_PAY_SLIP'',
-    ''DAILY_PAY_SLIP_NOTICE'',
-
-    i.payment_date,
-    i.payment_date,
-
-    coalesce(dr.estimated_gross_pay_amount, dp.planned_amount, 0),
-    0,
-    0,
-    coalesce(dr.allowance_amount, 0),
-    0,
-    0,
-    0,
-
-    coalesce(dr.deduction_amount, 0),
-    0,
-
-    coalesce(dr.estimated_gross_pay_amount, dp.planned_amount, 0),
-    coalesce(dr.deduction_amount, 0),
-    coalesce(dp.actual_amount, 0)
-from daily_pay_slip_input i
-join daily_payments dp
-  on dp.tenant_id = i.tenant_id
- and dp.payment_date = i.payment_date
- and dp.deleted_at is null
-join employee e
-  on e.tenant_id = i.tenant_id
- and e.id = dp.employee_id
- and e.deleted_at is null
-left join daily_report dr
-  on dr.tenant_id = i.tenant_id
- and dr.employee_id = e.id
- and dr.payment_date = i.payment_date
- and dr.deleted_at is null
-where i.execution_id = :executionId
-  and i.deleted_at is null
-  and (i.employee_id is null or i.employee_id = e.id)
-order by e.employee_code;
-',
+    'vw_daily_pay_slip_latest',
     null,
-    'reports/daily',
+    'PROCEDURE',
     null,
-    'SQL',
-    'delete from daily_pay_slip_output where execution_id = :executionId',
+    'sp_daily_pay_slip_prepare',
+    'select *
+from daily_pay_slip_output
+where execution_id = :executionId
+order by employee_code',
+    'PROCEDURE',
     null,
+    'sp_daily_pay_slip_cleanup',
     'SINGLE',
     1,
     '日払い明細_${paymentDate}',

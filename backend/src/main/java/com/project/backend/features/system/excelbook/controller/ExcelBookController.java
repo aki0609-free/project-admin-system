@@ -10,6 +10,7 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.project.backend.features.system.excelbook.dto.ExcelBookUpdateRequest;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/system/excel-books")
+@PreAuthorize("hasRole('SYS_ADMIN')")
 @RequiredArgsConstructor
 public class ExcelBookController {
 

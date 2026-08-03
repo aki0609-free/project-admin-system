@@ -231,6 +231,38 @@ public class DailyReport extends BaseEntity {
     private BigDecimal savingAmount = BigDecimal.ZERO;
 
     @Column(
+            name = "normal_pay_amount",
+            precision = 12,
+            scale = 2,
+            nullable = false
+    )
+    private BigDecimal normalPayAmount = BigDecimal.ZERO;
+
+    @Column(
+            name = "overtime_pay_amount",
+            precision = 12,
+            scale = 2,
+            nullable = false
+    )
+    private BigDecimal overtimePayAmount = BigDecimal.ZERO;
+
+    @Column(
+            name = "night_pay_amount",
+            precision = 12,
+            scale = 2,
+            nullable = false
+    )
+    private BigDecimal nightPayAmount = BigDecimal.ZERO;
+
+    @Column(
+            name = "holiday_pay_amount",
+            precision = 12,
+            scale = 2,
+            nullable = false
+    )
+    private BigDecimal holidayPayAmount = BigDecimal.ZERO;
+
+    @Column(
             name = "estimated_gross_pay_amount",
             precision = 12,
             scale = 2,

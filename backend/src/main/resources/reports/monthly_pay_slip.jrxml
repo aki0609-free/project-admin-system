@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport
+    xmlns="http://jasperreports.sourceforge.net/jasperreports"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+    name="monthly_pay_slip"
+    pageWidth="729"
+    pageHeight="516"
+    orientation="Landscape"
+    columnWidth="701"
+    leftMargin="14"
+    rightMargin="14"
+    topMargin="14"
+    bottomMargin="14"
+    whenNoDataType="AllSectionsNoDetail"
+>
+    <property name="net.sf.jasperreports.default.font.name" value="IPAexGothic"/>
+    <property name="net.sf.jasperreports.export.pdf.tagged" value="true"/>
+
+    <style name="Base" fontName="IPAexGothic" fontSize="9" pdfFontName="fonts/ipaexg.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+    <style name="Title" style="Base" fontSize="19" isBold="true"/>
+    <style name="Header" style="Base" fontSize="9" isBold="true" hTextAlign="Center" vTextAlign="Middle" mode="Opaque" backcolor="#DCE6F1">
+        <box>
+            <pen lineWidth="0.6" lineColor="#1F2937"/>
+        </box>
+    </style>
+    <style name="Cell" style="Base" hTextAlign="Left" vTextAlign="Middle">
+        <box>
+            <pen lineWidth="0.5" lineColor="#374151"/>
+        </box>
+    </style>
+    <style name="CellCenter" style="Cell" hTextAlign="Center"/>
+    <style name="CellRight" style="Cell" hTextAlign="Right"/>
+    <style name="PanelTitlePay" style="Header" backcolor="#DCFCE7"/>
+    <style name="PanelTitleDeduction" style="Header" backcolor="#FEE2E2"/>
+    <style name="TotalLabel" style="Header" fontSize="10"/>
+    <style name="TotalValue" style="CellRight" fontSize="13" isBold="true"/>
+    <style name="NetLabel" style="TotalLabel" forecolor="#FFFFFF" backcolor="#1D4ED8"/>
+    <style name="NetValue" style="TotalValue" forecolor="#1D4ED8"/>
+
+    <parameter name="MONEY_FORMAT" class="java.text.DecimalFormat" isForPrompting="false">
+        <defaultValueExpression><![CDATA[new java.text.DecimalFormat("#,##0;▲#,##0")]]></defaultValueExpression>
+    </parameter>
+    <parameter name="DATE_FORMAT" class="java.text.SimpleDateFormat" isForPrompting="false">
+        <defaultValueExpression><![CDATA[new java.text.SimpleDateFormat("yyyy年M月d日")]]></defaultValueExpression>
+    </parameter>
+    <parameter name="MONTH_FORMAT" class="java.text.SimpleDateFormat" isForPrompting="false">
+        <defaultValueExpression><![CDATA[new java.text.SimpleDateFormat("yyyy年M月")]]></defaultValueExpression>
+    </parameter>
+
+    <field name="target_month" class="java.sql.Date"/>
+    <field name="closing_version" class="java.lang.Integer"/>
+    <field name="employee_code" class="java.lang.String"/>
+    <field name="employee_name" class="java.lang.String"/>
+    <field name="company_name" class="java.lang.String"/>
+    <field name="period_from" class="java.sql.Date"/>
+    <field name="period_to" class="java.sql.Date"/>
+    <field name="work_day_count" class="java.lang.Integer"/>
+    <field name="work_hours" class="java.math.BigDecimal"/>
+    <field name="overtime_hours" class="java.math.BigDecimal"/>
+    <field name="night_work_hours" class="java.math.BigDecimal"/>
+    <field name="holiday_work_hours" class="java.math.BigDecimal"/>
+    <field name="paid_leave_days" class="java.math.BigDecimal"/>
+    <field name="basic_salary" class="java.math.BigDecimal"/>
+    <field name="allowance_total" class="java.math.BigDecimal"/>
+    <field name="gross_amount" class="java.math.BigDecimal"/>
+    <field name="health_insurance" class="java.math.BigDecimal"/>
+    <field name="child_care_contribution" class="java.math.BigDecimal"/>
+    <field name="pension_insurance" class="java.math.BigDecimal"/>
+    <field name="employment_insurance" class="java.math.BigDecimal"/>
+    <field name="social_insurance_total" class="java.math.BigDecimal"/>
+    <field name="taxable_amount" class="java.math.BigDecimal"/>
+    <field name="income_tax" class="java.math.BigDecimal"/>
+    <field name="resident_tax" class="java.math.BigDecimal"/>
+    <field name="legal_deduction_total" class="java.math.BigDecimal"/>
+    <field name="other_deduction_total" class="java.math.BigDecimal"/>
+    <field name="deduction_total" class="java.math.BigDecimal"/>
+    <field name="advance_payment_amount" class="java.math.BigDecimal"/>
+    <field name="net_payment_amount" class="java.math.BigDecimal"/>
+
+    <field name="allowance_item_name_01" class="java.lang.String"/>
+    <field name="allowance_item_value_01" class="java.math.BigDecimal"/>
+    <field name="allowance_item_name_02" class="java.lang.String"/>
+    <field name="allowance_item_value_02" class="java.math.BigDecimal"/>
+    <field name="allowance_item_name_03" class="java.lang.String"/>
+    <field name="allowance_item_value_03" class="java.math.BigDecimal"/>
+    <field name="allowance_item_name_04" class="java.lang.String"/>
+    <field name="allowance_item_value_04" class="java.math.BigDecimal"/>
+    <field name="allowance_item_name_05" class="java.lang.String"/>
+    <field name="allowance_item_value_05" class="java.math.BigDecimal"/>
+    <field name="allowance_item_name_06" class="java.lang.String"/>
+    <field name="allowance_item_value_06" class="java.math.BigDecimal"/>
+    <field name="allowance_item_name_07" class="java.lang.String"/>
+    <field name="allowance_item_value_07" class="java.math.BigDecimal"/>
+    <field name="allowance_item_name_08" class="java.lang.String"/>
+    <field name="allowance_item_value_08" class="java.math.BigDecimal"/>
+    <field name="allowance_item_name_09" class="java.lang.String"/>
+    <field name="allowance_item_value_09" class="java.math.BigDecimal"/>
+    <field name="allowance_item_name_10" class="java.lang.String"/>
+    <field name="allowance_item_value_10" class="java.math.BigDecimal"/>
+    <field name="allowance_item_name_11" class="java.lang.String"/>
+    <field name="allowance_item_value_11" class="java.math.BigDecimal"/>
+    <field name="allowance_item_name_12" class="java.lang.String"/>
+    <field name="allowance_item_value_12" class="java.math.BigDecimal"/>
+
+    <field name="legal_item_name_01" class="java.lang.String"/>
+    <field name="legal_item_value_01" class="java.math.BigDecimal"/>
+    <field name="legal_item_name_02" class="java.lang.String"/>
+    <field name="legal_item_value_02" class="java.math.BigDecimal"/>
+    <field name="legal_item_name_03" class="java.lang.String"/>
+    <field name="legal_item_value_03" class="java.math.BigDecimal"/>
+    <field name="legal_item_name_04" class="java.lang.String"/>
+    <field name="legal_item_value_04" class="java.math.BigDecimal"/>
+    <field name="legal_item_name_05" class="java.lang.String"/>
+    <field name="legal_item_value_05" class="java.math.BigDecimal"/>
+    <field name="legal_item_name_06" class="java.lang.String"/>
+    <field name="legal_item_value_06" class="java.math.BigDecimal"/>
+    <field name="legal_item_name_07" class="java.lang.String"/>
+    <field name="legal_item_value_07" class="java.math.BigDecimal"/>
+    <field name="legal_item_name_08" class="java.lang.String"/>
+    <field name="legal_item_value_08" class="java.math.BigDecimal"/>
+    <field name="legal_item_name_09" class="java.lang.String"/>
+    <field name="legal_item_value_09" class="java.math.BigDecimal"/>
+    <field name="legal_item_name_10" class="java.lang.String"/>
+    <field name="legal_item_value_10" class="java.math.BigDecimal"/>
+    <field name="legal_item_name_11" class="java.lang.String"/>
+    <field name="legal_item_value_11" class="java.math.BigDecimal"/>
+    <field name="legal_item_name_12" class="java.lang.String"/>
+    <field name="legal_item_value_12" class="java.math.BigDecimal"/>
+
+    <field name="other_item_name_01" class="java.lang.String"/>
+    <field name="other_item_value_01" class="java.math.BigDecimal"/>
+    <field name="other_item_name_02" class="java.lang.String"/>
+    <field name="other_item_value_02" class="java.math.BigDecimal"/>
+    <field name="other_item_name_03" class="java.lang.String"/>
+    <field name="other_item_value_03" class="java.math.BigDecimal"/>
+    <field name="other_item_name_04" class="java.lang.String"/>
+    <field name="other_item_value_04" class="java.math.BigDecimal"/>
+    <field name="other_item_name_05" class="java.lang.String"/>
+    <field name="other_item_value_05" class="java.math.BigDecimal"/>
+    <field name="other_item_name_06" class="java.lang.String"/>
+    <field name="other_item_value_06" class="java.math.BigDecimal"/>
+    <field name="other_item_name_07" class="java.lang.String"/>
+    <field name="other_item_value_07" class="java.math.BigDecimal"/>
+    <field name="other_item_name_08" class="java.lang.String"/>
+    <field name="other_item_value_08" class="java.math.BigDecimal"/>
+    <field name="other_item_name_09" class="java.lang.String"/>
+    <field name="other_item_value_09" class="java.math.BigDecimal"/>
+    <field name="other_item_name_10" class="java.lang.String"/>
+    <field name="other_item_value_10" class="java.math.BigDecimal"/>
+    <field name="other_item_name_11" class="java.lang.String"/>
+    <field name="other_item_value_11" class="java.math.BigDecimal"/>
+    <field name="other_item_name_12" class="java.lang.String"/>
+    <field name="other_item_value_12" class="java.math.BigDecimal"/>
+
+    <detail>
+        <band height="474" splitType="Prevent">
+            <frame>
+                <reportElement x="0" y="0" width="701" height="474"/>
+
+                <textField isBlankWhenNull="true">
+                    <reportElement style="Title" x="0" y="0" width="489" height="34"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle"/>
+                    <textFieldExpression><![CDATA[$P{MONTH_FORMAT}.format($F{target_month}) + " 給与明細書"]]></textFieldExpression>
+                </textField>
+                <textField isBlankWhenNull="true">
+                    <reportElement style="Base" x="489" y="0" width="212" height="17"/>
+                    <textElement textAlignment="Center" verticalAlignment="Bottom"/>
+                    <textFieldExpression><![CDATA[$F{employee_name} + " 様"]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="Base" x="489" y="17" width="212" height="17"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle"/>
+                    <textFieldExpression><![CDATA[$F{company_name}]]></textFieldExpression>
+                </textField>
+
+                <staticText>
+                    <reportElement style="Header" x="0" y="38" width="79" height="20"/>
+                    <text><![CDATA[社員コード]]></text>
+                </staticText>
+                <textField isBlankWhenNull="true">
+                    <reportElement style="CellCenter" x="79" y="38" width="96" height="20"/>
+                    <textFieldExpression><![CDATA[$F{employee_code}]]></textFieldExpression>
+                </textField>
+                <staticText>
+                    <reportElement style="Header" x="175" y="38" width="79" height="20"/>
+                    <text><![CDATA[締め期間]]></text>
+                </staticText>
+                <textField>
+                    <reportElement style="CellCenter" x="253" y="38" width="262" height="20"/>
+                    <textFieldExpression><![CDATA[$P{DATE_FORMAT}.format($F{period_from}) + " ～ " + $P{DATE_FORMAT}.format($F{period_to})]]></textFieldExpression>
+                </textField>
+                <staticText>
+                    <reportElement style="Header" x="516" y="38" width="79" height="20"/>
+                    <text><![CDATA[締めVersion]]></text>
+                </staticText>
+                <textField>
+                    <reportElement style="CellCenter" x="594" y="38" width="107" height="20"/>
+                    <textFieldExpression><![CDATA["v" + $F{closing_version}]]></textFieldExpression>
+                </textField>
+
+                <staticText><reportElement style="Header" x="0" y="64" width="117" height="18"/><text><![CDATA[勤務日数]]></text></staticText>
+                <staticText><reportElement style="Header" x="117" y="64" width="117" height="18"/><text><![CDATA[実働時間]]></text></staticText>
+                <staticText><reportElement style="Header" x="234" y="64" width="117" height="18"/><text><![CDATA[早出・残業時間]]></text></staticText>
+                <staticText><reportElement style="Header" x="351" y="64" width="117" height="18"/><text><![CDATA[深夜時間]]></text></staticText>
+                <staticText><reportElement style="Header" x="468" y="64" width="116" height="18"/><text><![CDATA[休日労働時間]]></text></staticText>
+                <staticText><reportElement style="Header" x="585" y="64" width="116" height="18"/><text><![CDATA[有休日数]]></text></staticText>
+
+                <textField><reportElement style="CellRight" x="0" y="82" width="117" height="21"/><textFieldExpression><![CDATA[$F{work_day_count} + " 日"]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="117" y="82" width="117" height="21"/><textFieldExpression><![CDATA[$F{work_hours}.stripTrailingZeros().toPlainString() + " h"]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="234" y="82" width="117" height="21"/><textFieldExpression><![CDATA[$F{overtime_hours}.stripTrailingZeros().toPlainString() + " h"]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="351" y="82" width="117" height="21"/><textFieldExpression><![CDATA[$F{night_work_hours}.stripTrailingZeros().toPlainString() + " h"]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="468" y="82" width="116" height="21"/><textFieldExpression><![CDATA[$F{holiday_work_hours}.stripTrailingZeros().toPlainString() + " h"]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="585" y="82" width="116" height="21"/><textFieldExpression><![CDATA[$F{paid_leave_days}.stripTrailingZeros().toPlainString() + " 日"]]></textFieldExpression></textField>
+
+                <staticText><reportElement style="PanelTitlePay" x="0" y="111" width="227" height="20"/><text><![CDATA[支給]]></text></staticText>
+                <staticText><reportElement style="PanelTitleDeduction" x="237" y="111" width="227" height="20"/><text><![CDATA[控除1（法定控除）]]></text></staticText>
+                <staticText><reportElement style="PanelTitleDeduction" x="474" y="111" width="227" height="20"/><text><![CDATA[控除2（その他控除）]]></text></staticText>
+
+                <staticText><reportElement style="Cell" x="0" y="131" width="131" height="18"/><text><![CDATA[基本給]]></text></staticText>
+                <textField><reportElement style="CellRight" x="131" y="131" width="96" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{basic_salary})]]></textFieldExpression></textField>
+                <textField isBlankWhenNull="true" isStretchWithOverflow="false">
+                    <reportElement style="Cell" x="0" y="148" width="131" height="193"/>
+                    <textElement verticalAlignment="Top"/>
+                    <textFieldExpression><![CDATA[
+($F{allowance_item_name_01} == null ? "" : $F{allowance_item_name_01}) + "\n" +
+($F{allowance_item_name_02} == null ? "" : $F{allowance_item_name_02}) + "\n" +
+($F{allowance_item_name_03} == null ? "" : $F{allowance_item_name_03}) + "\n" +
+($F{allowance_item_name_04} == null ? "" : $F{allowance_item_name_04}) + "\n" +
+($F{allowance_item_name_05} == null ? "" : $F{allowance_item_name_05}) + "\n" +
+($F{allowance_item_name_06} == null ? "" : $F{allowance_item_name_06}) + "\n" +
+($F{allowance_item_name_07} == null ? "" : $F{allowance_item_name_07}) + "\n" +
+($F{allowance_item_name_08} == null ? "" : $F{allowance_item_name_08}) + "\n" +
+($F{allowance_item_name_09} == null ? "" : $F{allowance_item_name_09}) + "\n" +
+($F{allowance_item_name_10} == null ? "" : $F{allowance_item_name_10}) + "\n" +
+($F{allowance_item_name_11} == null ? "" : $F{allowance_item_name_11}) + "\n" +
+($F{allowance_item_name_12} == null ? "" : $F{allowance_item_name_12})
+                    ]]></textFieldExpression>
+                </textField>
+                <textField isBlankWhenNull="true">
+                    <reportElement style="CellRight" x="131" y="148" width="96" height="193"/>
+                    <textElement verticalAlignment="Top"/>
+                    <textFieldExpression><![CDATA[
+($F{allowance_item_value_01} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_01})) + "\n" +
+($F{allowance_item_value_02} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_02})) + "\n" +
+($F{allowance_item_value_03} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_03})) + "\n" +
+($F{allowance_item_value_04} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_04})) + "\n" +
+($F{allowance_item_value_05} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_05})) + "\n" +
+($F{allowance_item_value_06} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_06})) + "\n" +
+($F{allowance_item_value_07} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_07})) + "\n" +
+($F{allowance_item_value_08} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_08})) + "\n" +
+($F{allowance_item_value_09} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_09})) + "\n" +
+($F{allowance_item_value_10} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_10})) + "\n" +
+($F{allowance_item_value_11} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_11})) + "\n" +
+($F{allowance_item_value_12} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_12}))
+                    ]]></textFieldExpression>
+                </textField>
+
+                <staticText><reportElement style="Cell" x="237" y="131" width="131" height="16"/><text><![CDATA[健康保険]]></text></staticText>
+                <textField><reportElement style="CellRight" x="368" y="131" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{health_insurance})]]></textFieldExpression></textField>
+                <staticText><reportElement style="Cell" x="237" y="147" width="131" height="16"/><text><![CDATA[子ども・子育て支援金]]></text></staticText>
+                <textField><reportElement style="CellRight" x="368" y="147" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{child_care_contribution})]]></textFieldExpression></textField>
+                <staticText><reportElement style="Cell" x="237" y="163" width="131" height="16"/><text><![CDATA[厚生年金]]></text></staticText>
+                <textField><reportElement style="CellRight" x="368" y="163" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{pension_insurance})]]></textFieldExpression></textField>
+                <staticText><reportElement style="Cell" x="237" y="179" width="131" height="16"/><text><![CDATA[雇用保険]]></text></staticText>
+                <textField><reportElement style="CellRight" x="368" y="179" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{employment_insurance})]]></textFieldExpression></textField>
+                <staticText><reportElement style="Cell" x="237" y="195" width="131" height="16"/><text><![CDATA[所得税]]></text></staticText>
+                <textField><reportElement style="CellRight" x="368" y="195" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{income_tax})]]></textFieldExpression></textField>
+                <staticText><reportElement style="Cell" x="237" y="211" width="131" height="16"/><text><![CDATA[住民税]]></text></staticText>
+                <textField><reportElement style="CellRight" x="368" y="211" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{resident_tax})]]></textFieldExpression></textField>
+                <textField isBlankWhenNull="true">
+                    <reportElement style="Cell" x="237" y="227" width="131" height="114"/>
+                    <textElement verticalAlignment="Top"/>
+                    <textFieldExpression><![CDATA[
+($F{legal_item_name_01} == null ? "" : $F{legal_item_name_01}) + "\n" +
+($F{legal_item_name_02} == null ? "" : $F{legal_item_name_02}) + "\n" +
+($F{legal_item_name_03} == null ? "" : $F{legal_item_name_03}) + "\n" +
+($F{legal_item_name_04} == null ? "" : $F{legal_item_name_04}) + "\n" +
+($F{legal_item_name_05} == null ? "" : $F{legal_item_name_05}) + "\n" +
+($F{legal_item_name_06} == null ? "" : $F{legal_item_name_06}) + "\n" +
+($F{legal_item_name_07} == null ? "" : $F{legal_item_name_07}) + "\n" +
+($F{legal_item_name_08} == null ? "" : $F{legal_item_name_08}) + "\n" +
+($F{legal_item_name_09} == null ? "" : $F{legal_item_name_09}) + "\n" +
+($F{legal_item_name_10} == null ? "" : $F{legal_item_name_10}) + "\n" +
+($F{legal_item_name_11} == null ? "" : $F{legal_item_name_11}) + "\n" +
+($F{legal_item_name_12} == null ? "" : $F{legal_item_name_12})
+                    ]]></textFieldExpression>
+                </textField>
+                <textField isBlankWhenNull="true">
+                    <reportElement style="CellRight" x="368" y="227" width="96" height="114"/>
+                    <textElement verticalAlignment="Top"/>
+                    <textFieldExpression><![CDATA[
+($F{legal_item_value_01} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_01})) + "\n" +
+($F{legal_item_value_02} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_02})) + "\n" +
+($F{legal_item_value_03} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_03})) + "\n" +
+($F{legal_item_value_04} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_04})) + "\n" +
+($F{legal_item_value_05} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_05})) + "\n" +
+($F{legal_item_value_06} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_06})) + "\n" +
+($F{legal_item_value_07} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_07})) + "\n" +
+($F{legal_item_value_08} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_08})) + "\n" +
+($F{legal_item_value_09} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_09})) + "\n" +
+($F{legal_item_value_10} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_10})) + "\n" +
+($F{legal_item_value_11} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_11})) + "\n" +
+($F{legal_item_value_12} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_12}))
+                    ]]></textFieldExpression>
+                </textField>
+
+                <textField isBlankWhenNull="true">
+                    <reportElement style="Cell" x="474" y="131" width="131" height="211"/>
+                    <textElement verticalAlignment="Top"/>
+                    <textFieldExpression><![CDATA[
+($F{other_item_name_01} == null ? "" : $F{other_item_name_01}) + "\n" +
+($F{other_item_name_02} == null ? "" : $F{other_item_name_02}) + "\n" +
+($F{other_item_name_03} == null ? "" : $F{other_item_name_03}) + "\n" +
+($F{other_item_name_04} == null ? "" : $F{other_item_name_04}) + "\n" +
+($F{other_item_name_05} == null ? "" : $F{other_item_name_05}) + "\n" +
+($F{other_item_name_06} == null ? "" : $F{other_item_name_06}) + "\n" +
+($F{other_item_name_07} == null ? "" : $F{other_item_name_07}) + "\n" +
+($F{other_item_name_08} == null ? "" : $F{other_item_name_08}) + "\n" +
+($F{other_item_name_09} == null ? "" : $F{other_item_name_09}) + "\n" +
+($F{other_item_name_10} == null ? "" : $F{other_item_name_10}) + "\n" +
+($F{other_item_name_11} == null ? "" : $F{other_item_name_11}) + "\n" +
+($F{other_item_name_12} == null ? "" : $F{other_item_name_12})
+                    ]]></textFieldExpression>
+                </textField>
+                <textField isBlankWhenNull="true">
+                    <reportElement style="CellRight" x="605" y="131" width="96" height="211"/>
+                    <textElement verticalAlignment="Top"/>
+                    <textFieldExpression><![CDATA[
+($F{other_item_value_01} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_01})) + "\n" +
+($F{other_item_value_02} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_02})) + "\n" +
+($F{other_item_value_03} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_03})) + "\n" +
+($F{other_item_value_04} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_04})) + "\n" +
+($F{other_item_value_05} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_05})) + "\n" +
+($F{other_item_value_06} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_06})) + "\n" +
+($F{other_item_value_07} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_07})) + "\n" +
+($F{other_item_value_08} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_08})) + "\n" +
+($F{other_item_value_09} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_09})) + "\n" +
+($F{other_item_value_10} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_10})) + "\n" +
+($F{other_item_value_11} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_11})) + "\n" +
+($F{other_item_value_12} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_12}))
+                    ]]></textFieldExpression>
+                </textField>
+
+                <staticText><reportElement style="TotalLabel" x="0" y="351" width="140" height="20"/><text><![CDATA[総支給額]]></text></staticText>
+                <staticText><reportElement style="TotalLabel" x="140" y="351" width="140" height="20"/><text><![CDATA[総控除1額]]></text></staticText>
+                <staticText><reportElement style="TotalLabel" x="280" y="351" width="140" height="20"/><text><![CDATA[総控除2額]]></text></staticText>
+                <staticText><reportElement style="TotalLabel" x="420" y="351" width="140" height="20"/><text><![CDATA[控除合計]]></text></staticText>
+                <staticText><reportElement style="NetLabel" x="559" y="351" width="142" height="20"/><text><![CDATA[差引支給額]]></text></staticText>
+
+                <textField><reportElement style="TotalValue" x="0" y="370" width="140" height="30"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{gross_amount}) + " 円"]]></textFieldExpression></textField>
+                <textField><reportElement style="TotalValue" x="140" y="370" width="140" height="30"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{legal_deduction_total}) + " 円"]]></textFieldExpression></textField>
+                <textField><reportElement style="TotalValue" x="280" y="370" width="140" height="30"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{other_deduction_total}) + " 円"]]></textFieldExpression></textField>
+                <textField><reportElement style="TotalValue" x="420" y="370" width="140" height="30"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{deduction_total}) + " 円"]]></textFieldExpression></textField>
+                <textField><reportElement style="NetValue" x="559" y="370" width="142" height="30"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{net_payment_amount}) + " 円"]]></textFieldExpression></textField>
+
+                <staticText><reportElement style="Header" x="0" y="410" width="140" height="20"/><text><![CDATA[前払い額（日払い累計）]]></text></staticText>
+                <textField><reportElement style="CellRight" x="140" y="410" width="140" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{advance_payment_amount}) + " 円"]]></textFieldExpression></textField>
+                <staticText><reportElement style="Header" x="280" y="410" width="140" height="20"/><text><![CDATA[課税対象額]]></text></staticText>
+                <textField><reportElement style="CellRight" x="420" y="410" width="140" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{taxable_amount}) + " 円"]]></textFieldExpression></textField>
+                <staticText><reportElement style="Header" x="559" y="410" width="70" height="20"/><text><![CDATA[保険計]]></text></staticText>
+                <textField><reportElement style="CellRight" x="629" y="410" width="72" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{social_insurance_total})]]></textFieldExpression></textField>
+
+                <staticText>
+                    <reportElement style="Base" x="0" y="440" width="701" height="25"/>
+                    <text><![CDATA[＜備考＞ この明細は月次締め時点の確定データです。再締めを行った場合は締めVersionで識別します。]]></text>
+                </staticText>
+            </frame>
+        </band>
+    </detail>
+
+    <noData>
+        <band height="80">
+            <staticText>
+                <reportElement style="Title" x="0" y="0" width="701" height="36"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"/>
+                <text><![CDATA[給与明細書]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="Base" x="0" y="38" width="701" height="21"/>
+                <textElement textAlignment="Center"/>
+                <text><![CDATA[対象データがありません。]]></text>
+            </staticText>
+        </band>
+    </noData>
+</jasperReport>

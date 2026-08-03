@@ -80,11 +80,13 @@ jobs:
       - name: Validate deployment variables
         env:
           AWS_DEPLOY_ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          SYNCFUSION_LICENSE: ${{ secrets.SYNCFUSION_LICENSE }}
         run: |
           for name in AWS_DEPLOY_ROLE_ARN AWS_REGION AWS_ACCOUNT_ID APP_INSTANCE_ID \
-            DOCUMENT_BUCKET_NAME BACKEND_REPOSITORY FRONTEND_REPOSITORY APPLICATION_URL; do
+            DOCUMENT_BUCKET_NAME BACKEND_REPOSITORY FRONTEND_REPOSITORY APPLICATION_URL \
+            SYNCFUSION_LICENSE; do
             if [[ -z "${!name:-}" ]]; then
-              echo "GitHub dev Environment variable is missing: ${name}" >&2
+              echo "GitHub dev Environment variable or secret is missing: ${name}" >&2
               exit 1
             fi
           done
@@ -130,6 +132,8 @@ jobs:
           tags: ${{ env.FRONTEND_IMAGE }}
           cache-from: type=gha,scope=project-admin-frontend
           cache-to: type=gha,mode=max,scope=project-admin-frontend
+          build-args: |
+            VITE_SYNCFUSION_LICENSE_KEY=${{ secrets.SYNCFUSION_LICENSE }}
       - name: Deploy through Systems Manager
         run: infrastructure/scripts/deployment/deploy_runtime_ci.sh
       - name: Verify Cloudflare Access boundary

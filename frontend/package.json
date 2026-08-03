@@ -26,6 +26,9 @@
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
+    "@syncfusion/ej2-locale": "34.1.29",
+    "@syncfusion/ej2-vue-filemanager": "^33.2.13",
+    "@syncfusion/ej2-vue-spreadsheet": "^33.2.13",
     "@tanstack/vue-query": "^5.92.9",
     "@tiptap/extension-color": "^3.23.6",
     "@tiptap/extension-highlight": "^3.23.6",

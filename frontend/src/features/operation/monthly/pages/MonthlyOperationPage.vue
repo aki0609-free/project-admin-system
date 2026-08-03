@@ -53,6 +53,7 @@ const {
           v-else
           operation-type="MONTHLY"
           :target-month="targetMonth"
+          :closing-version="summary?.closing?.closingVersion ?? null"
         />
 
       </template>

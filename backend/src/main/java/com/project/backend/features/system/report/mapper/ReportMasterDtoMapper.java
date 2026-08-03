@@ -58,6 +58,18 @@ public interface ReportMasterDtoMapper {
         if (!StringUtils.hasText(entity.getOutputTable())) {
             entity.setOutputTable(null);
         }
+        if (!StringUtils.hasText(entity.getSourceViewName())) {
+            entity.setSourceViewName(null);
+        }
+        if (!StringUtils.hasText(entity.getHistoryTable())) {
+            entity.setHistoryTable(null);
+        }
+        if (!StringUtils.hasText(entity.getHtmlTemplateKey())) {
+            entity.setHtmlTemplateKey(null);
+        }
+        if (!StringUtils.hasText(entity.getHtmlTemplateHash())) {
+            entity.setHtmlTemplateHash(null);
+        }
         if (!StringUtils.hasText(entity.getTemplateFileName())) {
             entity.setTemplateFileName(null);
         }

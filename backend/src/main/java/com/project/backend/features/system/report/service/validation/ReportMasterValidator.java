@@ -1,5 +1,7 @@
 package com.project.backend.features.system.report.service.validation;
 
+import java.util.regex.Pattern;
+
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -9,6 +11,11 @@ import com.project.backend.features.system.report.enums.ReportPreProcessType;
 
 @Component
 public class ReportMasterValidator {
+
+    private static final Pattern SAFE_IDENTIFIER =
+            Pattern.compile("^[A-Za-z][A-Za-z0-9_]{0,199}$");
+    private static final Pattern SHA_256 =
+            Pattern.compile("^[A-Fa-f0-9]{64}$");
 
     public void validate(ReportMasterSaveRequest request) {
         if (request == null) {
@@ -29,6 +36,7 @@ public class ReportMasterValidator {
 
         validatePreProcess(request);
         validateCleanup(request);
+        validateSnapshotDefinition(request);
     }
 
     private void validatePreProcess(ReportMasterSaveRequest request) {
@@ -56,6 +64,57 @@ public class ReportMasterValidator {
         if (type == ReportCleanupType.PROCEDURE
                 && !StringUtils.hasText(request.cleanupProcedureName())) {
             throw new RuntimeException("cleanupType=PROCEDURE の場合、cleanupProcedureName は必須です。");
+        }
+    }
+
+    private void validateSnapshotDefinition(
+            ReportMasterSaveRequest request
+    ) {
+        validateOptionalIdentifier(
+                "sourceViewName",
+                request.sourceViewName()
+        );
+        validateOptionalIdentifier(
+                "historyTable",
+                request.historyTable()
+        );
+
+        if (StringUtils.hasText(request.htmlTemplateKey())) {
+            String key = request.htmlTemplateKey();
+            if (key.startsWith("/")
+                    || key.contains("..")
+                    || key.contains("\\")
+                    || !key.endsWith(".html")) {
+                throw new RuntimeException(
+                        "htmlTemplateKeyは安全な.htmlのS3キーを指定してください。"
+                );
+            }
+        }
+        if (request.htmlTemplateVersion() != null
+                && request.htmlTemplateVersion() < 1) {
+            throw new RuntimeException(
+                    "htmlTemplateVersionは1以上で指定してください。"
+            );
+        }
+        if (StringUtils.hasText(request.htmlTemplateHash())
+                && !SHA_256.matcher(
+                        request.htmlTemplateHash()
+                ).matches()) {
+            throw new RuntimeException(
+                    "htmlTemplateHashはSHA-256形式で指定してください。"
+            );
+        }
+    }
+
+    private void validateOptionalIdentifier(
+            String fieldName,
+            String value
+    ) {
+        if (StringUtils.hasText(value)
+                && !SAFE_IDENTIFIER.matcher(value).matches()) {
+            throw new RuntimeException(
+                    fieldName + "に不正な識別子が指定されています。"
+            );
         }
     }
 }
