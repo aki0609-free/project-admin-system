@@ -132,7 +132,13 @@ const showOutputButton = computed(() => {
 
 const executeReport = async () => {
   if (selectedReport.value?.outputType === 'HTML_PRINT') {
-    previewIframe.value?.contentWindow?.print()
+    const previewWindow = previewIframe.value?.contentWindow
+    if (!previewWindow || !previewHtml.value) {
+      showOutputMessage('印刷対象のプレビューを読み込めませんでした。')
+      return
+    }
+    previewWindow.focus()
+    previewWindow.print()
     return
   }
 
@@ -144,11 +150,8 @@ const executeReport = async () => {
   if (!selectedReport.value?.jobCode) return
   if (selectedReport.value.outputType === 'NONE') return
 
-  const targetParamName = selectedReport.value.targetParamName ||
-    (props.operationType === 'MONTHLY' ? 'targetMonth' : 'targetDate')
-  const targetValue = props.operationType === 'MONTHLY'
-    ? props.targetMonth
-    : props.targetDate
+  const targetParamName = selectedReport.value.targetParamName || 'targetDate'
+  const targetValue = props.targetDate
   const params = {
     [targetParamName]: targetValue ?? null,
   }
@@ -158,7 +161,17 @@ const executeReport = async () => {
     params,
   })) as BatchExecuteResponse
 
-  if (!result.outputFileKey || !result.logId) return
+  if (result.status === 'FAILED') {
+    showOutputMessage(
+      result.message || '帳票の生成に失敗しました。バッチ実行履歴を確認してください。',
+    )
+    return
+  }
+
+  if (!result.outputFileKey || !result.logId) {
+    showOutputMessage('生成された帳票ファイルを取得できませんでした。')
+    return
+  }
 
   const blob = (await downloadBatchLogFileMutation.mutateAsync(result.logId)) as Blob
 
@@ -201,8 +214,9 @@ const openMonthlyStoredReport = async () => {
     return
   }
 
-  if (files.length === 1) {
-    await openStoredFile(files[0])
+  const onlyFile = files[0]
+  if (files.length === 1 && onlyFile) {
+    await openStoredFile(onlyFile)
     return
   }
 

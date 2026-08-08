@@ -16,4 +16,13 @@ public interface EmployeeSavingRepository extends JpaRepository<EmployeeSaving, 
     Optional<EmployeeSaving> findFirstByEmployeeIdAndActiveFlagTrueOrderByIdDesc(
             Long employeeId
     );
+
+    boolean existsByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNull(Long employeeId);
+
+    boolean existsByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullAndIdNot(
+            Long employeeId,
+            Long id
+    );
+
+    boolean existsByEmployeeIdAndDeletedAtIsNull(Long employeeId);
 }

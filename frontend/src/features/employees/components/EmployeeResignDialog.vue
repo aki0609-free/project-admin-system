@@ -4,6 +4,7 @@ import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
 import type {
   EmployeeResignRequest,
   EmployeeResignationChecklistResponse,
+  EmployeeResignationMessageResponse,
 } from '../types/employeeApiTypes'
 import type { EmployeeForm } from '../types/employeeFormTypes'
 import { useEmployeeResignDialog } from '../composables/useEmployeeResignDialog'
@@ -12,6 +13,7 @@ const props = defineProps<{
   modelValue: boolean
   employee: EmployeeForm
   checklist: EmployeeResignationChecklistResponse[]
+  message: EmployeeResignationMessageResponse
 }>()
 
 const emit = defineEmits<{
@@ -65,16 +67,15 @@ const isMissing = (id: number): boolean =>
 <template>
   <DetailDialogLayout
     v-model="visible"
-    title="退職処理"
+    :title="message.dialogTitle"
     max-width="760"
     :footer-items="footerItems"
   >
     <div class="resign-dialog">
       <div class="warning-card">
-        <div class="warning-title">退職処理を実行します</div>
+        <div class="warning-title">{{ message.confirmationMessage }}</div>
         <div class="warning-text">
-          実行すると、従業員の在籍状態は退職、activeFlag は false になります。
-          退職日と確認項目を確認してから実行してください。
+          {{ message.guidanceMessage }}
         </div>
       </div>
 
@@ -83,8 +84,7 @@ const isMissing = (id: number): boolean =>
           {{ employee.employeeCode }} / {{ employee.employeeName }}
         </div>
         <div class="employee-status">
-          現在の状態：{{ employee.employmentStatus }} /
-          activeFlag: {{ employee.activeFlag ? 'true' : 'false' }}
+          現在の状態：{{ employee.employmentStatus }}
         </div>
       </div>
 
@@ -170,6 +170,7 @@ const isMissing = (id: number): boolean =>
   font-size: 13px;
   line-height: 1.7;
   color: #7c2d12;
+  white-space: pre-wrap;
 }
 
 .employee-card {

@@ -42,7 +42,7 @@ public class BundledReportHtmlTemplateInitializer
             ),
             new TemplateDefinition(
                     "DAILY_PAY_SLIP",
-                    1,
+                    2,
                     "daily_pay_slip.html"
             ),
             new TemplateDefinition(

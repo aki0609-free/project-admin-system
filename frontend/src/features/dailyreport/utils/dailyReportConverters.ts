@@ -137,6 +137,11 @@ export const toDailyReportSaveRequest = (
         form.savingAmount ?? 0,
       ),
 
+    dormitoryChargeDays:
+      Number(
+        form.dormitoryChargeDays ?? 0,
+      ),
+
     approvalStatus:
       form.approvalStatus,
 

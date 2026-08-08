@@ -70,9 +70,59 @@ class DailyPreviewHtmlTemplateTest {
                 .doesNotContain("th:text");
     }
 
+    @Test
+    void rendersDailyPaySlipDataPreview() throws Exception {
+        String html = render(
+                "daily_pay_slip.html",
+                Map.ofEntries(
+                        Map.entry("payment_date", "2026-08-01"),
+                        Map.entry("employee_code", "E001"),
+                        Map.entry("employee_name", "山田太郎"),
+                        Map.entry("labor_period_from", "2026-08-01"),
+                        Map.entry("labor_period_to", "2026-08-01"),
+                        Map.entry("work_hours", amount("8")),
+                        Map.entry("overtime_hours", amount("1")),
+                        Map.entry("night_work_hours", amount("0")),
+                        Map.entry("basic_salary", amount("10000")),
+                        Map.entry("allowance_item_name1", "運転手当"),
+                        Map.entry("allowance_item_value1", amount("1000")),
+                        Map.entry("deduction_item_name1", "前借り"),
+                        Map.entry("deduction_item_value1", amount("2000")),
+                        Map.entry("gross_amount", amount("11000")),
+                        Map.entry("deduction_total", amount("2000")),
+                        Map.entry("net_payment_amount", amount("9000")),
+                        Map.entry("note", "確認済み")
+                )
+        );
+
+        assertThat(html)
+                .contains("日次給与明細")
+                .contains("山田太郎")
+                .contains("運転手当")
+                .contains("前借り")
+                .contains("9,000 円")
+                .doesNotContain("th:text");
+    }
+
+    @Test
+    void rendersDailyPaySlipEmptyState() throws Exception {
+        String html = renderRows("daily_pay_slip.html", List.of());
+
+        assertThat(html)
+                .contains("対象日に日次給与明細のデータがありません。")
+                .doesNotContain("th:if");
+    }
+
     private String render(
             String fileName,
             Map<String, Object> row
+    ) throws Exception {
+        return renderRows(fileName, List.of(row));
+    }
+
+    private String renderRows(
+            String fileName,
+            List<Map<String, Object>> rows
     ) throws Exception {
         ClassPathResource resource = new ClassPathResource(
                 "templates/operation/reportpreview/" + fileName
@@ -88,7 +138,7 @@ class DailyPreviewHtmlTemplateTest {
         return renderer.render(
                 source,
                 Map.of(
-                        "rows", List.of(row),
+                        "rows", rows,
                         "columns", List.of(),
                         "definition", Map.of(),
                         "request", Map.of()

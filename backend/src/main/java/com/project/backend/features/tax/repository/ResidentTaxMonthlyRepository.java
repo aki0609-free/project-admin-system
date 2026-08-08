@@ -28,4 +28,6 @@ public interface ResidentTaxMonthlyRepository
     void deleteByFiscalYear(Integer fiscalYear);
 
     void deleteByEmployeeIdAndFiscalYear(Long employeeId, Integer fiscalYear);
+
+    boolean existsByEmployeeIdAndDeletedAtIsNull(Long employeeId);
 }

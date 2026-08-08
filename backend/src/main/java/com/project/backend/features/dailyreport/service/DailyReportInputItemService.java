@@ -11,6 +11,7 @@ import com.project.backend.features.dailyreport.dto.DailyReportAllowanceSaveRequ
 import com.project.backend.features.dailyreport.dto.DailyReportDeductionSaveRequest;
 import com.project.backend.features.dailyreport.dto.DailyReportInputResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
+import com.project.backend.features.admin.business.repository.DormitoryFeeSettingRepository;
 import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
@@ -27,6 +28,7 @@ public class DailyReportInputItemService {
     private final PayrollItemDailyInputService payrollItemDailyInputService;
     private final EmployeeRepository employeeRepository;
     private final EmployeeContractRepository employeeContractRepository;
+    private final DormitoryFeeSettingRepository dormitoryFeeSettingRepository;
 
     public DailyReportInputResponse findItems() {
         return findItems(
@@ -64,7 +66,7 @@ public class DailyReportInputItemService {
                 .findByEmployeeIdAndDeletedAtIsNull(employee.getId())
                 .orElse(null);
 
-        Map<String, Object> variables = buildVariables(request, contract);
+        Map<String, Object> variables = buildVariables(request, contract, employee);
         DailyReportCalculationContext context = DailyReportCalculationContext.builder()
                 .employee(employee)
                 .targetDate(request.workDate())
@@ -101,7 +103,8 @@ public class DailyReportInputItemService {
 
     private Map<String, Object> buildVariables(
             DailyReportSaveRequest request,
-            EmployeeContract contract
+            EmployeeContract contract,
+            Employee employee
     ) {
         Map<String, Object> variables = new LinkedHashMap<>();
 
@@ -121,6 +124,12 @@ public class DailyReportInputItemService {
         putIfNotNull(variables, "vehicleUsedFlag", request.vehicleUsedFlag());
         putIfNotNull(variables, "mileage", request.mileage());
         putIfNotNull(variables, "paidLeaveDays", request.paidLeaveDays());
+        putIfNotNull(
+                variables,
+                "dormitoryChargeDays",
+                request.dormitoryChargeDays() == null ? 0 : request.dormitoryChargeDays()
+        );
+        variables.put("dormitoryDailyAmount", java.math.BigDecimal.ZERO);
 
         if (contract != null) {
             putIfNotNull(variables, "salaryType", contract.getSalaryType());
@@ -133,6 +142,17 @@ public class DailyReportInputItemService {
                     "standardWorkingHours",
                     contract.getStandardWorkingHours()
             );
+        }
+
+        if (employee != null && employee.isDormitoryFlag()) {
+            java.util.Optional.ofNullable(employee.getDormitoryType())
+                    .flatMap(dormitoryFeeSettingRepository
+                            ::findByDormitoryTypeAndActiveFlagTrueAndDeletedAtIsNull)
+                    .ifPresent(setting -> putIfNotNull(
+                            variables,
+                            "dormitoryDailyAmount",
+                            setting.getDailyAmount()
+                    ));
         }
 
         return variables;

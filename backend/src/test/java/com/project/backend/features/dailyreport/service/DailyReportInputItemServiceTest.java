@@ -21,9 +21,12 @@ import com.project.backend.features.dailyreport.dto.DailyReportAllowanceSaveRequ
 import com.project.backend.features.dailyreport.dto.DailyReportDeductionSaveRequest;
 import com.project.backend.features.dailyreport.dto.DailyReportInputItemResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
+import com.project.backend.features.admin.business.repository.DormitoryFeeSettingRepository;
+import com.project.backend.features.admin.business.entity.DormitoryFeeSetting;
 import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.enums.SalaryType;
+import com.project.backend.features.employee.enums.DormitoryType;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.employee.repository.EmployeeRepository;
 import com.project.backend.features.master.payrollitem.service.PayrollItemDailyInputService;
@@ -33,6 +36,7 @@ class DailyReportInputItemServiceTest {
     private PayrollItemDailyInputService payrollItemDailyInputService;
     private EmployeeRepository employeeRepository;
     private EmployeeContractRepository employeeContractRepository;
+    private DormitoryFeeSettingRepository dormitoryFeeSettingRepository;
     private DailyReportInputItemService service;
 
     @BeforeEach
@@ -40,10 +44,12 @@ class DailyReportInputItemServiceTest {
         payrollItemDailyInputService = mock(PayrollItemDailyInputService.class);
         employeeRepository = mock(EmployeeRepository.class);
         employeeContractRepository = mock(EmployeeContractRepository.class);
+        dormitoryFeeSettingRepository = mock(DormitoryFeeSettingRepository.class);
         service = new DailyReportInputItemService(
                 payrollItemDailyInputService,
                 employeeRepository,
-                employeeContractRepository
+                employeeContractRepository,
+                dormitoryFeeSettingRepository
         );
     }
 
@@ -110,6 +116,50 @@ class DailyReportInputItemServiceTest {
         assertThatThrownBy(() -> service.preview(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("重複");
+    }
+
+    @Test
+    void calculate_shouldPassDormitoryMasterAmountAndChargeDaysToRule() {
+        DailyReportSaveRequest request = mockRequest();
+        when(request.dormitoryChargeDays()).thenReturn(3);
+
+        Employee employee = new Employee();
+        employee.setId(10L);
+        employee.updateDormitory(true, DormitoryType.SHARED_ROOM);
+
+        DormitoryFeeSetting setting = new DormitoryFeeSetting();
+        setting.setDormitoryType(DormitoryType.SHARED_ROOM);
+        setting.setDailyAmount(BigDecimal.valueOf(450));
+        setting.setActiveFlag(true);
+
+        when(employeeRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(employee));
+        when(employeeContractRepository.findByEmployeeIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.empty());
+        when(dormitoryFeeSettingRepository
+                .findByDormitoryTypeAndActiveFlagTrueAndDeletedAtIsNull(
+                        DormitoryType.SHARED_ROOM
+                ))
+                .thenReturn(Optional.of(setting));
+        when(payrollItemDailyInputService.findAllowanceItems(anyMap(), anyMap()))
+                .thenReturn(List.of());
+        when(payrollItemDailyInputService.findDeductionItems(anyMap(), anyMap()))
+                .thenReturn(List.of());
+
+        service.calculate(request);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> parametersCaptor =
+                ArgumentCaptor.forClass(Map.class);
+        verify(payrollItemDailyInputService).findDeductionItems(
+                parametersCaptor.capture(),
+                anyMap()
+        );
+        assertThat(parametersCaptor.getValue())
+                .containsEntry("dormitoryFlag", true)
+                .containsEntry("dormitoryType", "SHARED_ROOM")
+                .containsEntry("dormitoryChargeDays", 3)
+                .containsEntry("dormitoryDailyAmount", BigDecimal.valueOf(450));
     }
 
     private DailyReportSaveRequest mockRequest() {

@@ -24,6 +24,7 @@ import com.project.backend.app.storage.properties.StorageProperties;
 import com.project.backend.app.storage.service.StorageService;
 import com.project.backend.features.admin.document.service.DocumentStorageKeyResolver;
 import com.project.backend.features.system.excelbook.dto.SpreadsheetTemplateResponse;
+import com.project.backend.features.operation.book.dto.SpreadsheetLedgerGenerationMode;
 import com.project.backend.features.operation.monthly.repository.MonthlyClosingRepository;
 import com.project.backend.features.system.excelbook.entity.ExcelBookDataSourceCatalog;
 import com.project.backend.features.system.excelbook.entity.ExcelBookMaster;
@@ -73,6 +74,9 @@ class SpreadsheetLedgerGenerationServiceTest {
                         List.of(
                                 new RepeatingRowSpreadsheetRenderer(
                                         expander
+                                ),
+                                new MonthlyLaborSpreadsheetRenderer(
+                                        objectMapper
                                 )
                         )
                 ),
@@ -174,5 +178,31 @@ class SpreadsheetLedgerGenerationServiceTest {
                 ).length),
                 eq("application/json")
         );
+    }
+
+    @Test
+    void findActive_shouldDistinguishTemplateAndCodeGeneration() {
+        ExcelBookMaster codeGenerated = new ExcelBookMaster();
+        codeGenerated.setId(43L);
+        codeGenerated.setBookCode("MONTHLY_LABOR");
+        codeGenerated.setBookName("月間労務表");
+        codeGenerated.setSourceName("MONTHLY_LABOR_SOURCE");
+        codeGenerated.setRendererKey(MonthlyLaborSpreadsheetRenderer.KEY);
+
+        when(repository
+                .findByActiveFlagTrueAndDeletedAtIsNullOrderByBookNameAsc())
+                .thenReturn(List.of(master, codeGenerated));
+
+        var result = service.findActive();
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).generationMode())
+                .isEqualTo(SpreadsheetLedgerGenerationMode.TEMPLATE);
+        assertThat(result.get(0).generationReady()).isTrue();
+        assertThat(result.get(0).templateConfigured()).isTrue();
+        assertThat(result.get(1).generationMode())
+                .isEqualTo(SpreadsheetLedgerGenerationMode.CODE);
+        assertThat(result.get(1).generationReady()).isTrue();
+        assertThat(result.get(1).templateConfigured()).isFalse();
     }
 }

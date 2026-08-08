@@ -23,6 +23,7 @@ import com.project.backend.app.storage.service.StorageService;
 import com.project.backend.features.admin.document.enums.DocumentArea;
 import com.project.backend.features.admin.document.service.DocumentStorageKeyResolver;
 import com.project.backend.features.operation.book.dto.OperationExcelBookResponse;
+import com.project.backend.features.operation.book.dto.SpreadsheetLedgerGenerationMode;
 import com.project.backend.features.operation.book.dto.SpreadsheetLedgerGenerateResponse;
 import com.project.backend.features.operation.monthly.enums.MonthlyClosingStatus;
 import com.project.backend.features.operation.monthly.repository.MonthlyClosingRepository;
@@ -66,15 +67,20 @@ public class SpreadsheetLedgerGenerationService {
                 .stream()
                 .map(master -> {
                     SpreadsheetLedgerRenderer renderer = renderer(master);
-                    boolean configured = !renderer.requiresTemplate()
-                            || templateService.find(master.getId())
+                    boolean usesTemplate = renderer.requiresTemplate();
+                    boolean templateConfigured = usesTemplate
+                            && templateService.find(master.getId())
                                     .workbook() != null;
                     return new OperationExcelBookResponse(
                             master.getId(),
                             master.getBookCode(),
                             master.getBookName(),
                             master.getSourceName(),
-                            configured,
+                            usesTemplate
+                                    ? SpreadsheetLedgerGenerationMode.TEMPLATE
+                                    : SpreadsheetLedgerGenerationMode.CODE,
+                            !usesTemplate || templateConfigured,
+                            templateConfigured,
                             new ExcelBookSelectionConfig(
                                     master.getSelectionMode(),
                                     master.getSelectionSourceName(),

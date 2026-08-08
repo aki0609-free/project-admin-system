@@ -62,6 +62,13 @@ public class CustomerTransactionMapper {
 
         entity.setBillingAmount(request.billingAmount());
         entity.setExpectedPaymentDate(request.expectedPaymentDate());
+        entity.setSourceType("MONTHLY_CLOSING");
+        entity.setSourceInvoiceHistoryId(
+                request.sourceInvoiceHistoryId()
+        );
+        entity.setSourceClosingVersion(
+                request.sourceClosingVersion()
+        );
 
         if (entity.getPaidAmount() == null) {
             entity.setPaidAmount(0);
@@ -83,7 +90,9 @@ public class CustomerTransactionMapper {
             entity.setPaymentStatus(CustomerPaymentStatus.UNPAID);
         }
 
-        entity.setNote(request.note());
+        if (request.note() != null) {
+            entity.setNote(request.note());
+        }
     }
 
     public CustomerTransactionResponse toResponse(

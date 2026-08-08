@@ -19,13 +19,19 @@ import com.project.backend.features.system.report.service.builder.ReportHtmlTemp
 
 class BundledReportHtmlTemplateInitializerTest {
 
-    private static final Map<String, String> TEMPLATE_KEYS = Map.of(
+    private static final Map<String, TemplateKey> TEMPLATE_KEYS = Map.of(
             "DAILY_LABOR_COST_PREVIEW",
-            "documents/templates/reports/html/"
-                    + "DAILY_LABOR_COST_PREVIEW/v1/template.html",
+            new TemplateKey(1, "documents/templates/reports/html/"
+                    + "DAILY_LABOR_COST_PREVIEW/v1/template.html"),
             "DAILY_PAYMENT_PREPARATION",
-            "documents/templates/reports/html/"
-                    + "DAILY_PAYMENT_PREPARATION/v1/template.html"
+            new TemplateKey(1, "documents/templates/reports/html/"
+                    + "DAILY_PAYMENT_PREPARATION/v1/template.html"),
+            "DAILY_PAY_SLIP",
+            new TemplateKey(2, "documents/templates/reports/html/"
+                    + "DAILY_PAY_SLIP/v2/template.html"),
+            "MONTHLY_PAY_SLIP",
+            new TemplateKey(1, "documents/templates/reports/html/"
+                    + "MONTHLY_PAY_SLIP/v1/template.html")
     );
 
     private final StorageService storageService =
@@ -44,9 +50,9 @@ class BundledReportHtmlTemplateInitializerTest {
 
         initializer.run(new DefaultApplicationArguments());
 
-        for (String key : TEMPLATE_KEYS.values()) {
+        for (TemplateKey template : TEMPLATE_KEYS.values()) {
             verify(storageService).save(
-                    eq(key),
+                    eq(template.key()),
                     isA(InputStream.class),
                     longThat(size -> size > 0),
                     eq("text/html; charset=UTF-8")
@@ -60,9 +66,9 @@ class BundledReportHtmlTemplateInitializerTest {
 
         initializer.run(new DefaultApplicationArguments());
 
-        for (String key : TEMPLATE_KEYS.values()) {
+        for (TemplateKey template : TEMPLATE_KEYS.values()) {
             verify(storageService, never()).save(
-                    eq(key),
+                    eq(template.key()),
                     isA(InputStream.class),
                     org.mockito.ArgumentMatchers.anyLong(),
                     eq("text/html; charset=UTF-8")
@@ -71,9 +77,13 @@ class BundledReportHtmlTemplateInitializerTest {
     }
 
     private void stubKeys(boolean exists) {
-        TEMPLATE_KEYS.forEach((reportCode, key) -> {
-            when(keyBuilder.build(reportCode, 1)).thenReturn(key);
-            when(storageService.exists(key)).thenReturn(exists);
+        TEMPLATE_KEYS.forEach((reportCode, template) -> {
+            when(keyBuilder.build(reportCode, template.version()))
+                    .thenReturn(template.key());
+            when(storageService.exists(template.key())).thenReturn(exists);
         });
+    }
+
+    private record TemplateKey(int version, String key) {
     }
 }

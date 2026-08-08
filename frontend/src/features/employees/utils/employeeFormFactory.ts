@@ -1,7 +1,5 @@
-import type { EmployeeDetailResponse, EmployeeSaveRequest } from '../types/employeeApiTypes'
+import type { EmployeeDetailResponse } from '../types/employeeApiTypes'
 import type { EmployeeForm } from '../types/employeeFormTypes'
-
-const blankToNull = (value: string): string | null => (value.trim() ? value : null)
 
 export const createEmptyEmployeeForm = (): EmployeeForm => ({
   id: 0,
@@ -19,6 +17,8 @@ export const createEmptyEmployeeForm = (): EmployeeForm => ({
   email: '',
   postalCode: '',
   address: '',
+  dormitoryFlag: false,
+  dormitoryType: null,
   activeFlag: true,
 
   payrollProfile: {
@@ -72,6 +72,8 @@ export const toEmployeeForm = (detail: EmployeeDetailResponse): EmployeeForm => 
   email: detail.email ?? '',
   postalCode: detail.postalCode ?? '',
   address: detail.address ?? '',
+  dormitoryFlag: detail.dormitoryFlag ?? false,
+  dormitoryType: detail.dormitoryType ?? null,
   activeFlag: detail.activeFlag,
 
   payrollProfile: {
@@ -106,56 +108,5 @@ export const toEmployeeForm = (detail: EmployeeDetailResponse): EmployeeForm => 
     hourlyWage: detail.contract.hourlyWage ?? 0,
     standardWorkingHours: detail.contract.standardWorkingHours ?? 0,
     note: detail.contract.note ?? '',
-  },
-})
-
-export const toEmployeeSaveRequest = (form: EmployeeForm): EmployeeSaveRequest => ({
-  employeeCode: form.employeeCode,
-  employeeName: form.employeeName,
-  employeeNameKana: blankToNull(form.employeeNameKana),
-  gender: form.gender,
-  birthDate: blankToNull(form.birthDate),
-  hireDate: blankToNull(form.hireDate),
-  resignDate: blankToNull(form.resignDate),
-  employmentType: form.employmentType,
-  employmentStatus: form.employmentStatus,
-  phone: blankToNull(form.phone),
-  email: blankToNull(form.email),
-  postalCode: blankToNull(form.postalCode),
-  address: blankToNull(form.address),
-  activeFlag: form.activeFlag,
-
-  payrollProfile: {
-    taxCategory: form.payrollProfile.taxCategory,
-    taxDependentCount: form.payrollProfile.taxDependentCount,
-
-    dependentFlag: form.payrollProfile.dependentFlag,
-    dependentOfOtherFlag: form.payrollProfile.dependentOfOtherFlag,
-    paidLeaveRemainingDays: form.payrollProfile.paidLeaveRemainingDays,
-
-    incomeTaxCalcFlag: form.payrollProfile.incomeTaxCalcFlag,
-    residentTaxCalcFlag: form.payrollProfile.residentTaxCalcFlag,
-    residentTaxMonthly: form.payrollProfile.residentTaxMonthly,
-    employmentInsuranceFlag: form.payrollProfile.employmentInsuranceFlag,
-    socialInsuranceFlag: form.payrollProfile.socialInsuranceFlag,
-    healthInsuranceFlag: form.payrollProfile.healthInsuranceFlag,
-    pensionInsuranceFlag: form.payrollProfile.pensionInsuranceFlag,
-    careInsuranceFlag: form.payrollProfile.careInsuranceFlag,
-    dailyPayFlag: form.payrollProfile.dailyPayFlag,
-    commuteAllowanceMonthly: form.payrollProfile.commuteAllowanceMonthly,
-  },
-
-  contract: {
-    contractStartDate: blankToNull(form.contract.contractStartDate),
-    contractEndDate: blankToNull(form.contract.contractEndDate),
-    renewalFlag: form.contract.renewalFlag,
-    salaryType: form.contract.salaryType,
-    paymentCycle: form.contract.paymentCycle,
-    monthlySalary: form.contract.monthlySalary,
-    weeklyWage: form.contract.weeklyWage,
-    dailyWage: form.contract.dailyWage,
-    hourlyWage: form.contract.hourlyWage,
-    standardWorkingHours: form.contract.standardWorkingHours,
-    note: blankToNull(form.contract.note),
   },
 })

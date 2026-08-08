@@ -4,21 +4,25 @@ import java.math.BigDecimal;
 
 import com.project.backend.features.employee.enums.TaxCategory;
 
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+
 public record EmployeePayrollProfileSaveRequest(
-        TaxCategory taxCategory,
-        Integer taxDependentCount,
+        @NotNull TaxCategory taxCategory,
+        @Min(0) Integer taxDependentCount,
         Boolean dependentFlag,
         Boolean dependentOfOtherFlag,
-        BigDecimal paidLeaveRemainingDays,
+        @DecimalMin("0.0") BigDecimal paidLeaveRemainingDays,
         Boolean incomeTaxCalcFlag,
         Boolean residentTaxCalcFlag,
-        BigDecimal residentTaxMonthly,
+        @DecimalMin("0.0") BigDecimal residentTaxMonthly,
         Boolean employmentInsuranceFlag,
         Boolean socialInsuranceFlag,
         Boolean healthInsuranceFlag,
         Boolean pensionInsuranceFlag,
         Boolean careInsuranceFlag,
         Boolean dailyPayFlag,
-        BigDecimal commuteAllowanceMonthly
+        @DecimalMin("0.0") BigDecimal commuteAllowanceMonthly
 ) {
 }

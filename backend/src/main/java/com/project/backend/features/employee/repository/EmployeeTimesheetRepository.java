@@ -12,4 +12,6 @@ public interface EmployeeTimesheetRepository extends JpaRepository<EmployeeTimes
     List<EmployeeTimesheet> findAllByDeletedAtIsNullOrderByWorkDateDescIdDesc();
 
     Optional<EmployeeTimesheet> findByIdAndDeletedAtIsNull(Long id);
+
+    boolean existsByEmployeeIdAndDeletedAtIsNull(Long employeeId);
 }

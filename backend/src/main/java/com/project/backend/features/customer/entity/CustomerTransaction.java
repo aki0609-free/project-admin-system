@@ -10,7 +10,15 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "customer_transactions")
+@Table(
+        name = "customer_transactions",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_customer_transaction_month",
+                columnNames = {
+                        "tenant_id", "customer_id", "target_month"
+                }
+        )
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -75,4 +83,13 @@ public class CustomerTransaction extends BaseEntity {
 
     @Column(name = "note")
     private String note;
+
+    @Column(name = "source_type", length = 30)
+    private String sourceType;
+
+    @Column(name = "source_invoice_history_id")
+    private Long sourceInvoiceHistoryId;
+
+    @Column(name = "source_closing_version")
+    private Integer sourceClosingVersion;
 }

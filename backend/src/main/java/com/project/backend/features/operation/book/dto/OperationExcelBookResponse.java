@@ -8,6 +8,8 @@ public record OperationExcelBookResponse(
         String bookCode,
         String bookName,
         String dataSourceCode,
+        SpreadsheetLedgerGenerationMode generationMode,
+        boolean generationReady,
         boolean templateConfigured,
         ExcelBookSelectionConfig selection,
         ExcelBookPrintConfig print

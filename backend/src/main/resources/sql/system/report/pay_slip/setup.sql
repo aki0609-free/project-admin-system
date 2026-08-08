@@ -9,11 +9,17 @@ create table if not exists daily_pay_slip_input (
 
     execution_id varchar(100) not null,
     payment_date date not null,
-    employee_id bigint not null,
+    -- NULL means all employees for the selected payment date.
+    employee_id bigint null,
 
     index idx_daily_pay_slip_input_execution (execution_id),
     index idx_daily_pay_slip_input_target (tenant_id, payment_date)
 );
+
+-- Existing environments may still have the former NOT NULL definition.
+-- Keep this migration idempotent so the runtime schema upgrade also repairs them.
+alter table daily_pay_slip_input
+    modify column employee_id bigint null;
 
 create table if not exists daily_pay_slip_output (
     id bigint auto_increment primary key,

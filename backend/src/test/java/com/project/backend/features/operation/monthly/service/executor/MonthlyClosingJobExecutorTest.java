@@ -1,9 +1,11 @@
 package com.project.backend.features.operation.monthly.service.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.project.backend.features.operation.monthly.dto.MonthlyClosingPeriod;
+import com.project.backend.app.storage.enums.StorageType;
 import com.project.backend.features.operation.monthly.entity.MonthlyClosingReportFile;
 import com.project.backend.features.operation.monthly.repository.MonthlyClosingReportFileRepository;
 import com.project.backend.features.operation.reportpreview.entity.OperationReportPreview;
@@ -38,9 +41,14 @@ class MonthlyClosingJobExecutorTest {
                 anyMap()
         )).thenReturn(BatchJobRunResult.builder()
                 .executionLogId(10L)
-                .result(BatchJobExecutionResult.message(
-                        "completed"
-                ))
+                .result(BatchJobExecutionResult.builder()
+                        .message("completed")
+                        .storageType(StorageType.LOCAL)
+                        .outputFileKey("reports/monthly.pdf")
+                        .outputFileName("monthly.pdf")
+                        .contentType("application/pdf")
+                        .fileSize(1024L)
+                        .build())
                 .build());
 
         MonthlyClosingJobExecutor executor =
@@ -80,5 +88,51 @@ class MonthlyClosingJobExecutorTest {
                 .isEqualTo(fixedInstant);
         assertThat(captor.getValue()
                 .getBatchExecutionLogId()).isEqualTo(10L);
+    }
+
+    @Test
+    void execute_shouldRejectPersistedReportWithoutGeneratedFile() {
+        BatchExecutionService batchExecutionService =
+                mock(BatchExecutionService.class);
+        MonthlyClosingReportFileRepository repository =
+                mock(MonthlyClosingReportFileRepository.class);
+        when(batchExecutionService.executeNowForResult(
+                org.mockito.ArgumentMatchers.eq("MONTHLY_JOB"),
+                anyMap()
+        )).thenReturn(BatchJobRunResult.builder()
+                .executionLogId(11L)
+                .result(BatchJobExecutionResult.message("completed"))
+                .build());
+
+        MonthlyClosingJobExecutor executor =
+                new MonthlyClosingJobExecutor(
+                        batchExecutionService,
+                        repository,
+                        Clock.systemUTC()
+                );
+        OperationReportPreview preview =
+                new OperationReportPreview();
+        preview.setReportCode("MONTHLY_PAY_SLIP");
+        preview.setJobCode("MONTHLY_JOB");
+        preview.setOutputType(
+                com.project.backend.features.operation.reportpreview.enums
+                        .OperationReportOutputType.PDF
+        );
+
+        assertThatThrownBy(() -> executor.execute(
+                1L,
+                preview,
+                new MonthlyClosingPeriod(
+                        "2026-12",
+                        LocalDate.of(2026, 12, 1),
+                        LocalDate.of(2026, 12, 31),
+                        null
+                ),
+                1
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ファイル");
+        verify(repository, never()).save(
+                org.mockito.ArgumentMatchers.any()
+        );
     }
 }

@@ -356,6 +356,9 @@ public class DailyReportQueryService {
                 .savingAmount(
                         entity.getSavingAmount()
                 )
+                .dormitoryChargeDays(
+                        entity.getDormitoryChargeDays()
+                )
 
                 .normalPayAmount(
                         entity.getNormalPayAmount()

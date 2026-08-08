@@ -8,6 +8,7 @@ import com.project.backend.features.employee.dto.EmployeeSavingResponse;
 import com.project.backend.features.employee.dto.EmployeeSavingSaveRequest;
 import com.project.backend.features.employee.service.EmployeeSavingService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -29,7 +30,7 @@ public class EmployeeSavingController {
 
     @PostMapping
     public EmployeeSavingResponse create(
-            @RequestBody EmployeeSavingSaveRequest request
+            @Valid @RequestBody EmployeeSavingSaveRequest request
     ) {
         return service.create(request);
     }
@@ -37,7 +38,7 @@ public class EmployeeSavingController {
     @PutMapping("/{id}")
     public EmployeeSavingResponse update(
             @PathVariable Long id,
-            @RequestBody EmployeeSavingSaveRequest request
+            @Valid @RequestBody EmployeeSavingSaveRequest request
     ) {
         return service.update(id, request);
     }

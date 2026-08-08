@@ -15,6 +15,15 @@ public interface OperationReportPreviewRepository
             findByOperationTypeAndActiveFlagTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
                     OperationType operationType);
 
+    List<OperationReportPreview>
+            findByOperationTypeAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
+                    OperationType operationType);
+
+    Optional<OperationReportPreview>
+            findByOperationTypeAndReportCodeAndDeletedAtIsNull(
+                    OperationType operationType,
+                    String reportCode);
+
     Optional<OperationReportPreview>
             findByOperationTypeAndReportCodeAndActiveFlagTrueAndDeletedAtIsNull(
                     OperationType operationType,

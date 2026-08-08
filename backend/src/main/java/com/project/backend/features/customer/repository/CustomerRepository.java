@@ -8,4 +8,8 @@ import com.project.backend.features.customer.entity.Customer;
 
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
     List<Customer> findByDeletedAtIsNullOrderByIdAsc();
+
+    List<Customer> findByIdInAndDeletedAtIsNullOrderByIdAsc(
+            List<Long> ids
+    );
 }

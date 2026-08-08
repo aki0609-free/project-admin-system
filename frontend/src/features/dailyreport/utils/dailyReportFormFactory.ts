@@ -64,6 +64,7 @@ export const createEmptyDailyReportForm =
 
     loanRepaymentAmount: 0,
     savingAmount: 0,
+    dormitoryChargeDays: 0,
 
     estimatedGrossPayAmount: 0,
     estimatedNetPayAmount: 0,
@@ -255,6 +256,9 @@ export const toDailyReportForm = (
 
   savingAmount:
     item.savingAmount ?? 0,
+
+  dormitoryChargeDays:
+    item.dormitoryChargeDays ?? 0,
 
   estimatedGrossPayAmount:
     item.estimatedGrossPayAmount

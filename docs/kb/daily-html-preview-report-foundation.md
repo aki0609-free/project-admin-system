@@ -146,6 +146,34 @@ backend/src/main/resources/sql/system/report/preview/daily_preview_foundation_v1
 
 不足列だけを追加するため、Hibernateの`ddl-auto:update`実行前後のどちらでも適用できる。
 
+### 7.1 ローカルDocker
+
+`local` profileでは、HibernateによるEntityテーブル更新後に上記SQLを自動適用する。
+
+```text
+OperationReportPreviewSchemaInitializer
+```
+
+起動のたびにViewとマスターを冪等更新するため、DB Volumeを作り直しても
+日次画面だけが存在してView／帳票定義が欠落する状態にはならない。
+
+適用後は`OperationReportPreviewReadinessValidator`が次を検証する。
+
+- `vw_daily_labor_cost_preview`
+- `vw_daily_payment_preparation_preview`
+- `DAILY_LABOR_COST_PREVIEW`
+- `DAILY_PAYMENT_PREPARATION`
+
+いずれかが不足する場合、日次帳票が利用不能なまま起動成功として扱わない。
+
+### 7.2 AWS DEV
+
+AWS DEVはアプリケーションユーザーへDDL権限を付与しないため、従来どおり
+`apply_runtime_schema_upgrade.sh`からSQLを適用する。
+
+通常の`aws` profile起動ではReadiness Checkだけを行う。
+DB更新スクリプトも、View 2件とマスター2件が揃わなければ失敗する。
+
 ## 8. 主なコード資産
 
 ### バックエンド
@@ -193,6 +221,10 @@ features/operation/reportpreview/components/OperationReportTab.vue
 6. 給与支払表の「ブラウザ印刷」を確認
 7. プレビュー操作で`report_history`が増えないことを確認
 8. 別tenantのデータが表示されないことを確認
+
+プレビューAPIが失敗した場合、画面には共通エラーメッセージとTrace IDを表示する。
+Trace IDをバックエンドログで検索し、DB View、マスター、テンプレートのどこで
+失敗したかを確認する。
 
 ## 11. 今後変更しやすい箇所
 

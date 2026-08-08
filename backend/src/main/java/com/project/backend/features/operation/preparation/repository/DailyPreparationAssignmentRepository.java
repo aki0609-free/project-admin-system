@@ -20,4 +20,6 @@ public interface DailyPreparationAssignmentRepository
             Long preparationId,
             Long employeeId
     );
+
+    boolean existsByEmployeeIdAndDeletedAtIsNull(Long employeeId);
 }

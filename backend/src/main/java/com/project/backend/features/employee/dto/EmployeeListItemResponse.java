@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import com.project.backend.features.employee.enums.EmploymentStatus;
 import com.project.backend.features.employee.enums.EmploymentType;
 import com.project.backend.features.employee.enums.Gender;
+import com.project.backend.features.employee.enums.DormitoryType;
 
 import lombok.Builder;
 
@@ -22,6 +23,8 @@ public record EmployeeListItemResponse(
         EmploymentStatus employmentStatus,
         String phone,
         String email,
+        boolean dormitoryFlag,
+        DormitoryType dormitoryType,
         boolean activeFlag
 ) {
 }

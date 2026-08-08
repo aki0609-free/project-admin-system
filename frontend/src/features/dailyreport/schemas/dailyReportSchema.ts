@@ -53,6 +53,7 @@ export const dailyReportSchema = z.object({
 
   loanRepaymentAmount: z.number().min(0),
   savingAmount: z.number().min(0),
+  dormitoryChargeDays: z.number().int().min(0).max(31),
 
   estimatedGrossPayAmount: z.number().min(0),
   estimatedNetPayAmount: z.number(),

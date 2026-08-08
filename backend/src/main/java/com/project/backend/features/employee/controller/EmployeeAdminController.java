@@ -8,10 +8,12 @@ import com.project.backend.features.employee.dto.EmployeeDetailResponse;
 import com.project.backend.features.employee.dto.EmployeeListItemResponse;
 import com.project.backend.features.employee.dto.EmployeeResignRequest;
 import com.project.backend.features.employee.dto.EmployeeResignationChecklistResponse;
+import com.project.backend.features.employee.dto.EmployeeResignationConfigurationResponse;
 import com.project.backend.features.employee.dto.EmployeeSaveRequest;
 import com.project.backend.features.employee.service.EmployeeAdminService;
 import com.project.backend.features.employee.service.EmployeeResignationChecklistQueryService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -37,15 +39,20 @@ public class EmployeeAdminController {
         return resignationChecklistQueryService.findAllActive();
     }
 
+    @GetMapping("/resignation-configuration")
+    public EmployeeResignationConfigurationResponse findResignationConfiguration() {
+        return resignationChecklistQueryService.findConfiguration();
+    }
+
     @PostMapping
-    public EmployeeDetailResponse create(@RequestBody EmployeeSaveRequest request) {
+    public EmployeeDetailResponse create(@Valid @RequestBody EmployeeSaveRequest request) {
         return service.create(request);
     }
 
     @PutMapping("/{id}")
     public EmployeeDetailResponse update(
             @PathVariable Long id,
-            @RequestBody EmployeeSaveRequest request
+            @Valid @RequestBody EmployeeSaveRequest request
     ) {
         return service.update(id, request);
     }
@@ -53,7 +60,7 @@ public class EmployeeAdminController {
     @PostMapping("/{id}/resign")
     public EmployeeDetailResponse resign(
             @PathVariable Long id,
-            @RequestBody EmployeeResignRequest request
+            @Valid @RequestBody EmployeeResignRequest request
     ) {
         return service.resign(id, request);
     }
@@ -61,5 +68,10 @@ public class EmployeeAdminController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);
+    }
+
+    @PostMapping("/{id}/cancel-resignation")
+    public EmployeeDetailResponse cancelResignation(@PathVariable Long id) {
+        return service.cancelResignation(id);
     }
 }

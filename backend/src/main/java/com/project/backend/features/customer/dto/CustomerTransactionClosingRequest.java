@@ -11,6 +11,8 @@ public record CustomerTransactionClosingRequest(
         DayRule paymentDayRule,
         Integer billingAmount,
         LocalDate expectedPaymentDate,
-        String note
+        String note,
+        Long sourceInvoiceHistoryId,
+        Integer sourceClosingVersion
 ) {
 }

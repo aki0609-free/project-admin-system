@@ -72,18 +72,23 @@ export const useEmployeeLoanEditDialog = (
       label: '従業員',
       type: 'select',
       options: employeeOptions.value,
+      editable: formModel.id === 0,
       gridColumn: '1 / span 2',
     },
     {
       key: 'principal',
       label: '借入元本',
       type: 'number',
+      editable:
+        formModel.id === 0
+        || formModel.currentBalance === (loan.value?.principal ?? formModel.principal),
       gridColumn: '3 / span 1',
     },
     {
       key: 'currentBalance',
       label: '借入残高',
       type: 'number',
+      editable: false,
       gridColumn: '4 / span 1',
     },
     {
@@ -110,17 +115,6 @@ export const useEmployeeLoanEditDialog = (
       type: 'checkbox',
       gridColumn: '4 / span 1',
       width: 120,
-    },
-    {
-      key: 'approvalStatus',
-      label: '承認状態',
-      type: 'select',
-      gridColumn: '1 / span 2',
-      options: [
-        { title: '未承認', value: 'PENDING' },
-        { title: '承認済', value: 'APPROVED' },
-        { title: '却下', value: 'REJECTED' },
-      ],
     },
   ])
 

@@ -3,6 +3,8 @@ export type OperationExcelBook = {
   bookCode: string
   bookName: string
   dataSourceCode: string
+  generationMode: 'TEMPLATE' | 'CODE'
+  generationReady: boolean
   templateConfigured: boolean
   selection: SpreadsheetLedgerSelectionConfig
   print: SpreadsheetLedgerPrintConfig

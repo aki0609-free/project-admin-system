@@ -543,19 +543,35 @@ export const useDailyReportEditDialog = (
         ?? 0
 
       if (formModel.id === 0) {
-        formModel.loanRepaymentAmount =
-          summary.monthlyLoanRepayment
-          ?? 0
-
-        formModel.savingAmount =
-          summary.monthlySavingAmount
-          ?? 0
+        // 日報には、その日に実際に受領した金額だけを入力する。
+        // 月返済・月積立の予定額は参考情報として別項目に保持する。
+        formModel.loanRepaymentAmount = 0
+        formModel.savingAmount = 0
       }
 
       recalculateEstimatedPay()
     },
     {
       immediate: true,
+    },
+  )
+
+  watch(
+    () => formModel.employeeId,
+    employeeId => {
+      if (
+        applyingDetail.value
+        || formModel.id > 0
+      ) {
+        return
+      }
+
+      const employee = employees.value.find(
+        item => item.id === employeeId,
+      )
+
+      formModel.dormitoryChargeDays =
+        employee?.dormitoryFlag ? 1 : 0
     },
   )
 
@@ -650,6 +666,7 @@ export const useDailyReportEditDialog = (
       formModel.vehicleUsedFlag,
       formModel.mileage,
       formModel.paidLeaveDays,
+      formModel.dormitoryChargeDays,
     ],
     schedulePayrollItemPreview,
   )
