@@ -16,14 +16,6 @@ WHERE master.tenant_id = @tenant_id
       'MONTHLY_INVOICE_PATTERN_3'
   );
 
-DELETE FROM report_master
-WHERE tenant_id = @tenant_id
-  AND report_code IN (
-      'MONTHLY_INVOICE_PATTERN_1',
-      'MONTHLY_INVOICE_PATTERN_2',
-      'MONTHLY_INVOICE_PATTERN_3'
-  );
-
 INSERT INTO report_master (
     tenant_id, created_at, updated_at,
     report_code, report_name, template_file_name,
@@ -83,8 +75,33 @@ order by job_code, site_role_code, metric_order'
         'monthly_invoice_pattern_3.jrxml',
         'select * from vw_monthly_invoice_pattern_3_render
 where execution_id = :executionId
-order by customer_site_id, job_code, site_role_code, metric_order'
-) definition;
+    order by customer_site_id, job_code, site_role_code, metric_order'
+) definition
+WHERE TRUE
+ON DUPLICATE KEY UPDATE
+    updated_at = VALUES(updated_at),
+    report_name = VALUES(report_name),
+    template_file_name = VALUES(template_file_name),
+    work_table = VALUES(work_table),
+    input_table = VALUES(input_table),
+    output_table = VALUES(output_table),
+    source_view_name = VALUES(source_view_name),
+    history_table = VALUES(history_table),
+    pre_process_type = VALUES(pre_process_type),
+    pre_process_sql = VALUES(pre_process_sql),
+    procedure_name = VALUES(procedure_name),
+    query_sql = VALUES(query_sql),
+    cleanup_type = VALUES(cleanup_type),
+    cleanup_sql = VALUES(cleanup_sql),
+    cleanup_procedure_name = VALUES(cleanup_procedure_name),
+    layout_type = VALUES(layout_type),
+    layout_count = VALUES(layout_count),
+    file_name = VALUES(file_name),
+    output_format = VALUES(output_format),
+    use_signature = VALUES(use_signature),
+    preview_enabled = VALUES(preview_enabled),
+    active_flag = VALUES(active_flag),
+    deleted_at = NULL;
 
 INSERT INTO report_param (
     tenant_id, created_at, updated_at, report_master_id,
