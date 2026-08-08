@@ -14,6 +14,11 @@ export type CustomerBillingUnit =
   | 'MONTHLY'
   | 'FIXED'
 
+export type CustomerInvoiceType =
+  | 'PATTERN_1'
+  | 'PATTERN_2'
+  | 'PATTERN_3'
+
 export type CustomerSiteResponse = {
   id: number
   customerId: number
@@ -107,6 +112,7 @@ export type CustomerListItemResponse = {
   phone: string | null
   jobType: string | null
   contractFlag: string | null
+  invoiceType: CustomerInvoiceType
   closingDayRule: DayRule | null
   paymentDayRule: DayRule | null
   siteCount: number | null
@@ -155,6 +161,7 @@ export type CustomerSaveRequest = {
   phone: string | null
   jobType: string | null
   contractFlag: string | null
+  invoiceType: CustomerInvoiceType
   closingDayRule: DayRule | null
   paymentDayRule: DayRule | null
   sites: CustomerSiteRequest[]

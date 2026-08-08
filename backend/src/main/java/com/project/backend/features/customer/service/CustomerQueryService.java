@@ -33,11 +33,11 @@ public class CustomerQueryService {
     private final CustomerMapper customerMapper;
 
     public List<CustomerListItemResponse> findAll() {
-        return customerRepository.findAll().stream()
+        return customerRepository.findByDeletedAtIsNullOrderByIdAsc().stream()
                 .map(customer -> customerMapper.toListItem(
                         customer,
-                        customerSiteRepository.findByCustomerIdOrderByIdAsc(customer.getId()).size(),
-                        customerEmployeeRepository.findByCustomerIdOrderByIdAsc(customer.getId()).size(),
+                        customerSiteRepository.findByCustomerIdAndDeletedAtIsNullOrderByIdAsc(customer.getId()).size(),
+                        customerEmployeeRepository.findByCustomerIdAndDeletedAtIsNullOrderByIdAsc(customer.getId()).size(),
                         getLatestPaymentStatus(customer.getId())
                 ))
                 .toList();
@@ -45,19 +45,20 @@ public class CustomerQueryService {
 
     @SuppressWarnings("null")
     public CustomerDetailResponse findDetail(Long id) {
-        Customer customer = customerRepository.findById(id)
+        Customer customer = customerRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new IllegalArgumentException("顧客が見つかりません。id=" + id));
 
         return customerMapper.toDetail(
                 customer,
-                customerSiteRepository.findByCustomerIdOrderByIdAsc(id),
-                customerEmployeeRepository.findByCustomerIdOrderByIdAsc(id),
+                customerSiteRepository.findByCustomerIdAndDeletedAtIsNullOrderByIdAsc(id),
+                customerEmployeeRepository.findByCustomerIdAndDeletedAtIsNullOrderByIdAsc(id),
                 getLatestPaymentStatus(id)
         );
     }
 
     public CustomerOptionResponse findOptions() {
-        List<CustomerOptionItemResponse> customers = customerRepository.findAll()
+        List<CustomerOptionItemResponse> customers = customerRepository
+                .findByDeletedAtIsNullOrderByIdAsc()
                 .stream()
                 .map(customer -> new CustomerOptionItemResponse(
                         customer.getId(),
@@ -65,7 +66,8 @@ public class CustomerQueryService {
                 ))
                 .toList();
 
-        List<CustomerSiteOptionItemResponse> sites = customerSiteRepository.findAll()
+        List<CustomerSiteOptionItemResponse> sites = customerSiteRepository
+                .findByDeletedAtIsNullOrderByIdAsc()
                 .stream()
                 .map(site -> new CustomerSiteOptionItemResponse(
                         site.getId(),
@@ -80,7 +82,7 @@ public class CustomerQueryService {
 
     private String getLatestPaymentStatus(Long customerId) {
         CustomerTransaction latest = customerTransactionRepository
-                .findByCustomerIdOrderByTargetMonthDesc(customerId)
+                .findByCustomerIdAndDeletedAtIsNullOrderByTargetMonthDesc(customerId)
                 .stream()
                 .filter(transaction -> transaction.getTargetMonth() != null)
                 .findFirst()
@@ -91,6 +93,7 @@ public class CustomerQueryService {
         }
 
         return latest.getPaymentStatus() == CustomerPaymentStatus.PAID
+                || latest.getPaymentStatus() == CustomerPaymentStatus.OVERPAID
                 ? "済"
                 : "未";
     }

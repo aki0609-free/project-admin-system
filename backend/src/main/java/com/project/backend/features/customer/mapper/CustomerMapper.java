@@ -78,12 +78,14 @@ public class CustomerMapper {
 
                 DayRuleUtils.toResponse(
                         customer.getClosingDayType(),
-                        customer.getClosingDayValue()
+                        customer.getClosingDayValue(),
+                        customer.getClosingMonthOffset()
                 ),
 
                 DayRuleUtils.toResponse(
                         customer.getPaymentDayType(),
-                        customer.getPaymentDayValue()
+                        customer.getPaymentDayValue(),
+                        customer.getPaymentMonthOffset()
                 ),
 
                 siteCount,
@@ -126,12 +128,14 @@ public class CustomerMapper {
 
                 DayRuleUtils.toResponse(
                         customer.getClosingDayType(),
-                        customer.getClosingDayValue()
+                        customer.getClosingDayValue(),
+                        customer.getClosingMonthOffset()
                 ),
 
                 DayRuleUtils.toResponse(
                         customer.getPaymentDayType(),
-                        customer.getPaymentDayValue()
+                        customer.getPaymentDayValue(),
+                        customer.getPaymentMonthOffset()
                 ),
 
                 safeSites.size(),
@@ -171,6 +175,12 @@ public class CustomerMapper {
                         ? null
                         : rule.value()
         );
+
+        entity.setClosingMonthOffset(
+                rule == null || rule.monthOffset() == null
+                        ? 0
+                        : rule.monthOffset()
+        );
     }
 
     private void applyPaymentDayRule(
@@ -187,6 +197,12 @@ public class CustomerMapper {
                 rule == null
                         ? null
                         : rule.value()
+        );
+
+        entity.setPaymentMonthOffset(
+                rule == null || rule.monthOffset() == null
+                        ? 0
+                        : rule.monthOffset()
         );
     }
 

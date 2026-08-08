@@ -5,7 +5,8 @@ import SearchPanel from '@/shared/components/search/SearchPanel.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
 import type { SimpleTableColumnDef } from '@/shared/components/table/simple_table/types/item/types'
 import type { SearchPanelFieldDef } from '@/shared/components/search/types/searchPanelTypes'
-import type { CustomerTransaction } from '@/features/master/customer/types/customerTypes'
+import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
+import type { CustomerTransaction } from '../types/customerTypes'
 
 export type CustomerTransactionReviewRow = CustomerTransaction & {
   customerName: string
@@ -57,9 +58,16 @@ const columns: SimpleTableColumnDef<CustomerTransactionReviewRow>[] = [
   { title: '入金額', key: 'paidAmount', width: '120px' },
   { title: '手数料', key: 'fee', width: '100px' },
   { title: '合計', key: 'totalAmount', width: '120px' },
-  { title: '入金済', key: 'isPaid', width: '100px', formatter: value => value ? '済' : '未' },
+  {
+    title: '入金済',
+    key: 'paymentStatus',
+    width: '100px',
+    formatter: value => ['PAID', 'OVERPAID'].includes(String(value)) ? '済' : '未',
+  },
   { title: '備考', key: 'note', width: '240px' },
 ]
+
+const filterRules = createSimpleTableFilterRules<CustomerTransactionReviewRow>(columns)
 
 const filteredTransactions = computed(() =>
   props.transactions.filter(row => {
@@ -70,8 +78,9 @@ const filteredTransactions = computed(() =>
       if (!text.includes(filter.customerName.toLowerCase())) return false
     }
 
-    if (filter.paymentStatus === 'paid' && !row.isPaid) return false
-    if (filter.paymentStatus === 'unpaid' && row.isPaid) return false
+    const isPaid = row.paymentStatus === 'PAID' || row.paymentStatus === 'OVERPAID'
+    if (filter.paymentStatus === 'paid' && !isPaid) return false
+    if (filter.paymentStatus === 'unpaid' && isPaid) return false
 
     return true
   }),
@@ -110,6 +119,7 @@ const clearFilter = () => {
           item-key="id"
           :items="filteredTransactions"
           :columns="columns"
+          :filter-rules="filterRules"
         />
       </v-card-text>
 

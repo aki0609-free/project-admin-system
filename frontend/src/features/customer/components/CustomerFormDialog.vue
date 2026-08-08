@@ -92,6 +92,7 @@ const form = reactive<Customer>({
   phone: '',
   jobType: '',
   contractFlag: '',
+  invoiceType: 'PATTERN_1',
   closingDayRule: null,
   paymentDayRule: null,
 })
@@ -188,6 +189,11 @@ const schema = z.object({
     .string()
     .trim()
     .min(1, '顧客名は必須です'),
+  invoiceType: z.enum([
+    'PATTERN_1',
+    'PATTERN_2',
+    'PATTERN_3',
+  ]),
 }).passthrough()
 
 function handleClose() {

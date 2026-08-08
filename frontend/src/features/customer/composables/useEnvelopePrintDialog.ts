@@ -1,9 +1,9 @@
 import { computed, ref, type Ref } from 'vue'
-import type { CustomerListItem } from '@/features/master/customer/types/customerTypes'
+import type { CustomerListItem } from '../types/customerTypes'
 import type {
   EnvelopePrintCustomerOption,
   EnvelopePrintPayload,
-} from '@/features/master/customer/types/envelopePrintTypes'
+} from '../types/envelopePrintTypes'
 import type {
   BatchExecuteResponse,
   StorageType,

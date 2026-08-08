@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 
-import type { CustomerTransactionReviewRow } from '@/features/master/customer/components/CustomerTransactionReviewDialog.vue'
+import type { CustomerTransactionReviewRow } from '../components/CustomerTransactionReviewDialog.vue'
 
 export const useCustomerTransactionReview = () => {
   const dialog = ref(false)

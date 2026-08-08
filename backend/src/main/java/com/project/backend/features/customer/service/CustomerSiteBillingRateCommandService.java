@@ -23,15 +23,18 @@ public class CustomerSiteBillingRateCommandService {
 
     @SuppressWarnings("null")
     public Long create(
-            Long customerSiteId,
+            Long customerId,
             CustomerSiteBillingRateRequest request
     ) {
         validate(request);
 
-        CustomerSite customerSite = findCustomerSite(customerSiteId);
+        CustomerSite customerSite = findCustomerSite(
+                customerId,
+                request.customerSiteId()
+        );
 
-        validateDuplicate(
-                customerSiteId,
+        validateEffectivePeriodOverlap(
+                customerSite.getId(),
                 null,
                 request
         );
@@ -44,38 +47,44 @@ public class CustomerSiteBillingRateCommandService {
 
     @SuppressWarnings("null")
     public void update(
-            Long customerSiteId,
+            Long customerId,
             Long billingRateId,
             CustomerSiteBillingRateRequest request
     ) {
         validate(request);
 
         CustomerSiteBillingRate entity =
-                findOwnedRate(customerSiteId, billingRateId);
+                findOwnedRate(customerId, billingRateId);
 
-        validateDuplicate(
-                customerSiteId,
+        CustomerSite customerSite = findCustomerSite(
+                customerId,
+                request.customerSiteId()
+        );
+
+        validateEffectivePeriodOverlap(
+                customerSite.getId(),
                 billingRateId,
                 request
         );
 
+        entity.setCustomerSite(customerSite);
         mapper.apply(entity, request);
         repository.save(entity);
     }
 
     @SuppressWarnings("null")
     public void delete(
-            Long customerSiteId,
+            Long customerId,
             Long billingRateId
     ) {
         CustomerSiteBillingRate entity =
-                findOwnedRate(customerSiteId, billingRateId);
+                findOwnedRate(customerId, billingRateId);
 
         repository.delete(entity);
     }
 
     private CustomerSiteBillingRate findOwnedRate(
-            Long customerSiteId,
+            Long customerId,
             Long billingRateId
     ) {
         CustomerSiteBillingRate entity =
@@ -85,9 +94,9 @@ public class CustomerSiteBillingRateCommandService {
                                         + billingRateId
                         ));
 
-        if (!customerSiteId.equals(entity.getCustomerSite().getId())) {
+        if (!customerId.equals(entity.getCustomerSite().getCustomerId())) {
             throw new IllegalArgumentException(
-                    "現場請求単価の現場IDが一致しません。"
+                    "現場請求単価の顧客IDが一致しません。"
             );
         }
 
@@ -95,13 +104,28 @@ public class CustomerSiteBillingRateCommandService {
     }
 
     @SuppressWarnings("null")
-    private CustomerSite findCustomerSite(Long customerSiteId) {
-        return customerSiteRepository.findById(customerSiteId)
-                .filter(site -> site.getDeletedAt() == null)
+    private CustomerSite findCustomerSite(
+            Long customerId,
+            Long customerSiteId
+    ) {
+        if (customerSiteId == null) {
+            throw new IllegalArgumentException("現場は必須です。");
+        }
+
+        CustomerSite site = customerSiteRepository
+                .findByIdAndDeletedAtIsNull(customerSiteId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "顧客現場が見つかりません。id="
                                 + customerSiteId
                 ));
+
+        if (!customerId.equals(site.getCustomerId())) {
+            throw new IllegalArgumentException(
+                    "顧客現場の顧客IDが一致しません。"
+            );
+        }
+
+        return site;
     }
 
     private void validate(CustomerSiteBillingRateRequest request) {
@@ -138,7 +162,7 @@ public class CustomerSiteBillingRateCommandService {
         }
     }
 
-    private void validateDuplicate(
+    private void validateEffectivePeriodOverlap(
             Long customerSiteId,
             Long billingRateId,
             CustomerSiteBillingRateRequest request
@@ -149,32 +173,18 @@ public class CustomerSiteBillingRateCommandService {
                         ? "GENERAL"
                         : request.siteRoleCode().trim();
 
-        boolean exists;
-
-        if (billingRateId == null) {
-            exists =
-                    repository
-                            .existsByCustomerSiteIdAndJobCodeAndSiteRoleCodeAndEffectiveFromAndDeletedAtIsNull(
-                                    customerSiteId,
-                                    request.jobCode().trim(),
-                                    siteRoleCode,
-                                    request.effectiveFrom()
-                            );
-        } else {
-            exists =
-                    repository
-                            .existsByCustomerSiteIdAndJobCodeAndSiteRoleCodeAndEffectiveFromAndIdNotAndDeletedAtIsNull(
-                                    customerSiteId,
-                                    request.jobCode().trim(),
-                                    siteRoleCode,
-                                    request.effectiveFrom(),
-                                    billingRateId
-                            );
-        }
+        boolean exists = repository.existsOverlappingRate(
+                customerSiteId,
+                request.jobCode().trim(),
+                siteRoleCode,
+                request.effectiveFrom(),
+                request.effectiveTo(),
+                billingRateId
+        );
 
         if (exists) {
             throw new IllegalArgumentException(
-                    "同じ現場・職種・役職・適用開始日の"
+                    "同じ現場・職種・役職で適用期間が重複する"
                             + "請求単価が既に登録されています。"
             );
         }

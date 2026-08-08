@@ -4,7 +4,7 @@ import type {
   EnvelopePrintCustomerOption,
   EnvelopePrintPayload,
   EnvelopeType,
-} from '@/features/master/customer/types/envelopePrintTypes'
+} from '../types/envelopePrintTypes'
 
 const props = defineProps<{
   modelValue: boolean

@@ -7,6 +7,7 @@ import com.project.backend.features.customer.enums.CustomerBillingUnit;
 
 public record CustomerSiteBillingRateRequest(
         Long id,
+        Long customerSiteId,
 
         String jobCode,
         String jobName,

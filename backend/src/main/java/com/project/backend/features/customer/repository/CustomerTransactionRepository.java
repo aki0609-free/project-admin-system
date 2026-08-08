@@ -9,14 +9,29 @@ import com.project.backend.features.customer.entity.CustomerTransaction;
 
 public interface CustomerTransactionRepository extends JpaRepository<CustomerTransaction, Long> {
 
-    List<CustomerTransaction> findByCustomerIdOrderByTargetMonthDesc(Long customerId);
+    boolean existsByCustomerIdAndDeletedAtIsNull(Long customerId);
 
-    List<CustomerTransaction> findByCustomerIdOrderByIdAsc(Long customerId);
+    List<CustomerTransaction> findByDeletedAtIsNullOrderByTargetMonthDescIdDesc();
 
-    Optional<CustomerTransaction> findByCustomerIdAndTargetMonth(
+    List<CustomerTransaction> findByCustomerIdAndDeletedAtIsNullOrderByTargetMonthDesc(Long customerId);
+
+    List<CustomerTransaction> findByCustomerIdAndDeletedAtIsNullOrderByIdAsc(Long customerId);
+
+    Optional<CustomerTransaction> findByIdAndDeletedAtIsNull(Long id);
+
+    Optional<CustomerTransaction> findByCustomerIdAndTargetMonthAndDeletedAtIsNull(
             Long customerId,
             String targetMonth
     );
 
-    void deleteByCustomerId(Long customerId);
+    boolean existsByCustomerIdAndTargetMonthAndDeletedAtIsNull(
+            Long customerId,
+            String targetMonth
+    );
+
+    boolean existsByCustomerIdAndTargetMonthAndIdNotAndDeletedAtIsNull(
+            Long customerId,
+            String targetMonth,
+            Long id
+    );
 }

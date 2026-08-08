@@ -67,6 +67,7 @@ export function toCustomer(
     phone: toStringValue(response.phone),
     jobType: toStringValue(response.jobType),
     contractFlag: toStringValue(response.contractFlag),
+    invoiceType: response.invoiceType ?? 'PATTERN_1',
     closingDayRule: toDayRule(response.closingDayRule),
     paymentDayRule: toDayRule(response.paymentDayRule),
   }
@@ -168,6 +169,7 @@ export function toCustomerSaveRequest(
     phone: toNullableString(payload.customer.phone),
     jobType: toNullableString(payload.customer.jobType),
     contractFlag: toNullableString(payload.customer.contractFlag),
+    invoiceType: payload.customer.invoiceType,
     closingDayRule: toDayRuleRequest(payload.customer.closingDayRule),
     paymentDayRule: toDayRuleRequest(payload.customer.paymentDayRule),
     sites: payload.sites.map(toCustomerSiteRequest),

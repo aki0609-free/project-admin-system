@@ -27,6 +27,7 @@ function createEmptyCustomer(): Customer {
     phone: '',
     jobType: '',
     contractFlag: '',
+    invoiceType: 'PATTERN_1',
     closingDayRule: null,
     paymentDayRule: null,
   }

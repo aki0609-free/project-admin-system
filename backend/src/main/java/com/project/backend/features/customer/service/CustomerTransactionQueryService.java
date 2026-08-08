@@ -26,7 +26,7 @@ public class CustomerTransactionQueryService {
             return findByCustomerId(customerId);
         }
 
-        return repository.findAll().stream()
+        return repository.findByDeletedAtIsNullOrderByTargetMonthDescIdDesc().stream()
                 .map(mapper::toResponse)
                 .toList();
     }
@@ -34,7 +34,7 @@ public class CustomerTransactionQueryService {
     public List<CustomerTransactionResponse> findByCustomerId(Long customerId) {
         validateCustomerExists(customerId);
 
-        return repository.findByCustomerIdOrderByTargetMonthDesc(customerId)
+        return repository.findByCustomerIdAndDeletedAtIsNullOrderByTargetMonthDesc(customerId)
                 .stream()
                 .map(mapper::toResponse)
                 .toList();
@@ -42,7 +42,7 @@ public class CustomerTransactionQueryService {
 
     @SuppressWarnings("null")
     private void validateCustomerExists(Long customerId) {
-        if (!customerRepository.existsById(customerId)) {
+        if (customerRepository.findByIdAndDeletedAtIsNull(customerId).isEmpty()) {
             throw new IllegalArgumentException("顧客が見つかりません。id=" + customerId);
         }
     }
