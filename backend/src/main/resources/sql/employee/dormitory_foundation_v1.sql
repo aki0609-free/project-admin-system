@@ -121,6 +121,7 @@ CROSS JOIN (
     SELECT DISTINCT tenant_id
     FROM employee
 ) tenants
+WHERE TRUE
 ON DUPLICATE KEY UPDATE updated_at = VALUES(updated_at);
 
 -- 寮費Ruleは金額をコードへ固定せず、寮費マスター日額と日報の徴収日数から算出する。
@@ -159,6 +160,7 @@ SELECT
 FROM (
     SELECT DISTINCT tenant_id FROM employee
 ) tenants
+WHERE TRUE
 ON DUPLICATE KEY UPDATE rule_name = VALUES(rule_name);
 
 INSERT INTO rule_parameter (
