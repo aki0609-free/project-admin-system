@@ -242,10 +242,6 @@ JOIN report_master master ON master.id = param.report_master_id
 WHERE master.tenant_id = @tenant_id
   AND master.report_code = 'DAILY_WORK_ORDER';
 
-DELETE FROM report_master
-WHERE tenant_id = @tenant_id
-  AND report_code = 'DAILY_WORK_ORDER';
-
 INSERT INTO report_master (
     tenant_id, created_at, updated_at,
     report_code, report_name, template_file_name,
@@ -265,7 +261,31 @@ INSERT INTO report_master (
     'PROCEDURE', NULL, 'sp_daily_work_order_cleanup',
     'SINGLE', 1, '作業証明伝票_${targetDate}', 'PDF',
     FALSE, TRUE, TRUE
-);
+)
+ON DUPLICATE KEY UPDATE
+    updated_at = VALUES(updated_at),
+    report_name = VALUES(report_name),
+    template_file_name = VALUES(template_file_name),
+    work_table = VALUES(work_table),
+    input_table = VALUES(input_table),
+    output_table = VALUES(output_table),
+    source_view_name = VALUES(source_view_name),
+    history_table = VALUES(history_table),
+    pre_process_type = VALUES(pre_process_type),
+    pre_process_sql = VALUES(pre_process_sql),
+    procedure_name = VALUES(procedure_name),
+    query_sql = VALUES(query_sql),
+    cleanup_type = VALUES(cleanup_type),
+    cleanup_sql = VALUES(cleanup_sql),
+    cleanup_procedure_name = VALUES(cleanup_procedure_name),
+    layout_type = VALUES(layout_type),
+    layout_count = VALUES(layout_count),
+    file_name = VALUES(file_name),
+    output_format = VALUES(output_format),
+    use_signature = VALUES(use_signature),
+    preview_enabled = VALUES(preview_enabled),
+    active_flag = VALUES(active_flag),
+    deleted_at = NULL;
 
 SET @report_master_id = (
     SELECT id FROM report_master
