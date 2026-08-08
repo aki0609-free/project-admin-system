@@ -15,7 +15,7 @@ export const adminMenu: MenuItem = {
   icon: 'mdi-security',
   children: [
     {
-      title: '業務設定',
+      title: '業務管理',
       to: '/admin/business-settings',
       component: BusinessSettingsPage,
       resource: 'admin',

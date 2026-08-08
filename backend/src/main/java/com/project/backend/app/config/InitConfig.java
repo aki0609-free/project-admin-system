@@ -42,6 +42,7 @@ public class InitConfig {
                                         Map.entry("employee:view", "従業員管理 / 閲覧"),
                                         Map.entry("operation:view", "書類管理 / 閲覧"),
                                         Map.entry("admin:view", "管理者 / 閲覧"),
+                                        Map.entry("admin:manage", "管理者 / 管理"),
                                         Map.entry("user:manage", "ユーザ管理 / 管理"),
                                         Map.entry("system:manage", "システム運用 / 管理"));
 
