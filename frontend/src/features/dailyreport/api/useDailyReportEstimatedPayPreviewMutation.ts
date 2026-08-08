@@ -1,4 +1,4 @@
-import { useAppMutation } from '@/shared/api/useAppMutation'
+import { useMutation } from '@tanstack/vue-query'
 import { post } from '@/shared/api/http'
 import type {
   DailyReportEstimatedPayPreviewResponse,
@@ -6,7 +6,7 @@ import type {
 } from '@/features/dailyreport/types/dailyReportApiTypes'
 
 export const useDailyReportEstimatedPayPreviewMutation = () => {
-  return useAppMutation({
+  return useMutation({
     mutationFn: async (request: DailyReportSaveRequest) =>
       await post<
         DailyReportEstimatedPayPreviewResponse,

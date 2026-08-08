@@ -56,6 +56,7 @@ import {
   dailyReportSchema,
 } from '@/features/dailyreport/schemas/dailyReportSchema'
 import { useDailyReportInputItemsPreviewMutation } from '@/features/dailyreport/api/useDailyReportInputItemsPreviewMutation'
+import { useDailyReportEstimatedPayPreviewMutation } from '@/features/dailyreport/api/useDailyReportEstimatedPayPreviewMutation'
 import { toDailyReportSaveRequest } from '@/features/dailyreport/utils/dailyReportConverters'
 
 import {
@@ -104,11 +105,13 @@ export const useDailyReportEditDialog = (
   const payrollItemsPreview =
     useDailyReportInputItemsPreviewMutation()
 
+  const estimatedPayPreview =
+    useDailyReportEstimatedPayPreviewMutation()
+
   const payrollItemsLoading =
-    computed(
-      () =>
-        payrollItemsPreview
-          .isPending.value,
+    computed(() =>
+      payrollItemsPreview.isPending.value
+      || estimatedPayPreview.isPending.value,
     )
 
   const formModel =
@@ -259,6 +262,9 @@ export const useDailyReportEditDialog = (
 
     const result =
       calculateDailyReportWorkTimes({
+        workDate:
+          formModel.workDate,
+
         startTime:
           formModel.startTime,
 
@@ -283,12 +289,8 @@ export const useDailyReportEditDialog = (
     formModel.nightWorkHours =
       result.nightWorkHours
 
-    /*
-     * 休日時間は現在手入力。
-     * 会社カレンダー対応後に自動振分する。
-     */
     formModel.holidayWorkHours =
-      nvl(formModel.holidayWorkHours)
+      result.holidayWorkHours
 
     recalculateEstimatedPay()
   }
@@ -352,6 +354,20 @@ export const useDailyReportEditDialog = (
         }
 
         applyPreviewItems(response)
+
+        const estimated =
+          await estimatedPayPreview.mutateAsync(
+            toDailyReportSaveRequest(formModel),
+          )
+
+        if (sequence !== previewSequence) {
+          return
+        }
+
+        formModel.estimatedGrossPayAmount =
+          Number(estimated.estimatedGrossPayAmount ?? 0)
+        formModel.estimatedNetPayAmount =
+          Number(estimated.estimatedNetPayAmount ?? 0)
       } catch (error) {
         if (
           sequence
@@ -629,6 +645,7 @@ export const useDailyReportEditDialog = (
 
   watch(
     () => [
+      formModel.workDate,
       formModel.startTime,
       formModel.endTime,
       formModel.breakMinutes,

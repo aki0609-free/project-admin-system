@@ -1,4 +1,4 @@
-import { useAppMutation } from '@/shared/api/useAppMutation'
+import { useMutation } from '@tanstack/vue-query'
 import { post } from '@/shared/api/http'
 import type {
   MailTemplatePreviewRequest,
@@ -6,7 +6,7 @@ import type {
 } from '@/features/system/mail/types/mailApiTypes'
 
 export const usePreviewMailTemplateMutation = () =>
-  useAppMutation({
+  useMutation({
     mutationFn: async (request: MailTemplatePreviewRequest) =>
       await post<MailTemplatePreviewResponse, MailTemplatePreviewRequest>(
         '/api/system/mail-templates/preview',

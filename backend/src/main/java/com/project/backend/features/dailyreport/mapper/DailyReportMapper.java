@@ -12,6 +12,7 @@ import org.mapstruct.ReportingPolicy;
 import com.project.backend.features.dailyreport.dto.DailyReportResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
 import com.project.backend.features.dailyreport.entity.DailyReport;
+import com.project.backend.features.dailyreport.service.DailyReportWorkTimePolicy;
 import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.enums.ApprovalStatus;
 
@@ -107,21 +108,18 @@ public interface DailyReportMapper {
                         : 0
         );
 
-        entity.setWorkHours(
-                nvl(request.workHours())
-        );
-
-        entity.setOvertimeHours(
-                nvl(request.overtimeHours())
-        );
-
-        entity.setNightWorkHours(
-                nvl(request.nightWorkHours())
-        );
-
-        entity.setHolidayWorkHours(
-                nvl(request.holidayWorkHours())
-        );
+        DailyReportWorkTimePolicy.WorkTimes workTimes =
+                DailyReportWorkTimePolicy.resolve(
+                        request.workDate(),
+                        request.workHours(),
+                        request.overtimeHours(),
+                        request.nightWorkHours(),
+                        request.holidayWorkHours()
+                );
+        entity.setWorkHours(workTimes.workHours());
+        entity.setOvertimeHours(workTimes.overtimeHours());
+        entity.setNightWorkHours(workTimes.nightWorkHours());
+        entity.setHolidayWorkHours(workTimes.holidayWorkHours());
 
         entity.setAllowanceAmount(
                 nvl(request.allowanceAmount())

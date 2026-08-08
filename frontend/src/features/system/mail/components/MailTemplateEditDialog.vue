@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
+import { computed, reactive, toRef } from 'vue'
 import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
 import NoticeRichEditor from '@/shared/components/notice/NoticeRichEditor.vue'
 import type { MailTemplateResponse } from '@/features/system/mail/types/mailApiTypes'
@@ -21,11 +21,13 @@ const visible = computed({
   set: value => emit('update:modelValue', value),
 })
 
-const templateDialog = useMailTemplateEditDialog(
-  visible,
-  toRef(props, 'template'),
-  form => emit('save', form),
-  form => emit('delete', form),
+const templateDialog = reactive(
+  useMailTemplateEditDialog(
+    visible,
+    toRef(props, 'template'),
+    form => emit('save', form),
+    form => emit('delete', form),
+  ),
 )
 
 const placeholders = [

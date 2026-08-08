@@ -1,6 +1,7 @@
 package com.project.backend.features.dailyreport.service;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 
 import org.springframework.stereotype.Service;
@@ -32,6 +33,8 @@ public class DailyReportCommandService {
     private final EmployeeRepository employeeRepository;
     private final EmployeeContractRepository employeeContractRepository;
     private final DailyReportMapper mapper;
+    private final DailyReportSaveValidator saveValidator;
+    private final DailyReportCustomerSiteResolver customerSiteResolver;
 
     private final DailyReportAllowanceCommandService allowanceCommandService;
     private final DailyReportDeductionCommandService deductionCommandService;
@@ -40,11 +43,12 @@ public class DailyReportCommandService {
     private final DailyReportEstimatedPayService estimatedPayService;
     private final DailyReportBillingRateService billingRateService;
     private final DailyReportInputItemService inputItemService;
+    private final Clock clock;
 
     public DailyReportResponse create(
             DailyReportSaveRequest request
     ) {
-        validateRequest(request);
+        saveValidator.validateForCreate(request);
 
         Employee employee = findEmployee(
                 request.employeeId()
@@ -57,6 +61,8 @@ public class DailyReportCommandService {
                 entity,
                 employee
         );
+
+        customerSiteResolver.applySnapshot(entity, request);
 
         billingRateService.applyBillingRate(
                 entity
@@ -99,7 +105,7 @@ public class DailyReportCommandService {
             Long id,
             DailyReportSaveRequest request
     ) {
-        validateRequest(request);
+        saveValidator.validateForUpdate(id, request);
 
         DailyReport entity =
                 repository.findByIdAndDeletedAtIsNull(id)
@@ -126,6 +132,8 @@ public class DailyReportCommandService {
                 entity,
                 employee
         );
+
+        customerSiteResolver.applySnapshot(entity, request);
 
         billingRateService.applyBillingRate(
                 entity
@@ -205,7 +213,7 @@ public class DailyReportCommandService {
         );
 
         entity.setDeletedAt(
-                Instant.now()
+                Instant.now(clock)
         );
     }
 
@@ -232,93 +240,6 @@ public class DailyReportCommandService {
                         employeeId
                 )
                 .orElse(null);
-    }
-
-    private void validateRequest(
-            DailyReportSaveRequest request
-    ) {
-        if (request == null) {
-            throw new RuntimeException(
-                    "リクエストが不正です。"
-            );
-        }
-
-        if (request.employeeId() == null) {
-            throw new RuntimeException(
-                    "employeeId は必須です。"
-            );
-        }
-
-        if (request.dormitoryChargeDays() != null
-                && (request.dormitoryChargeDays() < 0
-                || request.dormitoryChargeDays() > 31)) {
-            throw new IllegalArgumentException("寮費日数は0〜31日で指定してください。");
-        }
-
-        if (request.workDate() == null) {
-            throw new RuntimeException(
-                    "workDate は必須です。"
-            );
-        }
-
-        if (request.customerSiteId() != null
-                && (request.jobCode() == null
-                || request.jobCode().isBlank())) {
-            throw new RuntimeException(
-                    "現場を指定した場合、jobCode は必須です。"
-            );
-        }
-
-        validateNonNegative(
-                request.workHours(),
-                "workHours"
-        );
-
-        validateNonNegative(
-                request.overtimeHours(),
-                "overtimeHours"
-        );
-
-        validateNonNegative(
-                request.nightWorkHours(),
-                "nightWorkHours"
-        );
-
-        validateNonNegative(
-                request.holidayWorkHours(),
-                "holidayWorkHours"
-        );
-
-        validateNonNegative(
-                request.paidLeaveDays(),
-                "paidLeaveDays"
-        );
-
-        validateNonNegative(
-                request.mileage(),
-                "mileage"
-        );
-
-        /*
-         * 通常時間と休日時間を同時に入力するケースは、
-         * 現時点では禁止しない。
-         *
-         * 半日通常勤務＋半日休日勤務などを
-         * 将来的に扱える余地を残すため。
-         */
-    }
-
-    private void validateNonNegative(
-            BigDecimal value,
-            String fieldName
-    ) {
-        if (value != null
-                && value.compareTo(BigDecimal.ZERO) < 0) {
-            throw new RuntimeException(
-                    fieldName
-                            + " は0以上で指定してください。"
-            );
-        }
     }
 
     private BigDecimal nvl(

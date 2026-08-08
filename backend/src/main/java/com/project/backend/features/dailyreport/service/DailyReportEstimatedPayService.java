@@ -38,6 +38,14 @@ public class DailyReportEstimatedPayService {
             DailyReportSaveRequest request,
             EmployeeContract contract
     ) {
+        DailyReportWorkTimePolicy.WorkTimes workTimes =
+                DailyReportWorkTimePolicy.resolve(
+                        request.workDate(),
+                        request.workHours(),
+                        request.overtimeHours(),
+                        request.nightWorkHours(),
+                        request.holidayWorkHours()
+                );
         DailyReport report = new DailyReport();
         report.setWorkDate(request.workDate());
         report.setPaymentDate(request.paymentDate());
@@ -45,10 +53,10 @@ public class DailyReportEstimatedPayService {
         report.setCustomerSiteId(request.customerSiteId());
         report.setJobCode(request.jobCode());
         report.setSiteRoleCode(request.siteRoleCode());
-        report.setWorkHours(nvl(request.workHours()));
-        report.setOvertimeHours(nvl(request.overtimeHours()));
-        report.setNightWorkHours(nvl(request.nightWorkHours()));
-        report.setHolidayWorkHours(nvl(request.holidayWorkHours()));
+        report.setWorkHours(workTimes.workHours());
+        report.setOvertimeHours(workTimes.overtimeHours());
+        report.setNightWorkHours(workTimes.nightWorkHours());
+        report.setHolidayWorkHours(workTimes.holidayWorkHours());
         report.setMileage(nvl(request.mileage()));
         report.setAllowanceAmount(nvl(request.allowanceAmount()));
         report.setDeductionAmount(nvl(request.deductionAmount()));

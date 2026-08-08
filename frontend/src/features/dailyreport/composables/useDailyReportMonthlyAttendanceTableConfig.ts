@@ -12,6 +12,7 @@ import { formatHours } from '@/shared/utils/TimeUtils'
 
 const salaryTypeLabelMap: Record<SalaryType, string> = {
   MONTHLY: '月給',
+  WEEKLY: '週給',
   DAILY: '日給',
   HOURLY: '時給',
 }
@@ -31,7 +32,7 @@ export type DailyReportMonthlyAttendanceTableRow = SimpleTableEditableRow & {
   grossSalaryAmount: number
 
   reportCount: number
-  paidLeaveCount: number
+  paidLeaveUsedDays: number
   totalWorkHours: number
   totalOvertimeHours: number
   totalNightWorkHours: number
@@ -61,7 +62,7 @@ export const useDailyReportMonthlyAttendanceTableConfig = (
       grossSalaryAmount: item.grossSalaryAmount,
 
       reportCount: item.reportCount,
-      paidLeaveCount: item.paidLeaveCount,
+      paidLeaveUsedDays: item.paidLeaveUsedDays,
 
       totalWorkHours: item.totalWorkHours,
       totalOvertimeHours: item.totalOvertimeHours,
@@ -87,7 +88,7 @@ export const useDailyReportMonthlyAttendanceTableConfig = (
       { title: '支給見込', key: 'grossSalaryAmount', width: '160px', filter: { type: 'text' } },
 
       { title: '日報数', key: 'reportCount', width: '120px', filter: { type: 'text' } },
-      { title: '有給日数', key: 'paidLeaveCount', width: '120px', filter: { type: 'text' } },
+      { title: '有給日数', key: 'paidLeaveUsedDays', width: '120px', filter: { type: 'text' } },
 
       {
         title: '通常時間',
