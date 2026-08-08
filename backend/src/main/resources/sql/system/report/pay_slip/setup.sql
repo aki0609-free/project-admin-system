@@ -178,7 +178,9 @@ set @tenant_id = 'default';
 set @now = now();
 
 -- =====================================================
--- 既存削除：MONTHLY_PAY_SLIP / DAILY_PAY_SLIP
+-- パラメータは再構築する。
+-- report_master本体はreport_historyから参照されるため削除せず、
+-- 以下のUPSERTで同じIDを維持する。
 -- =====================================================
 
 delete rp
@@ -187,13 +189,6 @@ join report_master rm
   on rm.id = rp.report_master_id
 where rm.tenant_id = @tenant_id
   and rm.report_code in (
-    'MONTHLY_PAY_SLIP',
-    'DAILY_PAY_SLIP'
-  );
-
-delete from report_master
-where tenant_id = @tenant_id
-  and report_code in (
     'MONTHLY_PAY_SLIP',
     'DAILY_PAY_SLIP'
   );
@@ -257,7 +252,31 @@ order by employee_code',
     false,
     true,
     true
-);
+)
+on duplicate key update
+    updated_at = values(updated_at),
+    report_name = values(report_name),
+    template_file_name = values(template_file_name),
+    work_table = values(work_table),
+    input_table = values(input_table),
+    output_table = values(output_table),
+    source_view_name = values(source_view_name),
+    history_table = values(history_table),
+    pre_process_type = values(pre_process_type),
+    pre_process_sql = values(pre_process_sql),
+    procedure_name = values(procedure_name),
+    query_sql = values(query_sql),
+    cleanup_type = values(cleanup_type),
+    cleanup_sql = values(cleanup_sql),
+    cleanup_procedure_name = values(cleanup_procedure_name),
+    layout_type = values(layout_type),
+    layout_count = values(layout_count),
+    file_name = values(file_name),
+    output_format = values(output_format),
+    use_signature = values(use_signature),
+    preview_enabled = values(preview_enabled),
+    active_flag = values(active_flag),
+    deleted_at = null;
 
 set @monthly_report_master_id = (
     select id
@@ -422,7 +441,31 @@ order by employee_code',
     false,
     true,
     true
-);
+)
+on duplicate key update
+    updated_at = values(updated_at),
+    report_name = values(report_name),
+    template_file_name = values(template_file_name),
+    work_table = values(work_table),
+    input_table = values(input_table),
+    output_table = values(output_table),
+    source_view_name = values(source_view_name),
+    history_table = values(history_table),
+    pre_process_type = values(pre_process_type),
+    pre_process_sql = values(pre_process_sql),
+    procedure_name = values(procedure_name),
+    query_sql = values(query_sql),
+    cleanup_type = values(cleanup_type),
+    cleanup_sql = values(cleanup_sql),
+    cleanup_procedure_name = values(cleanup_procedure_name),
+    layout_type = values(layout_type),
+    layout_count = values(layout_count),
+    file_name = values(file_name),
+    output_format = values(output_format),
+    use_signature = values(use_signature),
+    preview_enabled = values(preview_enabled),
+    active_flag = values(active_flag),
+    deleted_at = null;
 
 set @daily_report_master_id = (
     select id
