@@ -27,9 +27,12 @@ public class CustomerTransactionCommandService {
     public Long create(Long customerId, CustomerTransactionRequest request) {
         validateCustomerExists(customerId);
         validate(request);
+        validateTargetMonthDuplicate(customerId, null, request.targetMonth());
 
-        return repository.save(
-                mapper.toEntity(customerId, request)).getId();
+        CustomerTransaction entity = mapper.toEntity(customerId, request);
+        entity.setSourceType("MANUAL");
+        refreshPaymentStatus(entity);
+        return repository.save(entity).getId();
     }
 
     public Long upsertFromMonthlyClosing(CustomerTransactionClosingRequest request) {
@@ -37,7 +40,10 @@ public class CustomerTransactionCommandService {
         validateCustomerExists(request.customerId());
 
         CustomerTransaction entity = repository
-                .findByCustomerIdAndTargetMonth(request.customerId(), request.targetMonth())
+                .findByCustomerIdAndTargetMonthAndDeletedAtIsNull(
+                        request.customerId(),
+                        request.targetMonth()
+                )
                 .orElseGet(CustomerTransaction::new);
 
         if (entity.getPaymentStatus() == CustomerPaymentStatus.PAID
@@ -65,6 +71,11 @@ public class CustomerTransactionCommandService {
         validate(request);
 
         CustomerTransaction entity = findOwnedTransaction(customerId, transactionId);
+        validateTargetMonthDuplicate(
+                customerId,
+                transactionId,
+                request.targetMonth()
+        );
 
         mapper.apply(entity, request);
         refreshPaymentStatus(entity);
@@ -141,6 +152,18 @@ public class CustomerTransactionCommandService {
         validateCustomerExists(customerId);
 
         CustomerTransaction entity = findOwnedTransaction(customerId, transactionId);
+
+        if ("MONTHLY_CLOSING".equals(entity.getSourceType())) {
+            throw new IllegalStateException(
+                    "月次締めで作成された取引情報は削除できません。再締め処理で更新してください。"
+            );
+        }
+        if (entity.getPaymentStatus() != null
+                && entity.getPaymentStatus() != CustomerPaymentStatus.UNPAID) {
+            throw new IllegalStateException(
+                    "入金処理済みの取引情報は削除できません。"
+            );
+        }
         repository.delete(entity);
     }
 
@@ -189,7 +212,7 @@ public class CustomerTransactionCommandService {
             Long customerId,
             Long transactionId) {
         @SuppressWarnings("null")
-        CustomerTransaction entity = repository.findById(transactionId)
+        CustomerTransaction entity = repository.findByIdAndDeletedAtIsNull(transactionId)
                 .orElseThrow(() -> new IllegalArgumentException("取引情報が見つかりません。id=" + transactionId));
 
         if (!customerId.equals(entity.getCustomerId())) {
@@ -207,6 +230,12 @@ public class CustomerTransactionCommandService {
         if (request.targetMonth() == null || request.targetMonth().isBlank()) {
             throw new IllegalArgumentException("対象月は必須です。");
         }
+
+        validateTargetMonthFormat(request.targetMonth());
+        validateNonNegative("請求額", request.billingAmount());
+        validateNonNegative("入金額", request.paidAmount());
+        validateNonNegative("手数料", request.fee());
+        validateNonNegative("相殺額", request.offsetAmount());
     }
 
     private void validateClosingRequest(CustomerTransactionClosingRequest request) {
@@ -221,12 +250,54 @@ public class CustomerTransactionCommandService {
         if (request.targetMonth() == null || request.targetMonth().isBlank()) {
             throw new IllegalArgumentException("targetMonth は必須です。");
         }
+
+        validateTargetMonthFormat(request.targetMonth());
+        validateNonNegative("請求額", request.billingAmount());
     }
 
     @SuppressWarnings("null")
     private void validateCustomerExists(Long customerId) {
-        if (!customerRepository.existsById(customerId)) {
+        if (customerRepository.findByIdAndDeletedAtIsNull(customerId).isEmpty()) {
             throw new IllegalArgumentException("顧客が見つかりません。id=" + customerId);
+        }
+    }
+
+    private void validateTargetMonthDuplicate(
+            Long customerId,
+            Long transactionId,
+            String targetMonth
+    ) {
+        boolean exists = transactionId == null
+                ? repository.existsByCustomerIdAndTargetMonthAndDeletedAtIsNull(
+                        customerId,
+                        targetMonth
+                )
+                : repository.existsByCustomerIdAndTargetMonthAndIdNotAndDeletedAtIsNull(
+                        customerId,
+                        targetMonth,
+                        transactionId
+                );
+        if (exists) {
+            throw new IllegalArgumentException(
+                    "同じ顧客・対象月の取引情報が既に登録されています。"
+            );
+        }
+    }
+
+    private void validateTargetMonthFormat(String targetMonth) {
+        try {
+            java.time.YearMonth.parse(targetMonth);
+        } catch (java.time.format.DateTimeParseException exception) {
+            throw new IllegalArgumentException(
+                    "対象月はyyyy-MM形式で入力してください。",
+                    exception
+            );
+        }
+    }
+
+    private void validateNonNegative(String label, Integer value) {
+        if (value != null && value < 0) {
+            throw new IllegalArgumentException(label + "は0以上で入力してください。");
         }
     }
 }

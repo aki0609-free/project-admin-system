@@ -33,6 +33,10 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
 
         boolean existsByEmployeeIdAndDeletedAtIsNull(Long employeeId);
 
+        boolean existsByCustomerIdAndDeletedAtIsNull(Long customerId);
+
+        boolean existsByCustomerSiteIdAndDeletedAtIsNull(Long customerSiteId);
+
         List<DailyReport> findByPaymentDateAndDeletedAtIsNullOrderByWorkDateDescIdDesc(
                         LocalDate paymentDate);
 

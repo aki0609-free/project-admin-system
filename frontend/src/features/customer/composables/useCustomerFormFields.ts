@@ -16,6 +16,18 @@ export const useCustomerFormFields = () => {
 
     { key: 'jobType', label: '職種', type: 'text', tab: '契約・請求' },
     { key: 'contractFlag', label: '契約有無', type: 'text', tab: '契約・請求' },
+    {
+      key: 'invoiceType',
+      label: '請求書パターン',
+      type: 'select',
+      tab: '契約・請求',
+      required: true,
+      options: [
+        { title: 'パターン1：職種のみ・現場名なし', value: 'PATTERN_1' },
+        { title: 'パターン2：職種・役職別・現場名なし', value: 'PATTERN_2' },
+        { title: 'パターン3：職種・役職・現場別', value: 'PATTERN_3' },
+      ],
+    },
 
     // DayRule
     {

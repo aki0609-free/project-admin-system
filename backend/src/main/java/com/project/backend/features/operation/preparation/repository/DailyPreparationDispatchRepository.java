@@ -20,4 +20,8 @@ public interface DailyPreparationDispatchRepository
             Long preparationId,
             Long customerSiteId
     );
+
+    boolean existsByCustomerIdAndDeletedAtIsNull(Long customerId);
+
+    boolean existsByCustomerSiteIdAndDeletedAtIsNull(Long customerSiteId);
 }

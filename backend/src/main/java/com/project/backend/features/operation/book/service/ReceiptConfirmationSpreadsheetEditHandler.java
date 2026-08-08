@@ -79,7 +79,7 @@ public class ReceiptConfirmationSpreadsheetEditHandler
             }
 
             CustomerTransaction transaction = repository
-                    .findById(transactionId)
+                    .findByIdAndDeletedAtIsNull(transactionId)
                     .orElseThrow(() -> new IllegalArgumentException(
                             "入金取引が見つかりません。id=" + transactionId
                     ));

@@ -22,4 +22,8 @@ public interface DailyPreparationAssignmentRepository
     );
 
     boolean existsByEmployeeIdAndDeletedAtIsNull(Long employeeId);
+
+    boolean existsByCustomerIdAndDeletedAtIsNull(Long customerId);
+
+    boolean existsByCustomerSiteIdAndDeletedAtIsNull(Long customerSiteId);
 }

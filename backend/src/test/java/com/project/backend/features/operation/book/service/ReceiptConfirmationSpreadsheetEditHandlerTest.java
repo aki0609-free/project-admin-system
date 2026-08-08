@@ -46,7 +46,8 @@ class ReceiptConfirmationSpreadsheetEditHandlerTest {
         transaction.setCustomerId(10L);
         transaction.setTargetMonth("2026-02");
         transaction.setBillingAmount(1134014);
-        when(repository.findById(1L)).thenReturn(Optional.of(transaction));
+        when(repository.findByIdAndDeletedAtIsNull(1L))
+                .thenReturn(Optional.of(transaction));
 
         var workbook = objectMapper.readTree(
                 """
@@ -95,7 +96,8 @@ class ReceiptConfirmationSpreadsheetEditHandlerTest {
         transaction.setCustomerId(10L);
         transaction.setTargetMonth("2026-02");
         transaction.setBillingAmount(1000);
-        when(repository.findById(1L)).thenReturn(Optional.of(transaction));
+        when(repository.findByIdAndDeletedAtIsNull(1L))
+                .thenReturn(Optional.of(transaction));
 
         var workbook = objectMapper.readTree(
                 """

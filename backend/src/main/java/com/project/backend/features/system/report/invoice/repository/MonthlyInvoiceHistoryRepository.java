@@ -10,6 +10,8 @@ import com.project.backend.features.system.report.invoice.entity.MonthlyInvoiceH
 public interface MonthlyInvoiceHistoryRepository
         extends JpaRepository<MonthlyInvoiceHistory, Long> {
 
+    boolean existsByCustomerIdAndDeletedAtIsNull(Long customerId);
+
     List<MonthlyInvoiceHistory>
             findByTargetMonthAndClosingVersionAndDeletedAtIsNullOrderByCustomerIdAsc(
                     LocalDate targetMonth,

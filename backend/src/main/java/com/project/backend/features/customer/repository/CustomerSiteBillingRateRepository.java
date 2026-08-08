@@ -62,4 +62,24 @@ public interface CustomerSiteBillingRateRepository
             LocalDate effectiveFrom,
             Long id
     );
+
+    @Query("""
+            select count(r) > 0
+            from CustomerSiteBillingRate r
+            where r.customerSite.id = :customerSiteId
+              and r.jobCode = :jobCode
+              and r.siteRoleCode = :siteRoleCode
+              and r.deletedAt is null
+              and (:excludedId is null or r.id <> :excludedId)
+              and (:effectiveTo is null or r.effectiveFrom <= :effectiveTo)
+              and (r.effectiveTo is null or r.effectiveTo >= :effectiveFrom)
+            """)
+    boolean existsOverlappingRate(
+            @Param("customerSiteId") Long customerSiteId,
+            @Param("jobCode") String jobCode,
+            @Param("siteRoleCode") String siteRoleCode,
+            @Param("effectiveFrom") LocalDate effectiveFrom,
+            @Param("effectiveTo") LocalDate effectiveTo,
+            @Param("excludedId") Long excludedId
+    );
 }

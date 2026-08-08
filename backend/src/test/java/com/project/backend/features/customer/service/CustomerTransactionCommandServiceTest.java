@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 
 import com.project.backend.features.customer.dto.CustomerPaymentConfirmRequest;
 import com.project.backend.features.customer.dto.CustomerTransactionClosingRequest;
+import com.project.backend.features.customer.dto.CustomerTransactionRequest;
+import com.project.backend.features.customer.entity.Customer;
 import com.project.backend.features.customer.entity.CustomerTransaction;
 import com.project.backend.features.customer.enums.CustomerPaymentStatus;
 import com.project.backend.features.customer.mapper.CustomerTransactionMapper;
@@ -36,8 +38,8 @@ class CustomerTransactionCommandServiceTest {
     @Test
     void confirmPayment_shouldCountFeeAndOffsetAsSettledAmount() {
         CustomerTransaction entity = transaction(1_134_014);
-        when(customerRepository.existsById(10L)).thenReturn(true);
-        when(repository.findById(20L)).thenReturn(Optional.of(entity));
+        customerExists();
+        when(repository.findByIdAndDeletedAtIsNull(20L)).thenReturn(Optional.of(entity));
 
         service.confirmPayment(
                 10L,
@@ -59,8 +61,8 @@ class CustomerTransactionCommandServiceTest {
     @Test
     void confirmPayment_shouldKeepPartialStatusWhenSettlementIsShort() {
         CustomerTransaction entity = transaction(100_000);
-        when(customerRepository.existsById(10L)).thenReturn(true);
-        when(repository.findById(20L)).thenReturn(Optional.of(entity));
+        customerExists();
+        when(repository.findByIdAndDeletedAtIsNull(20L)).thenReturn(Optional.of(entity));
 
         service.confirmPayment(
                 10L,
@@ -86,8 +88,8 @@ class CustomerTransactionCommandServiceTest {
         entity.setFee(500);
         entity.setOffsetAmount(1_000);
         entity.setPaymentStatus(CustomerPaymentStatus.PARTIAL);
-        when(customerRepository.existsById(10L)).thenReturn(true);
-        when(repository.findByCustomerIdAndTargetMonth(
+        customerExists();
+        when(repository.findByCustomerIdAndTargetMonthAndDeletedAtIsNull(
                 10L,
                 "2026-02"
         )).thenReturn(Optional.of(entity));
@@ -108,8 +110,8 @@ class CustomerTransactionCommandServiceTest {
     void upsertFromMonthlyClosing_shouldRejectPaidTransaction() {
         CustomerTransaction entity = transaction(100_000);
         entity.setPaymentStatus(CustomerPaymentStatus.PAID);
-        when(customerRepository.existsById(10L)).thenReturn(true);
-        when(repository.findByCustomerIdAndTargetMonth(
+        customerExists();
+        when(repository.findByCustomerIdAndTargetMonthAndDeletedAtIsNull(
                 10L,
                 "2026-02"
         )).thenReturn(Optional.of(entity));
@@ -119,6 +121,38 @@ class CustomerTransactionCommandServiceTest {
         )).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("入金済み");
         verify(repository, never()).save(entity);
+    }
+
+    @Test
+    void create_shouldRejectDuplicateCustomerAndTargetMonth() {
+        customerExists();
+        when(repository.existsByCustomerIdAndTargetMonthAndDeletedAtIsNull(
+                10L,
+                "2026-02"
+        )).thenReturn(true);
+
+        assertThatThrownBy(() -> service.create(10L, transactionRequest()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("既に登録");
+
+        verify(repository, never()).save(
+                org.mockito.ArgumentMatchers.any(CustomerTransaction.class)
+        );
+    }
+
+    @Test
+    void delete_shouldRejectTransactionCreatedByMonthlyClosing() {
+        CustomerTransaction entity = transaction(100_000);
+        entity.setSourceType("MONTHLY_CLOSING");
+        customerExists();
+        when(repository.findByIdAndDeletedAtIsNull(20L))
+                .thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> service.delete(10L, 20L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("月次締め");
+
+        verify(repository, never()).delete(entity);
     }
 
     private CustomerTransactionClosingRequest closingRequest(
@@ -146,5 +180,31 @@ class CustomerTransactionCommandServiceTest {
         entity.setTargetMonth("2026-02");
         entity.setBillingAmount(billingAmount);
         return entity;
+    }
+
+    private void customerExists() {
+        Customer customer = new Customer();
+        customer.setId(10L);
+        when(customerRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(customer));
+    }
+
+    private CustomerTransactionRequest transactionRequest() {
+        return new CustomerTransactionRequest(
+                null,
+                10L,
+                "2026-02",
+                null,
+                null,
+                100_000,
+                null,
+                null,
+                0,
+                0,
+                0,
+                0,
+                CustomerPaymentStatus.UNPAID,
+                null
+        );
     }
 }
