@@ -26,3 +26,7 @@ logging:
 app:
   ai:
     enabled: ${APP_AI_ENABLED:false}
+  report:
+    preview:
+      readiness-check:
+        enabled: true

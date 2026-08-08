@@ -138,7 +138,7 @@ INSERT INTO operation_report_preview (
     'PRINT_DAILY_PAY_SLIP',
     'vw_daily_pay_slip_latest', 'payment_date', 'paymentDate',
     'daily_pay_slip.jrxml',
-    'documents/templates/reports/html/DAILY_PAY_SLIP/v1/template.html', 1,
+    'documents/templates/reports/html/DAILY_PAY_SLIP/v2/template.html', 2,
     'employee_code', 30, TRUE, 'PDF'
 ),
 (

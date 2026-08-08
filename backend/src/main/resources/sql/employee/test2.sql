@@ -100,6 +100,7 @@ INSERT INTO employee_loan (
     tenant_id,
     employee_id,
     principal,
+    current_balance,
     monthly_repayment,
     loan_date,
     repayment_start_date,
@@ -112,6 +113,7 @@ INSERT INTO employee_loan (
 SELECT
     'default',
     e.id,
+    100000,
     100000,
     10000,
     '2026-04-01',
@@ -128,6 +130,7 @@ INSERT INTO employee_loan (
     tenant_id,
     employee_id,
     principal,
+    current_balance,
     monthly_repayment,
     loan_date,
     repayment_start_date,
@@ -140,6 +143,7 @@ INSERT INTO employee_loan (
 SELECT
     'default',
     e.id,
+    50000,
     50000,
     5000,
     '2026-04-15',

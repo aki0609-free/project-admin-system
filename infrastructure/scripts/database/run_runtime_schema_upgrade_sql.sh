@@ -153,6 +153,135 @@ if [[ "${verification}" != "11:5:3:4:1" ]]; then
   exit 1
 fi
 
+daily_preview_verification="$(
+  run_mysql "" --batch --skip-column-names --execute "
+    SELECT CONCAT(
+      (SELECT COUNT(*)
+       FROM information_schema.views
+       WHERE table_schema = DATABASE()
+         AND table_name IN (
+           'vw_daily_labor_cost_preview',
+           'vw_daily_payment_preparation_preview'
+         )),
+      ':',
+      (SELECT COUNT(DISTINCT report_code)
+       FROM operation_report_preview
+       WHERE tenant_id = 'default'
+         AND active_flag = TRUE
+         AND deleted_at IS NULL
+         AND report_code IN (
+           'DAILY_LABOR_COST_PREVIEW',
+           'DAILY_PAYMENT_PREPARATION'
+         ))
+    );
+  "
+)"
+
+if [[ "${daily_preview_verification}" != "2:2" ]]; then
+  echo "Daily preview verification failed: ${daily_preview_verification}" >&2
+  exit 1
+fi
+
+daily_pay_slip_verification="$(
+  run_mysql "" --batch --skip-column-names --execute "
+    SELECT CONCAT(
+      (SELECT is_nullable
+       FROM information_schema.columns
+       WHERE table_schema = DATABASE()
+         AND table_name = 'daily_pay_slip_input'
+         AND column_name = 'employee_id'),
+      ':',
+      (SELECT COUNT(*)
+       FROM information_schema.views
+       WHERE table_schema = DATABASE()
+         AND table_name = 'vw_daily_pay_slip_latest'),
+      ':',
+      (SELECT COUNT(*)
+       FROM information_schema.routines
+       WHERE routine_schema = DATABASE()
+         AND routine_type = 'PROCEDURE'
+         AND routine_name = 'sp_daily_pay_slip_prepare'),
+      ':',
+      (SELECT COUNT(*)
+       FROM report_master
+       WHERE tenant_id = 'default'
+         AND report_code = 'DAILY_PAY_SLIP'
+         AND active_flag = TRUE
+         AND deleted_at IS NULL),
+      ':',
+      (SELECT COUNT(*)
+       FROM batch_job_definition
+       WHERE tenant_id = 'default'
+         AND job_code = 'PRINT_DAILY_PAY_SLIP'
+         AND active_flag = TRUE
+         AND deleted_at IS NULL),
+      ':',
+      (SELECT COUNT(*)
+       FROM operation_report_preview
+       WHERE tenant_id = 'default'
+         AND report_code = 'DAILY_PAY_SLIP'
+         AND html_template_key = 'documents/templates/reports/html/DAILY_PAY_SLIP/v2/template.html'
+         AND html_template_version = 2
+         AND active_flag = TRUE
+         AND deleted_at IS NULL)
+    );
+  "
+)"
+
+if [[ "${daily_pay_slip_verification}" != "YES:1:1:1:1:1" ]]; then
+  echo "Daily pay slip verification failed: ${daily_pay_slip_verification}" >&2
+  exit 1
+fi
+
+customer_transaction_sync_verification="$(
+  run_mysql "" --batch --skip-column-names --execute "
+    SELECT CONCAT(
+      (SELECT COUNT(*)
+       FROM information_schema.columns
+       WHERE table_schema = DATABASE()
+         AND table_name = 'customer_transactions'
+         AND column_name IN (
+           'source_type',
+           'source_invoice_history_id',
+           'source_closing_version'
+         )),
+      ':',
+      (SELECT COUNT(*)
+       FROM information_schema.statistics
+       WHERE table_schema = DATABASE()
+         AND table_name = 'customer_transactions'
+         AND index_name = 'uk_customer_transaction_month')
+    );
+  "
+)"
+
+if [[ "${customer_transaction_sync_verification}" != "3:3" ]]; then
+  echo "Customer transaction sync verification failed: ${customer_transaction_sync_verification}" >&2
+  exit 1
+fi
+
+business_settings_verification="$(
+  run_mysql "" --batch --skip-column-names --execute "
+    SELECT CONCAT(
+      (SELECT COUNT(*)
+       FROM information_schema.tables
+       WHERE table_schema = DATABASE()
+         AND table_name = 'employee_resignation_setting'),
+      ':',
+      (SELECT COUNT(*)
+       FROM information_schema.statistics
+       WHERE table_schema = DATABASE()
+         AND table_name = 'employee_resignation_checklist_master'
+         AND index_name = 'uk_employee_resignation_checklist_code')
+    );
+  "
+)"
+
+if [[ "${business_settings_verification}" != "1:2" ]]; then
+  echo "Business settings verification failed: ${business_settings_verification}" >&2
+  exit 1
+fi
+
 run_mysql "" --table --execute "
   SELECT table_name, column_name, column_type
   FROM information_schema.columns

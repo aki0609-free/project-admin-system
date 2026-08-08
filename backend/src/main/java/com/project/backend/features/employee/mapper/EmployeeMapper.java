@@ -19,8 +19,6 @@ import com.project.backend.features.employee.dto.EmployeeSaveRequest;
 import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.entity.EmployeePayrollProfile;
-import com.project.backend.features.employee.enums.EmploymentStatus;
-import com.project.backend.features.employee.enums.EmploymentType;
 import com.project.backend.features.employee.enums.PaymentCycle;
 import com.project.backend.features.employee.enums.SalaryType;
 import com.project.backend.features.employee.enums.TaxCategory;
@@ -46,6 +44,8 @@ public interface EmployeeMapper {
         @Mapping(target = "email", source = "employee.email")
         @Mapping(target = "postalCode", source = "employee.postalCode")
         @Mapping(target = "address", source = "employee.address")
+        @Mapping(target = "dormitoryFlag", source = "employee.dormitoryFlag")
+        @Mapping(target = "dormitoryType", source = "employee.dormitoryType")
         @Mapping(target = "activeFlag", source = "employee.activeFlag")
         @Mapping(target = "payrollProfile", source = "payrollProfile")
         @Mapping(target = "contract", source = "contract")
@@ -58,6 +58,12 @@ public interface EmployeeMapper {
 
         EmployeeContractResponse toContractResponse(EmployeeContract contract);
 
+        @Mapping(target = "employeeCode", ignore = true)
+        @Mapping(target = "resignDate", ignore = true)
+        @Mapping(target = "employmentStatus", ignore = true)
+        @Mapping(target = "activeFlag", ignore = true)
+        @Mapping(target = "dormitoryFlag", ignore = true)
+        @Mapping(target = "dormitoryType", ignore = true)
         void updateEmployeeFromRequest(
                         EmployeeSaveRequest request,
                         @MappingTarget Employee employee);
@@ -69,24 +75,6 @@ public interface EmployeeMapper {
         void updateContractFromRequest(
                         EmployeeContractSaveRequest request,
                         @MappingTarget EmployeeContract contract);
-
-        @AfterMapping
-        default void afterUpdateEmployeeFromRequest(
-                        EmployeeSaveRequest request,
-                        @MappingTarget Employee employee) {
-                employee.setEmploymentType(
-                                request.employmentType() != null
-                                                ? request.employmentType()
-                                                : EmploymentType.FULL_TIME);
-
-                employee.setEmploymentStatus(
-                                request.employmentStatus() != null
-                                                ? request.employmentStatus()
-                                                : EmploymentStatus.ACTIVE);
-
-                employee.setActiveFlag(
-                                request.activeFlag() == null || request.activeFlag());
-        }
 
         @AfterMapping
         default void afterUpdatePayrollProfileFromRequest(

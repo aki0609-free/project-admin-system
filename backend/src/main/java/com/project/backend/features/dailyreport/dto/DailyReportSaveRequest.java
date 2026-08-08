@@ -43,6 +43,7 @@ public record DailyReportSaveRequest(
 
         BigDecimal loanRepaymentAmount,
         BigDecimal savingAmount,
+        Integer dormitoryChargeDays,
 
         Boolean vehicleUsedFlag,
         BigDecimal mileage,

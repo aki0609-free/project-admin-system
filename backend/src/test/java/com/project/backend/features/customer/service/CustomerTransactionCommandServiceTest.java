@@ -1,7 +1,10 @@
 package com.project.backend.features.customer.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
@@ -10,6 +13,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import com.project.backend.features.customer.dto.CustomerPaymentConfirmRequest;
+import com.project.backend.features.customer.dto.CustomerTransactionClosingRequest;
 import com.project.backend.features.customer.entity.CustomerTransaction;
 import com.project.backend.features.customer.enums.CustomerPaymentStatus;
 import com.project.backend.features.customer.mapper.CustomerTransactionMapper;
@@ -73,6 +77,66 @@ class CustomerTransactionCommandServiceTest {
         assertThat(entity.getTotalAmount()).isEqualTo(81_500);
         assertThat(entity.getPaymentStatus())
                 .isEqualTo(CustomerPaymentStatus.PARTIAL);
+    }
+
+    @Test
+    void upsertFromMonthlyClosing_shouldRefreshPartialPaymentStatus() {
+        CustomerTransaction entity = transaction(100_000);
+        entity.setPaidAmount(80_000);
+        entity.setFee(500);
+        entity.setOffsetAmount(1_000);
+        entity.setPaymentStatus(CustomerPaymentStatus.PARTIAL);
+        when(customerRepository.existsById(10L)).thenReturn(true);
+        when(repository.findByCustomerIdAndTargetMonth(
+                10L,
+                "2026-02"
+        )).thenReturn(Optional.of(entity));
+        when(repository.save(entity)).thenReturn(entity);
+
+        service.upsertFromMonthlyClosing(
+                closingRequest(80_000, 90L, 2)
+        );
+
+        assertThat(entity.getTotalAmount()).isEqualTo(81_500);
+        assertThat(entity.getPaymentStatus())
+                .isEqualTo(CustomerPaymentStatus.OVERPAID);
+        assertThat(entity.getSourceInvoiceHistoryId()).isEqualTo(90L);
+        assertThat(entity.getSourceClosingVersion()).isEqualTo(2);
+    }
+
+    @Test
+    void upsertFromMonthlyClosing_shouldRejectPaidTransaction() {
+        CustomerTransaction entity = transaction(100_000);
+        entity.setPaymentStatus(CustomerPaymentStatus.PAID);
+        when(customerRepository.existsById(10L)).thenReturn(true);
+        when(repository.findByCustomerIdAndTargetMonth(
+                10L,
+                "2026-02"
+        )).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> service.upsertFromMonthlyClosing(
+                closingRequest(110_000, 91L, 2)
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("入金済み");
+        verify(repository, never()).save(entity);
+    }
+
+    private CustomerTransactionClosingRequest closingRequest(
+            int billingAmount,
+            long historyId,
+            int closingVersion
+    ) {
+        return new CustomerTransactionClosingRequest(
+                10L,
+                "2026-02",
+                null,
+                null,
+                billingAmount,
+                null,
+                null,
+                historyId,
+                closingVersion
+        );
     }
 
     private CustomerTransaction transaction(int billingAmount) {

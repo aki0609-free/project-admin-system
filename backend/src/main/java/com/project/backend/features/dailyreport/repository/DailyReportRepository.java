@@ -31,6 +31,8 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
                         Long employeeId,
                         LocalDate workDate);
 
+        boolean existsByEmployeeIdAndDeletedAtIsNull(Long employeeId);
+
         List<DailyReport> findByPaymentDateAndDeletedAtIsNullOrderByWorkDateDescIdDesc(
                         LocalDate paymentDate);
 

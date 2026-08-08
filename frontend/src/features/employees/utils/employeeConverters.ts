@@ -1,5 +1,5 @@
-import { EmployeeSaveRequest } from "../types/employeeApiTypes"
-import { EmployeeForm } from "../types/employeeFormTypes"
+import type { EmployeeSaveRequest } from '../types/employeeApiTypes'
+import type { EmployeeForm } from '../types/employeeFormTypes'
 
 const blankToNull = (value: string): string | null =>
   value.trim() ? value : null
@@ -20,6 +20,8 @@ export const toEmployeeSaveRequest = (
   email: blankToNull(form.email),
   postalCode: blankToNull(form.postalCode),
   address: blankToNull(form.address),
+  dormitoryFlag: form.dormitoryFlag,
+  dormitoryType: form.dormitoryFlag ? form.dormitoryType : null,
   activeFlag: form.activeFlag,
   payrollProfile: {
     ...form.payrollProfile,

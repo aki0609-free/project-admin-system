@@ -84,6 +84,26 @@ class LaborCostPaymentSpreadsheetRendererTest {
                 .isEqualTo(3);
     }
 
+    @Test
+    void render_shouldCreateFormattedWorkbookWhenSourceIsEmpty() {
+        var result = renderer.render(context(master(), List.of()));
+        var sheet = result.path("Workbook").path("sheets").get(0);
+
+        assertThat(sheet.path("name").asText()).isEqualTo("月払い");
+        assertThat(sheet.path("showGridLines").asBoolean()).isFalse();
+        assertThat(sheet.path("usedRange").path("colIndex").asInt())
+                .isEqualTo(12);
+        assertThat(sheet.path("columns")).hasSize(13);
+        assertThat(sheet.path("rows")).hasSize(45);
+        assertThat(sheet.path("rows").get(0).path("cells").get(0)
+                .path("value").asText())
+                .contains("労務費支払一覧総支給");
+        assertThat(sheet.path("rows").get(4).path("cells").get(0)
+                .path("value").asText()).isEqualTo("日付");
+        assertThat(sheet.path("rows").get(44).path("cells").get(0)
+                .path("value").asText()).isEqualTo("差引支給額");
+    }
+
     private SpreadsheetLedgerRenderContext context(
             ExcelBookMaster master,
             List<Map<String, Object>> rows

@@ -16,4 +16,18 @@ public interface EmployeeLoanRepository extends JpaRepository<EmployeeLoan, Long
     Optional<EmployeeLoan> findFirstByEmployeeIdAndActiveFlagTrueOrderByIdDesc(
         Long employeeId
     );
+
+    Optional<EmployeeLoan> findFirstByEmployeeIdAndApprovalStatusAndDeletedAtIsNullOrderByIdDesc(
+            Long employeeId,
+            com.project.backend.features.employee.enums.ApprovalStatus approvalStatus
+    );
+
+    boolean existsByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNull(Long employeeId);
+
+    boolean existsByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullAndIdNot(
+            Long employeeId,
+            Long id
+    );
+
+    boolean existsByEmployeeIdAndDeletedAtIsNull(Long employeeId);
 }

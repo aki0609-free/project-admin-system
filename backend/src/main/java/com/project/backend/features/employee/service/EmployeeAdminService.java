@@ -33,6 +33,7 @@ public class EmployeeAdminService {
     private final EmployeeContractRepository contractRepository;
     private final EmployeeResignationChecklistRepository resignationChecklistRepository;
     private final EmployeeMapper mapper;
+    private final EmployeeDeletionPolicy deletionPolicy;
 
     @Transactional(readOnly = true)
     public List<EmployeeListItemResponse> findAll() {
@@ -56,10 +57,17 @@ public class EmployeeAdminService {
 
     @Transactional
     public EmployeeDetailResponse create(EmployeeSaveRequest request) {
-        validateRequest(request, null);
+        validateRequest(request, null, null);
 
         Employee employee = new Employee();
+        employee.setEmployeeCode(request.employeeCode().trim());
         mapper.updateEmployeeFromRequest(request, employee);
+        employee.updateDormitory(
+                Boolean.TRUE.equals(request.dormitoryFlag()),
+                request.dormitoryType()
+        );
+        employee.setEmployeeName(request.employeeName().trim());
+        employee.initializeEmployment();
 
         Employee savedEmployee = employeeRepository.save(employee);
 
@@ -79,12 +87,18 @@ public class EmployeeAdminService {
     @SuppressWarnings("null")
     @Transactional
     public EmployeeDetailResponse update(Long id, EmployeeSaveRequest request) {
-        validateRequest(request, id);
-
         Employee employee = employeeRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("従業員が見つかりません。 id=" + id));
 
+        validateRequest(request, id, employee);
+
         mapper.updateEmployeeFromRequest(request, employee);
+        employee.updateDormitory(
+                Boolean.TRUE.equals(request.dormitoryFlag()),
+                request.dormitoryType()
+        );
+        employee.setEmployeeName(request.employeeName().trim());
+        employee.changeEmploymentStatus(request.employmentStatus());
 
         EmployeePayrollProfile profile = payrollProfileRepository.findByEmployeeIdAndDeletedAtIsNull(id)
                 .orElseGet(() -> {
@@ -123,9 +137,7 @@ public class EmployeeAdminService {
 
         validateRequiredChecklist(request);
 
-        employee.setResignDate(request.resignDate());
-        employee.setActiveFlag(false);
-        employee.setEmploymentStatus(EmploymentStatus.RESIGNED);
+        employee.resign(request.resignDate());
 
         Employee savedEmployee = employeeRepository.save(employee);
 
@@ -139,9 +151,29 @@ public class EmployeeAdminService {
     }
 
     @Transactional
+    public EmployeeDetailResponse cancelResignation(Long id) {
+        Employee employee = employeeRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new RuntimeException("従業員が見つかりません。 id=" + id));
+
+        employee.cancelResignation(EmploymentStatus.ACTIVE);
+        Employee savedEmployee = employeeRepository.save(employee);
+
+        EmployeePayrollProfile payrollProfile = payrollProfileRepository
+                .findByEmployeeIdAndDeletedAtIsNull(id)
+                .orElse(null);
+        EmployeeContract contract = contractRepository
+                .findByEmployeeIdAndDeletedAtIsNull(id)
+                .orElse(null);
+
+        return mapper.toDetailResponse(savedEmployee, payrollProfile, contract);
+    }
+
+    @Transactional
     public void delete(Long id) {
         Employee employee = employeeRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("従業員が見つかりません。 id=" + id));
+
+        deletionPolicy.verifyDeletable(id);
 
         Instant now = Instant.now();
         employee.setDeletedAt(now);
@@ -153,7 +185,11 @@ public class EmployeeAdminService {
                 .ifPresent(contract -> contract.setDeletedAt(now));
     }
 
-    private void validateRequest(EmployeeSaveRequest request, Long id) {
+    private void validateRequest(
+            EmployeeSaveRequest request,
+            Long id,
+            Employee current
+    ) {
         if (request == null) {
             throw new RuntimeException("リクエストが不正です。");
         }
@@ -174,10 +210,43 @@ public class EmployeeAdminService {
             throw new RuntimeException("employmentStatus は必須です。");
         }
 
+        if (id == null) {
+            if (request.employmentStatus() != EmploymentStatus.ACTIVE
+                    || request.resignDate() != null
+                    || Boolean.FALSE.equals(request.activeFlag())) {
+                throw new IllegalArgumentException(
+                        "新規従業員は在籍状態で登録してください。"
+                );
+            }
+        } else {
+            if (current == null) {
+                throw new IllegalArgumentException("現在の従業員情報は必須です。");
+            }
+            if (!current.getEmployeeCode().equals(request.employeeCode().trim())) {
+                throw new IllegalArgumentException(
+                        "社員コードは作成後に変更できません。"
+                );
+            }
+            if (current.getEmploymentStatus() == EmploymentStatus.RESIGNED) {
+                throw new IllegalStateException(
+                        "退職済み従業員は通常編集できません。退職取消後に編集してください。"
+                );
+            }
+            if (request.employmentStatus() == EmploymentStatus.RESIGNED
+                    || request.resignDate() != null
+                    || Boolean.FALSE.equals(request.activeFlag())) {
+                throw new IllegalArgumentException(
+                        "退職への変更は退職処理から実行してください。"
+                );
+            }
+        }
+
         boolean exists = id == null
-                ? employeeRepository.existsByEmployeeCodeAndDeletedAtIsNull(request.employeeCode())
+                ? employeeRepository.existsByEmployeeCodeAndDeletedAtIsNull(
+                        request.employeeCode().trim()
+                )
                 : employeeRepository.existsByEmployeeCodeAndIdNotAndDeletedAtIsNull(
-                        request.employeeCode(),
+                        request.employeeCode().trim(),
                         id);
 
         if (exists) {
@@ -188,6 +257,24 @@ public class EmployeeAdminService {
                 && request.payrollProfile().taxDependentCount() != null
                 && request.payrollProfile().taxDependentCount() < 0) {
             throw new RuntimeException("taxDependentCount は0以上で指定してください。");
+        }
+
+        if (request.contract() != null
+                && request.contract().contractStartDate() != null
+                && request.contract().contractEndDate() != null
+                && request.contract().contractEndDate().isBefore(
+                        request.contract().contractStartDate()
+                )) {
+            throw new IllegalArgumentException(
+                    "契約終了日は契約開始日以降で指定してください。"
+            );
+        }
+
+        if (Boolean.TRUE.equals(request.dormitoryFlag())
+                && request.dormitoryType() == null) {
+            throw new IllegalArgumentException(
+                    "入寮ありの場合は寮タイプを選択してください。"
+            );
         }
     }
 

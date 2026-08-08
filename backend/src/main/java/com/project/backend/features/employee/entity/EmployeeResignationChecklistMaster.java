@@ -7,7 +7,13 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "employee_resignation_checklist_master")
+@Table(
+        name = "employee_resignation_checklist_master",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_employee_resignation_checklist_code",
+                columnNames = {"tenant_id", "code"}
+        )
+)
 @Getter
 @Setter
 public class EmployeeResignationChecklistMaster extends BaseEntity {

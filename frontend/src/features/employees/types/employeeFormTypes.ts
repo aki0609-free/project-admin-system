@@ -2,6 +2,7 @@ import type {
   EmploymentStatus,
   EmploymentType,
   Gender,
+  DormitoryType,
   PaymentCycle,
   SalaryType,
   TaxCategory,
@@ -56,6 +57,8 @@ export type EmployeeForm = {
   email: string
   postalCode: string
   address: string
+  dormitoryFlag: boolean
+  dormitoryType: DormitoryType | null
   activeFlag: boolean
   payrollProfile: EmployeePayrollProfileForm
   contract: EmployeeContractForm

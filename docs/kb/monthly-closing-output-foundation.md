@@ -30,6 +30,18 @@ View
 `View -> historyTable`と`View -> outputTable`を別々に実行しない。
 完成ファイルと確定データの不一致を防ぐため、outputTableはhistoryTableから作成する。
 
+現在のV1月次締めは、次の有効な帳票を自動実行する。
+
+| 帳票 | jobCode | 完成形式 |
+| --- | --- | --- |
+| 月次給与明細 | `PRINT_MONTHLY_PAY_SLIP` | PDF |
+| 月次労務費一覧 | `PRINT_MONTHLY_LABOR_COST_LIST` | Excel |
+| 月次請求書 | `PRINT_MONTHLY_INVOICE` | 顧客別PDF |
+
+月次請求書は顧客マスターの`invoice_type`から、3種類のJasperテンプレートを解決する。
+対象期間の`vw_monthly_invoice_latest_detail`に明細が存在する顧客だけを出力対象とする。取引のない顧客へ空の請求書や顧客取引を作成しない。
+PDF・CSV・Excelとして登録された帳票は、バッチ成功だけでなく、保存先・ファイル名・ファイルサイズが返ることを締め完了条件とする。有効な月次帳票が0件の場合も締めを失敗させる。
+
 ## 3. 日次と月次
 
 ### 3.1 日次帳票
@@ -82,6 +94,7 @@ FAILED
 ```
 
 - 必須項目が1件でも失敗した場合、月次締め全体を`CLOSED`にしない
+- 帳票ファイル生成または顧客取引同期に失敗した場合も`CLOSED`にしない
 - 成功済みファイルとhistoryTableは削除しない
 - 同じVersionの再実行では失敗項目だけを再処理する
 - 任意項目の失敗を締め失敗にするかは締め対象マスタの`required_flag`で決める
@@ -251,13 +264,53 @@ monthly_closing_output_definition
 monthly_closing_item
 ```
 
-現段階では既存の`MonthlyClosingJobService`を新しい対象マスタへまだ接続していない。
-既存処理を保ったまま、新旧の結果比較ができる状態で次工程へ進む。
+`MonthlyClosingJobService`は`operation_report_preview`の有効な月次帳票を表示順に実行する。
+`monthly_closing_output_definition`／`monthly_closing_item`による項目単位の失敗再実行は次工程で接続する。V1の初回締め・再締めでは、すべての有効帳票と顧客取引同期が成功した後だけ`monthly_closings.status`を`CLOSED`へ更新する。
 
 ストアドは`execution_id`だけを引数に受け取り、inputTableから
 `tenant_id`、`target_month`、`closing_version`、`execution_mode`を取得する。
 `INITIAL`と`RECLOSE`は最新ViewからhistoryTableを作成し、
 `RETRY`はhistoryTableを変更せずoutputTableだけを再構築する。
+
+## 10.1 顧客取引への請求額同期
+
+月次請求書を全顧客分生成した後、同じ締めVersionの確定請求履歴から顧客取引を作成・更新する。
+
+```text
+monthly_invoice_history.total_amount
+  -> CustomerTransactionCommandService.upsertFromMonthlyClosing
+  -> customer_transactions.billing_amount
+```
+
+Viewの最新値やPDFの解析結果から請求額を作らない。請求書と顧客取引は、必ず同じ`monthly_invoice_history`を正本とする。
+
+| 条件 | 再締め時の処理 |
+| --- | --- |
+| 未入金 | 最新Versionの請求額・入金予定日へ更新 |
+| 一部入金 | 請求額を更新し、入金額・手数料・相殺から状態を再計算 |
+| 入金済み／過入金 | 金額不整合を防ぐため再締めを失敗させる |
+
+重複防止単位：
+
+```text
+tenant_id + customer_id + target_month
+```
+
+取引には次の追跡情報を保存する。
+
+```text
+source_type = MONTHLY_CLOSING
+source_invoice_history_id
+source_closing_version
+```
+
+顧客マスターの締日・支払日ルールも取引へスナップショットし、`expected_payment_date`は対象月と支払日ルールから計算する。
+
+追加DDL：
+
+```text
+backend/src/main/resources/sql/operation/monthly/customer_transaction_sync_v1.sql
+```
 
 ## 11. 月次給与明細
 
@@ -656,6 +709,33 @@ backend/src/main/resources/reports/daily_pay_slip.jrxml
 月次給与明細とは色・罫線・合計欄のデザインを共通化するが、
 ページ制御は共有しない。
 
+### 12.3.1 画面プレビューと本印刷
+
+日次管理の帳票一覧で「日払い明細」を選択すると、
+`vw_daily_pay_slip_latest`の最新データを使ったHTMLプレビューを表示する。
+このプレビューは金額・手当・控除を印刷前に確認するためのもので、
+履歴保存およびブラウザ印刷の対象にはしない。
+
+「印刷」を押したときだけ帳票基盤を実行し、JasperReportsのB5 PDFを生成する。
+生成したPDFはPDFプレビューダイアログで確認してから本印刷し、
+ファイルと`report_history`を保存する。
+
+```text
+帳票行クリック
+  -> ViewからHTMLプレビュー（保存なし）
+  -> 印刷
+  -> View -> inputTable -> ストアド -> outputTable
+  -> JasperReports PDF
+  -> PDFプレビュー
+  -> 帳票履歴・ストレージ保存
+```
+
+HTMLテンプレートは次を使用する。
+
+```text
+documents/templates/reports/html/DAILY_PAY_SLIP/v2/template.html
+```
+
 ### 12.4 DDL適用順
 
 新規環境または日次支払明細を作り直せる開発環境では、次の順で適用する。
@@ -669,7 +749,12 @@ backend/src/main/resources/reports/daily_pay_slip.jrxml
 
 `daily_pay_slip_table.sql`は作業テーブルを再作成するため、
 既存環境へ適用する前に対象テーブルが一時データだけであることを確認する。
-本番移行用DDLは、基盤確定時に非破壊の`ALTER TABLE`形式へ統合する。
+
+全員分を一括生成する場合は`employeeId`を指定しない。このため、
+`daily_pay_slip_input.employee_id`はNULL許可が必須である。
+`setup.sql`には既存環境を修復する非破壊の`ALTER TABLE`を含める。
+AWS反映後はランタイムスキーマ更新スクリプトが、NULL許可、View、ストアド、
+帳票マスター、バッチ定義をまとめて検証する。
 
 ### 12.5 自動検証
 

@@ -12,8 +12,8 @@ export const employeeSavingSchema = z.object({
   employeeId: z.number().nullable(),
   percentage: z.number(),
   minSalaryThreshold: z.number(),
+  currentBalance: z.number().min(0),
   activeFlag: z.boolean(),
-  applyThisMonth: z.boolean().nullable(),
   approvalStatus: z.enum(['PENDING', 'APPROVED', 'REJECTED']),
   approvalComment: z.string(),
 })
@@ -63,21 +63,18 @@ export const useEmployeeSavingEditDialog = (
         label: '従業員',
         type: 'select',
         options: employeeOptions.value,
+        editable: formModel.id === 0,
         gridColumn: '2 / span 3',
       },
       { key: 'percentage', label: '貯蓄率%', type: 'number' },
       { key: 'minSalaryThreshold', label: '最低給与額', type: 'number' },
-      { key: 'activeFlag', label: '有効', type: 'checkbox' },
       {
-        key: 'approvalStatus',
-        label: '承認状態',
-        type: 'select',
-        options: [
-          { title: '未承認', value: 'PENDING' },
-          { title: '承認済', value: 'APPROVED' },
-          { title: '却下', value: 'REJECTED' },
-        ],
+        key: 'currentBalance',
+        label: '積立残高',
+        type: 'number',
+        editable: false,
       },
+      { key: 'activeFlag', label: '有効', type: 'checkbox' },
     ]
 
     return defs

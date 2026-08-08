@@ -6,11 +6,22 @@ import type { MenuItem } from './types'
 const DocumentManagementPage = defineAsyncComponent(
   () => import('@/features/admin/document/pages/DocumentManagementPage.vue'),
 )
+const BusinessSettingsPage = defineAsyncComponent(
+  () => import('@/features/admin/business/pages/BusinessSettingsPage.vue'),
+)
 
 export const adminMenu: MenuItem = {
   title: '管理者メニュー',
   icon: 'mdi-security',
   children: [
+    {
+      title: '業務設定',
+      to: '/admin/business-settings',
+      component: BusinessSettingsPage,
+      resource: 'admin',
+      action: 'manage',
+      roles: [Role.SYS_ADMIN],
+    },
     {
       title: '承認管理',
       to: '/admin/approval',

@@ -6,12 +6,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import com.project.backend.features.operation.monthly.dto.MonthlyClosingPeriod;
 import com.project.backend.features.operation.monthly.dto.MonthlyClosingReportTarget;
 import com.project.backend.features.operation.monthly.entity.MonthlyClosingReportFile;
 import com.project.backend.features.operation.monthly.repository.MonthlyClosingReportFileRepository;
 import com.project.backend.features.operation.reportpreview.entity.OperationReportPreview;
+import com.project.backend.features.operation.reportpreview.enums.OperationReportOutputType;
 import com.project.backend.features.system.batch.dto.BatchJobExecutionResult;
 import com.project.backend.features.system.batch.dto.BatchJobRunResult;
 import com.project.backend.features.system.batch.service.BatchExecutionService;
@@ -91,6 +93,7 @@ public class MonthlyClosingJobExecutor {
                                 parameters);
 
                 BatchJobExecutionResult result = runResult.result();
+                validateGeneratedFile(preview, result);
                 MonthlyClosingReportFile file = new MonthlyClosingReportFile();
 
                 file.setMonthlyClosingId(monthlyClosingId);
@@ -125,6 +128,31 @@ public class MonthlyClosingJobExecutor {
                 }
 
                 reportFileRepository.save(file);
+        }
+
+        private void validateGeneratedFile(
+                        OperationReportPreview preview,
+                        BatchJobExecutionResult result) {
+                if (!requiresGeneratedFile(preview.getOutputType())) {
+                        return;
+                }
+                if (result == null
+                                || result.storageType() == null
+                                || !StringUtils.hasText(result.outputFileKey())
+                                || !StringUtils.hasText(result.outputFileName())
+                                || result.fileSize() == null
+                                || result.fileSize() <= 0) {
+                        throw new IllegalStateException(
+                                        "月次締め帳票ファイルが生成されませんでした。reportCode="
+                                                        + preview.getReportCode());
+                }
+        }
+
+        private boolean requiresGeneratedFile(
+                        OperationReportOutputType outputType) {
+                return outputType == OperationReportOutputType.PDF
+                                || outputType == OperationReportOutputType.CSV
+                                || outputType == OperationReportOutputType.EXCEL;
         }
 
         public void execute(

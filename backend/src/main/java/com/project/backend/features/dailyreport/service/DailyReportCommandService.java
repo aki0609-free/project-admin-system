@@ -249,6 +249,12 @@ public class DailyReportCommandService {
             );
         }
 
+        if (request.dormitoryChargeDays() != null
+                && (request.dormitoryChargeDays() < 0
+                || request.dormitoryChargeDays() > 31)) {
+            throw new IllegalArgumentException("寮費日数は0〜31日で指定してください。");
+        }
+
         if (request.workDate() == null) {
             throw new RuntimeException(
                     "workDate は必須です。"

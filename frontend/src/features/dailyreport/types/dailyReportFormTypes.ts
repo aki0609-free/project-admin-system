@@ -86,6 +86,7 @@ export type DailyReportForm = {
 
   loanRepaymentAmount: number
   savingAmount: number
+  dormitoryChargeDays: number
 
   estimatedGrossPayAmount: number
   estimatedNetPayAmount: number

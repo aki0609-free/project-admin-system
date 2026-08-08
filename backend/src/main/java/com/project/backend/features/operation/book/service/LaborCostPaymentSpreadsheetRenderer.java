@@ -94,7 +94,15 @@ public class LaborCostPaymentSpreadsheetRenderer
         }
 
         if (sheets.isEmpty()) {
-            addEmptySheet(sheets, targetMonth);
+            // 対象データがなくても、画面で帳票フォーマットを確認できる
+            // ように月払い用の空フォームを生成する。
+            addSheet(
+                    sheets,
+                    targetMonth,
+                    "MONTHLY",
+                    emptyEmployees(),
+                    1
+            );
         }
 
         ObjectNode metadata = root.putObject("projectAdminMetadata");
@@ -368,21 +376,15 @@ public class LaborCostPaymentSpreadsheetRenderer
         cell.set("style", style(false, 8, "Left", "#FFFFFF"));
     }
 
-    private void addEmptySheet(ArrayNode sheets, YearMonth targetMonth) {
-        ObjectNode sheet = sheets.addObject();
-        sheet.put("name", "対象データなし");
-        sheet.put("showGridLines", false);
-        ArrayNode rows = sheet.putArray("rows");
-        ObjectNode row = rows.addObject();
-        ArrayNode cells = row.putArray("cells");
-        valueCell(
-                cells,
-                targetMonth + " の労務費支払データはありません。",
-                null,
-                "#FFF2CC",
-                "Left",
-                true
-        );
+    private List<EmployeePayment> emptyEmployees() {
+        List<EmployeePayment> employees = new ArrayList<>();
+        for (int index = 0; index < EMPLOYEES_PER_SHEET; index++) {
+            employees.add(new EmployeePayment(
+                    new EmployeeKey("MONTHLY", "", "", ""),
+                    ""
+            ));
+        }
+        return employees;
     }
 
     private ObjectNode valueCell(

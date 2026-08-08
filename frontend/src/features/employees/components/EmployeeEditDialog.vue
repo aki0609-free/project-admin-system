@@ -12,6 +12,7 @@ import { useEmployeeEditDialog } from '../composables/useEmployeeEditDialog'
 import EmployeeResignDialog from './EmployeeResignDialog.vue'
 import { useEmployeeResignationChecklistQuery } from '../api/useEmployeeResignationChecklistQuery'
 import { useResignEmployeeMutation } from '../api/useResignEmployeeMutation'
+import { useCancelEmployeeResignationMutation } from '../api/useCancelEmployeeResignationMutation'
 
 const props = defineProps<{
   modelValue: boolean
@@ -31,6 +32,7 @@ const visible = computed({
 
 const resignationChecklistQuery = useEmployeeResignationChecklistQuery()
 const resignMutation = useResignEmployeeMutation()
+const cancelResignationMutation = useCancelEmployeeResignationMutation()
 
 const {
   activeTab,
@@ -50,6 +52,13 @@ const {
   toRef(props, 'employee'),
   (form) => emit('save', form),
   (form) => emit('delete', form),
+  async (employeeId) => {
+    const confirmed = window.confirm('退職を取り消して在籍状態へ戻しますか？')
+    if (!confirmed) return
+    await cancelResignationMutation.mutateAsync(employeeId)
+    visible.value = false
+    emit('resigned')
+  },
 )
 
 const handleResign = async (request: EmployeeResignRequest) => {
@@ -114,6 +123,7 @@ const handleResign = async (request: EmployeeResignRequest) => {
     v-model="resignDialogVisible"
     :employee="formModel"
     :checklist="resignationChecklistQuery.checklist.value"
+    :message="resignationChecklistQuery.message.value"
     @submit="handleResign"
   />
 </template>

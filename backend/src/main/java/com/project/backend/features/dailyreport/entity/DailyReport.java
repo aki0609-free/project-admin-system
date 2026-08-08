@@ -230,6 +230,9 @@ public class DailyReport extends BaseEntity {
     )
     private BigDecimal savingAmount = BigDecimal.ZERO;
 
+    @Column(name = "dormitory_charge_days", nullable = false)
+    private Integer dormitoryChargeDays = 0;
+
     @Column(
             name = "normal_pay_amount",
             precision = 12,

@@ -5,23 +5,32 @@ import java.time.LocalDate;
 import com.project.backend.features.employee.enums.EmploymentStatus;
 import com.project.backend.features.employee.enums.EmploymentType;
 import com.project.backend.features.employee.enums.Gender;
+import com.project.backend.features.employee.enums.DormitoryType;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public record EmployeeSaveRequest(
-        String employeeCode,
-        String employeeName,
-        String employeeNameKana,
+        @NotBlank @Size(max = 100) String employeeCode,
+        @NotBlank @Size(max = 200) String employeeName,
+        @Size(max = 200) String employeeNameKana,
         Gender gender,
         LocalDate birthDate,
         LocalDate hireDate,
         LocalDate resignDate,
-        EmploymentType employmentType,
-        EmploymentStatus employmentStatus,
-        String phone,
-        String email,
-        String postalCode,
-        String address,
+        @NotNull EmploymentType employmentType,
+        @NotNull EmploymentStatus employmentStatus,
+        @Size(max = 50) String phone,
+        @Email @Size(max = 255) String email,
+        @Size(max = 20) String postalCode,
+        @Size(max = 500) String address,
+        Boolean dormitoryFlag,
+        DormitoryType dormitoryType,
         Boolean activeFlag,
-        EmployeePayrollProfileSaveRequest payrollProfile,
-        EmployeeContractSaveRequest contract
+        @Valid EmployeePayrollProfileSaveRequest payrollProfile,
+        @Valid EmployeeContractSaveRequest contract
 ) {
 }

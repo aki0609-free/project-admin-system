@@ -102,7 +102,7 @@ const fiscalMonthItems = computed(() =>
   }),
 )
 async function generate(book: OperationExcelBook) {
-  if (!targetMonth.value || !book.templateConfigured) return
+  if (!targetMonth.value || !book.generationReady) return
 
   if (book.selection.mode !== 'NONE') {
     selectionBookCode.value = book.bookCode
@@ -307,7 +307,7 @@ watch(selectedFiscalYear, () => {
           <th>台帳名</th>
           <th>Book Code</th>
           <th>データソース</th>
-          <th>テンプレート</th>
+          <th>生成方式</th>
           <th class="book-table__action">操作</th>
         </tr>
       </thead>
@@ -324,9 +324,21 @@ watch(selectedFiscalYear, () => {
             <v-chip
               size="small"
               variant="tonal"
-              :color="book.templateConfigured ? 'success' : 'warning'"
+              :color="
+                !book.generationReady
+                  ? 'error'
+                  : book.generationMode === 'CODE'
+                    ? 'info'
+                    : 'success'
+              "
             >
-              {{ book.templateConfigured ? '設定済み' : '未設定' }}
+              {{
+                !book.generationReady
+                  ? '未設定'
+                  : book.generationMode === 'CODE'
+                    ? 'コード生成'
+                    : 'テンプレート'
+              }}
             </v-chip>
           </td>
           <td class="book-table__action">
@@ -340,7 +352,7 @@ watch(selectedFiscalYear, () => {
               :disabled="
                 generating
                   || !targetMonth
-                  || !book.templateConfigured
+                  || !book.generationReady
               "
               @click="generate(book)"
             >

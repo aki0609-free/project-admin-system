@@ -16,7 +16,7 @@ export const createEmptyEmployeeLoanForm = (): EmployeeLoanForm => ({
   loanDate: '',
   repaymentStartDate: '',
   activeFlag: true,
-  approvalStatus: 'PENDING',
+  approvalStatus: 'APPROVED',
   approvalComment: '',
 })
 

@@ -1,5 +1,7 @@
 export type Gender = 'MALE' | 'FEMALE' | 'OTHER'
 
+export type DormitoryType = 'SINGLE_ROOM' | 'SHARED_ROOM'
+
 export type EmploymentType =
   | 'FULL_TIME'
   | 'CONTRACT'
@@ -41,6 +43,8 @@ export type EmployeeListItemResponse = {
   employmentStatus: EmploymentStatus
   phone: string | null
   email: string | null
+  dormitoryFlag: boolean
+  dormitoryType: DormitoryType | null
   activeFlag: boolean
 }
 
@@ -135,6 +139,8 @@ export type EmployeeSaveRequest = {
   email: string | null
   postalCode: string | null
   address: string | null
+  dormitoryFlag: boolean
+  dormitoryType: DormitoryType | null
   activeFlag: boolean
   payrollProfile: EmployeePayrollProfileSaveRequest
   contract: EmployeeContractSaveRequest
@@ -147,6 +153,17 @@ export type EmployeeResignationChecklistResponse = {
   description: string | null
   requiredFlag: boolean
   displayOrder: number
+}
+
+export type EmployeeResignationMessageResponse = {
+  dialogTitle: string
+  guidanceMessage: string
+  confirmationMessage: string
+}
+
+export type EmployeeResignationConfigurationResponse = {
+  message: EmployeeResignationMessageResponse
+  checklist: EmployeeResignationChecklistResponse[]
 }
 
 export type EmployeeResignRequest = {

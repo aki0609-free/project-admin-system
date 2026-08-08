@@ -3,7 +3,7 @@ export const queryKeys = {
     all: ['employees'] as const,
     list: () => ['employees', 'list'] as const,
     detail: (id: number | null) => ['employees', 'detail', id] as const,
-    resignationChecklist: () => ['employees', 'resignation-checklist'] as const,
+    resignationConfiguration: () => ['employees', 'resignation-configuration'] as const,
   },
   employeeWork: {
     all: ['employee-work'] as const,

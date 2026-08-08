@@ -90,6 +90,7 @@ public interface DailyReportMapper {
 
             entity.setLoanRepaymentAmount(BigDecimal.ZERO);
             entity.setSavingAmount(BigDecimal.ZERO);
+            entity.setDormitoryChargeDays(0);
 
             entity.setVehicleUsedFlag(false);
             entity.setMileage(BigDecimal.ZERO);
@@ -136,6 +137,12 @@ public interface DailyReportMapper {
 
         entity.setSavingAmount(
                 nvl(request.savingAmount())
+        );
+
+        entity.setDormitoryChargeDays(
+                request.dormitoryChargeDays() != null
+                        ? request.dormitoryChargeDays()
+                        : 0
         );
 
         entity.setVehicleUsedFlag(

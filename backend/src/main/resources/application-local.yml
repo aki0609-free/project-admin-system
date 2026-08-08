@@ -1,0 +1,7 @@
+app:
+  report:
+    preview:
+      schema-init:
+        enabled: true
+      readiness-check:
+        enabled: true

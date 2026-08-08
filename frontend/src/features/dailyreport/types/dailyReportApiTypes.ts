@@ -102,6 +102,7 @@ export type DailyReportResponse = {
 
   loanRepaymentAmount: number
   savingAmount: number
+  dormitoryChargeDays: number
 
   normalPayAmount: number
   overtimePayAmount: number
@@ -189,6 +190,7 @@ export type DailyReportSaveRequest = {
 
   loanRepaymentAmount: number
   savingAmount: number
+  dormitoryChargeDays: number
 
   allowances: DailyReportAllowanceSaveRequest[]
   deductions: DailyReportDeductionSaveRequest[]

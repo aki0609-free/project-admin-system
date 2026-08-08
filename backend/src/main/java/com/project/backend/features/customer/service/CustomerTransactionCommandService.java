@@ -40,7 +40,9 @@ public class CustomerTransactionCommandService {
                 .findByCustomerIdAndTargetMonth(request.customerId(), request.targetMonth())
                 .orElseGet(CustomerTransaction::new);
 
-        if (entity.getPaymentStatus() == CustomerPaymentStatus.PAID) {
+        if (entity.getPaymentStatus() == CustomerPaymentStatus.PAID
+                || entity.getPaymentStatus()
+                        == CustomerPaymentStatus.OVERPAID) {
             throw new IllegalStateException(
                     "入金済みの取引は月次締め処理から更新できません。customerId="
                             + request.customerId()
@@ -49,6 +51,7 @@ public class CustomerTransactionCommandService {
         }
 
         mapper.applyFromClosing(entity, request);
+        refreshPaymentStatus(entity);
 
         return repository.save(entity).getId();
     }

@@ -23,12 +23,22 @@ export const employeeBasicSchema = z.object({
   employmentType: z.enum(['FULL_TIME', 'CONTRACT', 'PART_TIME', 'TEMPORARY', 'DAILY_WORKER']),
   employmentStatus: z.enum(['ACTIVE', 'LEAVE', 'RESIGNED']),
   phone: z.string(),
-  email: z.string(),
+  email: z.string().email('メールアドレスの形式が不正です。').or(z.literal('')),
   postalCode: z.string(),
   address: z.string(),
+  dormitoryFlag: z.boolean(),
+  dormitoryType: z.enum(['SINGLE_ROOM', 'SHARED_ROOM']).nullable(),
   activeFlag: z.boolean(),
   payrollProfile: z.any(),
   contract: z.any(),
+}).superRefine((value, context) => {
+  if (value.dormitoryFlag && value.dormitoryType == null) {
+    context.addIssue({
+      code: 'custom',
+      path: ['dormitoryType'],
+      message: '入寮ありの場合は寮タイプを選択してください。',
+    })
+  }
 })
 
 export const employeePayrollSchema = z.object({
@@ -61,6 +71,18 @@ export const employeeContractSchema = z.object({
   hourlyWage: z.number().min(0),
   standardWorkingHours: z.number().min(0),
   note: z.string(),
+}).superRefine((value, context) => {
+  if (
+    value.contractStartDate &&
+    value.contractEndDate &&
+    value.contractEndDate < value.contractStartDate
+  ) {
+    context.addIssue({
+      code: 'custom',
+      path: ['contractEndDate'],
+      message: '契約終了日は契約開始日以降で指定してください。',
+    })
+  }
 })
 
 export const useEmployeeEditDialog = (
@@ -68,6 +90,7 @@ export const useEmployeeEditDialog = (
   employee: Ref<EmployeeDetailResponse | null>,
   emitSave: (form: EmployeeForm) => void,
   emitDelete: (form: EmployeeForm) => void,
+  emitCancelResignation: (employeeId: number) => void,
 ) => {
   const activeTab = ref<'basic' | 'payroll' | 'contract'>('basic')
   const formModel = reactive<EmployeeForm>(createEmptyEmployeeForm())
@@ -110,8 +133,8 @@ export const useEmployeeEditDialog = (
 
   const isEdit = computed(() => formModel.id > 0)
 
-  const basicFields: GridFormFieldDef<EmployeeForm>[] = [
-    { key: 'employeeCode', label: '社員コード', type: 'text', gridColumn: '1 / span 4' },
+  const basicFields = computed<GridFormFieldDef<EmployeeForm>[]>(() => [
+    { key: 'employeeCode', label: '社員コード', type: 'text', gridColumn: '1 / span 4', editable: !isEdit.value },
     { key: 'employeeName', label: '氏名', type: 'text', gridColumn: '1 / span 2' },
     { key: 'employeeNameKana', label: 'フリガナ', type: 'text', gridColumn: '3 / span 2' },
     {
@@ -127,7 +150,6 @@ export const useEmployeeEditDialog = (
     },
     { key: 'birthDate', label: '生年月日', type: 'date', gridColumn: '3 / span 2' },
     { key: 'hireDate', label: '入社日', type: 'date', gridColumn: '1 / span 2' },
-    { key: 'resignDate', label: '退職日', type: 'date', gridColumn: '3 / span 2' },
     {
       key: 'employmentType',
       label: '雇用区分',
@@ -147,8 +169,8 @@ export const useEmployeeEditDialog = (
       options: [
         { title: '在籍', value: 'ACTIVE' },
         { title: '休職', value: 'LEAVE' },
-        { title: '退職', value: 'RESIGNED' },
       ],
+      editable: formModel.employmentStatus !== 'RESIGNED',
     },
     { key: 'phone', label: '電話', type: 'text', gridColumn: '3 / span 2' },
     { key: 'email', label: 'メール', type: 'text', gridColumn: '1 / span 4' },
@@ -159,8 +181,25 @@ export const useEmployeeEditDialog = (
       formatter: (value) => formatZipCode(value as string),
     },
     { key: 'address', label: '住所', type: 'text', gridColumn: '2 / span 3' },
-    { key: 'activeFlag', label: '有効', type: 'checkbox', width: 100 },
-  ]
+    {
+      key: 'dormitoryFlag',
+      label: '入寮あり',
+      type: 'checkbox',
+      width: 120,
+      gridColumn: '1 / span 1',
+    },
+    {
+      key: 'dormitoryType',
+      label: '寮タイプ',
+      type: 'select',
+      options: [
+        { title: '一人部屋', value: 'SINGLE_ROOM' },
+        { title: '複数人部屋', value: 'SHARED_ROOM' },
+      ],
+      visible: model => model.dormitoryFlag,
+      gridColumn: '2 / span 2',
+    },
+  ])
 
   const payrollFields: GridFormFieldDef<EmployeePayrollProfileForm>[] = [
     {
@@ -253,6 +292,23 @@ export const useEmployeeEditDialog = (
 
   const footerItems = computed<ToolbarItem[]>(() => {
     const items: ToolbarItem[] = []
+
+    if (isEdit.value && formModel.employmentStatus === 'RESIGNED') {
+      return [
+        {
+          type: 'button',
+          label: '退職取消',
+          color: 'warning',
+          onClick: () => emitCancelResignation(formModel.id),
+        },
+        {
+          type: 'button',
+          label: '閉じる',
+          color: 'secondary',
+          onClick: close,
+        },
+      ]
+    }
 
     if (isEdit.value) {
       items.push({
