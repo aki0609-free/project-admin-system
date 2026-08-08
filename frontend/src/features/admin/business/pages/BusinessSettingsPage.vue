@@ -29,7 +29,7 @@ const dormitoryTypeLabel = (type: 'SINGLE_ROOM' | 'SHARED_ROOM') =>
 <template>
   <div class="business-settings-page">
     <header>
-      <h1>業務設定</h1>
+      <h1>業務管理</h1>
       <p>退職処理、給与締日、月次締め帳票、寮費を管理します。</p>
     </header>
 
