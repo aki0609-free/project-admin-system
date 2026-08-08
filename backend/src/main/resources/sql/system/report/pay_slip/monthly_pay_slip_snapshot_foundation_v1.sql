@@ -12,9 +12,35 @@
 
 SET NAMES utf8mb4;
 
-ALTER TABLE monthly_pay_slip_input
-    ADD COLUMN closing_version INT NULL AFTER employee_id,
-    ADD COLUMN execution_mode VARCHAR(30) NULL AFTER closing_version;
+SET @closing_version_ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_pay_slip_input ADD COLUMN closing_version INT NULL AFTER employee_id',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_pay_slip_input'
+      AND column_name = 'closing_version'
+);
+PREPARE closing_version_statement FROM @closing_version_ddl;
+EXECUTE closing_version_statement;
+DEALLOCATE PREPARE closing_version_statement;
+
+SET @execution_mode_ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_pay_slip_input ADD COLUMN execution_mode VARCHAR(30) NULL AFTER closing_version',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_pay_slip_input'
+      AND column_name = 'execution_mode'
+);
+PREPARE execution_mode_statement FROM @execution_mode_ddl;
+EXECUTE execution_mode_statement;
+DEALLOCATE PREPARE execution_mode_statement;
 
 CREATE TABLE IF NOT EXISTS monthly_pay_slip_history (
     id BIGINT NOT NULL AUTO_INCREMENT,
