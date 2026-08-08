@@ -1,5 +1,6 @@
 import { defineAsyncComponent } from 'vue'
-import DeductionPage from '@/features/master/deduction/page/DeductionPage.vue'
+// V2: 承認フロー実装時に再有効化する
+// import DeductionPage from '@/features/master/deduction/page/DeductionPage.vue'
 import { Role } from '@/shared/auth/types/types'
 import type { MenuItem } from './types'
 
@@ -22,13 +23,14 @@ export const adminMenu: MenuItem = {
       action: 'manage',
       roles: [Role.SYS_ADMIN],
     },
-    {
-      title: '承認管理',
-      to: '/admin/approval',
-      component: DeductionPage,
-      resource: 'admin',
-      action: 'view',
-    },
+    // V2: 承認フローと一緒に実装・再有効化する
+    // {
+    //   title: '承認管理',
+    //   to: '/admin/approval',
+    //   component: DeductionPage,
+    //   resource: 'admin',
+    //   action: 'view',
+    // },
     {
       title: '書類管理',
       to: '/admin/document',
