@@ -57,7 +57,7 @@ export const useDailyReportTableConfig = (
       nightWorkHours: item.nightWorkHours,
 
       vehicleText: item.vehicleUsedFlag ? '使用' : '',
-      paidLeaveText: item.paidLeaveUsedFlag ? '使用' : '',
+      paidLeaveText: item.paidLeaveDays > 0 ? `${item.paidLeaveDays}日` : '',
       approvalStatus: item.approvalStatus,
 
       raw: item,

@@ -107,6 +107,14 @@ public class DailyReportInputItemService {
             Employee employee
     ) {
         Map<String, Object> variables = new LinkedHashMap<>();
+        DailyReportWorkTimePolicy.WorkTimes workTimes =
+                DailyReportWorkTimePolicy.resolve(
+                        request.workDate(),
+                        request.workHours(),
+                        request.overtimeHours(),
+                        request.nightWorkHours(),
+                        request.holidayWorkHours()
+                );
 
         putIfNotNull(variables, "workDate", request.workDate());
         putIfNotNull(variables, "paymentDate", request.paymentDate());
@@ -117,10 +125,10 @@ public class DailyReportInputItemService {
         putIfNotNull(variables, "startTime", request.startTime());
         putIfNotNull(variables, "endTime", request.endTime());
         putIfNotNull(variables, "breakMinutes", request.breakMinutes());
-        putIfNotNull(variables, "workHours", request.workHours());
-        putIfNotNull(variables, "overtimeHours", request.overtimeHours());
-        putIfNotNull(variables, "nightWorkHours", request.nightWorkHours());
-        putIfNotNull(variables, "holidayWorkHours", request.holidayWorkHours());
+        putIfNotNull(variables, "workHours", workTimes.workHours());
+        putIfNotNull(variables, "overtimeHours", workTimes.overtimeHours());
+        putIfNotNull(variables, "nightWorkHours", workTimes.nightWorkHours());
+        putIfNotNull(variables, "holidayWorkHours", workTimes.holidayWorkHours());
         putIfNotNull(variables, "vehicleUsedFlag", request.vehicleUsedFlag());
         putIfNotNull(variables, "mileage", request.mileage());
         putIfNotNull(variables, "paidLeaveDays", request.paidLeaveDays());

@@ -72,7 +72,7 @@ export const useMailTemplateEditDialog = (
       bodyTemplate: formModel.bodyTemplate,
       htmlFlag: formModel.htmlFlag,
       variables: previewVariables,
-    }) as MailTemplatePreviewResponse
+    })
   }
 
   const snapshot = (): MailTemplateForm => ({ ...formModel })

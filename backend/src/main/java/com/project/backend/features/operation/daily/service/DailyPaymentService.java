@@ -1,8 +1,10 @@
 package com.project.backend.features.operation.daily.service;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,9 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.project.backend.features.dailyreport.entity.DailyReport;
 import com.project.backend.features.dailyreport.repository.DailyReportRepository;
-import com.project.backend.features.employee.entity.EmployeeContract;
-import com.project.backend.features.employee.enums.SalaryType;
-import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.operation.daily.dto.DailyPaymentBulkSaveItemRequest;
 import com.project.backend.features.operation.daily.dto.DailyPaymentBulkSaveRequest;
 import com.project.backend.features.operation.daily.dto.DailyPaymentDenominationResponse;
@@ -35,8 +34,8 @@ public class DailyPaymentService {
 
     private final DailyPaymentRepository dailyPaymentRepository;
     private final DailyReportRepository dailyReportRepository;
-    private final EmployeeContractRepository employeeContractRepository;
     private final DailyPaymentMapper mapper;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public List<DailyPaymentResponse> findByPaymentDate(LocalDate paymentDate) {
@@ -53,16 +52,24 @@ public class DailyPaymentService {
         List<DailyReport> reports = dailyReportRepository
                 .findByPaymentDateAndDeletedAtIsNullOrderByWorkDateDescIdDesc(paymentDate);
 
+        Map<Long, List<DailyReport>> reportsByEmployee = new LinkedHashMap<>();
         for (DailyReport report : reports) {
-            Long employeeId = report.getEmployee().getId();
-
-            if (paymentMap.containsKey(employeeId)) {
-                continue;
-            }
-
-            DailyPayment generated = createGeneratedPayment(paymentDate, report);
-            paymentMap.put(employeeId, generated);
+            reportsByEmployee
+                    .computeIfAbsent(
+                            report.getEmployee().getId(),
+                            ignored -> new ArrayList<>()
+                    )
+                    .add(report);
         }
+
+        reportsByEmployee.forEach((employeeId, employeeReports) -> {
+            if (!paymentMap.containsKey(employeeId)) {
+                paymentMap.put(
+                        employeeId,
+                        createGeneratedPayment(paymentDate, employeeReports)
+                );
+            }
+        });
 
         return paymentMap.values()
                 .stream()
@@ -125,7 +132,7 @@ public class DailyPaymentService {
             if (item.isDeleted()) {
                 if (item.getId() != null) {
                     DailyPayment entity = findPayment(item.getId());
-                    entity.setDeletedAt(Instant.now());
+                    entity.setDeletedAt(Instant.now(clock));
                 }
                 continue;
             }
@@ -194,7 +201,7 @@ public class DailyPaymentService {
         );
 
         if (entity.getStatus() == DailyPaymentStatus.PAID && oldStatus != DailyPaymentStatus.PAID) {
-            entity.setPaidAt(Instant.now());
+            entity.setPaidAt(Instant.now(clock));
         }
 
         if (entity.getStatus() != DailyPaymentStatus.PAID) {
@@ -206,18 +213,24 @@ public class DailyPaymentService {
 
     private DailyPayment createGeneratedPayment(
             LocalDate paymentDate,
-            DailyReport report
+            List<DailyReport> reports
     ) {
+        if (reports == null || reports.isEmpty()) {
+            throw new IllegalArgumentException("日次支払の元となる日報が必要です。");
+        }
+        DailyReport representative = reports.getFirst();
         DailyPayment entity = new DailyPayment();
 
         entity.setId(null);
         entity.setPaymentDate(paymentDate);
 
-        entity.setEmployeeId(report.getEmployee().getId());
-        entity.setEmployeeCode(report.getEmployee().getEmployeeCode());
-        entity.setEmployeeName(report.getEmployee().getEmployeeName());
+        entity.setEmployeeId(representative.getEmployee().getId());
+        entity.setEmployeeCode(representative.getEmployee().getEmployeeCode());
+        entity.setEmployeeName(representative.getEmployee().getEmployeeName());
 
-        BigDecimal plannedAmount = calculatePlannedAmount(report);
+        BigDecimal plannedAmount = reports.stream()
+                .map(this::calculatePlannedAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         entity.setPlannedAmount(plannedAmount);
         entity.setActualAmount(plannedAmount);
@@ -228,33 +241,7 @@ public class DailyPaymentService {
     }
 
     private BigDecimal calculatePlannedAmount(DailyReport report) {
-        EmployeeContract contract = employeeContractRepository
-                .findByEmployeeIdAndDeletedAtIsNull(report.getEmployee().getId())
-                .orElse(null);
-
-        BigDecimal basePay = BigDecimal.ZERO;
-
-        if (contract != null && contract.getSalaryType() != null) {
-            SalaryType salaryType = contract.getSalaryType();
-
-            if (salaryType == SalaryType.DAILY) {
-                basePay = nvl(contract.getDailyWage());
-            }
-
-            if (salaryType == SalaryType.HOURLY) {
-                BigDecimal totalHours = nvl(report.getWorkHours())
-                        .add(nvl(report.getOvertimeHours()))
-                        .add(nvl(report.getNightWorkHours()));
-
-                basePay = nvl(contract.getHourlyWage()).multiply(totalHours);
-            }
-        }
-
-        return basePay
-                .add(nvl(report.getAllowanceAmount()))
-                .subtract(nvl(report.getDeductionAmount()))
-                .subtract(nvl(report.getSavingAmount()))
-                .subtract(nvl(report.getLoanRepaymentAmount()));
+        return nvl(report.getEstimatedNetPayAmount());
     }
 
     private DailyPaymentDenominationResponse calculateDenomination(BigDecimal amount) {

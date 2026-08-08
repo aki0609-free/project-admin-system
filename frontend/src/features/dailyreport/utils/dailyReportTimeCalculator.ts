@@ -1,6 +1,7 @@
 import { normalizeTimeHHmm } from '@/shared/utils/TimeUtils'
 
 export type DailyReportTimeCalculationInput = {
+  workDate: string
   startTime: string
   endTime: string
   breakMinutes: number | null | undefined
@@ -10,6 +11,7 @@ export type DailyReportTimeCalculationResult = {
   workHours: number
   overtimeHours: number
   nightWorkHours: number
+  holidayWorkHours: number
 }
 
 const MINUTES_PER_DAY = 24 * 60
@@ -17,6 +19,21 @@ const STANDARD_WORK_MINUTES = 8 * 60
 
 const NIGHT_START_MINUTES = 22 * 60
 const NIGHT_END_MINUTES = 5 * 60
+
+function isWeekend(value: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) {
+    return false
+  }
+
+  const date = new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+  )
+  const day = date.getDay()
+  return day === 0 || day === 6
+}
 
 function parseTimeToMinutes(
   value: string,
@@ -130,11 +147,17 @@ export function calculateDailyReportWorkTimes(
       endMinutes,
     )
 
+  const workHours = roundHours(workMinutes)
+  const overtimeHours = roundHours(overtimeMinutes)
+  const weekend = isWeekend(input.workDate)
+
   return {
-    workHours: roundHours(workMinutes),
-    overtimeHours:
-      roundHours(overtimeMinutes),
+    workHours: weekend ? 0 : workHours,
+    overtimeHours: weekend ? 0 : overtimeHours,
     nightWorkHours:
       roundHours(nightMinutes),
+    holidayWorkHours: weekend
+      ? roundHours(totalMinutes)
+      : 0,
   }
 }

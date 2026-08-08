@@ -90,7 +90,7 @@ class DailyReportInputItemServiceTest {
 
         assertThat(parametersCaptor.getValue())
                 .containsEntry("employeeId", 10L)
-                .containsEntry("targetDate", LocalDate.of(2026, 7, 25))
+                .containsEntry("targetDate", LocalDate.of(2026, 7, 27))
                 .containsEntry("workHours", BigDecimal.valueOf(8))
                 .containsEntry("overtimeHours", BigDecimal.valueOf(2))
                 .containsEntry("salaryType", SalaryType.HOURLY)
@@ -165,7 +165,7 @@ class DailyReportInputItemServiceTest {
     private DailyReportSaveRequest mockRequest() {
         DailyReportSaveRequest request = mock(DailyReportSaveRequest.class);
         when(request.employeeId()).thenReturn(10L);
-        when(request.workDate()).thenReturn(LocalDate.of(2026, 7, 25));
+        when(request.workDate()).thenReturn(LocalDate.of(2026, 7, 27));
         when(request.workHours()).thenReturn(BigDecimal.valueOf(8));
         when(request.overtimeHours()).thenReturn(BigDecimal.valueOf(2));
         when(request.allowances()).thenReturn(List.of(
