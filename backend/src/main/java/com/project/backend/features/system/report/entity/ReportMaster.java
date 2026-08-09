@@ -94,7 +94,7 @@ public class ReportMaster extends BaseEntity {
     private String procedureName;
 
     @Lob
-    @Column(name = "query_sql")
+    @Column(name = "query_sql", columnDefinition = "LONGTEXT")
     private String querySql;
 
     @Enumerated(EnumType.STRING)
@@ -102,7 +102,7 @@ public class ReportMaster extends BaseEntity {
     private ReportCleanupType cleanupType = ReportCleanupType.NONE;
 
     @Lob
-    @Column(name = "cleanup_sql")
+    @Column(name = "cleanup_sql", columnDefinition = "LONGTEXT")
     private String cleanupSql;
 
     @Column(name = "cleanup_procedure_name", length = 255)

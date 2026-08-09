@@ -1,5 +1,6 @@
 package com.project.backend.features.system.imports.dto;
 
+import java.io.Serializable;
 import java.util.List;
 
 import lombok.Builder;
@@ -12,5 +13,5 @@ public record ImportWriteResult(
         int skippedCount,
         int errorCount,
         List<ImportWriteError> errors
-) {
+) implements Serializable {
 }

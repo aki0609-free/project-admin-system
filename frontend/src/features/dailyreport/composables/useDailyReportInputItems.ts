@@ -15,9 +15,20 @@ const toAmountItemForm = (
   name: item.name,
   itemType: item.itemType,
   inputMode: item.inputMode,
+  calculatedAmount: item.calculatedAmount ?? item.amount ?? 0,
   amount: item.amount ?? 0,
+  manualOverride: item.manualOverride ?? false,
+  overrideReason: item.overrideReason ?? '',
   editable: item.editable,
   displayOrder: item.displayOrder,
+  balanceTracked: item.balanceTracked ?? false,
+  balanceUnit: item.balanceUnit ?? null,
+  openingQuantity: item.openingQuantity ?? 0,
+  accruedQuantity: item.accruedQuantity ?? 0,
+  consumedQuantity: item.consumedQuantity ?? 0,
+  remainingQuantity: item.remainingQuantity ?? 0,
+  quantity: item.quantity ?? 0,
+  remainingAfterQuantity: item.remainingAfterQuantity ?? 0,
 })
 
 export const useDailyReportInputItems = (

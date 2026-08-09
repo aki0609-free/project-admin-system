@@ -12,6 +12,8 @@ import com.project.backend.features.employee.dto.EmployeeResignationConfiguratio
 import com.project.backend.features.employee.dto.EmployeeSaveRequest;
 import com.project.backend.features.employee.service.EmployeeAdminService;
 import com.project.backend.features.employee.service.EmployeeResignationChecklistQueryService;
+import com.project.backend.features.master.payrollitem.balance.EmployeePayrollItemSettingService;
+import com.project.backend.features.employee.dto.EmployeePayrollItemSettingResponse;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,12 @@ public class EmployeeAdminController {
 
     private final EmployeeAdminService service;
     private final EmployeeResignationChecklistQueryService resignationChecklistQueryService;
+    private final EmployeePayrollItemSettingService payrollItemSettingService;
+
+    @GetMapping("/payroll-item-settings/catalog")
+    public List<EmployeePayrollItemSettingResponse> findPayrollItemSettingCatalog() {
+        return payrollItemSettingService.findCatalog();
+    }
 
     @GetMapping
     public List<EmployeeListItemResponse> findAll() {

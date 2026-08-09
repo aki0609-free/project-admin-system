@@ -59,7 +59,24 @@ export type EmployeeForm = {
   address: string
   dormitoryFlag: boolean
   dormitoryType: DormitoryType | null
+  dormitoryOpeningDays: number
+  dormitoryCurrentMonthDays: number
+  dormitoryConsumedDays: number
+  dormitoryRemainingDays: number
   activeFlag: boolean
   payrollProfile: EmployeePayrollProfileForm
   contract: EmployeeContractForm
+  payrollItemSettings: Array<{
+    targetCode: string
+    displayName: string
+    enabled: boolean
+    effectiveFrom: string
+    effectiveTo: string
+    balanceUnit: string
+    openingQuantity: number
+    accruedQuantity: number
+    consumedQuantity: number
+    remainingQuantity: number
+    parameters: Record<string, string>
+  }>
 }

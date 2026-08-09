@@ -1,0 +1,32 @@
+# AWS実行環境とTestcontainersで共通利用するSQL資産一覧。
+# 依存順で記載し、パスはsrc/main/resourcesからの相対パスとする。
+sql/daily_report/pay_component_rule_foundation_v1.sql
+sql/system/excelbook/renderer_selection_v1.sql
+sql/system/excelbook/monthly_summary_v1.sql
+sql/system/excelbook/monthly_labor_v1.sql
+sql/system/excelbook/labor_cost_payment_v1.sql
+sql/system/excelbook/receipt_confirmation_v1.sql
+sql/system/report/monthly_snapshot_foundation_v1.sql
+sql/operation/monthly/closing_output_foundation_v1.sql
+sql/operation/monthly/customer_transaction_sync_v1.sql
+sql/employee/business_settings_v1.sql
+sql/employee/finance_foundation_v1.sql
+sql/employee/dormitory_foundation_v1.sql
+sql/daily_report/payroll_item_balance_foundation_v1.sql
+sql/master/statutory_deduction_master_foundation_v1.sql
+sql/system/import/tax_import_foundation_v1.sql
+sql/system/import/resident_tax_editor_foundation_v1.sql
+sql/system/report/envelope/changeDefinition.sql
+sql/system/report/pay_slip/monthly_pay_slip_view_foundation_v1.sql
+sql/system/report/pay_slip/daily_pay_slip_view_foundation_v1.sql
+sql/system/report/pay_slip/setup.sql
+sql/system/report/pay_slip/monthly_pay_slip_snapshot_foundation_v1.sql
+sql/system/report/pay_slip/daily_pay_slip_stored.sql
+sql/system/report/invoice/monthly_invoice_foundation_v1.sql
+sql/system/report/invoice/monthly_invoice_render_views_v1.sql
+sql/system/report/invoice/monthly_invoice_report_master_v1.sql
+sql/system/report/preview/daily_preview_foundation_v1.sql
+sql/system/report/preview/report_preview_catalog_v1.sql
+sql/system/report/labor_cost/monthly_labor_cost_list_foundation_v1.sql
+sql/system/report/daily_work_order/daily_work_order_foundation_v1.sql
+sql/operation/monthly/annual_report_backup_foundation_v1.sql

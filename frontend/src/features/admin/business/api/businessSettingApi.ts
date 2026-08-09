@@ -1,5 +1,7 @@
 import { del, get, post, put } from '@/shared/api/http'
 import type {
+  AnnualReportBackupResult,
+  AnnualReportBackupSetting,
   BusinessClosingSetting,
   DormitoryFeeSetting,
   DormitoryFeeSettingSaveRequest,
@@ -67,4 +69,18 @@ export const saveDormitoryFees = (requests: DormitoryFeeSettingSaveRequest[]) =>
   put<DormitoryFeeSetting[], DormitoryFeeSettingSaveRequest[]>(
     `${basePath}/dormitory-fees`,
     requests,
+  )
+
+export const getAnnualReportBackupSetting = () =>
+  get<AnnualReportBackupSetting>(`${basePath}/annual-report-backup`)
+
+export const saveAnnualReportBackupSetting = (request: AnnualReportBackupSetting) =>
+  put<AnnualReportBackupSetting, AnnualReportBackupSetting>(
+    `${basePath}/annual-report-backup`,
+    request,
+  )
+
+export const executeAnnualReportBackup = (fiscalYear: number) =>
+  post<AnnualReportBackupResult>(
+    `${basePath}/annual-report-backup/${fiscalYear}/execute`,
   )

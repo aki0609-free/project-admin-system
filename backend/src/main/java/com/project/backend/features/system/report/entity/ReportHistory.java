@@ -46,7 +46,7 @@ public class ReportHistory extends BaseEntity {
     private ReportHistoryStatus status = ReportHistoryStatus.SUCCESS;
 
     @Lob
-    @Column(name = "request_params_json")
+    @Column(name = "request_params_json", columnDefinition = "LONGTEXT")
     private String requestParamsJson;
 
     @Column(name = "executed_by", length = 100)

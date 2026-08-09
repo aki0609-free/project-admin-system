@@ -28,6 +28,10 @@ public class ImportScriptExecutorService {
     private final ImportCsvPathResolver csvPathResolver;
 
     public void execute(ImportTargetDefinition target) {
+        execute(target, null);
+    }
+
+    public void execute(ImportTargetDefinition target, Path inputFile) {
         validate(target);
 
         try {
@@ -35,7 +39,8 @@ public class ImportScriptExecutorService {
 
             List<String> command = buildCommand(
                     target,
-                    resolvedScriptPath
+                    resolvedScriptPath,
+                    inputFile
             );
 
             ProcessBuilder builder = new ProcessBuilder(command);
@@ -95,7 +100,8 @@ public class ImportScriptExecutorService {
 
     private List<String> buildCommand(
             ImportTargetDefinition target,
-            Path resolvedScriptPath
+            Path resolvedScriptPath,
+            Path inputFile
     ) {
         List<String> command = new ArrayList<>();
 
@@ -110,7 +116,7 @@ public class ImportScriptExecutorService {
         command.add(resolvedScriptPath.toString());
 
         if (StringUtils.hasText(target.scriptArgs())) {
-            command.addAll(splitArgs(target.scriptArgs()));
+            command.addAll(splitArgs(target.scriptArgs(), inputFile));
         }
 
         return command;
@@ -147,19 +153,27 @@ public class ImportScriptExecutorService {
         return output.toString();
     }
 
-    private List<String> splitArgs(String args) {
+    private List<String> splitArgs(String args, Path inputFile) {
         List<String> result = new ArrayList<>();
 
         for (String arg : args.trim().split("\\s+")) {
             if (!arg.isBlank()) {
-                result.add(
-                        arg.replace(
-                                "${IMPORT_CSV_DIR}",
-                                csvPathResolver
-                                        .baseDirectory()
-                                        .toString()
-                        )
+                String resolved = arg.replace(
+                        "${IMPORT_CSV_DIR}",
+                        csvPathResolver.baseDirectory().toString()
                 );
+                if (resolved.contains("${IMPORT_INPUT_FILE}")) {
+                    if (inputFile == null) {
+                        throw new RuntimeException(
+                                "IMPORT_INPUT_FILE が必要ですが入力ファイルがありません。"
+                        );
+                    }
+                    resolved = resolved.replace(
+                            "${IMPORT_INPUT_FILE}",
+                            inputFile.toAbsolutePath().normalize().toString()
+                    );
+                }
+                result.add(resolved);
             }
         }
 

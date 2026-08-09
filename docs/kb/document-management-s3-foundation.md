@@ -301,6 +301,11 @@ documents/templates/ledgers/{ledgerCode}/template.json
 次工程：
 
 1. Spreadsheetによる台帳マスタ画面を設計
-2. 既存生成帳票を`generated-reports`へ接続
+2. 新規生成帳票を`documents/generated-reports/reports`へ接続（完了）
 3. 年次バックアップを`backups/reports`へ接続
 4. 年次バックアップLambdaを接続
+
+既存の帳票履歴に保存されている旧キーは変更しない。
+ダウンロード処理は履歴に記録された`storage_type`と`stored_file_key`を使用するため、
+旧`reports-output`配下のファイルも引き続き参照できる。
+新しく生成する帳票から書類管理の「生成帳票」領域へ保存する。

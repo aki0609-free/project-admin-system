@@ -1,5 +1,7 @@
 package com.project.backend.features.dailyreport.entity;
 
+import java.math.BigDecimal;
+
 import com.project.backend.app.base.entity.BaseEntity;
 
 import jakarta.persistence.*;
@@ -32,4 +34,19 @@ public class DailyReportDeduction extends BaseEntity {
 
     @Column(name = "amount", nullable = false)
     private Integer amount;
+
+    @Column(name = "calculated_amount", nullable = false)
+    private Integer calculatedAmount;
+
+    @Column(name = "manual_override_flag", nullable = false)
+    private boolean manualOverrideFlag;
+
+    @Column(name = "override_reason", length = 500)
+    private String overrideReason;
+
+    @Column(name = "quantity", precision = 12, scale = 2)
+    private BigDecimal quantity;
+
+    @Column(name = "balance_unit", length = 20)
+    private String balanceUnit;
 }

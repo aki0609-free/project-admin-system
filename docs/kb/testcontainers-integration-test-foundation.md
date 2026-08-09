@@ -87,6 +87,7 @@ test
 - Spring Batchメタデータ：自動作成
 - ファイルストレージ：一時ディレクトリ
 - S3：無効
+- Pythonコマンド：`python3`（Python前処理を含む取込テストで使用）
 
 テスト用ファイルはOSの一時ディレクトリ配下へ保存し、開発用ストレージやS3を変更しない。
 
@@ -215,7 +216,29 @@ backend/build/reports/tests/integrationTest/index.html
 - Redis読み書きテストが成功する
 - GitHub Actionsで通常テストと統合テストが必須化されている
 
-## 13. 時間境界テストの方針
+## 13. 税金データ取込テスト
+
+税金系は次の2経路を確認する。
+
+| テスト | 確認内容 |
+|---|---|
+| `ResidentTaxImportContainerIntegrationTest` | 自治体通知CSVをPythonで12か月へ正規化し、MySQLへUPSERTして住民税控除詳細へ反映 |
+| `IncomeTaxImportContainerIntegrationTest` | 国税庁ExcelのPython変換後CSVをMySQLへUPSERTし、所得税控除詳細へ反映 |
+
+住民税テストはJavaから実際に`python3`を起動する。国税庁Excelについては
+公式2026年版の実ファイルをDockerのPython環境で変換し、1928行、キー重複なし、
+先頭0～104,999円、最終3,500,000円以上の税額帯まで生成できることを確認した。
+
+この検証で次の基盤不具合を修正した。
+
+- Spring BatchのExecutionContextへ保存する取込結果がSerializableでなく、ジョブが`UNKNOWN`になっていた
+- Python出力のUTF-8 BOMが先頭ヘッダーへ残り、1列目を認識できなかった
+- アップロードファイルへPython前処理を適用できなかった
+- 国税庁2026年版Excelの列位置と複数行ヘッダーに未対応だった
+- `.xls`読込に必要な`xlrd`がコンテナへ入っていなかった
+- 所得税表の再取込がINSERT_ONLYで重複する設計だった
+
+## 14. 時間境界テストの方針
 
 ProjectAdminSystemでは、締日、月次処理、給与計算、通知、帳票、年度バックアップなどで日時の境界が業務結果へ影響する。
 
@@ -232,7 +255,7 @@ ProjectAdminSystemでは、締日、月次処理、給与計算、通知、帳�
 6. 監査ログ等の記録日時
 ```
 
-### 13.1 テスト対象
+### 14.1 テスト対象
 
 - 月末と月初
 - 年末と年始
@@ -247,7 +270,7 @@ ProjectAdminSystemでは、締日、月次処理、給与計算、通知、帳�
 - 月次処理の重複防止
 - 年度帳票バックアップの対象年度
 
-### 13.2 タイムゾーン
+### 14.2 タイムゾーン
 
 業務日付の基準は原則として次を使用する。
 
@@ -257,7 +280,7 @@ Asia/Tokyo
 
 DBや外部サービスとの時刻連携では`Instant`を使用し、画面表示や業務日付への変換時に`Asia/Tokyo`を適用する。
 
-### 13.3 単体テスト
+### 14.3 単体テスト
 
 日時計算だけを確認する場合は、固定した`Clock`を使用する。
 
@@ -270,7 +293,7 @@ Clock fixedClock = Clock.fixed(
 
 この例の日本時間は、2026年1月31日0時である。
 
-### 13.4 Testcontainers統合テスト
+### 14.4 Testcontainers統合テスト
 
 日時によってDB更新結果が変わる場合は、固定した`Clock`とTestcontainersを組み合わせる。
 
@@ -285,7 +308,7 @@ Clock fixedClock = Clock.fixed(
 
 テストでOSやコンテナ自体のシステム時刻を変更しない。アプリケーションへ注入した`Clock`だけを切り替える。
 
-### 13.5 導入時の確認事項
+### 14.5 導入時の確認事項
 
 各ドメインで`Clock`を導入する前に、次を整理する。
 
@@ -338,6 +361,31 @@ Asia/Tokyo
 ### 13.9 第4段階：帳票・バックアップ
 
 帳票ファイル名、帳票マスター削除日時、バックアップファイル名、バックアップ履歴、バックアップ定義削除日時、月次締め帳票の生成日時へ共通Clockを適用した。
+
+月次正式帳票について、MySQL・Redis・ローカルストレージを組み合わせた
+`ReportFileLifecycleContainerIntegrationTest`を追加した。
+
+確認内容：
+
+- 帳票入力テーブルへの実行条件登録
+- 前処理SQLによる出力テーブル生成
+- CSV完成ファイルの生成と保存
+- `report_history`と保存ファイルの関連付け
+- `monthly_closing_report_files`と保存ファイルの関連付け
+- 初回締めVersion 1と再締めVersion 2を別ファイルとして保持
+- Version 2作成後もVersion 1のファイルと履歴を参照可能
+- 新規生成帳票を`documents/generated-reports/reports`へ保存
+
+このテストで、Hibernateの新規DB生成時に
+`report_history.request_params_json`が本番DDLより小さい型になる不整合を検出した。
+Entityの定義を`LONGTEXT`へ統一し、月次締めパラメータを欠落なく保存できるようにした。
+
+年度帳票バックアップは24時間稼働を前提にしない方針とし、
+`AnnualReportBackupContainerIntegrationTest`を追加した。
+年度終了から設定された猶予日数が経過した後、最初のアプリケーション起動時に
+未実行年度を検出する。管理者による手動実行にも同じサービスを使用する。
+
+詳細は`docs/kb/annual-report-backup-v1.md`を参照する。
 
 固定日時：
 
@@ -404,3 +452,57 @@ BUILD SUCCESSFUL
 ```
 
 初回テストでは、JSON内の同じ数値が`9.8E+2`と`980.0`で表現される差をオブジェクト全体の一致判定が検出した。業務値としては同じため、文字列表現ではなく`BigDecimal`の数値比較へ変更した。生成処理の不具合ではない。
+
+## 15. 税・社会保険データの統合テスト
+
+2026-08-09に次のテスト範囲を追加した。
+
+| テスト | 確認範囲 |
+|---|---|
+| `IncomeTaxImportContainerIntegrationTest` | 所得税正規化CSV、UPSERT、控除詳細 |
+| `ResidentTaxImportContainerIntegrationTest` | 住民税通知CSV、Python月別化、UPSERT、控除詳細 |
+| `InsuranceRateImportContainerIntegrationTest` | 健康・介護・厚生年金・雇用・支援金の取込と訂正更新 |
+| `RuntimeSchemaAssetsIntegrationTest` | 本番SQL資産、公式2026料率による給与View計算 |
+
+公式PDFの抽出値確認と、DB取込・給与計算のTestcontainersテストを分ける。
+外部サイトへ接続するテストを通常CIへ含めると不安定になるため、公式PDFの
+取得は年度更新作業として実行し、抽出結果を公式値と人手照合する。
+
+### 15.1 公式PDF変換結果
+
+実際の2026年度公式PDFを使用し、次の本人負担率を抽出した。
+
+```text
+HEALTH_INSURANCE       0.04805
+CARE_INSURANCE         0.00810
+PENSION                0.09150
+EMPLOYMENT_GENERAL     0.00500
+EMPLOYMENT_AGRICULTURE 0.00600
+EMPLOYMENT_CONSTRUCTION 0.00600
+CHILD_CARE_SUPPORT     0.00115
+```
+
+厚生年金は抽出失敗時の固定値フォールバックを廃止した。
+雇用保険PDFでは農林水産等の見出しと料率が別行になるため、見出し直後の
+料率行を安全に探索する処理へ修正し、3事業区分すべてを確認した。
+
+### 15.2 給与View計算結果
+
+標準報酬月額300,000円、総支給300,000円、介護保険対象、支援金対象の
+テスト従業員を登録し、次を確認した。
+
+| 項目 | 期待値 | 結果 |
+|---|---:|---|
+| 健康・介護保険 | 16,845円 | PASSED |
+| 子ども・子育て支援金 | 345円 | PASSED |
+| 厚生年金 | 27,450円 | PASSED |
+| 雇用保険 | 1,800円 | PASSED |
+| 社会保険合計 | 46,440円 | PASSED |
+| 課税対象額 | 253,560円 | PASSED |
+| 計算可能判定 | `true` | PASSED |
+
+雇用保険は計算経路確認のため建設事業の本人率を使用した。本番の事業区分は
+労働保険上の正式区分を確認してから確定する。
+
+`tax_import_foundation_v1.sql`を同じMySQLへ2回適用し、対象7定義と
+介護保険4カラムが重複しないことも確認した。

@@ -87,8 +87,27 @@ export type EmployeeContractResponse = {
 export type EmployeeDetailResponse = EmployeeListItemResponse & {
   postalCode: string | null
   address: string | null
+  dormitoryOpeningDays: number
+  dormitoryCurrentMonthDays: number
+  dormitoryConsumedDays: number
+  dormitoryRemainingDays: number
   payrollProfile: EmployeePayrollProfileResponse
   contract: EmployeeContractResponse
+  payrollItemSettings: EmployeePayrollItemSetting[]
+}
+
+export type EmployeePayrollItemSetting = {
+  targetCode: string
+  displayName: string
+  enabled: boolean
+  effectiveFrom: string | null
+  effectiveTo: string | null
+  balanceUnit: string
+  openingQuantity: number
+  accruedQuantity: number
+  consumedQuantity: number
+  remainingQuantity: number
+  parameters: Record<string, string>
 }
 
 export type EmployeePayrollProfileSaveRequest = {
@@ -144,6 +163,11 @@ export type EmployeeSaveRequest = {
   activeFlag: boolean
   payrollProfile: EmployeePayrollProfileSaveRequest
   contract: EmployeeContractSaveRequest
+  payrollItemSettings: Array<{
+    targetCode: string
+    enabled: boolean
+    parameters: Record<string, string>
+  }>
 }
 
 export type EmployeeResignationChecklistResponse = {

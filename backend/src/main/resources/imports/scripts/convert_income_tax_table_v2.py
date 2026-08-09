@@ -46,24 +46,32 @@ def clean_tax(value):
     return int(match.group()) if match else None
 
 
-def find_header_row(df):
+def find_table_layout(df):
     for idx in range(len(df)):
-        values = [str(v).strip() for v in df.iloc[idx].tolist()]
-        joined = "|".join(values)
+        values = [str(v).replace(" ", "").replace("　", "").strip()
+                  for v in df.iloc[idx].tolist()]
+        dependent_columns = []
+        for dependents in range(8):
+            label = f"{dependents}人"
+            try:
+                dependent_columns.append(values.index(label))
+            except ValueError:
+                dependent_columns = []
+                break
 
-        has_range = "以上" in joined and "未満" in joined
-        has_dependents = any(v == "0" or "0人" in v or "0 人" in v for v in values)
+        if dependent_columns:
+            first_tax_column = dependent_columns[0]
+            if first_tax_column < 2:
+                break
+            return idx, first_tax_column - 2, first_tax_column - 1, dependent_columns
 
-        if has_range and has_dependents:
-            return idx
-
-    raise RuntimeError("ヘッダー行を見つけられませんでした。")
+    raise RuntimeError("扶養親族数0〜7人のヘッダー行を見つけられませんでした。")
 
 
 def normalize_excel(input_file: Path, year: int, output_file: Path):
     raw = pd.read_excel(input_file, header=None, dtype=object)
 
-    header_row = find_header_row(raw)
+    header_row, min_column, max_column, dependent_columns = find_table_layout(raw)
     data = raw.iloc[header_row + 1:].copy()
 
     rows = []
@@ -71,15 +79,20 @@ def normalize_excel(input_file: Path, year: int, output_file: Path):
     for _, row in data.iterrows():
         values = row.tolist()
 
-        min_salary = to_int(values[0]) if len(values) > 0 else None
-        max_salary = to_int(values[1]) if len(values) > 1 else None
+        min_salary_text = str(values[min_column]) if len(values) > min_column else ""
+        if "超え" in min_salary_text:
+            # 税額表末尾の計算式説明であり、税額帯のデータ行ではない。
+            continue
+
+        min_salary = to_int(values[min_column]) if len(values) > min_column else None
+        max_salary = to_int(values[max_column]) if len(values) > max_column else None
 
         if min_salary is not None and max_salary is None:
-            text = str(values[0])
-            if "未満" in text:
+            range_text = "".join(str(values[index]) for index in (min_column, max_column))
+            if "未満" in range_text:
                 max_salary = min_salary - 1
                 min_salary = 0
-            elif "以上" in text:
+            elif "以上" in range_text:
                 max_salary = MAX_SALARY_SENTINEL
 
         if min_salary is None:
@@ -88,7 +101,8 @@ def normalize_excel(input_file: Path, year: int, output_file: Path):
         if max_salary is None:
             max_salary = MAX_SALARY_SENTINEL
 
-        for dependents, tax_value in enumerate(values[2:10]):
+        for dependents, column_index in enumerate(dependent_columns):
+            tax_value = values[column_index] if len(values) > column_index else None
             tax_amount = clean_tax(tax_value)
 
             if tax_amount is None:
@@ -106,6 +120,14 @@ def normalize_excel(input_file: Path, year: int, output_file: Path):
         raise RuntimeError("変換結果が0件です。")
 
     out = pd.DataFrame(rows).sort_values(["year", "minSalary", "dependents"])
+    duplicate_keys = out.duplicated(
+        subset=["year", "minSalary", "maxSalary", "dependents"],
+        keep=False,
+    )
+    if duplicate_keys.any():
+        raise RuntimeError(
+            "同じ給与範囲・扶養人数の税額が重複しています。Excelの形式を確認してください。"
+        )
     output_file.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(output_file, index=False, encoding="utf-8-sig")
 

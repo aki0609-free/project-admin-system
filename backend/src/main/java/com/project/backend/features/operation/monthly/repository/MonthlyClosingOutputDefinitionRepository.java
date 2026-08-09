@@ -24,4 +24,10 @@ public interface MonthlyClosingOutputDefinitionRepository
                     MonthlyClosingOutputType outputType,
                     String outputCode
             );
+
+    List<MonthlyClosingOutputDefinition>
+            findByTenantIdAndOutputTypeAndActiveFlagTrueAndDeletedAtIsNullOrderByExecutionOrderAscIdAsc(
+                    String tenantId,
+                    MonthlyClosingOutputType outputType
+            );
 }

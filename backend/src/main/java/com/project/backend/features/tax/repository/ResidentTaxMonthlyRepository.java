@@ -25,6 +25,8 @@ public interface ResidentTaxMonthlyRepository
             Integer month
     );
 
+    void deleteByEmployeeIdAndFiscalYearAndMonth(Long employeeId, Integer fiscalYear, Integer month);
+
     void deleteByFiscalYear(Integer fiscalYear);
 
     void deleteByEmployeeIdAndFiscalYear(Long employeeId, Integer fiscalYear);

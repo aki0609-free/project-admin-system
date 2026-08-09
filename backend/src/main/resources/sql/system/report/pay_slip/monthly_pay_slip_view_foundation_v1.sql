@@ -80,7 +80,7 @@ SELECT
     COALESCE(epp.commute_allowance_monthly, 0) AS commute_allowance_monthly,
     CASE
         WHEN epp.resident_tax_calc_flag = TRUE
-            THEN COALESCE(epp.resident_tax_monthly, 0)
+            THEN COALESCE(rtm.tax_amount, epp.resident_tax_monthly, 0)
         ELSE 0
     END AS resident_tax
 FROM monthly_closings mc
@@ -99,6 +99,13 @@ LEFT JOIN employee_payroll_profile epp
   ON epp.tenant_id = mc.tenant_id
  AND epp.employee_id = e.id
  AND epp.deleted_at IS NULL
+LEFT JOIN resident_tax_monthly rtm
+  ON rtm.tenant_id = mc.tenant_id
+ AND rtm.employee_id = e.id
+ AND rtm.fiscal_year = YEAR(mc.target_month)
+     - CASE WHEN MONTH(mc.target_month) < 6 THEN 1 ELSE 0 END
+ AND rtm.month = MONTH(mc.target_month)
+ AND rtm.deleted_at IS NULL
 WHERE mc.deleted_at IS NULL;
 
 CREATE OR REPLACE VIEW vw_monthly_pay_slip_attendance AS
@@ -408,6 +415,8 @@ insurance_rate AS (
         year,
         MAX(CASE WHEN insurance_type = 'HEALTH_INSURANCE' THEN employee_rate END)
             AS health_insurance_rate,
+        MAX(CASE WHEN insurance_type = 'CARE_INSURANCE' THEN employee_rate END)
+            AS care_insurance_rate,
         MAX(CASE WHEN insurance_type = 'PENSION' THEN employee_rate END)
             AS pension_insurance_rate,
         MAX(CASE WHEN insurance_type = 'EMPLOYMENT_INSURANCE' THEN employee_rate END)
@@ -476,6 +485,7 @@ calculation_basis AS (
         remuneration.pension_standard_remuneration,
         remuneration.remuneration_match_count,
         rate.health_insurance_rate,
+        rate.care_insurance_rate,
         rate.pension_insurance_rate,
         rate.employment_insurance_rate,
         rate.child_care_support_rate
@@ -513,6 +523,16 @@ insurance_amount AS (
                         * basis.health_insurance_rate,
                     0
                 )
+                + CASE
+                    WHEN basis.care_insurance_flag
+                     AND basis.care_insurance_rate IS NOT NULL
+                        THEN ROUND(
+                            basis.health_standard_remuneration
+                                * basis.care_insurance_rate,
+                            0
+                        )
+                    ELSE 0
+                  END
             ELSE 0
         END AS health_insurance,
         CASE
@@ -593,8 +613,11 @@ SELECT
             THEN 'CALCULATION_PERIOD_NOT_VERIFIED'
         WHEN taxable.rounding_mode <> 'HALF_UP'
             THEN 'ROUNDING_MODE_UNSUPPORTED'
-        WHEN taxable.care_insurance_flag = TRUE
-            THEN 'CARE_INSURANCE_RATE_UNSUPPORTED'
+        WHEN taxable.social_insurance_flag = TRUE
+         AND taxable.health_insurance_flag = TRUE
+         AND taxable.care_insurance_flag = TRUE
+         AND taxable.care_insurance_rate IS NULL
+            THEN 'CARE_INSURANCE_RATE_MISSING'
         WHEN taxable.social_insurance_flag = TRUE
          AND COALESCE(taxable.remuneration_match_count, 0) = 0
             THEN 'STANDARD_REMUNERATION_MISSING'
@@ -630,7 +653,10 @@ SELECT
         WHEN taxable.calculation_period_id IS NULL THEN FALSE
         WHEN taxable.calculation_period_verified = FALSE THEN FALSE
         WHEN taxable.rounding_mode <> 'HALF_UP' THEN FALSE
-        WHEN taxable.care_insurance_flag = TRUE THEN FALSE
+        WHEN taxable.social_insurance_flag = TRUE
+         AND taxable.health_insurance_flag = TRUE
+         AND taxable.care_insurance_flag = TRUE
+         AND taxable.care_insurance_rate IS NULL THEN FALSE
         WHEN taxable.social_insurance_flag = TRUE
          AND COALESCE(taxable.remuneration_match_count, 0) <> 1 THEN FALSE
         WHEN taxable.social_insurance_flag = TRUE

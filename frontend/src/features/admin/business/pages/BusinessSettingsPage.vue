@@ -10,6 +10,9 @@ const {
   closingSetting,
   closingOutputs,
   dormitoryFees,
+  annualReportBackup,
+  manualBackupFiscalYear,
+  lastBackupResult,
   checklistDialog,
   editingChecklist,
   saveMessage,
@@ -20,6 +23,8 @@ const {
   saveClosing,
   saveOutputs,
   saveDormitoryFeeSettings,
+  saveBackupSetting,
+  executeBackup,
 } = useBusinessSettingsPage()
 
 const dormitoryTypeLabel = (type: 'SINGLE_ROOM' | 'SHARED_ROOM') =>
@@ -30,7 +35,7 @@ const dormitoryTypeLabel = (type: 'SINGLE_ROOM' | 'SHARED_ROOM') =>
   <div class="business-settings-page">
     <header>
       <h1>業務管理</h1>
-      <p>退職処理、給与締日、月次締め帳票、寮費を管理します。</p>
+      <p>退職処理、給与締日、月次締め帳票、年度バックアップ、寮費を管理します。</p>
     </header>
 
     <v-card :loading="loading" variant="outlined">
@@ -38,6 +43,7 @@ const dormitoryTypeLabel = (type: 'SINGLE_ROOM' | 'SHARED_ROOM') =>
         <v-tab value="resignation">退職時文言・TODO</v-tab>
         <v-tab value="closing">締日設定</v-tab>
         <v-tab value="outputs">締め帳票</v-tab>
+        <v-tab value="backup">帳票バックアップ</v-tab>
         <v-tab value="dormitory">寮費設定</v-tab>
       </v-tabs>
 
@@ -174,6 +180,72 @@ const dormitoryTypeLabel = (type: 'SINGLE_ROOM' | 'SHARED_ROOM') =>
           </section>
         </v-window-item>
 
+        <v-window-item value="backup">
+          <section class="settings-section narrow">
+            <h2>年度帳票バックアップ</h2>
+            <p>
+              年度終了後、設定した猶予日数を過ぎてから最初にシステムが起動した時点で、
+              保存対象の月次帳票を年度バックアップへコピーします。
+            </p>
+            <v-alert type="info" variant="tonal">
+              指定日時に24時間稼働させる必要はありません。停止中だった場合は、次回起動時に未処理年度を確認します。
+            </v-alert>
+            <v-select
+              v-model.number="annualReportBackup.fiscalYearStartMonth"
+              :items="Array.from({ length: 12 }, (_, index) => ({ title: `${index + 1}月`, value: index + 1 }))"
+              label="会計年度の開始月"
+              variant="outlined"
+            />
+            <v-text-field
+              v-model.number="annualReportBackup.graceDays"
+              label="年度終了後の猶予日数"
+              type="number"
+              min="0"
+              max="90"
+              suffix="日"
+              variant="outlined"
+            />
+            <div class="check-row">
+              <v-checkbox v-model="annualReportBackup.startupEnabled" label="起動時に未処理年度を自動確認" hide-details />
+              <v-checkbox v-model="annualReportBackup.activeFlag" label="設定を有効にする" hide-details />
+            </div>
+            <div class="actions">
+              <v-btn color="primary" :loading="loading" @click="saveBackupSetting">
+                バックアップ設定を保存
+              </v-btn>
+            </div>
+
+            <v-divider />
+
+            <h2>手動実行</h2>
+            <p>障害時の再確認や初回移行時に、対象年度を指定して実行できます。完了済み年度は重複作成しません。</p>
+            <div class="manual-backup-row">
+              <v-text-field
+                v-model.number="manualBackupFiscalYear"
+                label="対象年度"
+                type="number"
+                min="2000"
+                max="2200"
+                suffix="年度"
+                variant="outlined"
+                hide-details
+              />
+              <v-btn color="primary" variant="tonal" :loading="loading" @click="executeBackup">
+                今すぐ実行
+              </v-btn>
+            </div>
+            <v-alert
+              v-if="lastBackupResult"
+              :type="lastBackupResult.status === 'COMPLETED' ? 'success' : 'error'"
+              variant="tonal"
+            >
+              {{ lastBackupResult.fiscalYear }}年度: {{ lastBackupResult.status }} ／
+              {{ lastBackupResult.fileCount }}ファイル ／ {{ lastBackupResult.totalSize.toLocaleString() }} bytes
+              <span v-if="lastBackupResult.errorMessage">（{{ lastBackupResult.errorMessage }}）</span>
+            </v-alert>
+          </section>
+        </v-window-item>
+
         <v-window-item value="dormitory">
           <section class="settings-section">
             <h2>寮費設定</h2>
@@ -266,4 +338,5 @@ header p, .settings-section p { margin: 6px 0 0; color: #64748b; }
 .item-description { margin-top: 2px; color: #64748b; font-size: 12px; }
 .dialog-form { display: grid; gap: 12px; padding-top: 18px !important; }
 .check-row { display: flex; gap: 24px; }
+.manual-backup-row { display: grid; grid-template-columns: minmax(220px, 1fr) auto; align-items: center; gap: 12px; }
 </style>

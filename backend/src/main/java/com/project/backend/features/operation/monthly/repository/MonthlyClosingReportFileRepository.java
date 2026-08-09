@@ -20,4 +20,16 @@ public interface MonthlyClosingReportFileRepository
             findAllByTargetMonthAndClosingVersionAndDeletedAtIsNullOrderByTargetNameAscIdAsc(
                     String targetMonth,
                     Integer closingVersion);
+
+    List<MonthlyClosingReportFile>
+            findByTenantIdAndTargetMonthBetweenAndDeletedAtIsNullOrderByTargetMonthAscIdAsc(
+                    String tenantId,
+                    String periodStartMonth,
+                    String periodEndMonth
+            );
+
+    List<MonthlyClosingReportFile>
+            findByTenantIdAndDeletedAtIsNullOrderByTargetMonthAscIdAsc(
+                    String tenantId
+            );
 }

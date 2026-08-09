@@ -5,32 +5,13 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_root="$(cd "${script_dir}/../../.." && pwd)"
 terraform_dir="${project_root}/infrastructure/environments/dev"
 remote_runner="${script_dir}/run_runtime_schema_upgrade_sql.sh"
-sql_files=(
-  "${project_root}/backend/src/main/resources/sql/daily_report/pay_component_rule_foundation_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/excelbook/renderer_selection_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/excelbook/monthly_summary_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/excelbook/monthly_labor_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/excelbook/labor_cost_payment_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/excelbook/receipt_confirmation_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/report/monthly_snapshot_foundation_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/operation/monthly/closing_output_foundation_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/operation/monthly/customer_transaction_sync_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/employee/business_settings_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/employee/finance_foundation_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/employee/dormitory_foundation_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/report/pay_slip/monthly_pay_slip_view_foundation_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/report/pay_slip/daily_pay_slip_view_foundation_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/report/pay_slip/setup.sql"
-  "${project_root}/backend/src/main/resources/sql/system/report/pay_slip/monthly_pay_slip_snapshot_foundation_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/report/pay_slip/daily_pay_slip_stored.sql"
-  "${project_root}/backend/src/main/resources/sql/system/report/invoice/monthly_invoice_foundation_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/report/invoice/monthly_invoice_render_views_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/report/invoice/monthly_invoice_report_master_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/report/preview/daily_preview_foundation_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/report/preview/report_preview_catalog_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/report/labor_cost/monthly_labor_cost_list_foundation_v1.sql"
-  "${project_root}/backend/src/main/resources/sql/system/report/daily_work_order/daily_work_order_foundation_v1.sql"
-)
+schema_manifest="${project_root}/backend/src/main/resources/sql/runtime-schema-manifest.txt"
+sql_files=()
+
+while IFS= read -r resource_path || [[ -n "${resource_path}" ]]; do
+  [[ -z "${resource_path}" || "${resource_path}" == \#* ]] && continue
+  sql_files+=("${project_root}/backend/src/main/resources/${resource_path}")
+done < "${schema_manifest}"
 
 export AWS_PROFILE="${AWS_PROFILE:-project-admin-terraform}"
 export AWS_REGION="${AWS_REGION:-ap-northeast-1}"
@@ -43,7 +24,7 @@ for command in aws terraform tar; do
   }
 done
 
-for file in "${remote_runner}" "${sql_files[@]}"; do
+for file in "${remote_runner}" "${schema_manifest}" "${sql_files[@]}"; do
   [[ -f "${file}" ]] || {
     echo "Required file is missing: ${file}" >&2
     exit 1

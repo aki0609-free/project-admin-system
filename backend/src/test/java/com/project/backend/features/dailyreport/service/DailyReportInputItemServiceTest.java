@@ -3,6 +3,8 @@ package com.project.backend.features.dailyreport.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,6 +32,10 @@ import com.project.backend.features.employee.enums.DormitoryType;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.employee.repository.EmployeeRepository;
 import com.project.backend.features.master.payrollitem.service.PayrollItemDailyInputService;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceQueryService;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceSnapshot;
+import com.project.backend.features.master.payrollitem.balance.BalanceUnit;
+import com.project.backend.features.dailyreport.repository.DailyReportRepository;
 
 class DailyReportInputItemServiceTest {
 
@@ -37,6 +43,8 @@ class DailyReportInputItemServiceTest {
     private EmployeeRepository employeeRepository;
     private EmployeeContractRepository employeeContractRepository;
     private DormitoryFeeSettingRepository dormitoryFeeSettingRepository;
+    private PayrollItemBalanceQueryService balanceQueryService;
+    private DailyReportRepository dailyReportRepository;
     private DailyReportInputItemService service;
 
     @BeforeEach
@@ -45,11 +53,21 @@ class DailyReportInputItemServiceTest {
         employeeRepository = mock(EmployeeRepository.class);
         employeeContractRepository = mock(EmployeeContractRepository.class);
         dormitoryFeeSettingRepository = mock(DormitoryFeeSettingRepository.class);
+        balanceQueryService = mock(PayrollItemBalanceQueryService.class);
+        dailyReportRepository = mock(DailyReportRepository.class);
+        when(dailyReportRepository.findByEmployeeIdAndWorkDateAndDeletedAtIsNull(
+                anyLong(), any(LocalDate.class)))
+                .thenReturn(Optional.empty());
+        when(balanceQueryService.findDeductionBalance(
+                anyLong(), anyLong(), any(LocalDate.class), any()))
+                .thenReturn(PayrollItemBalanceSnapshot.untracked());
         service = new DailyReportInputItemService(
                 payrollItemDailyInputService,
                 employeeRepository,
                 employeeContractRepository,
-                dormitoryFeeSettingRepository
+                dormitoryFeeSettingRepository,
+                balanceQueryService,
+                dailyReportRepository
         );
     }
 
@@ -160,6 +178,54 @@ class DailyReportInputItemServiceTest {
                 .containsEntry("dormitoryType", "SHARED_ROOM")
                 .containsEntry("dormitoryChargeDays", 3)
                 .containsEntry("dormitoryDailyAmount", BigDecimal.valueOf(450));
+    }
+
+    @Test
+    void calculate_shouldRejectQuantityExceedingRemainingBalance() {
+        DailyReportSaveRequest request = mockRequest();
+        when(request.deductions()).thenReturn(List.of(
+                new DailyReportDeductionSaveRequest(
+                        9L,
+                        "MOBILE_RENTAL",
+                        "携帯電話料",
+                        40_000,
+                        12_345,
+                        true,
+                        "会社都合による金額調整",
+                        BigDecimal.valueOf(40),
+                        BalanceUnit.DAYS.name()
+                )
+        ));
+
+        Employee employee = new Employee();
+        employee.setId(10L);
+        when(employeeRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(employee));
+        when(employeeContractRepository.findByEmployeeIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.empty());
+        when(payrollItemDailyInputService.findAllowanceItems(anyMap(), anyMap()))
+                .thenReturn(List.of());
+        when(payrollItemDailyInputService.findDeductionItems(anyMap(), anyMap()))
+                .thenReturn(List.of(inputItem(9L, "MOBILE_RENTAL", 12_345)));
+        when(balanceQueryService.findDeductionBalance(
+                10L,
+                9L,
+                LocalDate.of(2026, 7, 27),
+                null
+        )).thenReturn(new PayrollItemBalanceSnapshot(
+                true,
+                BalanceUnit.DAYS,
+                BigDecimal.ZERO,
+                BigDecimal.valueOf(31),
+                BigDecimal.ZERO,
+                BigDecimal.valueOf(31)
+        ));
+
+        assertThatThrownBy(() -> service.calculate(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("残数量を超えています")
+                .hasMessageContaining("remaining=31")
+                .hasMessageContaining("quantity=40");
     }
 
     private DailyReportSaveRequest mockRequest() {

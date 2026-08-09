@@ -4,6 +4,7 @@ export const queryKeys = {
     list: () => ['employees', 'list'] as const,
     detail: (id: number | null) => ['employees', 'detail', id] as const,
     resignationConfiguration: () => ['employees', 'resignation-configuration'] as const,
+    payrollItemSettingCatalog: () => ['employees', 'payroll-item-setting-catalog'] as const,
   },
   employeeWork: {
     all: ['employee-work'] as const,

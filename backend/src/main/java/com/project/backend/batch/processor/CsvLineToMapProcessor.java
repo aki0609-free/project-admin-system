@@ -50,6 +50,9 @@ public class CsvLineToMapProcessor implements ItemProcessor<String, Map<String, 
                     .build();
 
             this.headers = parser.parseLine(headerLine);
+            if (headers.length > 0 && headers[0].startsWith("\uFEFF")) {
+                headers[0] = headers[0].substring(1);
+            }
         } catch (Exception e) {
             throw new RuntimeException("CSVヘッダーの読み込みに失敗しました。", e);
         }

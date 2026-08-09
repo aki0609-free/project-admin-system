@@ -256,7 +256,7 @@
                     ]]></textFieldExpression>
                 </textField>
 
-                <staticText><reportElement style="Cell" x="237" y="131" width="131" height="16"/><text><![CDATA[健康保険]]></text></staticText>
+                <staticText><reportElement style="Cell" x="237" y="131" width="131" height="16"/><text><![CDATA[健康・介護保険]]></text></staticText>
                 <textField><reportElement style="CellRight" x="368" y="131" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{health_insurance})]]></textFieldExpression></textField>
                 <staticText><reportElement style="Cell" x="237" y="147" width="131" height="16"/><text><![CDATA[子ども・子育て支援金]]></text></staticText>
                 <textField><reportElement style="CellRight" x="368" y="147" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{child_care_contribution})]]></textFieldExpression></textField>

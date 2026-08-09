@@ -92,7 +92,7 @@ export const useEmployeeEditDialog = (
   emitDelete: (form: EmployeeForm) => void,
   emitCancelResignation: (employeeId: number) => void,
 ) => {
-  const activeTab = ref<'basic' | 'payroll' | 'contract'>('basic')
+  const activeTab = ref<'basic' | 'payrollItems' | 'payroll' | 'contract'>('basic')
   const formModel = reactive<EmployeeForm>(createEmptyEmployeeForm())
   const resignDialogVisible = ref(false)
 
@@ -181,24 +181,6 @@ export const useEmployeeEditDialog = (
       formatter: (value) => formatZipCode(value as string),
     },
     { key: 'address', label: '住所', type: 'text', gridColumn: '2 / span 3' },
-    {
-      key: 'dormitoryFlag',
-      label: '入寮あり',
-      type: 'checkbox',
-      width: 120,
-      gridColumn: '1 / span 1',
-    },
-    {
-      key: 'dormitoryType',
-      label: '寮タイプ',
-      type: 'select',
-      options: [
-        { title: '一人部屋', value: 'SINGLE_ROOM' },
-        { title: '複数人部屋', value: 'SHARED_ROOM' },
-      ],
-      visible: model => model.dormitoryFlag,
-      gridColumn: '2 / span 2',
-    },
   ])
 
   const payrollFields: GridFormFieldDef<EmployeePayrollProfileForm>[] = [
@@ -262,6 +244,7 @@ export const useEmployeeEditDialog = (
 
   const tabs = [
     { label: '基本情報', value: 'basic' },
+    { label: '手当・控除設定', value: 'payrollItems' },
     { label: '給与・税金', value: 'payroll' },
     { label: '契約情報', value: 'contract' },
   ]

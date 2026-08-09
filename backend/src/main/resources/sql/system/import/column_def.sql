@@ -150,6 +150,60 @@ WHERE target_code = 'IMPORT_HEALTH_INSURANCE_RATE';
 -- 3. 厚生年金
 -- =====================================================
 
+-- 介護保険もinsurance_rate_masterの同一列構成を使用する。
+-- 既存定義との重複を避けるため、厚生年金定義の前に個別登録する。
+INSERT INTO import_column (
+    target_id, column_name, csv_header_name, data_type,
+    required_flag, key_flag, nullable_flag, trim_flag,
+    default_value, format_pattern, updatable_flag,
+    order_no, tenant_id, created_at, updated_at
+)
+SELECT id, 'insurance_type', 'insuranceType', 'STRING',
+       TRUE, TRUE, FALSE, TRUE,
+       NULL, NULL, TRUE,
+       1, tenant_id, NOW(), NOW()
+FROM import_target
+WHERE target_code = 'IMPORT_CARE_INSURANCE_RATE';
+
+INSERT INTO import_column (
+    target_id, column_name, csv_header_name, data_type,
+    required_flag, key_flag, nullable_flag, trim_flag,
+    default_value, format_pattern, updatable_flag,
+    order_no, tenant_id, created_at, updated_at
+)
+SELECT id, 'year', 'year', 'INTEGER',
+       TRUE, TRUE, FALSE, TRUE,
+       NULL, NULL, TRUE,
+       2, tenant_id, NOW(), NOW()
+FROM import_target
+WHERE target_code = 'IMPORT_CARE_INSURANCE_RATE';
+
+INSERT INTO import_column (
+    target_id, column_name, csv_header_name, data_type,
+    required_flag, key_flag, nullable_flag, trim_flag,
+    default_value, format_pattern, updatable_flag,
+    order_no, tenant_id, created_at, updated_at
+)
+SELECT id, 'employee_rate', 'employeeRate', 'DECIMAL',
+       TRUE, FALSE, FALSE, TRUE,
+       NULL, NULL, TRUE,
+       3, tenant_id, NOW(), NOW()
+FROM import_target
+WHERE target_code = 'IMPORT_CARE_INSURANCE_RATE';
+
+INSERT INTO import_column (
+    target_id, column_name, csv_header_name, data_type,
+    required_flag, key_flag, nullable_flag, trim_flag,
+    default_value, format_pattern, updatable_flag,
+    order_no, tenant_id, created_at, updated_at
+)
+SELECT id, 'employer_rate', 'employerRate', 'DECIMAL',
+       FALSE, FALSE, TRUE, TRUE,
+       NULL, NULL, TRUE,
+       4, tenant_id, NOW(), NOW()
+FROM import_target
+WHERE target_code = 'IMPORT_CARE_INSURANCE_RATE';
+
 INSERT INTO import_column (
     target_id, column_name, csv_header_name, data_type,
     required_flag, key_flag, nullable_flag, trim_flag,

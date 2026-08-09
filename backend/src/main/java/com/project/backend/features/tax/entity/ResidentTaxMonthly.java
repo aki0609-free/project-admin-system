@@ -11,7 +11,7 @@ import lombok.Setter;
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uk_resident_tax_employee_year_month",
-                        columnNames = {"employee_id", "fiscal_year", "month"}
+                        columnNames = {"tenant_id", "employee_id", "fiscal_year", "month"}
                 )
         }
 )

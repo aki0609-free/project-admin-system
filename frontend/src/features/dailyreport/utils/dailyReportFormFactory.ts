@@ -193,14 +193,29 @@ export const toDailyReportForm = (
         inputMode:
           'MANUAL',
 
+        calculatedAmount:
+          allowance.amount ?? 0,
+
         amount:
           allowance.amount ?? 0,
+
+        manualOverride: false,
+        overrideReason: '',
 
         editable:
           true,
 
         displayOrder:
           0,
+
+        balanceTracked: false,
+        balanceUnit: null,
+        openingQuantity: 0,
+        accruedQuantity: 0,
+        consumedQuantity: 0,
+        remainingQuantity: 0,
+        quantity: 0,
+        remainingAfterQuantity: 0,
       }),
     ),
 
@@ -222,14 +237,36 @@ export const toDailyReportForm = (
         inputMode:
           'MANUAL',
 
+        calculatedAmount:
+          deduction.calculatedAmount ?? deduction.amount ?? 0,
+
         amount:
           deduction.amount ?? 0,
+
+        manualOverride:
+          deduction.manualOverride ?? false,
+
+        overrideReason:
+          deduction.overrideReason ?? '',
 
         editable:
           true,
 
         displayOrder:
           0,
+
+        balanceTracked:
+          deduction.quantity != null,
+
+        balanceUnit:
+          (deduction.balanceUnit as 'DAYS' | 'HOURS' | 'COUNT' | 'AMOUNT' | null) ?? null,
+
+        openingQuantity: 0,
+        accruedQuantity: 0,
+        consumedQuantity: 0,
+        remainingQuantity: 0,
+        quantity: deduction.quantity ?? 0,
+        remainingAfterQuantity: 0,
       }),
     ),
 

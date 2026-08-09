@@ -1,6 +1,8 @@
 package com.project.backend.features.employee.service;
 
 import java.time.Instant;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -21,6 +23,10 @@ import com.project.backend.features.employee.repository.EmployeeContractReposito
 import com.project.backend.features.employee.repository.EmployeePayrollProfileRepository;
 import com.project.backend.features.employee.repository.EmployeeRepository;
 import com.project.backend.features.employee.repository.EmployeeResignationChecklistRepository;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemEnrollmentService;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceQueryService;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceSnapshot;
+import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,6 +40,10 @@ public class EmployeeAdminService {
     private final EmployeeResignationChecklistRepository resignationChecklistRepository;
     private final EmployeeMapper mapper;
     private final EmployeeDeletionPolicy deletionPolicy;
+    private final PayrollItemEnrollmentService payrollItemEnrollmentService;
+    private final PayrollItemBalanceQueryService payrollItemBalanceQueryService;
+    private final com.project.backend.features.master.payrollitem.balance.EmployeePayrollItemSettingService payrollItemSettingService;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public List<EmployeeListItemResponse> findAll() {
@@ -52,7 +62,7 @@ public class EmployeeAdminService {
         EmployeeContract contract = contractRepository.findByEmployeeIdAndDeletedAtIsNull(id)
                 .orElse(null);
 
-        return mapper.toDetailResponse(employee, payrollProfile, contract);
+        return toDetailResponse(employee, payrollProfile, contract);
     }
 
     @Transactional
@@ -62,14 +72,18 @@ public class EmployeeAdminService {
         Employee employee = new Employee();
         employee.setEmployeeCode(request.employeeCode().trim());
         mapper.updateEmployeeFromRequest(request, employee);
-        employee.updateDormitory(
-                Boolean.TRUE.equals(request.dormitoryFlag()),
-                request.dormitoryType()
-        );
+        applyDormitoryCompatibility(employee, request);
         employee.setEmployeeName(request.employeeName().trim());
         employee.initializeEmployment();
 
         Employee savedEmployee = employeeRepository.save(employee);
+        payrollItemEnrollmentService.synchronize(
+                savedEmployee.getId(),
+                PayrollItemTargetType.DEDUCTION,
+                "DORMITORY_FEE",
+                savedEmployee.isDormitoryFlag()
+        );
+        payrollItemSettingService.synchronizeAll(savedEmployee.getId(), request.payrollItemSettings());
 
         EmployeePayrollProfile profile = new EmployeePayrollProfile();
         profile.setEmployee(savedEmployee);
@@ -81,7 +95,7 @@ public class EmployeeAdminService {
         mapper.updateContractFromRequest(request.contract(), contract);
         contractRepository.save(contract);
 
-        return mapper.toDetailResponse(savedEmployee, profile, contract);
+        return toDetailResponse(savedEmployee, profile, contract);
     }
 
     @SuppressWarnings("null")
@@ -92,11 +106,10 @@ public class EmployeeAdminService {
 
         validateRequest(request, id, employee);
 
+        boolean wasDormitoryResident = employee.isDormitoryFlag();
+
         mapper.updateEmployeeFromRequest(request, employee);
-        employee.updateDormitory(
-                Boolean.TRUE.equals(request.dormitoryFlag()),
-                request.dormitoryType()
-        );
+        applyDormitoryCompatibility(employee, request);
         employee.setEmployeeName(request.employeeName().trim());
         employee.changeEmploymentStatus(request.employmentStatus());
 
@@ -122,7 +135,17 @@ public class EmployeeAdminService {
 
         Employee savedEmployee = employeeRepository.save(employee);
 
-        return mapper.toDetailResponse(savedEmployee, profile, contract);
+        if (wasDormitoryResident != savedEmployee.isDormitoryFlag()) {
+            payrollItemEnrollmentService.synchronize(
+                    savedEmployee.getId(),
+                    PayrollItemTargetType.DEDUCTION,
+                    "DORMITORY_FEE",
+                    savedEmployee.isDormitoryFlag()
+            );
+        }
+        payrollItemSettingService.synchronizeAll(savedEmployee.getId(), request.payrollItemSettings());
+
+        return toDetailResponse(savedEmployee, profile, contract);
     }
 
     @Transactional
@@ -147,7 +170,7 @@ public class EmployeeAdminService {
         EmployeeContract contract = contractRepository.findByEmployeeIdAndDeletedAtIsNull(id)
                 .orElse(null);
 
-        return mapper.toDetailResponse(savedEmployee, payrollProfile, contract);
+        return toDetailResponse(savedEmployee, payrollProfile, contract);
     }
 
     @Transactional
@@ -165,7 +188,7 @@ public class EmployeeAdminService {
                 .findByEmployeeIdAndDeletedAtIsNull(id)
                 .orElse(null);
 
-        return mapper.toDetailResponse(savedEmployee, payrollProfile, contract);
+        return toDetailResponse(savedEmployee, payrollProfile, contract);
     }
 
     @Transactional
@@ -183,6 +206,49 @@ public class EmployeeAdminService {
 
         contractRepository.findByEmployeeIdAndDeletedAtIsNull(id)
                 .ifPresent(contract -> contract.setDeletedAt(now));
+    }
+
+    private EmployeeDetailResponse toDetailResponse(
+            Employee employee,
+            EmployeePayrollProfile payrollProfile,
+            EmployeeContract contract
+    ) {
+        PayrollItemBalanceSnapshot dormitoryBalance = employee.isDormitoryFlag()
+                ? payrollItemBalanceQueryService.findDeductionBalance(
+                        employee.getId(),
+                        findDormitoryDeductionMasterId(),
+                        LocalDate.now(clock),
+                        null
+                )
+                : PayrollItemBalanceSnapshot.untracked();
+        return mapper.toDetailResponse(
+                employee, payrollProfile, contract, dormitoryBalance,
+                payrollItemSettingService.findAll(employee.getId())
+        );
+    }
+
+    private Long findDormitoryDeductionMasterId() {
+        return payrollItemBalanceQueryService.findPolicyMasterId(
+                PayrollItemTargetType.DEDUCTION,
+                "DORMITORY_FEE"
+        ).orElse(null);
+    }
+
+    private void applyDormitoryCompatibility(Employee employee, EmployeeSaveRequest request) {
+        var setting = request.payrollItemSettings() == null ? null
+                : request.payrollItemSettings().stream()
+                .filter(item -> "DORMITORY_FEE".equals(item.targetCode()))
+                .findFirst().orElse(null);
+        if (setting == null) {
+            employee.updateDormitory(Boolean.TRUE.equals(request.dormitoryFlag()), request.dormitoryType());
+            return;
+        }
+        var typeValue = setting.parameters() == null ? null
+                : setting.parameters().get("dormitoryType");
+        com.project.backend.features.employee.enums.DormitoryType type =
+                typeValue == null || typeValue.isBlank() ? null
+                        : com.project.backend.features.employee.enums.DormitoryType.valueOf(typeValue);
+        employee.updateDormitory(setting.enabled(), type);
     }
 
     private void validateRequest(
@@ -270,8 +336,17 @@ public class EmployeeAdminService {
             );
         }
 
-        if (Boolean.TRUE.equals(request.dormitoryFlag())
-                && request.dormitoryType() == null) {
+        var dormitorySetting = request.payrollItemSettings() == null ? null
+                : request.payrollItemSettings().stream()
+                .filter(item -> "DORMITORY_FEE".equals(item.targetCode()))
+                .findFirst().orElse(null);
+        boolean missingDynamicDormitoryType = dormitorySetting != null
+                && dormitorySetting.enabled()
+                && (dormitorySetting.parameters() == null
+                || dormitorySetting.parameters().getOrDefault("dormitoryType", "").isBlank());
+        if (missingDynamicDormitoryType || (dormitorySetting == null
+                && Boolean.TRUE.equals(request.dormitoryFlag())
+                && request.dormitoryType() == null)) {
             throw new IllegalArgumentException(
                     "入寮ありの場合は寮タイプを選択してください。"
             );

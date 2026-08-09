@@ -352,16 +352,6 @@ export const useDailyReportFormFields = ({
             type: 'number',
             gridColumn: '3 / span 2',
           },
-          {
-            key:
-              'dormitoryChargeDays',
-
-            label:
-              '寮費徴収日数',
-
-            type: 'number',
-            gridColumn: '1 / span 2',
-          },
         ]
 
       return result

@@ -1,6 +1,7 @@
 package com.project.backend.features.employee.dto;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.project.backend.features.employee.enums.EmploymentStatus;
 import com.project.backend.features.employee.enums.EmploymentType;
@@ -31,6 +32,7 @@ public record EmployeeSaveRequest(
         DormitoryType dormitoryType,
         Boolean activeFlag,
         @Valid EmployeePayrollProfileSaveRequest payrollProfile,
-        @Valid EmployeeContractSaveRequest contract
+        @Valid EmployeeContractSaveRequest contract,
+        @Valid List<EmployeePayrollItemSettingRequest> payrollItemSettings
 ) {
 }

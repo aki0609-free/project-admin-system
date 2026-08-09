@@ -18,7 +18,7 @@ import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetTy
 class PayrollItemDailyInputServiceTest {
 
     @Test
-    void findAllowanceItems_shouldKeepAutoAndFixedItemsReadOnly() {
+    void findAllowanceItems_shouldAllowOverrideWhenAutoMasterPermitsManualInput() {
         PayrollItemCalculationService calculationService =
                 mock(PayrollItemCalculationService.class);
         PayrollItemDailyInputService service =
@@ -37,12 +37,12 @@ class PayrollItemDailyInputServiceTest {
 
         assertThat(items).extracting(item -> item.inputMode())
                 .containsExactly(
-                        DailyReportInputMode.AUTO_CALCULATED,
+                        DailyReportInputMode.AUTO_WITH_OVERRIDE,
                         DailyReportInputMode.FIXED,
                         DailyReportInputMode.MANUAL
                 );
         assertThat(items).extracting(item -> item.editable())
-                .containsExactly(false, false, true);
+                .containsExactly(true, false, true);
     }
 
     private PayrollItemCalculationResult result(

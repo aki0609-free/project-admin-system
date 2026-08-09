@@ -1,5 +1,7 @@
 package com.project.backend.features.dailyreport.dto;
 
+import java.math.BigDecimal;
+
 import lombok.Builder;
 
 @Builder
@@ -8,6 +10,11 @@ public record DailyReportDeductionResponse(
         Long deductionMasterId,
         String deductionCode,
         String deductionName,
-        Integer amount
+        Integer calculatedAmount,
+        Integer amount,
+        Boolean manualOverride,
+        String overrideReason,
+        BigDecimal quantity,
+        String balanceUnit
 ) {
 }

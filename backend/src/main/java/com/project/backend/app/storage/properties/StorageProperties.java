@@ -56,13 +56,13 @@ public class StorageProperties {
     @Getter
     @Setter
     public static class Template {
-        private String path = "templates/reports";
+        private String path = "documents/templates/reports";
     }
 
     @Getter
     @Setter
     public static class Output {
-        private String path = "reports";
+        private String path = "documents/generated-reports/reports";
     }
 
     @Getter
