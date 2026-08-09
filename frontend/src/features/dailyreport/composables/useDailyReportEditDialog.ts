@@ -312,12 +312,14 @@ export const useDailyReportEditDialog = (
       response.allowances.map(item => ({
         ...item,
         amount: item.amount ?? 0,
+        overrideReason: item.overrideReason ?? '',
       }))
 
     formModel.deductions =
       response.deductions.map(item => ({
         ...item,
         amount: item.amount ?? 0,
+        overrideReason: item.overrideReason ?? '',
       }))
   }
 

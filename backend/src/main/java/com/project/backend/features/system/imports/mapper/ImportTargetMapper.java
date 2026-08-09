@@ -99,8 +99,7 @@ public interface ImportTargetMapper {
     default ImportScriptType resolveScriptType(
             ImportTargetSaveRequest request
     ) {
-        return request.sourceType() == ImportSourceType.SCRIPT
-                && request.scriptType() != null
+        return request.scriptType() != null
                 ? request.scriptType()
                 : ImportScriptType.NONE;
     }
@@ -108,7 +107,11 @@ public interface ImportTargetMapper {
     default String resolveFixedFilePath(
             ImportTargetSaveRequest request
     ) {
-        return request.sourceType() == ImportSourceType.UPLOAD
+        boolean uploadWithoutPreprocessor =
+                request.sourceType() == ImportSourceType.UPLOAD
+                        && (request.scriptType() == null
+                        || request.scriptType() == ImportScriptType.NONE);
+        return uploadWithoutPreprocessor
                 ? null
                 : normalizeBlank(request.fixedFilePath());
     }
@@ -116,7 +119,8 @@ public interface ImportTargetMapper {
     default String resolveScriptPath(
             ImportTargetSaveRequest request
     ) {
-        return request.sourceType() == ImportSourceType.SCRIPT
+        return request.scriptType() != null
+                && request.scriptType() != ImportScriptType.NONE
                 ? normalizeBlank(request.scriptPath())
                 : null;
     }
@@ -124,7 +128,8 @@ public interface ImportTargetMapper {
     default String resolveScriptArgs(
             ImportTargetSaveRequest request
     ) {
-        return request.sourceType() == ImportSourceType.SCRIPT
+        return request.scriptType() != null
+                && request.scriptType() != ImportScriptType.NONE
                 ? normalizeBlank(request.scriptArgs())
                 : null;
     }

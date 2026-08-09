@@ -1,6 +1,7 @@
 package com.project.backend.features.system.imports.service.validation;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -83,6 +84,33 @@ class ImportTargetValidatorTest {
                 validator.validateForCreate(request))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("データ型");
+    }
+
+    @Test
+    void upload時のPython前処理を許可する() {
+        ImportTargetCatalog catalog = catalog(true);
+        when(catalogService.findRequired("employee_import"))
+                .thenReturn(catalog);
+
+        ImportTargetSaveRequest request = ImportTargetSaveRequest.builder()
+                .targetCode("IMPORT_EMPLOYEE")
+                .targetName("従業員取込")
+                .tableName("employee_import")
+                .sourceType(ImportSourceType.UPLOAD)
+                .fixedFilePath("normalized.csv")
+                .scriptType(ImportScriptType.PYTHON)
+                .scriptPath("normalize.py")
+                .scriptArgs("--input ${IMPORT_INPUT_FILE} --output ${IMPORT_CSV_DIR}/normalized.csv")
+                .importMode(ImportMode.UPSERT)
+                .headerRowNumber(1)
+                .dataStartRowNumber(2)
+                .charset("UTF-8")
+                .delimiter(",")
+                .columns(List.of(column(true, ImportDataType.STRING)))
+                .build();
+
+        assertThatCode(() -> validator.validateForCreate(request))
+                .doesNotThrowAnyException();
     }
 
     private ImportTargetSaveRequest request(

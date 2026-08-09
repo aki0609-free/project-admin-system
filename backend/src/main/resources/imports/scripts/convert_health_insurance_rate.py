@@ -1,9 +1,8 @@
 import argparse
+import csv
 import re
-import requests
 from pathlib import Path
 
-import pandas as pd
 import pdfplumber
 
 
@@ -16,6 +15,7 @@ def download(url: str, path: Path):
 
     path.parent.mkdir(parents=True, exist_ok=True)
 
+    import requests
     res = requests.get(url, timeout=60)
     res.raise_for_status()
 
@@ -59,7 +59,7 @@ def extract_health_rate(input_file: Path):
             for line in text.splitlines():
                 normalized = line.replace("％", "%")
 
-                if "健康保険料率" not in normalized and "介護保険第2号" not in normalized:
+                if "健康保険料率" not in normalized:
                     continue
 
                 rates = re.findall(r"\d+(?:\.\d+)?\s*%", normalized)
@@ -77,7 +77,7 @@ def extract_health_rate(input_file: Path):
                     values = [(v or "").strip() for v in row]
                     joined = " ".join(values).replace("％", "%")
 
-                    if "健康保険" not in joined and "介護保険" not in joined:
+                    if "健康保険" not in joined:
                         continue
 
                     for value in values:
@@ -113,18 +113,19 @@ def main():
     employee_rate = round(total_rate / 2, 5)
     employer_rate = round(total_rate / 2, 5)
 
-    out = pd.DataFrame([
-        {
+    rows = [{
             "insuranceType": INSURANCE_TYPE,
             "year": args.year,
             "employeeRate": employee_rate,
             "employerRate": employer_rate,
-        }
-    ])
+        }]
 
     output_file = Path(args.output)
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    out.to_csv(output_file, index=False, encoding="utf-8-sig")
+    with output_file.open("w", encoding="utf-8-sig", newline="") as output:
+        writer = csv.DictWriter(output, fieldnames=rows[0].keys())
+        writer.writeheader()
+        writer.writerows(rows)
 
     print(f"CSV created: {output_file}")
     print(f"totalRate: {total_rate}")

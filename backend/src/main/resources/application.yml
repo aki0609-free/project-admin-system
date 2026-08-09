@@ -121,9 +121,9 @@ project:
     default-type: ${PROJECT_STORAGE_DEFAULT_TYPE:LOCAL}
     local-base-path: ${PROJECT_STORAGE_LOCAL_BASE_PATH:storage}
     template:
-      path: reports
+      path: ${PROJECT_STORAGE_REPORT_TEMPLATE_PATH:documents/templates/reports}
     output:
-      path: reports-output
+      path: ${PROJECT_STORAGE_REPORT_OUTPUT_PATH:documents/generated-reports/reports}
     imports:
       script:
         path: imports/scripts

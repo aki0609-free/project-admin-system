@@ -46,6 +46,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
 resource "aws_s3_bucket_lifecycle_configuration" "this" {
   bucket = aws_s3_bucket.this.id
 
+  depends_on = [aws_s3_bucket_versioning.this]
+
   rule {
     id     = "abort-incomplete-multipart-uploads"
     status = "Enabled"
@@ -54,6 +56,26 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
 
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
+    }
+  }
+
+  rule {
+    id     = "expire-annual-report-backups-after-seven-years"
+    status = "Enabled"
+
+    filter {
+      prefix = "documents/backups/reports/"
+    }
+
+    # 7暦年を下回らないよう、うるう年2日分を含めて保持する。
+    expiration {
+      days = 2557
+    }
+
+    # バージョニング有効バケットでは期限到来後に旧版となるため、
+    # さらに30日後に非現行バージョンも削除して保管費用を止める。
+    noncurrent_version_expiration {
+      noncurrent_days = 30
     }
   }
 }

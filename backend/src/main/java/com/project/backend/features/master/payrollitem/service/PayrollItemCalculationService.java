@@ -82,10 +82,21 @@ public class PayrollItemCalculationService {
                         )
                 );
 
-        BigDecimal amount =
+        BigDecimal calculatedAmount =
                 valueResult.amount() == null
                         ? BigDecimal.ZERO
                         : valueResult.amount().setScale(0, RoundingMode.HALF_UP);
+
+        boolean manualOverride = "AUTO".equals(valueResult.calculationType())
+                && Boolean.TRUE.equals(snapshot.allowManualInput())
+                && manualAmounts != null
+                && manualAmounts.containsKey(snapshot.id());
+        BigDecimal amount = manualOverride
+                ? applyLimits(
+                        BigDecimal.valueOf(manualAmounts.get(snapshot.id())),
+                        snapshot.minAmount(), snapshot.maxAmount()
+                )
+                : calculatedAmount;
 
         return new PayrollItemCalculationResult(
                 valueResult.targetType(),
@@ -94,7 +105,9 @@ public class PayrollItemCalculationService {
                 valueResult.targetName(),
                 valueResult.calculationType(),
                 valueResult.ruleName(),
+                calculatedAmount,
                 amount,
+                manualOverride,
                 snapshot.allowManualInput(),
                 resolveDisplayOrder(snapshot.displayOrder()),
                 buildFacts(valueResult.facts(), snapshot)
@@ -119,6 +132,21 @@ public class PayrollItemCalculationService {
             Integer displayOrder
     ) {
         return displayOrder != null ? displayOrder : 9999;
+    }
+
+    private BigDecimal applyLimits(
+            BigDecimal amount,
+            Integer minAmount,
+            Integer maxAmount
+    ) {
+        BigDecimal result = amount;
+        if (minAmount != null) {
+            result = result.max(BigDecimal.valueOf(minAmount));
+        }
+        if (maxAmount != null) {
+            result = result.min(BigDecimal.valueOf(maxAmount));
+        }
+        return result;
     }
 
     private Map<String, Object> buildFacts(

@@ -31,11 +31,11 @@ INSERT INTO import_target (
     'income_tax_table',
     'Pythonで国税庁ExcelからCSVを生成し、源泉徴収税額表を取り込む定義',
     'SCRIPT',
-    '/tmp/project-admin/import/income_tax_table_2026.csv',
+    'income_tax_table_2026.csv',
     'PYTHON',
-    '/app/storage/imports/scripts/convert_income_tax_table.py',
-    '--year 2026 --input /tmp/project-admin/source/nta_income_tax_monthly_2026.xlsx --output /tmp/project-admin/import/income_tax_table_2026.csv',
-    'INSERT_ONLY',
+    'convert_income_tax_table_v2.py',
+    '--year 2026 --input /tmp/project-admin/source/nta_income_tax_monthly_2026.xls --output ${IMPORT_CSV_DIR}/income_tax_table_2026.csv',
+    'UPSERT',
     1,
     2,
     'UTF-8',
@@ -115,7 +115,8 @@ UPDATE import_target
 SET
     source_type = 'SCRIPT',
     script_type = 'PYTHON',
-    script_path = '/app/storage/imports/scripts/convert_income_tax_table.py',
-    script_args = '--year 2026 --url https://www.nta.go.jp/publication/pamph/gensen/zeigakuhyo2026/data/01-07.xls --source /tmp/project-admin/source/nta_income_tax_monthly_2026.xls --output /tmp/project-admin/import/income_tax_table_2026.csv',
-    fixed_file_path = '/tmp/project-admin/import/income_tax_table_2026.csv'
+    script_path = 'convert_income_tax_table_v2.py',
+    script_args = '--year 2026 --url https://www.nta.go.jp/publication/pamph/gensen/zeigakuhyo2026/data/01-07.xls --input /tmp/project-admin/source/nta_income_tax_monthly_2026.xls --output ${IMPORT_CSV_DIR}/income_tax_table_2026.csv',
+    fixed_file_path = 'income_tax_table_2026.csv',
+    import_mode = 'UPSERT'
 WHERE target_code = 'IMPORT_INCOME_TAX_TABLE';

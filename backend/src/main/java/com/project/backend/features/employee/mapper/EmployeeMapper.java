@@ -22,6 +22,7 @@ import com.project.backend.features.employee.entity.EmployeePayrollProfile;
 import com.project.backend.features.employee.enums.PaymentCycle;
 import com.project.backend.features.employee.enums.SalaryType;
 import com.project.backend.features.employee.enums.TaxCategory;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceSnapshot;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface EmployeeMapper {
@@ -46,13 +47,20 @@ public interface EmployeeMapper {
         @Mapping(target = "address", source = "employee.address")
         @Mapping(target = "dormitoryFlag", source = "employee.dormitoryFlag")
         @Mapping(target = "dormitoryType", source = "employee.dormitoryType")
+        @Mapping(target = "dormitoryOpeningDays", source = "dormitoryBalance.openingQuantity")
+        @Mapping(target = "dormitoryCurrentMonthDays", source = "dormitoryBalance.accruedQuantity")
+        @Mapping(target = "dormitoryConsumedDays", source = "dormitoryBalance.consumedQuantity")
+        @Mapping(target = "dormitoryRemainingDays", source = "dormitoryBalance.remainingQuantity")
         @Mapping(target = "activeFlag", source = "employee.activeFlag")
         @Mapping(target = "payrollProfile", source = "payrollProfile")
         @Mapping(target = "contract", source = "contract")
+        @Mapping(target = "payrollItemSettings", source = "payrollItemSettings")
         EmployeeDetailResponse toDetailResponse(
                         Employee employee,
                         EmployeePayrollProfile payrollProfile,
-                        EmployeeContract contract);
+                        EmployeeContract contract,
+                        PayrollItemBalanceSnapshot dormitoryBalance,
+                        java.util.List<com.project.backend.features.employee.dto.EmployeePayrollItemSettingResponse> payrollItemSettings);
 
         EmployeePayrollProfileResponse toPayrollProfileResponse(EmployeePayrollProfile profile);
 

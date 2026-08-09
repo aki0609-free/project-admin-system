@@ -19,7 +19,12 @@ export const createEmptyEmployeeForm = (): EmployeeForm => ({
   address: '',
   dormitoryFlag: false,
   dormitoryType: null,
+  dormitoryOpeningDays: 0,
+  dormitoryCurrentMonthDays: 0,
+  dormitoryConsumedDays: 0,
+  dormitoryRemainingDays: 0,
   activeFlag: true,
+  payrollItemSettings: [],
 
   payrollProfile: {
     taxCategory: 'KOU',
@@ -74,7 +79,17 @@ export const toEmployeeForm = (detail: EmployeeDetailResponse): EmployeeForm => 
   address: detail.address ?? '',
   dormitoryFlag: detail.dormitoryFlag ?? false,
   dormitoryType: detail.dormitoryType ?? null,
+  dormitoryOpeningDays: detail.dormitoryOpeningDays ?? 0,
+  dormitoryCurrentMonthDays: detail.dormitoryCurrentMonthDays ?? 0,
+  dormitoryConsumedDays: detail.dormitoryConsumedDays ?? 0,
+  dormitoryRemainingDays: detail.dormitoryRemainingDays ?? 0,
   activeFlag: detail.activeFlag,
+  payrollItemSettings: (detail.payrollItemSettings ?? []).map(item => ({
+    ...item,
+    effectiveFrom: item.effectiveFrom ?? '',
+    effectiveTo: item.effectiveTo ?? '',
+    parameters: { ...item.parameters },
+  })),
 
   payrollProfile: {
     taxCategory: detail.payrollProfile.taxCategory,

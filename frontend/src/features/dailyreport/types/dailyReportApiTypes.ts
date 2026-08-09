@@ -28,7 +28,12 @@ export type DailyReportDeductionResponse = {
   deductionMasterId: number
   deductionCode: string
   deductionName: string
+  calculatedAmount: number
   amount: number
+  manualOverride: boolean
+  overrideReason: string | null
+  quantity: number | null
+  balanceUnit: string | null
 }
 
 export type DailyReportResponse = {
@@ -141,7 +146,12 @@ export type DailyReportDeductionSaveRequest = {
   deductionMasterId: number
   deductionCode: string
   deductionName: string
+  calculatedAmount: number
   amount: number
+  manualOverride: boolean
+  overrideReason: string | null
+  quantity: number | null
+  balanceUnit: string | null
 }
 
 export type DailyReportSaveRequest = {

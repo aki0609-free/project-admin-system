@@ -168,7 +168,7 @@ INSERT INTO deduction_masters (
     'COMPANY',
     'VARIABLE',
     'BOTH',
-    'GENERIC',
+    'NONE',
     true,
     true,
     true,
@@ -191,7 +191,7 @@ INSERT INTO deduction_masters (
     'COMPANY',
     'FIXED',
     'MONTHLY',
-    'GENERIC',
+    'NONE',
     false,
     true,
     true,
@@ -214,7 +214,7 @@ INSERT INTO deduction_masters (
     'COMPANY',
     'FIXED',
     'MONTHLY',
-    'GENERIC',
+    'NONE',
     false,
     true,
     true,
@@ -237,7 +237,7 @@ INSERT INTO deduction_masters (
     'COMPANY',
     'FIXED',
     'MONTHLY',
-    'GENERIC',
+    'NONE',
     false,
     true,
     true,
@@ -260,7 +260,7 @@ INSERT INTO deduction_masters (
     'COMPANY',
     'VARIABLE',
     'BOTH',
-    'GENERIC',
+    'NONE',
     true,
     true,
     true,
@@ -283,7 +283,7 @@ INSERT INTO deduction_masters (
     'COMPANY',
     'VARIABLE',
     'BOTH',
-    'GENERIC',
+    'NONE',
     true,
     true,
     true,
@@ -306,7 +306,7 @@ INSERT INTO deduction_masters (
     'LEGAL',
     'VARIABLE',
     'DAILY',
-    'GENERIC',
+    'NONE',
     true,
     false,
     true,
@@ -332,5 +332,5 @@ SET detail_view_type = 'EMPLOYMENT_INSURANCE'
 WHERE deduction_code = 'EMPLOYMENT_INSURANCE';
 
 UPDATE deduction_masters
-SET detail_view_type = 'GENERIC'
+SET detail_view_type = 'NONE'
 WHERE detail_view_type = 'INSURANCE_RATE';

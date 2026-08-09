@@ -450,7 +450,7 @@ JEXL、MVEL、Java Beanは日報入力時などJava側で実行し、
 | `CALCULATION_PERIOD_MISSING` | 対象月の計算期間マスターがない |
 | `CALCULATION_PERIOD_NOT_VERIFIED` | 対象月の税・保険マスターが確認済みではない |
 | `ROUNDING_MODE_UNSUPPORTED` | 未対応の端数処理方式 |
-| `CARE_INSURANCE_RATE_UNSUPPORTED` | 介護保険対象だが計算マスターが未対応 |
+| `CARE_INSURANCE_RATE_MISSING` | 介護保険対象だが対象版の料率がない |
 | `STANDARD_REMUNERATION_MISSING` | 対象月に有効な従業員別標準報酬月額がない |
 | `STANDARD_REMUNERATION_OVERLAPPED` | 標準報酬月額の適用期間が重複している |
 | `HEALTH_INSURANCE_RATE_MISSING` | 対象年の健康保険料率がない |

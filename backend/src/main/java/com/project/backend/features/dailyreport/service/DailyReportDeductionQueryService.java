@@ -27,7 +27,12 @@ public class DailyReportDeductionQueryService {
                         .deductionMasterId(entity.getDeductionMasterId())
                         .deductionCode(entity.getDeductionCode())
                         .deductionName(entity.getDeductionName())
+                        .calculatedAmount(entity.getCalculatedAmount())
                         .amount(entity.getAmount())
+                        .manualOverride(entity.isManualOverrideFlag())
+                        .overrideReason(entity.getOverrideReason())
+                        .quantity(entity.getQuantity())
+                        .balanceUnit(entity.getBalanceUnit())
                         .build())
                 .toList();
     }

@@ -31,6 +31,9 @@ app:
     enabled: false
 
 project:
+  imports:
+    script:
+      python-command: python3
   storage:
     default-type: LOCAL
     local-base-path: ${java.io.tmpdir}/project-admin-test-storage

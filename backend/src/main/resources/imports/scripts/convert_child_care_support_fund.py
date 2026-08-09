@@ -1,9 +1,8 @@
 import argparse
+import csv
 import re
-import requests
 from pathlib import Path
 
-import pandas as pd
 import pdfplumber
 
 
@@ -14,6 +13,7 @@ def download(url: str, path: Path):
     if not url:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
+    import requests
     res = requests.get(url, timeout=60)
     res.raise_for_status()
     path.write_bytes(res.content)
@@ -45,7 +45,7 @@ def extract_rate(input_file: Path):
             text = page.extract_text() or ""
 
             for line in text.splitlines():
-                if "子ども" not in line and "子育て" not in line:
+                if "子ども・子育て支援金" not in line and "子ども・子育て支援金率" not in line:
                     continue
 
                 rates = re.findall(r"\d+(?:\.\d+)?\s*[％%]", line)
@@ -75,16 +75,19 @@ def main():
 
     total_rate = extract_rate(input_file)
 
-    out = pd.DataFrame([{
+    rows = [{
         "insuranceType": INSURANCE_TYPE,
         "year": args.year,
         "employeeRate": round(total_rate / 2, 5),
         "employerRate": round(total_rate / 2, 5),
-    }])
+    }]
 
     output_file = Path(args.output)
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    out.to_csv(output_file, index=False, encoding="utf-8-sig")
+    with output_file.open("w", encoding="utf-8-sig", newline="") as output:
+        writer = csv.DictWriter(output, fieldnames=rows[0].keys())
+        writer.writeheader()
+        writer.writerows(rows)
 
     print(f"CSV created: {output_file}")
     print(f"rate: {total_rate}")

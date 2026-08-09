@@ -1,5 +1,7 @@
 package com.project.backend.features.dailyreport.dto;
 
+import java.math.BigDecimal;
+
 import com.project.backend.features.dailyreport.enums.DailyReportInputItemType;
 import com.project.backend.features.dailyreport.enums.DailyReportInputMode;
 
@@ -12,8 +14,19 @@ public record DailyReportInputItemResponse(
         String name,
         DailyReportInputItemType itemType,
         DailyReportInputMode inputMode,
+        Integer calculatedAmount,
         Integer amount,
+        Boolean manualOverride,
+        String overrideReason,
         Boolean editable,
-        Integer displayOrder
+        Integer displayOrder,
+        Boolean balanceTracked,
+        String balanceUnit,
+        BigDecimal openingQuantity,
+        BigDecimal accruedQuantity,
+        BigDecimal consumedQuantity,
+        BigDecimal remainingQuantity,
+        BigDecimal quantity,
+        BigDecimal remainingAfterQuantity
 ) {
 }

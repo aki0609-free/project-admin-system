@@ -1,6 +1,6 @@
 package com.project.backend.features.master.deduction.provider;
 
-import java.time.LocalDate;
+import java.time.Clock;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
@@ -20,6 +20,7 @@ public class EmploymentInsuranceDeductionDetailProvider implements DeductionDeta
 
     private final InsuranceRateRepository insuranceRateRepository;
     private final DeductionTaxDetailMapper mapper;
+    private final Clock clock;
 
     @Override
     public DeductionDetailViewType supports() {
@@ -28,7 +29,7 @@ public class EmploymentInsuranceDeductionDetailProvider implements DeductionDeta
 
     @Override
     public List<BaseDeductionDetailResponse> getDetails(DeductionMaster deduction) {
-        int year = LocalDate.now().getYear();
+        int year = clock.instant().atZone(clock.getZone()).getYear();
 
         return insuranceRateRepository
                 .findByInsuranceTypeAndYearOrderByIdAsc(

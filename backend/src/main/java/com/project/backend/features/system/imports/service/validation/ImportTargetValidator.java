@@ -133,14 +133,6 @@ public class ImportTargetValidator {
     private void validateSourceSetting(
             ImportTargetSaveRequest request
     ) {
-        if (request.sourceType() == ImportSourceType.UPLOAD
-                && request.scriptType() != null
-                && request.scriptType() != ImportScriptType.NONE) {
-            throw new RuntimeException(
-                    "sourceType=UPLOAD ではscriptTypeを指定できません。"
-            );
-        }
-
         if (
                 request.sourceType() == ImportSourceType.SERVER_FILE
                         && !StringUtils.hasText(request.fixedFilePath())
@@ -150,8 +142,7 @@ public class ImportTargetValidator {
             );
         }
 
-        if (request.sourceType() != ImportSourceType.UPLOAD
-                && StringUtils.hasText(request.fixedFilePath())
+        if (StringUtils.hasText(request.fixedFilePath())
                 && !request.fixedFilePath()
                         .trim()
                         .toLowerCase()
@@ -161,26 +152,27 @@ public class ImportTargetValidator {
             );
         }
 
-        if (request.sourceType() == ImportSourceType.SCRIPT) {
+        if (request.sourceType() == ImportSourceType.SCRIPT
+                && (request.scriptType() == null
+                || request.scriptType() == ImportScriptType.NONE)) {
+            throw new RuntimeException(
+                    "sourceType=SCRIPT の場合、scriptType は必須です。"
+            );
+        }
 
-            if (
-                    request.scriptType() == null
-                            || request.scriptType() == ImportScriptType.NONE
-            ) {
-                throw new RuntimeException(
-                        "sourceType=SCRIPT の場合、scriptType は必須です。"
-                );
-            }
+        boolean scriptEnabled = request.scriptType() != null
+                && request.scriptType() != ImportScriptType.NONE;
+        if (scriptEnabled) {
 
             if (!StringUtils.hasText(request.scriptPath())) {
                 throw new RuntimeException(
-                        "sourceType=SCRIPT の場合、scriptPath は必須です。"
+                        "scriptType指定時はscriptPathが必須です。"
                 );
             }
 
             if (!StringUtils.hasText(request.fixedFilePath())) {
                 throw new RuntimeException(
-                        "sourceType=SCRIPT の場合、生成CSVの fixedFilePath は必須です。"
+                        "scriptType指定時は生成CSVのfixedFilePathが必須です。"
                 );
             }
 

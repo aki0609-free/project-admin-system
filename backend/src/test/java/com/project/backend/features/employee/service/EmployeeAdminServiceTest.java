@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +24,8 @@ import com.project.backend.features.employee.repository.EmployeeContractReposito
 import com.project.backend.features.employee.repository.EmployeePayrollProfileRepository;
 import com.project.backend.features.employee.repository.EmployeeRepository;
 import com.project.backend.features.employee.repository.EmployeeResignationChecklistRepository;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemEnrollmentService;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceQueryService;
 
 class EmployeeAdminServiceTest {
 
@@ -31,6 +34,8 @@ class EmployeeAdminServiceTest {
     private EmployeeContractRepository contractRepository;
     private EmployeeResignationChecklistRepository checklistRepository;
     private EmployeeDeletionPolicy deletionPolicy;
+    private PayrollItemEnrollmentService enrollmentService;
+    private PayrollItemBalanceQueryService balanceQueryService;
     private EmployeeAdminService service;
 
     @BeforeEach
@@ -40,13 +45,23 @@ class EmployeeAdminServiceTest {
         contractRepository = mock(EmployeeContractRepository.class);
         checklistRepository = mock(EmployeeResignationChecklistRepository.class);
         deletionPolicy = mock(EmployeeDeletionPolicy.class);
+        enrollmentService = mock(PayrollItemEnrollmentService.class);
+        balanceQueryService = mock(PayrollItemBalanceQueryService.class);
+        when(balanceQueryService.findPolicyMasterId(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyString()
+        )).thenReturn(Optional.empty());
         service = new EmployeeAdminService(
                 employeeRepository,
                 payrollRepository,
                 contractRepository,
                 checklistRepository,
                 mock(EmployeeMapper.class),
-                deletionPolicy
+                deletionPolicy,
+                enrollmentService,
+                balanceQueryService,
+                mock(com.project.backend.features.master.payrollitem.balance.EmployeePayrollItemSettingService.class),
+                Clock.systemUTC()
         );
     }
 
@@ -129,7 +144,8 @@ class EmployeeAdminServiceTest {
                 null,
                 true,
                 null,
-                null
+                null,
+                java.util.List.of()
         );
     }
 }

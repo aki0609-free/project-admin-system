@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.project.backend.features.system.imports.dto.ImportExecuteResult;
 import com.project.backend.features.system.imports.dto.ImportTargetDefinition;
 import com.project.backend.features.system.imports.enums.ImportSourceType;
+import com.project.backend.features.system.imports.enums.ImportScriptType;
 import com.project.backend.features.system.imports.service.resolver.ImportCsvPathResolver;
 
 import lombok.RequiredArgsConstructor;
@@ -41,9 +42,18 @@ public class ImportExecutionService {
             String originalFileName =
                     tempFile.getFileName().toString();
 
+            Path importPath = tempFile;
+            if (target.scriptType() != null
+                    && target.scriptType() != ImportScriptType.NONE) {
+                scriptExecutorService.execute(target, tempFile);
+                importPath = csvPathResolver.resolveExisting(
+                        target.fixedFilePath()
+                );
+            }
+
             return csvJobLauncherService.run(
                     target,
-                    tempFile,
+                    importPath,
                     originalFileName
             );
 

@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.backend.features.admin.business.dto.BusinessClosingSettingResponse;
+import com.project.backend.features.admin.business.dto.AnnualReportBackupSettingResponse;
+import com.project.backend.features.admin.business.dto.AnnualReportBackupSettingSaveRequest;
 import com.project.backend.features.admin.business.dto.BusinessClosingSettingSaveRequest;
 import com.project.backend.features.admin.business.dto.DormitoryFeeSettingResponse;
 import com.project.backend.features.admin.business.dto.DormitoryFeeSettingSaveRequest;
@@ -22,6 +24,8 @@ import com.project.backend.features.admin.business.dto.ResignationChecklistAdmin
 import com.project.backend.features.admin.business.dto.ResignationChecklistSaveRequest;
 import com.project.backend.features.admin.business.dto.ResignationMessageSaveRequest;
 import com.project.backend.features.admin.business.service.BusinessSettingService;
+import com.project.backend.features.admin.business.service.AnnualReportBackupSettingService;
+import com.project.backend.features.operation.monthly.dto.AnnualReportBackupResult;
 import com.project.backend.features.employee.dto.EmployeeResignationMessageResponse;
 
 import jakarta.validation.Valid;
@@ -34,6 +38,26 @@ import lombok.RequiredArgsConstructor;
 public class BusinessSettingController {
 
     private final BusinessSettingService service;
+    private final AnnualReportBackupSettingService annualReportBackupService;
+
+    @GetMapping("/annual-report-backup")
+    public AnnualReportBackupSettingResponse findAnnualReportBackupSetting() {
+        return annualReportBackupService.find();
+    }
+
+    @PutMapping("/annual-report-backup")
+    public AnnualReportBackupSettingResponse saveAnnualReportBackupSetting(
+            @Valid @RequestBody AnnualReportBackupSettingSaveRequest request
+    ) {
+        return annualReportBackupService.save(request);
+    }
+
+    @PostMapping("/annual-report-backup/{fiscalYear}/execute")
+    public AnnualReportBackupResult executeAnnualReportBackup(
+            @PathVariable int fiscalYear
+    ) {
+        return annualReportBackupService.execute(fiscalYear);
+    }
 
     @GetMapping("/dormitory-fees")
     public List<DormitoryFeeSettingResponse> findDormitoryFees() {

@@ -1,9 +1,8 @@
 import argparse
+import csv
 import re
-import requests
 from pathlib import Path
 
-import pandas as pd
 import pdfplumber
 
 
@@ -21,6 +20,7 @@ def download(url: str, path: Path):
     if not url:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
+    import requests
     res = requests.get(url, timeout=60)
     res.raise_for_status()
     path.write_bytes(res.content)
@@ -41,17 +41,24 @@ def extract_rates(input_file: Path, category: str):
     if not keywords:
         raise RuntimeError(f"未対応のcategoryです: {category}")
 
-    for line in full_text.splitlines():
+    lines = full_text.splitlines()
+    for index, line in enumerate(lines):
         if not any(k in line for k in keywords):
             continue
 
-        rates = re.findall(r"(\d+(?:\.\d+)?)\s*/\s*1000", line)
-
-        if len(rates) >= 2:
-            return per_thousand_to_decimal(rates[0]), per_thousand_to_decimal(rates[1])
-
-        if len(rates) == 1:
-            return per_thousand_to_decimal(rates[0]), None
+        # PDFでは「農林水産・」と料率行が改行で分かれるため、
+        # 見出し行から直後3行までの最初の料率行を採用する。
+        for candidate in lines[index:index + 4]:
+            normalized = candidate.replace("，", ",").replace("／", "/")
+            rates = re.findall(
+                r"(\d+(?:\.\d+)?)\s*/\s*1\s*,?\s*000",
+                normalized,
+            )
+            if len(rates) >= 2:
+                return (
+                    per_thousand_to_decimal(rates[0]),
+                    per_thousand_to_decimal(rates[1]),
+                )
 
     raise RuntimeError(f"雇用保険料率を抽出できませんでした。category={category}")
 
@@ -72,16 +79,19 @@ def main():
 
     employee_rate, employer_rate = extract_rates(input_file, args.category)
 
-    out = pd.DataFrame([{
+    rows = [{
         "insuranceType": INSURANCE_TYPE,
         "year": args.year,
         "employeeRate": employee_rate,
         "employerRate": employer_rate,
-    }])
+    }]
 
     output_file = Path(args.output)
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    out.to_csv(output_file, index=False, encoding="utf-8-sig")
+    with output_file.open("w", encoding="utf-8-sig", newline="") as output:
+        writer = csv.DictWriter(output, fieldnames=rows[0].keys())
+        writer.writeheader()
+        writer.writerows(rows)
 
     print(f"CSV created: {output_file}")
     print(f"employeeRate: {employee_rate}")

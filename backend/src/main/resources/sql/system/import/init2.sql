@@ -57,7 +57,7 @@ VALUES
     'PYTHON',
     'convert_income_tax_table.py',
     '--year 2026 --input /tmp/project-admin/source/nta_income_tax_monthly_2026.xls --output ${IMPORT_CSV_DIR}/income_tax_table_2026.csv',
-    'INSERT_ONLY',
+    'UPSERT',
     1,
     2,
     'UTF-8',
@@ -97,6 +97,26 @@ VALUES
     'PYTHON',
     'convert_pension_insurance_rate.py',
     '--year 2026 --input /tmp/project-admin/source/nenkin_pension_2026.pdf --output ${IMPORT_CSV_DIR}/pension_insurance_rate_2026.csv',
+    'INSERT_ONLY',
+    1,
+    2,
+    'UTF-8',
+    ',',
+    TRUE,
+    'default',
+    NOW(),
+    NOW()
+),
+(
+    'IMPORT_CARE_INSURANCE_RATE',
+    '介護保険料率取込',
+    'care_insurance_rate',
+    '協会けんぽの介護保険料率をPythonでCSV化して取り込む定義',
+    'SCRIPT',
+    'care_insurance_rate_2026.csv',
+    'PYTHON',
+    'convert_care_insurance_rate.py',
+    '--year 2026 --input /tmp/project-admin/source/kyoukaikenpo_shizuoka_2026.pdf --output ${IMPORT_CSV_DIR}/care_insurance_rate_2026.csv',
     'INSERT_ONLY',
     1,
     2,
@@ -171,12 +191,12 @@ VALUES
     'IMPORT_RESIDENT_TAX',
     '住民税取込',
     'resident_tax_monthly',
-    '市区町村から届く住民税通知書CSVを取り込む定義。自動取得対象外。',
-    'SERVER_FILE',
+    '市区町村から届く住民税通知書CSVをPythonで月別データへ正規化して取り込む定義。自動取得対象外。',
+    'UPLOAD',
     'resident_tax_2026.csv',
-    'NONE',
-    NULL,
-    NULL,
+    'PYTHON',
+    'convert_resident_tax.py',
+    '--year 2026 --input ${IMPORT_INPUT_FILE} --output ${IMPORT_CSV_DIR}/resident_tax_2026.csv',
     'UPSERT',
     1,
     2,
@@ -190,8 +210,10 @@ VALUES
 
 UPDATE import_target
 SET
-    script_args = '--year 2026 --url https://www.nta.go.jp/publication/pamph/gensen/zeigakuhyo2026/data/01-07.xls --source /tmp/project-admin/source/nta_income_tax_monthly_2026.xls --output ${IMPORT_CSV_DIR}/income_tax_table_2026.csv',
-    fixed_file_path = 'income_tax_table_2026.csv'
+    script_path = 'convert_income_tax_table_v2.py',
+    script_args = '--year 2026 --url https://www.nta.go.jp/publication/pamph/gensen/zeigakuhyo2026/data/01-07.xls --input /tmp/project-admin/source/nta_income_tax_monthly_2026.xls --output ${IMPORT_CSV_DIR}/income_tax_table_2026.csv',
+    fixed_file_path = 'income_tax_table_2026.csv',
+    import_mode = 'UPSERT'
 WHERE target_code = 'IMPORT_INCOME_TAX_TABLE';
 
 UPDATE import_target
@@ -203,6 +225,17 @@ WHERE target_code = 'IMPORT_HEALTH_INSURANCE_RATE';
 UPDATE import_target
 SET table_name = 'insurance_rate_master'
 WHERE target_code IN (
+    'IMPORT_CARE_INSURANCE_RATE',
+    'IMPORT_PENSION_INSURANCE_RATE',
+    'IMPORT_EMPLOYMENT_INSURANCE_RATE',
+    'IMPORT_CHILD_CARE_SUPPORT_FUND'
+);
+
+UPDATE import_target
+SET import_mode = 'UPSERT'
+WHERE target_code IN (
+    'IMPORT_HEALTH_INSURANCE_RATE',
+    'IMPORT_CARE_INSURANCE_RATE',
     'IMPORT_PENSION_INSURANCE_RATE',
     'IMPORT_EMPLOYMENT_INSURANCE_RATE',
     'IMPORT_CHILD_CARE_SUPPORT_FUND'
@@ -216,3 +249,24 @@ UPDATE import_target
 SET
     script_args = '--year 2026 --url https://www.kyoukaikenpo.or.jp/assets/R8_22shizuoka.pdf --input /tmp/project-admin/source/kyoukaikenpo_shizuoka_2026.pdf --output ${IMPORT_CSV_DIR}/health_insurance_rate_2026.csv'
 WHERE target_code = 'IMPORT_HEALTH_INSURANCE_RATE';
+
+UPDATE import_target
+SET
+    script_args = '--year 2026 --url https://www.kyoukaikenpo.or.jp/assets/R8_22shizuoka.pdf --input /tmp/project-admin/source/kyoukaikenpo_shizuoka_2026.pdf --output ${IMPORT_CSV_DIR}/care_insurance_rate_2026.csv'
+WHERE target_code = 'IMPORT_CARE_INSURANCE_RATE';
+
+UPDATE import_target
+SET
+    script_args = '--year 2026 --url https://www.nenkin.go.jp/service/kounen/hokenryo/ryogaku/ryogakuhyo/20200825.files/R08ryougaku.pdf --input /tmp/project-admin/source/nenkin_pension_2026.pdf --output ${IMPORT_CSV_DIR}/pension_insurance_rate_2026.csv'
+WHERE target_code = 'IMPORT_PENSION_INSURANCE_RATE';
+
+UPDATE import_target
+SET
+    script_args = '--year 2026 --category GENERAL --url https://www.mhlw.go.jp/content/001692566.pdf --input /tmp/project-admin/source/mhlw_employment_insurance_2026.pdf --output ${IMPORT_CSV_DIR}/employment_insurance_rate_2026.csv',
+    description = '厚労省の雇用保険料率を取り込む。categoryは労働保険上の事業区分確認後に確定する。'
+WHERE target_code = 'IMPORT_EMPLOYMENT_INSURANCE_RATE';
+
+UPDATE import_target
+SET
+    script_args = '--year 2026 --url https://www.kyoukaikenpo.or.jp/assets/R8_22shizuoka.pdf --input /tmp/project-admin/source/kyoukaikenpo_shizuoka_2026.pdf --output ${IMPORT_CSV_DIR}/child_care_support_fund_2026.csv'
+WHERE target_code = 'IMPORT_CHILD_CARE_SUPPORT_FUND';

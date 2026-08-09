@@ -10,6 +10,7 @@ import type { EmployeeListItemResponse } from '@/features/employees/types/employ
 
 import { useDailyReportEditDialog } from '@/features/dailyreport/composables/useDailyReportEditDialog'
 import type { DailyReportCreateParams } from '@/features/dailyreport/composables/useDailyReportDialog'
+import type { DailyReportAmountItemForm } from '@/features/dailyreport/types/dailyReportInputItemTypes'
 
 const props = defineProps<{
   modelValue: boolean
@@ -50,6 +51,33 @@ const {
   form => emit('save', form),
   form => emit('delete', form),
 )
+
+const updateDeductionAmount = (
+  item: DailyReportAmountItemForm,
+  value: unknown,
+) => {
+  item.amount = Number(value ?? 0)
+  item.manualOverride =
+    item.inputMode === 'AUTO_WITH_OVERRIDE'
+    && item.amount !== item.calculatedAmount
+  if (!item.manualOverride) {
+    item.overrideReason = ''
+  }
+}
+
+const updateBalanceQuantity = (
+  item: DailyReportAmountItemForm,
+  value: unknown,
+) => {
+  item.quantity = Math.max(0, Number(value ?? 0))
+  item.remainingAfterQuantity = Math.max(
+    0,
+    item.remainingQuantity - item.quantity,
+  )
+  if (item.code === 'DORMITORY_FEE') {
+    formModel.dormitoryChargeDays = item.quantity
+  }
+}
 </script>
 
 <template>
@@ -236,7 +264,7 @@ const {
               </div>
 
               <v-text-field
-                v-model.number="item.amount"
+                :model-value="item.amount"
                 type="number"
                 label="金額"
                 density="compact"
@@ -244,6 +272,50 @@ const {
                 hide-details
                 class="amount-input"
                 :readonly="!item.editable"
+                @update:model-value="updateDeductionAmount(item, $event)"
+              />
+
+              <div
+                v-if="item.inputMode === 'AUTO_WITH_OVERRIDE'"
+                class="amount-reference"
+              >
+                Rule基準額：{{ item.calculatedAmount.toLocaleString() }}円
+              </div>
+
+              <template v-if="item.balanceTracked">
+                <div class="balance-section">
+                  <div class="balance-summary">
+                    <span>前月繰越 {{ item.openingQuantity }}</span>
+                    <span>当月分 {{ item.accruedQuantity }}</span>
+                    <span>現在残 {{ item.remainingQuantity }}</span>
+                  </div>
+                  <v-text-field
+                    :model-value="item.quantity"
+                    type="number"
+                    :label="item.balanceUnit === 'DAYS' ? '支払い日数' : '今回の数量'"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    min="0"
+                    :max="item.remainingQuantity"
+                    @update:model-value="updateBalanceQuantity(item, $event)"
+                  />
+                  <div class="amount-reference">
+                    {{ item.balanceUnit === 'DAYS' ? '保存後残日数' : '保存後残数' }}：{{ item.remainingAfterQuantity }} {{ item.balanceUnit === 'DAYS' ? '日' : '' }}
+                  </div>
+                </div>
+              </template>
+
+              <v-text-field
+                v-if="item.manualOverride"
+                v-model="item.overrideReason"
+                class="override-reason"
+                label="金額変更理由"
+                density="compact"
+                variant="outlined"
+                maxlength="500"
+                counter
+                hide-details="auto"
               />
             </div>
 
@@ -343,6 +415,34 @@ const {
 .amount-input :deep(input) {
   text-align: right;
   font-weight: 600;
+}
+
+.amount-reference {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.balance-section,
+.override-reason {
+  grid-column: 1 / -1;
+}
+
+.balance-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  align-items: center;
+  gap: 12px 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.balance-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 12px;
+  color: #475569;
 }
 
 .empty-text {

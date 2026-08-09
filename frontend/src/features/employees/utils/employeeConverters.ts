@@ -6,7 +6,9 @@ const blankToNull = (value: string): string | null =>
 
 export const toEmployeeSaveRequest = (
   form: EmployeeForm,
-): EmployeeSaveRequest => ({
+): EmployeeSaveRequest => {
+ const dormitory = form.payrollItemSettings.find(item => item.targetCode === 'DORMITORY_FEE')
+ return ({
   employeeCode: form.employeeCode,
   employeeName: form.employeeName,
   employeeNameKana: blankToNull(form.employeeNameKana),
@@ -20,9 +22,16 @@ export const toEmployeeSaveRequest = (
   email: blankToNull(form.email),
   postalCode: blankToNull(form.postalCode),
   address: blankToNull(form.address),
-  dormitoryFlag: form.dormitoryFlag,
-  dormitoryType: form.dormitoryFlag ? form.dormitoryType : null,
+  dormitoryFlag: dormitory?.enabled ?? false,
+  dormitoryType: dormitory?.enabled
+    ? (dormitory.parameters.dormitoryType as EmployeeSaveRequest['dormitoryType']) || null
+    : null,
   activeFlag: form.activeFlag,
+  payrollItemSettings: form.payrollItemSettings.map(item => ({
+    targetCode: item.targetCode,
+    enabled: item.enabled,
+    parameters: { ...item.parameters },
+  })),
   payrollProfile: {
     ...form.payrollProfile,
   },
@@ -32,4 +41,5 @@ export const toEmployeeSaveRequest = (
     contractEndDate: blankToNull(form.contract.contractEndDate),
     note: blankToNull(form.contract.note),
   },
-})
+ })
+}
