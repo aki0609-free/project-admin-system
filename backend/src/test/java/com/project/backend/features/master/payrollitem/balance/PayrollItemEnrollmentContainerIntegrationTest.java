@@ -78,6 +78,6 @@ class PayrollItemEnrollmentContainerIntegrationTest
         enrollmentRepository.flush();
 
         assertThat(enrollment.getEffectiveTo())
-                .isEqualTo(LocalDate.of(2026, 2, 1));
+                .isEqualTo(LocalDate.of(2026, 1, 31));
     }
 }

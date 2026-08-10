@@ -33,7 +33,7 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
     void productionSchemaAssetsApplyToFreshMySql() throws Exception {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
-        assertThat(resources).hasSize(30);
+        assertThat(resources).hasSize(31);
         RuntimeSchemaAssetInstaller.apply(mysqlContainer, resources);
         RuntimeSchemaAssetInstaller.apply(
                 mysqlContainer,
