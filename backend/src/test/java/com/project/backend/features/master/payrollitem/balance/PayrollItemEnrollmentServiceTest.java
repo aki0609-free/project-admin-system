@@ -14,11 +14,13 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
+import com.project.backend.app.tenant.context.TenantContext;
 
 class PayrollItemEnrollmentServiceTest {
 
     @Test
     void synchronize_shouldRecordEnableAndDisableDatesFromClock() {
+        TenantContext.setTenantId("default");
         var policyRepository = mock(PayrollItemBalancePolicyRepository.class);
         var enrollmentRepository = mock(EmployeePayrollItemEnrollmentRepository.class);
         Clock clock = Clock.fixed(Instant.parse("2026-08-09T03:00:00Z"), ZoneOffset.UTC);
@@ -29,8 +31,8 @@ class PayrollItemEnrollmentServiceTest {
 
         PayrollItemBalancePolicy policy = new PayrollItemBalancePolicy();
         policy.setId(5L);
-        when(policyRepository.findByTargetTypeAndTargetCodeAndDeletedAtIsNull(
-                PayrollItemTargetType.DEDUCTION, "DORMITORY_FEE"
+        when(policyRepository.findByTenantIdAndTargetTypeAndTargetCodeAndDeletedAtIsNull(
+                "default", PayrollItemTargetType.DEDUCTION, "DORMITORY_FEE"
         )).thenReturn(Optional.of(policy));
         when(enrollmentRepository
                 .findFirstByEmployeeIdAndBalancePolicyIdAndEffectiveToIsNullAndDeletedAtIsNullOrderByEffectiveFromDesc(
@@ -55,6 +57,7 @@ class PayrollItemEnrollmentServiceTest {
                 10L, PayrollItemTargetType.DEDUCTION, "DORMITORY_FEE", false
         );
         assertThat(captor.getValue().getEffectiveTo())
-                .isEqualTo(LocalDate.of(2026, 8, 9));
+                .isEqualTo(LocalDate.of(2026, 8, 8));
+        TenantContext.clear();
     }
 }

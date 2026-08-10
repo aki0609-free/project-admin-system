@@ -1,0 +1,246 @@
+import { expect, test, type Page } from '@playwright/test'
+
+type EmployeeListItem = {
+  id: number
+  employeeCode: string
+}
+
+type DailyReportListItem = {
+  id: number
+}
+
+const authenticatedHeaders = async (page: Page) => {
+  const accessToken = await page.evaluate(() => localStorage.getItem('accessToken'))
+  expect(accessToken, 'authenticated access token').not.toBeNull()
+
+  return {
+    Authorization: `Bearer ${accessToken}`,
+    'X-Tenant-ID': 'default',
+  }
+}
+
+const removeTestEmployees = async (page: Page, employeeCode?: string) => {
+  const headers = await authenticatedHeaders(page)
+  const response = await page.request.get('/api/employees', { headers })
+  expect(response.ok(), await response.text()).toBeTruthy()
+
+  const employees = await response.json() as EmployeeListItem[]
+  const targets = employees.filter(item => employeeCode
+    ? item.employeeCode === employeeCode
+    : item.employeeCode.startsWith('E2E-UI-'))
+
+  for (const employee of targets) {
+    const reportsResponse = await page.request.get('/api/daily-reports', {
+      headers,
+      params: { employeeId: employee.id },
+    })
+    expect(reportsResponse.ok(), await reportsResponse.text()).toBeTruthy()
+    const reports = await reportsResponse.json() as DailyReportListItem[]
+    for (const report of reports) {
+      const deleteReportResponse = await page.request.delete(
+        `/api/daily-reports/${report.id}`,
+        { headers },
+      )
+      expect(deleteReportResponse.ok(), await deleteReportResponse.text()).toBeTruthy()
+    }
+
+    const deleteResponse = await page.request.delete(`/api/employees/${employee.id}`, {
+      headers,
+    })
+    expect(deleteResponse.ok(), await deleteResponse.text()).toBeTruthy()
+  }
+}
+
+test('employee can be registered with tracked deductions from the employee screen', async ({ page }, testInfo) => {
+  test.setTimeout(60_000)
+  const uniqueSuffix = `${Date.now()}-${testInfo.workerIndex}`
+  const employeeCode = `E2E-UI-${uniqueSuffix}`
+  const employeeName = `E2E 画面登録社員 ${uniqueSuffix}`
+  let dailyReportId: number | null = null
+
+  await page.goto('/employee/information')
+  await removeTestEmployees(page)
+  await page.reload()
+
+  await test.step('register an employee and enable tracked deductions', async () => {
+    await page.getByRole('button', { name: '新規作成', exact: true }).click()
+    await expect(page.getByText('従業員情報新規作成', { exact: true })).toBeVisible()
+    const createDialog = page.getByRole('dialog')
+
+    await createDialog.getByLabel('社員コード', { exact: true }).fill(employeeCode)
+    await createDialog.getByLabel('氏名', { exact: true }).fill(employeeName)
+    await createDialog.getByLabel('フリガナ', { exact: true }).fill('イーツーイー ガメントウロクシャイン')
+    await createDialog.getByLabel('メール', { exact: true }).fill('e2e-ui-employee@example.invalid')
+
+    await createDialog.getByRole('button', { name: '手当・控除設定', exact: true }).click()
+
+    await createDialog.getByRole('tab', { name: '寮費', exact: true }).click()
+    await createDialog.getByLabel('この項目を適用する').check()
+    const createDormitoryType = createDialog.locator('.v-select').filter({ hasText: '寮タイプ' })
+    await createDormitoryType.click()
+    await page.getByRole('option', { name: '複数人部屋', exact: true }).click()
+
+    await createDialog.getByRole('tab', { name: '携帯電話貸出料', exact: true }).click()
+    await createDialog.getByLabel('この項目を適用する').check()
+
+    const createResponsePromise = page.waitForResponse(response =>
+      response.url().endsWith('/api/employees')
+      && response.request().method() === 'POST',
+    )
+    await createDialog.getByRole('button', { name: '保存', exact: true }).click()
+    const createResponse = await createResponsePromise
+    expect(createResponse.status(), await createResponse.text()).toBe(200)
+
+    await expect(page.getByText('従業員情報新規作成', { exact: true })).not.toBeVisible()
+    await expect(page.getByText(employeeName, { exact: true })).toBeVisible()
+  })
+
+  await test.step('reopen the employee and verify persisted settings', async () => {
+    await page.getByText(employeeName, { exact: true }).click()
+    await expect(page.getByText('従業員情報編集', { exact: true })).toBeVisible()
+    const editDialog = page.getByRole('dialog')
+    await editDialog.getByRole('button', { name: '手当・控除設定', exact: true }).click()
+
+    await editDialog.getByRole('tab', { name: '寮費', exact: true }).click()
+    await expect(editDialog.getByLabel('この項目を適用する')).toBeChecked()
+    await expect(
+      editDialog.locator('.v-select').filter({ hasText: '寮タイプ' }),
+    ).toContainText('複数人部屋')
+
+    await editDialog.getByRole('tab', { name: '携帯電話貸出料', exact: true }).click()
+    await expect(editDialog.getByLabel('この項目を適用する')).toBeChecked()
+
+    await editDialog.getByRole('button', { name: '閉じる', exact: true }).click()
+  })
+
+  await test.step('override a Rule baseline and persist the reason', async () => {
+    await page.goto('/operation/daily-reports')
+    await page.getByRole('button', { name: '新規作成', exact: true }).click()
+
+    const dialog = page.getByRole('dialog')
+    const employeeSelect = dialog.locator('.v-select').filter({ hasText: '従業員' })
+    await employeeSelect.click()
+    await page.getByRole('option', {
+      name: `${employeeCode} / ${employeeName}`,
+      exact: true,
+    }).click()
+
+    await dialog.getByLabel('勤務日', { exact: true }).click()
+    const datePicker = page.locator('.v-date-picker')
+    const initialPreviewPromise = page.waitForResponse(response =>
+      response.url().endsWith('/api/daily-reports/input-items/preview')
+      && response.request().method() === 'POST',
+    )
+    await datePicker.getByRole('button', { name: /2026年8月10日月曜日/ }).click()
+    expect((await initialPreviewPromise).status()).toBe(200)
+
+    await dialog.getByRole('button', { name: '控除', exact: true }).click()
+    let mobileCard = dialog.locator('.amount-card').filter({ hasText: '携帯電話貸出料' })
+    await expect(mobileCard).toBeVisible()
+
+    const quantityPreviewPromise = page.waitForResponse(response => {
+      if (!response.url().endsWith('/api/daily-reports/input-items/preview')
+        || response.request().method() !== 'POST') return false
+      const body = response.request().postDataJSON() as {
+        deductions?: { deductionCode?: string; quantity?: number }[]
+      }
+      return body.deductions?.some(item =>
+        item.deductionCode === 'MOBILE_RENTAL' && item.quantity === 5) ?? false
+    })
+    const mobilePaymentDays = mobileCard.getByLabel('支払い日数', { exact: true })
+    await mobilePaymentDays.click()
+    await mobilePaymentDays.press('ControlOrMeta+A')
+    await mobilePaymentDays.press('5')
+    expect((await quantityPreviewPromise).status()).toBe(200)
+
+    mobileCard = dialog.locator('.amount-card').filter({ hasText: '携帯電話貸出料' })
+    await expect(mobileCard.getByText('Rule基準額：1,000円', { exact: true })).toBeVisible()
+    await mobileCard.getByLabel('金額', { exact: true }).fill('900')
+    await mobileCard.getByLabel('金額変更理由', { exact: true }).fill('会社支給端末の調整')
+
+    const createReportResponsePromise = page.waitForResponse(response =>
+      response.url().endsWith('/api/daily-reports')
+      && response.request().method() === 'POST',
+    )
+    await dialog.getByRole('button', { name: '保存', exact: true }).click()
+    const createReportResponse = await createReportResponsePromise
+    const createReportBody = await createReportResponse.text()
+    expect(createReportResponse.status(), createReportBody).toBe(200)
+    dailyReportId = (JSON.parse(createReportBody) as { id: number }).id
+
+    await page.getByText(employeeName, { exact: true }).click()
+    const editReportDialog = page.getByRole('dialog')
+    await editReportDialog.getByRole('button', { name: '控除', exact: true }).click()
+    const persistedMobileCard = editReportDialog.locator('.amount-card')
+      .filter({ hasText: '携帯電話貸出料' })
+    await expect(persistedMobileCard.getByLabel('金額', { exact: true })).toHaveValue('900')
+    await expect(
+      persistedMobileCard.getByLabel('金額変更理由', { exact: true }),
+    ).toHaveValue('会社支給端末の調整')
+    await expect(
+      persistedMobileCard.getByText('Rule基準額：1,000円', { exact: true }),
+    ).toBeVisible()
+    await editReportDialog.getByRole('button', { name: '閉じる', exact: true }).click()
+
+    const headers = await authenticatedHeaders(page)
+    const deleteReportResponse = await page.request.delete(
+      `/api/daily-reports/${dailyReportId}`,
+      { headers },
+    )
+    expect(deleteReportResponse.ok(), await deleteReportResponse.text()).toBeTruthy()
+  })
+
+  await test.step('disable an existing employee deduction setting', async () => {
+    await page.goto('/employee/information')
+    await page.getByText(employeeName, { exact: true }).click()
+    const editDialog = page.getByRole('dialog')
+    await editDialog.getByRole('button', { name: '手当・控除設定', exact: true }).click()
+    const mobileRentalTab = editDialog.getByRole('tab', {
+      name: '携帯電話貸出料',
+      exact: true,
+    })
+    await expect(mobileRentalTab).toBeVisible()
+    await mobileRentalTab.click({ force: true })
+
+    await editDialog.getByLabel('この項目を適用する').uncheck()
+    const updateResponsePromise = page.waitForResponse(response =>
+      /\/api\/employees\/\d+$/.test(new URL(response.url()).pathname)
+      && response.request().method() === 'PUT',
+    )
+    await editDialog.getByRole('button', { name: '保存', exact: true }).click()
+    const updateResponse = await updateResponsePromise
+    expect(updateResponse.status(), await updateResponse.text()).toBe(200)
+  })
+
+  await test.step('reflect the changed settings in a new daily report', async () => {
+    await page.goto('/operation/daily-reports')
+    await page.getByRole('button', { name: '新規作成', exact: true }).click()
+
+    const dailyReportDialog = page.getByRole('dialog')
+    await expect(dailyReportDialog.getByText('日報新規作成', { exact: true })).toBeVisible()
+
+    const employeeSelect = dailyReportDialog.locator('.v-select').filter({ hasText: '従業員' })
+    await employeeSelect.click()
+    await page.getByRole('option', {
+      name: `${employeeCode} / ${employeeName}`,
+      exact: true,
+    }).click()
+
+    await dailyReportDialog.getByLabel('勤務日', { exact: true }).click()
+    const datePicker = page.locator('.v-date-picker')
+    await expect(datePicker).toBeVisible()
+    const previewResponsePromise = page.waitForResponse(response =>
+      response.url().endsWith('/api/daily-reports/input-items/preview')
+      && response.request().method() === 'POST',
+    )
+    await datePicker.getByRole('button', { name: /2026年8月10日月曜日/ }).click()
+    const previewResponse = await previewResponsePromise
+    expect(previewResponse.status(), await previewResponse.text()).toBe(200)
+
+    await dailyReportDialog.getByRole('button', { name: '控除', exact: true }).click()
+    await expect(dailyReportDialog.getByText('寮費', { exact: true })).toBeVisible()
+    await expect(dailyReportDialog.getByText('携帯電話貸出料', { exact: true })).toHaveCount(0)
+  })
+
+  await removeTestEmployees(page, employeeCode)
+})

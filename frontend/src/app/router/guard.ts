@@ -5,11 +5,13 @@ import type { Router } from 'vue-router'
 import type { Role } from '@/shared/auth/types/types'
 
 export function setupAuthGuard(router: Router) {
-  router.beforeEach((to) => {
+  router.beforeEach(async (to) => {
     const authStore = useAuthStore()
     const { can } = usePermission()
 
-    if (!authStore.authReady) return
+    if (!authStore.authReady) {
+      await authStore.initAuth()
+    }
 
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
       return '/login'

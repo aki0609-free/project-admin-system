@@ -250,14 +250,28 @@ public class DailyReportInputItemService {
 
         boolean overridden = submitted != null
                 && Boolean.TRUE.equals(submitted.manualOverride());
+        int calculatedAmount = item.calculatedAmount() == null
+                ? 0 : item.calculatedAmount();
+        int amount = item.amount() == null ? 0 : item.amount();
+        if (balance.tracked()
+                && balance.unit() == com.project.backend.features.master.payrollitem.balance.BalanceUnit.DAYS
+                && (item.inputMode() == com.project.backend.features.dailyreport.enums.DailyReportInputMode.FIXED
+                || item.inputMode() == com.project.backend.features.dailyreport.enums.DailyReportInputMode.FIXED_WITH_OVERRIDE)) {
+            calculatedAmount = java.math.BigDecimal.valueOf(calculatedAmount)
+                    .multiply(quantity)
+                    .intValueExact();
+            if (!overridden) {
+                amount = calculatedAmount;
+            }
+        }
         return DailyReportInputItemResponse.builder()
                 .masterId(item.masterId())
                 .code(item.code())
                 .name(item.name())
                 .itemType(item.itemType())
                 .inputMode(item.inputMode())
-                .calculatedAmount(item.calculatedAmount())
-                .amount(item.amount())
+                .calculatedAmount(calculatedAmount)
+                .amount(amount)
                 .manualOverride(overridden)
                 .overrideReason(overridden ? submitted.overrideReason() : null)
                 .editable(item.editable())

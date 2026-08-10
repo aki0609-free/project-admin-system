@@ -39,6 +39,7 @@ export type ToolbarItem =
       confirmMessage?: string
       parameterDefinitions?: BatchParameterDefinition[]
       defaultParams?: Record<string, unknown>
+      outputAction?: 'none' | 'download' | 'preview'
       onSuccess?: (message: string) => void
     }
   | {

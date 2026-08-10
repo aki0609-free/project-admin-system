@@ -75,6 +75,9 @@ services:
       PROJECT_STORAGE_LOCAL_BASE_PATH: /app/storage
       PROJECT_STORAGE_S3_ENABLED: "false"
       JWT_SECRET: project-admin-local-only-jwt-secret-change-before-shared-use
+      APP_E2E_USER_ENABLED: "true"
+      APP_E2E_USER_USERNAME: playwright_local
+      APP_E2E_USER_PASSWORD: playwright-local-only
       MANAGEMENT_HEALTH_MAIL_ENABLED: "false"
       TZ: Asia/Tokyo
     depends_on:
@@ -95,6 +98,21 @@ services:
       retries: 30
       start_period: 90s
 
+  runtime-schema:
+    image: mysql:8.4
+    restart: "no"
+    environment:
+      MYSQL_USER: root
+      MYSQL_DATABASE: ADMIN
+      MYSQL_PWD: ${LOCAL_MYSQL_ROOT_PASSWORD:-projectadmin-root-local}
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./backend/src/main/resources:/resources:ro
+      - ./infrastructure/scripts/database/apply_local_runtime_schema.sh:/scripts/apply_local_runtime_schema.sh:ro
+    entrypoint: ["/bin/sh", "/scripts/apply_local_runtime_schema.sh"]
+
   frontend:
     build:
       context: frontend
@@ -102,8 +120,8 @@ services:
       args:
         VITE_SYNCFUSION_LICENSE_KEY: ${VITE_SYNCFUSION_LICENSE_KEY:-}
     depends_on:
-      backend:
-        condition: service_healthy
+      runtime-schema:
+        condition: service_completed_successfully
     ports:
       - "5173:8080"
     healthcheck:

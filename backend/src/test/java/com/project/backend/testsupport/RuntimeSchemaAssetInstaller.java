@@ -62,6 +62,7 @@ public final class RuntimeSchemaAssetInstaller {
                     "sh",
                     "-c",
                     "mysql --protocol=tcp --host=127.0.0.1 "
+                            + "--default-character-set=utf8mb4 "
                             + "--user=\"$MYSQL_USER\" "
                             + "--password=\"$MYSQL_PASSWORD\" "
                             + "\"$MYSQL_DATABASE\" < \"" + target + "\""

@@ -24,6 +24,7 @@ export const createBatchItem = (config: {
   confirmMessage?: string
   parameterDefinitions?: BatchParameterDefinition[]
   defaultParams?: Record<string, unknown>
+  outputAction?: 'none' | 'download' | 'preview'
   onSuccess?: (message: string) => void
 }): ToolbarItem => ({
   type: 'batch',
@@ -34,6 +35,7 @@ export const createBatchItem = (config: {
   confirmMessage: config.confirmMessage,
   parameterDefinitions: config.parameterDefinitions ?? [],
   defaultParams: config.defaultParams ?? {},
+  outputAction: config.outputAction ?? 'none',
   onSuccess: config.onSuccess,
 })
 

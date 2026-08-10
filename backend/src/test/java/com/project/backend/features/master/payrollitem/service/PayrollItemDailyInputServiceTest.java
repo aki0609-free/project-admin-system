@@ -38,11 +38,11 @@ class PayrollItemDailyInputServiceTest {
         assertThat(items).extracting(item -> item.inputMode())
                 .containsExactly(
                         DailyReportInputMode.AUTO_WITH_OVERRIDE,
-                        DailyReportInputMode.FIXED,
+                        DailyReportInputMode.FIXED_WITH_OVERRIDE,
                         DailyReportInputMode.MANUAL
                 );
         assertThat(items).extracting(item -> item.editable())
-                .containsExactly(true, false, true);
+                .containsExactly(true, true, true);
     }
 
     private PayrollItemCalculationResult result(

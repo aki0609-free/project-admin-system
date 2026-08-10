@@ -79,6 +79,61 @@ PREPARE statement FROM @enrollment_settings_sql;
 EXECUTE statement;
 DEALLOCATE PREPARE statement;
 
+-- Hibernate ddl-autoで先に作られたテーブルには複合UNIQUEがない場合がある。
+-- 再適用前に既存重複を正規化し、以後のON DUPLICATE KEYを確実に機能させる。
+DROP TEMPORARY TABLE IF EXISTS tmp_payroll_item_balance_policy_keep;
+CREATE TEMPORARY TABLE tmp_payroll_item_balance_policy_keep AS
+SELECT tenant_id, target_type, target_code, MIN(id) AS keep_id
+FROM payroll_item_balance_policy
+GROUP BY tenant_id, target_type, target_code;
+
+UPDATE employee_payroll_item_enrollment enrollment
+JOIN payroll_item_balance_policy policy
+  ON policy.id = enrollment.balance_policy_id
+JOIN tmp_payroll_item_balance_policy_keep canonical
+  ON canonical.tenant_id = policy.tenant_id
+ AND canonical.target_type = policy.target_type
+ AND canonical.target_code = policy.target_code
+SET enrollment.balance_policy_id = canonical.keep_id,
+    enrollment.updated_at = NOW(6)
+WHERE enrollment.balance_policy_id <> canonical.keep_id;
+
+DELETE duplicate_enrollment
+FROM employee_payroll_item_enrollment duplicate_enrollment
+JOIN employee_payroll_item_enrollment keep_enrollment
+  ON keep_enrollment.employee_id = duplicate_enrollment.employee_id
+ AND keep_enrollment.balance_policy_id = duplicate_enrollment.balance_policy_id
+ AND keep_enrollment.effective_to IS NULL
+ AND keep_enrollment.deleted_at IS NULL
+ AND keep_enrollment.id < duplicate_enrollment.id
+WHERE duplicate_enrollment.effective_to IS NULL
+  AND duplicate_enrollment.deleted_at IS NULL;
+
+DELETE policy
+FROM payroll_item_balance_policy policy
+JOIN tmp_payroll_item_balance_policy_keep canonical
+  ON canonical.tenant_id = policy.tenant_id
+ AND canonical.target_type = policy.target_type
+ AND canonical.target_code = policy.target_code
+WHERE policy.id <> canonical.keep_id;
+
+DROP TEMPORARY TABLE tmp_payroll_item_balance_policy_keep;
+
+SET @balance_policy_unique_exists := (
+    SELECT COUNT(*) FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = 'payroll_item_balance_policy'
+      AND index_name = 'uk_payroll_item_balance_policy_code'
+);
+SET @balance_policy_unique_sql := IF(
+    @balance_policy_unique_exists = 0,
+    'ALTER TABLE payroll_item_balance_policy ADD CONSTRAINT uk_payroll_item_balance_policy_code UNIQUE (tenant_id, target_type, target_code)',
+    'SELECT 1'
+);
+PREPARE statement FROM @balance_policy_unique_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
 SET @deduction_calculated_amount_exists := (
     SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE()

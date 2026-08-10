@@ -22,6 +22,7 @@ sql/system/report/pay_slip/daily_pay_slip_view_foundation_v1.sql
 sql/system/report/pay_slip/setup.sql
 sql/system/report/pay_slip/monthly_pay_slip_snapshot_foundation_v1.sql
 sql/system/report/pay_slip/daily_pay_slip_stored.sql
+sql/system/report/employee/employee_csv_foundation_v1.sql
 sql/system/report/invoice/monthly_invoice_foundation_v1.sql
 sql/system/report/invoice/monthly_invoice_render_views_v1.sql
 sql/system/report/invoice/monthly_invoice_report_master_v1.sql
