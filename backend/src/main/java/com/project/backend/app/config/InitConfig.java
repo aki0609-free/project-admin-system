@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.project.backend.app.security.permission.entity.Permission;
@@ -29,7 +30,8 @@ public class InitConfig {
                         UserRepository userRepository,
                         RoleRepository roleRepository,
                         PermissionRepository permissionRepository,
-                        PasswordEncoder encoder) {
+                        PasswordEncoder encoder,
+                        Environment environment) {
                 return args -> {
 
                         // 1. Permission定義（menuItems に対応）
@@ -96,9 +98,46 @@ public class InitConfig {
 
                                 System.out.println("Admin user created");
                         }
+
+                        initializeLocalE2eUser(
+                                        userRepository,
+                                        sysAdminRole,
+                                        encoder,
+                                        environment);
                         TenantContext.clear();
 
                         System.out.println("Permissions initialized");
                 };
+        }
+
+        private void initializeLocalE2eUser(
+                        UserRepository userRepository,
+                        Role sysAdminRole,
+                        PasswordEncoder encoder,
+                        Environment environment) {
+                boolean enabled = environment.matchesProfiles("local")
+                                && environment.getProperty(
+                                                "app.e2e-user.enabled",
+                                                Boolean.class,
+                                                false);
+                if (!enabled) {
+                        return;
+                }
+
+                String username = environment.getRequiredProperty(
+                                "app.e2e-user.username");
+                String password = environment.getRequiredProperty(
+                                "app.e2e-user.password");
+
+                User user = userRepository.findByUsername(username)
+                                .orElseGet(() -> User.builder()
+                                                .username(username)
+                                                .build());
+                user.setPassword(encoder.encode(password));
+                user.setEnabled(true);
+                user.setRoles(Set.of(sysAdminRole));
+                userRepository.save(user);
+
+                System.out.println("Local E2E user initialized");
         }
 }

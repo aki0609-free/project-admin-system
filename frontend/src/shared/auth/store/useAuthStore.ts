@@ -8,6 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
     const accessToken = ref<string | null>(null)
     const refreshToken = ref<string | null>(null)
     const authReady = ref(false)
+    let initPromise: Promise<void> | null = null
 
     const isAuthenticated = computed(() => !!accessToken.value)
 
@@ -41,17 +42,30 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function initAuth() {
-        loadAuth()
+        if (authReady.value) return
+        if (!initPromise) {
+            initPromise = (async () => {
+                loadAuth()
 
-        if (accessToken.value) {
-            try {
-                const res = await axiosApiClient.get("/auth/me")
-                user.value = res.data
-            } catch {
-                clearAuth()
+                if (accessToken.value) {
+                    try {
+                        const res = await axiosApiClient.get("/auth/me")
+                        user.value = res.data
+                    } catch {
+                        clearAuth()
+                    }
+                }
+                authReady.value = true
+            })()
+        }
+
+        try {
+            await initPromise
+        } finally {
+            if (authReady.value) {
+                initPromise = null
             }
         }
-        authReady.value = true
     }
 
     return {

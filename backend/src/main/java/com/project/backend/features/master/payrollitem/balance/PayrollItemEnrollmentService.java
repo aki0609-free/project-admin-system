@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
+import com.project.backend.app.tenant.context.TenantContext;
 
 import lombok.RequiredArgsConstructor;
 
@@ -38,7 +39,8 @@ public class PayrollItemEnrollmentService {
             boolean enabled, Map<String, String> parameters
     ) {
         var policy = policyRepository
-                .findByTargetTypeAndTargetCodeAndDeletedAtIsNull(targetType, targetCode)
+                .findByTenantIdAndTargetTypeAndTargetCodeAndDeletedAtIsNull(
+                        TenantContext.getTenantId(), targetType, targetCode)
                 .orElse(null);
         if (policy == null) {
             return;
@@ -60,7 +62,9 @@ public class PayrollItemEnrollmentService {
         } else if (enabled) {
             current.get().setSettingsJson(write(parameters));
         } else if (!enabled && current.isPresent()) {
-            current.get().setEffectiveTo(today);
+            // effectiveTo は適用最終日（包含）として扱う。
+            // 無効化操作後に作成する当日の日報へ残さないため、前日で終了する。
+            current.get().setEffectiveTo(today.minusDays(1));
         }
     }
 

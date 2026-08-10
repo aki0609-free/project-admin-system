@@ -691,6 +691,14 @@ export const useDailyReportEditDialog = (
   )
 
   watch(
+    () => formModel.deductions.map(
+      item => `${item.masterId}:${item.quantity}`,
+    ),
+    schedulePayrollItemPreview,
+    { deep: true },
+  )
+
+  watch(
     () =>
       formModel.allowances.map(
         item => item.amount,

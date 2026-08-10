@@ -17,7 +17,10 @@ export const useEmployeePage = () => {
   const deleteMutation = useDeleteEmployeeMutation()
 
   const dialog = useEmployeeDialog()
-  const { createBatchButton, isExecutingBatch } = useBatchToolbarItems()
+  const { isExecutingBatch } = useBatchToolbarItems()
+
+  const todayInJapan = () =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(new Date())
 
   const busy = computed(
     () =>
@@ -66,15 +69,26 @@ export const useEmployeePage = () => {
   const rightToolbarItems = computed<ToolbarItem[]>(() => [
 
     createBatchItem({
-      label: '給与明細出力',
-      jobCode: 'REPORT_EMPLOYEE_PAYROLL',
+      label: '個別日別給与明細',
+      jobCode: 'PRINT_DAILY_PAY_SLIP',
       disabled: busy.value,
-      confirmMessage: '従業員の給与明細を出力しますか？',
+      confirmMessage: '選択した従業員の日別給与明細をプレビューしますか？',
+      outputAction: 'preview',
       parameterDefinitions: [
-        batchParams.checkbox({
-          key: 'includeDeleted',
-          label: '削除済みを含める',
-          defaultValue: false,
+        batchParams.date({
+          key: 'paymentDate',
+          label: '支払日',
+          required: true,
+          defaultValue: todayInJapan(),
+        }),
+        batchParams.select({
+          key: 'employeeId',
+          label: '従業員',
+          required: true,
+          options: employeesQuery.employees.value.map(employee => ({
+            title: `${employee.employeeCode} / ${employee.employeeName}`,
+            value: employee.id,
+          })),
         }),
       ],
     }),
@@ -84,6 +98,7 @@ export const useEmployeePage = () => {
       jobCode: 'EXPORT_EMPLOYEE_CSV',
       disabled: busy.value,
       confirmMessage: '従業員CSVを出力しますか？',
+      outputAction: 'download',
       parameterDefinitions: [
         batchParams.checkbox({
           key: 'includeDeleted',

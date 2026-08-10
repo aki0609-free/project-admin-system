@@ -26,7 +26,8 @@
     "docker:logs:backend": "docker compose logs -f backend",
     "docker:logs:frontend": "docker compose logs -f frontend",
     "docker:stop": "docker compose down",
-    "docker:build": "docker compose up --build"
+    "docker:build": "docker compose up --build",
+    "test:e2e": "cd frontend && npm run test:e2e"
   },
   "keywords": [],
   "author": "",

@@ -11,16 +11,19 @@ public interface PayrollItemBalancePolicyRepository
         extends JpaRepository<PayrollItemBalancePolicy, Long> {
 
     Optional<PayrollItemBalancePolicy>
-            findByTargetTypeAndTargetMasterIdAndActiveFlagTrueAndDeletedAtIsNull(
+            findByTenantIdAndTargetTypeAndTargetMasterIdAndActiveFlagTrueAndDeletedAtIsNull(
+                    String tenantId,
                     PayrollItemTargetType targetType,
                     Long targetMasterId
             );
 
     Optional<PayrollItemBalancePolicy>
-            findByTargetTypeAndTargetCodeAndDeletedAtIsNull(
+            findByTenantIdAndTargetTypeAndTargetCodeAndDeletedAtIsNull(
+                    String tenantId,
                     PayrollItemTargetType targetType,
                     String targetCode
             );
 
-    List<PayrollItemBalancePolicy> findAllByDeletedAtIsNullOrderByIdAsc();
+    List<PayrollItemBalancePolicy>
+            findAllByTenantIdAndDeletedAtIsNullOrderByIdAsc(String tenantId);
 }

@@ -94,7 +94,8 @@ public class PayrollItemDailyInputService {
                 .editable(
                         Boolean.TRUE.equals(result.allowManualInput())
                                 && ("MANUAL".equals(result.calculationType())
-                                || "AUTO".equals(result.calculationType()))
+                                || "AUTO".equals(result.calculationType())
+                                || "FIXED".equals(result.calculationType()))
                 )
                 .displayOrder(result.displayOrder())
                 .build();
@@ -120,7 +121,9 @@ public class PayrollItemDailyInputService {
         }
 
         if ("FIXED".equals(calculationType)) {
-            return DailyReportInputMode.FIXED;
+            return Boolean.TRUE.equals(allowManualInput)
+                    ? DailyReportInputMode.FIXED_WITH_OVERRIDE
+                    : DailyReportInputMode.FIXED;
         }
 
         return Boolean.TRUE.equals(allowManualInput)

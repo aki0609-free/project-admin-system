@@ -11,11 +11,18 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "payroll_item_balance_policy")
+@Table(
+        name = "payroll_item_balance_policy",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_payroll_item_balance_policy_code",
+                columnNames = {"tenant_id", "target_type", "target_code"}
+        )
+)
 @Getter
 @Setter
 public class PayrollItemBalancePolicy extends BaseEntity {

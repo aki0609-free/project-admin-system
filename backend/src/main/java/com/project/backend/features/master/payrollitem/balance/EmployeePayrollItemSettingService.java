@@ -33,7 +33,10 @@ public class EmployeePayrollItemSettingService {
     public List<EmployeePayrollItemSettingResponse> findAll(Long employeeId) {
         var enrollments = enrollmentRepository
                 .findAllByEmployeeIdAndDeletedAtIsNullOrderByEffectiveFromAsc(employeeId);
-        return policyRepository.findAllByDeletedAtIsNullOrderByIdAsc().stream()
+        return policyRepository
+                .findAllByTenantIdAndDeletedAtIsNullOrderByIdAsc(
+                        TenantContext.getTenantId())
+                .stream()
                 .filter(policy -> deductionMasterRepository
                         .findByTenantIdAndDeductionCodeAndDeletedAtIsNull(
                                 TenantContext.getTenantId(), policy.getTargetCode())
@@ -59,7 +62,10 @@ public class EmployeePayrollItemSettingService {
 
     @Transactional(readOnly = true)
     public List<EmployeePayrollItemSettingResponse> findCatalog() {
-        return policyRepository.findAllByDeletedAtIsNullOrderByIdAsc().stream()
+        return policyRepository
+                .findAllByTenantIdAndDeletedAtIsNullOrderByIdAsc(
+                        TenantContext.getTenantId())
+                .stream()
                 .map(policy -> deductionMasterRepository
                         .findByTenantIdAndDeductionCodeAndDeletedAtIsNull(
                                 TenantContext.getTenantId(), policy.getTargetCode())

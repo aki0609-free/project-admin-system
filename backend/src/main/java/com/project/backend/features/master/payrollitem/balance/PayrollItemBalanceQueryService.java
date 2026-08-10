@@ -31,15 +31,18 @@ public class PayrollItemBalanceQueryService {
             String targetCode
     ) {
         return policyRepository
-                .findByTargetTypeAndTargetCodeAndDeletedAtIsNull(targetType, targetCode)
+                .findByTenantIdAndTargetTypeAndTargetCodeAndDeletedAtIsNull(
+                        TenantContext.getTenantId(), targetType, targetCode)
                 .filter(PayrollItemBalancePolicy::isActiveFlag)
                 .map(PayrollItemBalancePolicy::getTargetMasterId);
     }
 
     public boolean isManagedDeduction(Long deductionMasterId) {
         return deductionMasterId != null && policyRepository
-                .findByTargetTypeAndTargetMasterIdAndActiveFlagTrueAndDeletedAtIsNull(
-                        PayrollItemTargetType.DEDUCTION, deductionMasterId)
+                .findByTenantIdAndTargetTypeAndTargetMasterIdAndActiveFlagTrueAndDeletedAtIsNull(
+                        TenantContext.getTenantId(),
+                        PayrollItemTargetType.DEDUCTION,
+                        deductionMasterId)
                 .isPresent();
     }
 
@@ -54,7 +57,8 @@ public class PayrollItemBalanceQueryService {
         }
 
         var policy = policyRepository
-                .findByTargetTypeAndTargetMasterIdAndActiveFlagTrueAndDeletedAtIsNull(
+                .findByTenantIdAndTargetTypeAndTargetMasterIdAndActiveFlagTrueAndDeletedAtIsNull(
+                        TenantContext.getTenantId(),
                         PayrollItemTargetType.DEDUCTION,
                         deductionMasterId
                 )
@@ -70,11 +74,18 @@ public class PayrollItemBalanceQueryService {
 
         LocalDate monthStart = targetDate.withDayOfMonth(1);
         LocalDate monthEnd = targetDate.withDayOfMonth(targetDate.lengthOfMonth());
-        LocalDate enrollmentStart = enrollmentRepository
+        var enrollmentsThroughMonthEnd = enrollmentRepository
                 .findAllByEmployeeIdAndBalancePolicyIdAndEffectiveFromLessThanEqualAndDeletedAtIsNullOrderByEffectiveFromAsc(
                         employeeId, policy.getId(), monthEnd
-                )
-                .stream()
+                );
+        boolean activeOnTargetDate = enrollmentsThroughMonthEnd.stream()
+                .anyMatch(enrollment -> !enrollment.getEffectiveFrom().isAfter(targetDate)
+                        && (enrollment.getEffectiveTo() == null
+                        || !enrollment.getEffectiveTo().isBefore(targetDate)));
+        if (!activeOnTargetDate) {
+            return PayrollItemBalanceSnapshot.untracked();
+        }
+        LocalDate enrollmentStart = enrollmentsThroughMonthEnd.stream()
                 .map(EmployeePayrollItemEnrollment::getEffectiveFrom)
                 .min(LocalDate::compareTo)
                 .orElse(null);

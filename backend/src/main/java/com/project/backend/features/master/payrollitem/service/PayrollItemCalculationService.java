@@ -87,7 +87,7 @@ public class PayrollItemCalculationService {
                         ? BigDecimal.ZERO
                         : valueResult.amount().setScale(0, RoundingMode.HALF_UP);
 
-        boolean manualOverride = "AUTO".equals(valueResult.calculationType())
+        boolean manualOverride = isBaselineCalculation(valueResult.calculationType())
                 && Boolean.TRUE.equals(snapshot.allowManualInput())
                 && manualAmounts != null
                 && manualAmounts.containsKey(snapshot.id());
@@ -112,6 +112,10 @@ public class PayrollItemCalculationService {
                 resolveDisplayOrder(snapshot.displayOrder()),
                 buildFacts(valueResult.facts(), snapshot)
         );
+    }
+
+    private boolean isBaselineCalculation(String calculationType) {
+        return "AUTO".equals(calculationType) || "FIXED".equals(calculationType);
     }
 
     private Integer resolveManualAmount(

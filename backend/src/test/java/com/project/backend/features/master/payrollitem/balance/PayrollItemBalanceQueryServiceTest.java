@@ -57,8 +57,8 @@ class PayrollItemBalanceQueryServiceTest {
         enrollment.setEffectiveFrom(LocalDate.of(2026, 7, 30));
 
         when(policyRepository
-                .findByTargetTypeAndTargetMasterIdAndActiveFlagTrueAndDeletedAtIsNull(
-                        PayrollItemTargetType.DEDUCTION, 8L
+                .findByTenantIdAndTargetTypeAndTargetMasterIdAndActiveFlagTrueAndDeletedAtIsNull(
+                        "default", PayrollItemTargetType.DEDUCTION, 8L
                 )).thenReturn(Optional.of(policy));
         when(enrollmentRepository
                 .findAllByEmployeeIdAndBalancePolicyIdAndEffectiveFromLessThanEqualAndDeletedAtIsNullOrderByEffectiveFromAsc(
@@ -85,5 +85,38 @@ class PayrollItemBalanceQueryServiceTest {
         assertThat(result.accruedQuantity()).isEqualByComparingTo("31");
         assertThat(result.consumedQuantity()).isEqualByComparingTo("4");
         assertThat(result.remainingQuantity()).isEqualByComparingTo("28");
+    }
+
+    @Test
+    void findDeductionBalance_shouldBeUntrackedAfterEnrollmentIsDisabled() {
+        PayrollItemBalancePolicy policy = new PayrollItemBalancePolicy();
+        policy.setId(5L);
+        policy.setTargetType(PayrollItemTargetType.DEDUCTION);
+        policy.setTargetMasterId(8L);
+        policy.setBalanceUnit(BalanceUnit.DAYS);
+        policy.setAccrualRuleName("CALENDAR_DAYS_IN_ENROLLMENT");
+        policy.setActiveFlag(true);
+
+        EmployeePayrollItemEnrollment enrollment = new EmployeePayrollItemEnrollment();
+        enrollment.setEmployeeId(10L);
+        enrollment.setBalancePolicyId(5L);
+        enrollment.setEffectiveFrom(LocalDate.of(2026, 8, 1));
+        enrollment.setEffectiveTo(LocalDate.of(2026, 8, 9));
+
+        when(policyRepository
+                .findByTenantIdAndTargetTypeAndTargetMasterIdAndActiveFlagTrueAndDeletedAtIsNull(
+                        "default", PayrollItemTargetType.DEDUCTION, 8L
+                )).thenReturn(Optional.of(policy));
+        when(enrollmentRepository
+                .findAllByEmployeeIdAndBalancePolicyIdAndEffectiveFromLessThanEqualAndDeletedAtIsNullOrderByEffectiveFromAsc(
+                        10L, 5L, LocalDate.of(2026, 8, 31)
+                )).thenReturn(List.of(enrollment));
+
+        PayrollItemBalanceSnapshot result = service.findDeductionBalance(
+                10L, 8L, LocalDate.of(2026, 8, 10), null
+        );
+
+        assertThat(result.tracked()).isFalse();
+        assertThat(result.remainingQuantity()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 }

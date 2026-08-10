@@ -118,8 +118,9 @@ FROM (
     SELECT 'SHARED_ROOM'
 ) room_type
 CROSS JOIN (
-    SELECT DISTINCT tenant_id
-    FROM employee
+    SELECT 'default' AS tenant_id
+    UNION
+    SELECT DISTINCT tenant_id FROM employee
 ) tenants
 WHERE TRUE
 ON DUPLICATE KEY UPDATE updated_at = VALUES(updated_at);
@@ -158,6 +159,8 @@ SELECT
     NOW(6),
     NULL
 FROM (
+    SELECT 'default' AS tenant_id
+    UNION
     SELECT DISTINCT tenant_id FROM employee
 ) tenants
 WHERE TRUE

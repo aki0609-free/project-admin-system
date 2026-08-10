@@ -58,7 +58,8 @@ const updateDeductionAmount = (
 ) => {
   item.amount = Number(value ?? 0)
   item.manualOverride =
-    item.inputMode === 'AUTO_WITH_OVERRIDE'
+    (item.inputMode === 'AUTO_WITH_OVERRIDE'
+      || item.inputMode === 'FIXED_WITH_OVERRIDE')
     && item.amount !== item.calculatedAmount
   if (!item.manualOverride) {
     item.overrideReason = ''
@@ -276,7 +277,7 @@ const updateBalanceQuantity = (
               />
 
               <div
-                v-if="item.inputMode === 'AUTO_WITH_OVERRIDE'"
+                v-if="item.inputMode === 'AUTO_WITH_OVERRIDE' || item.inputMode === 'FIXED_WITH_OVERRIDE'"
                 class="amount-reference"
               >
                 Rule基準額：{{ item.calculatedAmount.toLocaleString() }}円
