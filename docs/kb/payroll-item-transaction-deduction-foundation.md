@@ -119,3 +119,27 @@ AWSとTestcontainersは `runtime-schema-manifest.txt` の依存順で同じSQL�
 - 締め後の履歴項目へ確定額が保存されること
 - 再締め時に最新値を新しいバージョンへ保存すること
 
+## 11. AWS DEVへの適用順序
+
+AWSプロファイルはHibernateの`ddl-auto=validate`を使用する。Entityが参照する新テーブル・新カラムを追加するリリースでは、必ずDB資産を先に適用する。
+
+```text
+1. RDSとEC2を起動
+2. AWS CLIへログイン
+3. apply_runtime_schema_upgrade.shを実行
+4. RUNTIME_SCHEMA_UPGRADE_COMPLETEを確認
+5. Deploy DEVを実行
+6. backend / frontendのHealthyを確認
+7. Cloudflare Access境界を確認
+```
+
+実行コマンド：
+
+```bash
+AWS_PROFILE=project-admin-terraform \
+infrastructure/scripts/database/apply_runtime_schema_upgrade.sh
+```
+
+DB未適用のまま新Entityを含むイメージを起動すると、HibernateのSchema Validationが不足テーブルを検出し、バックエンドは起動しない。デプロイスクリプトは失敗時にバックエンドログ末尾を自動出力する。
+
+切替に失敗した場合は、DBを破壊的に戻さず、まず直前に成功したDeploy DEVを再実行してアプリケーションを復旧する。今回の追加SQLは再適用可能な形にしている。
