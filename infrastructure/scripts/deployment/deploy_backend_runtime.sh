@@ -120,7 +120,7 @@ uploaded=true
 
 remote_archive="/tmp/project-admin-runtime-bundle.tar.gz"
 remote_dir="/tmp/project-admin-runtime-bundle"
-remote_command="set -euo pipefail; rm -rf ${remote_dir}; install -d -m 0700 ${remote_dir}; aws s3 cp ${bundle_uri} ${remote_archive}; tar -xzf ${remote_archive} -C ${remote_dir}; bash ${remote_dir}/scripts/deployment/install_runtime_bundle.sh; cd /opt/project-admin/runtime; docker compose --env-file deployment.env up -d --remove-orphans --wait --wait-timeout 360; curl --fail --silent --show-error http://127.0.0.1:8080/actuator/health; docker compose --env-file deployment.env ps"
+remote_command="set -euo pipefail; rm -rf ${remote_dir}; install -d -m 0700 ${remote_dir}; aws s3 cp ${bundle_uri} ${remote_archive}; tar -xzf ${remote_archive} -C ${remote_dir}; bash ${remote_dir}/scripts/deployment/install_runtime_bundle.sh; cd /opt/project-admin/runtime; if ! docker compose --env-file deployment.env up -d --remove-orphans --wait --wait-timeout 360; then docker compose --env-file deployment.env ps || true; docker compose --env-file deployment.env logs --no-color --tail=300 backend || true; exit 1; fi; curl --fail --silent --show-error http://127.0.0.1:8080/actuator/health; docker compose --env-file deployment.env ps"
 
 echo "Deploying runtime bundle through SSM..."
 command_id="$(aws ssm send-command \
