@@ -72,6 +72,8 @@ export type EmployeeForm = {
     enabled: boolean
     effectiveFrom: string
     effectiveTo: string
+    inputSource: 'DAILY_REPORT' | 'TRANSACTION'
+    balanceTracked: boolean
     balanceUnit: string
     openingQuantity: number
     accruedQuantity: number

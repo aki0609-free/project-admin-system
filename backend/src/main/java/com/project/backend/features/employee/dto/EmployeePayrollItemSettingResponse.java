@@ -10,6 +10,8 @@ public record EmployeePayrollItemSettingResponse(
         boolean enabled,
         LocalDate effectiveFrom,
         LocalDate effectiveTo,
+        String inputSource,
+        boolean balanceTracked,
         String balanceUnit,
         BigDecimal openingQuantity,
         BigDecimal accruedQuantity,

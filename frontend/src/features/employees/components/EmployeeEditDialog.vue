@@ -14,6 +14,7 @@ import { useEmployeeResignationChecklistQuery } from '../api/useEmployeeResignat
 import { useResignEmployeeMutation } from '../api/useResignEmployeeMutation'
 import { useCancelEmployeeResignationMutation } from '../api/useCancelEmployeeResignationMutation'
 import { useEmployeePayrollItemSettingCatalogQuery } from '../api/useEmployeePayrollItemSettingCatalogQuery'
+import PayrollItemTransactionPanel from './PayrollItemTransactionPanel.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -81,7 +82,8 @@ const handleResign = async (request: EmployeeResignRequest) => {
 
 watch(() => formModel.payrollItemSettings, (items) => {
   if (items.length && !items.some(item => item.targetCode === activePayrollItemCode.value)) {
-    activePayrollItemCode.value = items[0]!.targetCode
+    const firstItem = items[0]
+    if (firstItem) activePayrollItemCode.value = firstItem.targetCode
   }
 }, { immediate: true, deep: true })
 
@@ -94,7 +96,11 @@ watch(
       effectiveFrom: item.effectiveFrom ?? '',
       effectiveTo: item.effectiveTo ?? '',
       parameters: item.targetCode === 'DORMITORY_FEE'
-        ? { ...item.parameters, dormitoryType: item.parameters.dormitoryType ?? '' }
+        ? {
+            ...item.parameters,
+            dormitoryType: item.parameters.dormitoryType ?? '',
+            collectionMode: item.parameters.collectionMode ?? 'DAILY',
+          }
         : { ...item.parameters },
     }))
   },
@@ -138,13 +144,40 @@ const activePayrollItem = computed(() =>
                 :items="[{ title: '一人部屋', value: 'SINGLE_ROOM' }, { title: '複数人部屋', value: 'SHARED_ROOM' }]"
                 variant="outlined"
               />
-              <div class="balance-grid">
+              <v-select
+                v-if="activePayrollItem.targetCode === 'DORMITORY_FEE'"
+                v-model="activePayrollItem.parameters.collectionMode"
+                label="徴収方式"
+                :items="[{ title: '日報で日次徴収', value: 'DAILY' }, { title: '月1回の一括徴収', value: 'MONTHLY' }]"
+                variant="outlined"
+              />
+              <div v-if="activePayrollItem.balanceTracked" class="balance-grid">
                 <v-text-field :model-value="activePayrollItem.effectiveFrom" label="適用開始日（自動）" readonly variant="outlined" />
                 <v-text-field :model-value="activePayrollItem.openingQuantity" label="前月繰越日数" readonly variant="outlined" />
                 <v-text-field :model-value="activePayrollItem.accruedQuantity" label="当月対象日数" readonly variant="outlined" />
                 <v-text-field :model-value="activePayrollItem.consumedQuantity" label="支払い日数" readonly variant="outlined" />
                 <v-text-field :model-value="activePayrollItem.remainingQuantity" label="残日数" readonly variant="outlined" />
               </div>
+              <PayrollItemTransactionPanel
+                v-if="formModel.id > 0 && (
+                  activePayrollItem.inputSource === 'TRANSACTION'
+                    || activePayrollItem.parameters.collectionMode === 'MONTHLY'
+                )"
+                :employee-id="formModel.id"
+                :target-code="activePayrollItem.targetCode"
+                :target-name="activePayrollItem.displayName"
+                :quantity-unit="activePayrollItem.balanceTracked ? activePayrollItem.balanceUnit : null"
+              />
+              <v-alert
+                v-else-if="formModel.id === 0 && (
+                  activePayrollItem.inputSource === 'TRANSACTION'
+                    || activePayrollItem.parameters.collectionMode === 'MONTHLY'
+                )"
+                type="info"
+                variant="tonal"
+              >
+                従業員を保存した後に明細を登録できます。
+              </v-alert>
             </template>
           </v-card>
         </div>

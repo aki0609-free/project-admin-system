@@ -215,6 +215,10 @@ http://localhost:5173/admin/document
 
 フロントエンドのSyncfusionライセンスキーは`frontend/.env.local`の環境変数で渡し、Gitへコミットしない。
 
+Dockerビルドでは、ライセンスキーを`ARG`や`ENV`へ設定しない。ローカルDockerはシェルまたはプロジェクトルートの`.env`に設定した`VITE_SYNCFUSION_LICENSE_KEY`をComposeのBuildKit Secretとして渡す。手動ECR Pushスクリプトも同じBuildKit Secretを使用する。GitHub ActionsはEnvironment Secretの`SYNCFUSION_LICENSE`をBuildKit Secretとして渡す。これによりキーをDockerイメージの設定・ビルド履歴へ残さない。
+
+なお、Essential JS 2はブラウザで実行されるため、登録済みキーを配信成果物から完全に秘匿することはできない。Git、CIログ、Docker履歴へ不要に露出させないことを管理上の境界とする。
+
 Docker上のViteビルドはSyncfusion追加後のメモリ使用量を考慮し、`NODE_OPTIONS=--max-old-space-size=4096`を設定している。
 
 ### 8.1 AWS DEV実環境確認

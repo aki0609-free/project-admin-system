@@ -132,8 +132,8 @@ jobs:
           tags: ${{ env.FRONTEND_IMAGE }}
           cache-from: type=gha,scope=project-admin-frontend
           cache-to: type=gha,mode=max,scope=project-admin-frontend
-          build-args: |
-            VITE_SYNCFUSION_LICENSE_KEY=${{ secrets.SYNCFUSION_LICENSE }}
+          secrets: |
+            syncfusion_license=${{ secrets.SYNCFUSION_LICENSE }}
       - name: Deploy through Systems Manager
         run: infrastructure/scripts/deployment/deploy_runtime_ci.sh
       - name: Verify Cloudflare Access boundary

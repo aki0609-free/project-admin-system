@@ -339,6 +339,18 @@ loan_repayment AS (
         loan_repayment_amount AS item_value
     FROM vw_monthly_pay_slip_attendance
     WHERE loan_repayment_amount <> 0
+),
+transaction_item AS (
+    SELECT
+        transaction_source.tenant_id,
+        transaction_source.target_month,
+        transaction_source.employee_id,
+        transaction_source.item_category,
+        transaction_source.item_code,
+        transaction_source.item_name,
+        transaction_source.display_order,
+        transaction_source.item_value
+    FROM vw_employee_payroll_item_transaction_confirmed transaction_source
 )
 SELECT * FROM daily_pay_component
 UNION ALL
@@ -352,7 +364,9 @@ SELECT * FROM advance_payment
 UNION ALL
 SELECT * FROM saving
 UNION ALL
-SELECT * FROM loan_repayment;
+SELECT * FROM loan_repayment
+UNION ALL
+SELECT * FROM transaction_item;
 
 CREATE OR REPLACE VIEW vw_monthly_pay_slip_variable_item AS
 SELECT
@@ -374,7 +388,24 @@ SELECT
             source.display_order,
             source.item_code
     ) AS item_no
-FROM vw_monthly_pay_slip_variable_item_source source;
+FROM (
+    SELECT
+        item.tenant_id,
+        item.target_month,
+        item.employee_id,
+        item.item_category,
+        item.item_code,
+        MAX(item.item_name) AS item_name,
+        SUM(item.item_value) AS item_value,
+        MIN(item.display_order) AS display_order
+    FROM vw_monthly_pay_slip_variable_item_source item
+    GROUP BY
+        item.tenant_id,
+        item.target_month,
+        item.employee_id,
+        item.item_category,
+        item.item_code
+) source;
 
 CREATE OR REPLACE VIEW vw_monthly_pay_slip_gross_basis AS
 SELECT

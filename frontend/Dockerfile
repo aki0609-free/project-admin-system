@@ -11,10 +11,11 @@ COPY . .
 ARG VITE_API_BASE_URL=""
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
-ARG VITE_SYNCFUSION_LICENSE_KEY=""
-ENV VITE_SYNCFUSION_LICENSE_KEY=${VITE_SYNCFUSION_LICENSE_KEY}
-
-RUN npm run build-only
+RUN --mount=type=secret,id=syncfusion_license \
+    if [ -s /run/secrets/syncfusion_license ]; then \
+      export VITE_SYNCFUSION_LICENSE_KEY="$(cat /run/secrets/syncfusion_license)"; \
+    fi; \
+    npm run build-only
 
 FROM nginxinc/nginx-unprivileged:1.30-alpine
 

@@ -33,7 +33,7 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
     void productionSchemaAssetsApplyToFreshMySql() throws Exception {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
-        assertThat(resources).hasSize(31);
+        assertThat(resources).hasSize(32);
         RuntimeSchemaAssetInstaller.apply(mysqlContainer, resources);
         RuntimeSchemaAssetInstaller.apply(
                 mysqlContainer,
@@ -46,16 +46,18 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 "monthly_closing_item",
                 "payroll_item_balance_policy",
                 "employee_payroll_item_enrollment",
+                "employee_payroll_item_transaction",
                 "annual_report_backup_setting",
                 "annual_report_backup_execution",
                 "annual_report_backup_file"
-        )).isEqualTo(8);
+        )).isEqualTo(9);
         assertThat(countViews(
                 "vw_daily_labor_cost_preview",
                 "vw_daily_payment_preparation_preview",
                 "vw_daily_pay_slip_latest",
-                "vw_monthly_pay_slip_latest"
-        )).isEqualTo(4);
+                "vw_monthly_pay_slip_latest",
+                "vw_employee_payroll_item_transaction_confirmed"
+        )).isEqualTo(5);
         assertThat(countProcedures(
                 "sp_daily_pay_slip_prepare",
                 "sp_monthly_pay_slip_snapshot",
@@ -255,6 +257,11 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 .isEqualTo(1);
         assertThat(calculation.get("calculation_error_code")).isNull();
 
+        Long mobileDeductionId = registerConfirmedAndDraftMobileTransactions(
+                employeeId
+        );
+        assertThat(mobileDeductionId).isNotNull();
+
         String executionId = "RESIDENT-TAX-CLOSING-INTEGRATION";
         jdbcTemplate.update("""
                 INSERT INTO monthly_pay_slip_input (
@@ -279,6 +286,88 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND deleted_at IS NULL
                 """, BigDecimal.class, TEST_TENANT_ID, employeeId);
         assertThat(fixedResidentTax).isEqualByComparingTo("12000");
+
+        BigDecimal fixedMobileDeduction = jdbcTemplate.queryForObject("""
+                SELECT item.item_value
+                FROM monthly_pay_slip_history_item item
+                JOIN monthly_pay_slip_history history
+                  ON history.id = item.monthly_pay_slip_history_id
+                WHERE history.tenant_id = ?
+                  AND history.target_month = '2026-08-01'
+                  AND history.closing_version = 1
+                  AND history.employee_id = ?
+                  AND item.item_code = 'MOBILE_TEST'
+                  AND item.deleted_at IS NULL
+                """, BigDecimal.class, TEST_TENANT_ID, employeeId);
+        assertThat(fixedMobileDeduction).isEqualByComparingTo("3500");
+    }
+
+    private Long registerConfirmedAndDraftMobileTransactions(Long employeeId) {
+        jdbcTemplate.update("""
+                INSERT INTO deduction_masters (
+                    deduction_code, deduction_name, deduction_type,
+                    calculation_type, default_amount, allow_manual_input,
+                    deduction_unit, detail_view_type,
+                    show_on_daily_statement, show_on_monthly_statement,
+                    carry_to_monthly_settlement, display_order,
+                    enabled, note, tenant_id, created_at, updated_at
+                ) VALUES (
+                    'MOBILE_TEST', '携帯料金テスト', 'COMPANY',
+                    'FIXED', 0, TRUE,
+                    'MONTHLY', 'NONE',
+                    FALSE, TRUE,
+                    TRUE, 500, TRUE,
+                    'Testcontainers明細取引', ?,
+                    CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                )
+                """, TEST_TENANT_ID);
+        Long deductionId = jdbcTemplate.queryForObject("""
+                SELECT id
+                FROM deduction_masters
+                WHERE tenant_id = ?
+                  AND deduction_code = 'MOBILE_TEST'
+                  AND deleted_at IS NULL
+                """, Long.class, TEST_TENANT_ID);
+
+        jdbcTemplate.batchUpdate("""
+                INSERT INTO employee_payroll_item_transaction (
+                    employee_id, target_type, target_master_id,
+                    target_code, target_name, target_month,
+                    transaction_date, amount, quantity,
+                    source_type, source_reference, status, note,
+                    lock_version, tenant_id, created_at, updated_at
+                ) VALUES (
+                    ?, 'DEDUCTION', ?,
+                    'MOBILE_TEST', '携帯料金テスト', '2026-08-01',
+                    ?, ?, NULL,
+                    'MANUAL', ?, ?, NULL,
+                    0, ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                )
+                """, List.of(
+                new Object[]{
+                        employeeId, deductionId, "2026-08-05", "2100",
+                        "MOBILE-202608-1", "CONFIRMED", TEST_TENANT_ID
+                },
+                new Object[]{
+                        employeeId, deductionId, "2026-08-12", "1400",
+                        "MOBILE-202608-2", "CONFIRMED", TEST_TENANT_ID
+                },
+                new Object[]{
+                        employeeId, deductionId, "2026-08-20", "9900",
+                        "MOBILE-202608-DRAFT", "DRAFT", TEST_TENANT_ID
+                }
+        ));
+
+        BigDecimal confirmedTotal = jdbcTemplate.queryForObject("""
+                SELECT item_value
+                FROM vw_monthly_pay_slip_variable_item
+                WHERE tenant_id = ?
+                  AND target_month = '2026-08-01'
+                  AND employee_id = ?
+                  AND item_code = 'MOBILE_TEST'
+                """, BigDecimal.class, TEST_TENANT_ID, employeeId);
+        assertThat(confirmedTotal).isEqualByComparingTo("3500");
+        return deductionId;
     }
 
     private void assertAmount(Object actual, String expected) {

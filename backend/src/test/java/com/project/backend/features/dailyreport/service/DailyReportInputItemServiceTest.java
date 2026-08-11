@@ -35,6 +35,7 @@ import com.project.backend.features.master.payrollitem.service.PayrollItemDailyI
 import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceQueryService;
 import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceSnapshot;
 import com.project.backend.features.master.payrollitem.balance.BalanceUnit;
+import com.project.backend.features.master.payrollitem.balance.EmployeePayrollItemSettingService;
 import com.project.backend.features.dailyreport.repository.DailyReportRepository;
 
 class DailyReportInputItemServiceTest {
@@ -44,6 +45,7 @@ class DailyReportInputItemServiceTest {
     private EmployeeContractRepository employeeContractRepository;
     private DormitoryFeeSettingRepository dormitoryFeeSettingRepository;
     private PayrollItemBalanceQueryService balanceQueryService;
+    private EmployeePayrollItemSettingService payrollItemSettingService;
     private DailyReportRepository dailyReportRepository;
     private DailyReportInputItemService service;
 
@@ -54,6 +56,7 @@ class DailyReportInputItemServiceTest {
         employeeContractRepository = mock(EmployeeContractRepository.class);
         dormitoryFeeSettingRepository = mock(DormitoryFeeSettingRepository.class);
         balanceQueryService = mock(PayrollItemBalanceQueryService.class);
+        payrollItemSettingService = mock(EmployeePayrollItemSettingService.class);
         dailyReportRepository = mock(DailyReportRepository.class);
         when(dailyReportRepository.findByEmployeeIdAndWorkDateAndDeletedAtIsNull(
                 anyLong(), any(LocalDate.class)))
@@ -61,12 +64,16 @@ class DailyReportInputItemServiceTest {
         when(balanceQueryService.findDeductionBalance(
                 anyLong(), anyLong(), any(LocalDate.class), any()))
                 .thenReturn(PayrollItemBalanceSnapshot.untracked());
+        when(payrollItemSettingService.isDailyReportInputEnabled(
+                anyLong(), anyLong(), any(LocalDate.class)))
+                .thenReturn(true);
         service = new DailyReportInputItemService(
                 payrollItemDailyInputService,
                 employeeRepository,
                 employeeContractRepository,
                 dormitoryFeeSettingRepository,
                 balanceQueryService,
+                payrollItemSettingService,
                 dailyReportRepository
         );
     }
@@ -226,6 +233,38 @@ class DailyReportInputItemServiceTest {
                 .hasMessageContaining("残数量を超えています")
                 .hasMessageContaining("remaining=31")
                 .hasMessageContaining("quantity=40");
+    }
+
+    @Test
+    void calculate_shouldExcludeTransactionAndMonthlyOperationDeductions() {
+        DailyReportSaveRequest request = mockRequest();
+        Employee employee = new Employee();
+        employee.setId(10L);
+
+        when(employeeRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(employee));
+        when(employeeContractRepository.findByEmployeeIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.empty());
+        when(payrollItemDailyInputService.findAllowanceItems(anyMap(), anyMap()))
+                .thenReturn(List.of());
+        when(payrollItemDailyInputService.findDeductionItems(anyMap(), anyMap()))
+                .thenReturn(List.of(
+                        inputItem(2L, "DAILY_ITEM", 300),
+                        inputItem(3L, "MOBILE_RENTAL", 5000),
+                        inputItem(4L, "DORMITORY_FEE", 15000)
+                ));
+        when(payrollItemSettingService.isDailyReportInputEnabled(
+                10L, 3L, LocalDate.of(2026, 7, 27)))
+                .thenReturn(false);
+        when(payrollItemSettingService.isDailyReportInputEnabled(
+                10L, 4L, LocalDate.of(2026, 7, 27)))
+                .thenReturn(false);
+
+        var response = service.calculate(request);
+
+        assertThat(response.deductions())
+                .extracting(DailyReportInputItemResponse::code)
+                .containsExactly("DAILY_ITEM");
     }
 
     private DailyReportSaveRequest mockRequest() {

@@ -102,6 +102,8 @@ export type EmployeePayrollItemSetting = {
   enabled: boolean
   effectiveFrom: string | null
   effectiveTo: string | null
+  inputSource: 'DAILY_REPORT' | 'TRANSACTION'
+  balanceTracked: boolean
   balanceUnit: string
   openingQuantity: number
   accruedQuantity: number

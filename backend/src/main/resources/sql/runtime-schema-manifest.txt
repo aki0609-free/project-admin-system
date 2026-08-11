@@ -13,6 +13,7 @@ sql/employee/business_settings_v1.sql
 sql/employee/finance_foundation_v1.sql
 sql/employee/dormitory_foundation_v1.sql
 sql/daily_report/payroll_item_balance_foundation_v1.sql
+sql/daily_report/payroll_item_transaction_foundation_v1.sql
 sql/master/statutory_deduction_master_foundation_v1.sql
 sql/system/import/tax_import_foundation_v1.sql
 sql/system/import/resident_tax_editor_foundation_v1.sql
