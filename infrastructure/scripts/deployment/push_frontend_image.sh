@@ -60,13 +60,15 @@ if [[ -z "${syncfusion_license_key}" ]]; then
 fi
 
 echo "Building and pushing linux/amd64 frontend image..."
+export SYNCFUSION_LICENSE_BUILD_SECRET="${syncfusion_license_key}"
 docker buildx build \
   --platform linux/amd64 \
   --provenance=false \
-  --build-arg "VITE_SYNCFUSION_LICENSE_KEY=${syncfusion_license_key}" \
+  --secret id=syncfusion_license,env=SYNCFUSION_LICENSE_BUILD_SECRET \
   --tag "${image_reference}" \
   --push \
   "${frontend_dir}"
+unset SYNCFUSION_LICENSE_BUILD_SECRET
 
 image_digest="$(aws ecr describe-images \
   --repository-name "${repository_name}" \

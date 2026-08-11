@@ -66,6 +66,9 @@ public class PayrollItemBalanceQueryService {
         if (policy == null) {
             return PayrollItemBalanceSnapshot.untracked();
         }
+        if (!policy.isBalanceTrackingFlag()) {
+            return PayrollItemBalanceSnapshot.untracked();
+        }
         if (!CALENDAR_DAYS_IN_ENROLLMENT.equals(policy.getAccrualRuleName())) {
             throw new IllegalStateException(
                     "未対応の残高加算Ruleです。rule=" + policy.getAccrualRuleName()

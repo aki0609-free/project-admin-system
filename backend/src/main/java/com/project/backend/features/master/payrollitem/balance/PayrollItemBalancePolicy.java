@@ -2,6 +2,7 @@ package com.project.backend.features.master.payrollitem.balance;
 
 import com.project.backend.app.base.entity.BaseEntity;
 import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
+import com.project.backend.features.master.payrollitem.enums.PayrollItemInputSource;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -47,6 +48,13 @@ public class PayrollItemBalancePolicy extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "balance_unit", nullable = false, length = 20)
     private BalanceUnit balanceUnit;
+
+    @Column(name = "balance_tracking_flag", nullable = false)
+    private boolean balanceTrackingFlag = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "input_source", nullable = false, length = 30)
+    private PayrollItemInputSource inputSource = PayrollItemInputSource.DAILY_REPORT;
 
     @Column(name = "accrual_frequency", nullable = false, length = 20)
     private String accrualFrequency;

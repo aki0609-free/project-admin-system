@@ -19,6 +19,7 @@ import com.project.backend.features.employee.repository.EmployeeContractReposito
 import com.project.backend.features.employee.repository.EmployeeRepository;
 import com.project.backend.features.master.payrollitem.service.PayrollItemDailyInputService;
 import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceQueryService;
+import com.project.backend.features.master.payrollitem.balance.EmployeePayrollItemSettingService;
 import com.project.backend.features.dailyreport.repository.DailyReportRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class DailyReportInputItemService {
     private final EmployeeContractRepository employeeContractRepository;
     private final DormitoryFeeSettingRepository dormitoryFeeSettingRepository;
     private final PayrollItemBalanceQueryService balanceQueryService;
+    private final EmployeePayrollItemSettingService payrollItemSettingService;
     private final DailyReportRepository dailyReportRepository;
 
     public DailyReportInputResponse findItems() {
@@ -206,8 +208,9 @@ public class DailyReportInputItemService {
 
         var deductions = calculated.deductions().stream()
                 .map(item -> enrichDeduction(item, request, existingId))
-                .filter(item -> !balanceQueryService.isManagedDeduction(item.masterId())
-                        || item.balanceTracked())
+                .filter(item -> payrollItemSettingService.isDailyReportInputEnabled(
+                        request.employeeId(), item.masterId(), request.workDate()
+                ))
                 .toList();
         return DailyReportInputResponse.builder()
                 .allowances(calculated.allowances())

@@ -42,6 +42,38 @@ PREPARE statement FROM @balance_policy_display_name_sql;
 EXECUTE statement;
 DEALLOCATE PREPARE statement;
 
+-- Hibernateが新Entity定義から先にテーブルを作る場合と、既存DBへ段階適用する場合の
+-- どちらでも後続INSERTが同じ列構成を利用できるよう、入力方式をここで先に揃える。
+SET @balance_tracking_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'payroll_item_balance_policy'
+      AND column_name = 'balance_tracking_flag'
+);
+SET @balance_tracking_sql := IF(
+    @balance_tracking_exists = 0,
+    'ALTER TABLE payroll_item_balance_policy ADD COLUMN balance_tracking_flag BOOLEAN NOT NULL DEFAULT TRUE AFTER balance_unit',
+    'SELECT 1'
+);
+PREPARE statement FROM @balance_tracking_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
+SET @input_source_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'payroll_item_balance_policy'
+      AND column_name = 'input_source'
+);
+SET @input_source_sql := IF(
+    @input_source_exists = 0,
+    'ALTER TABLE payroll_item_balance_policy ADD COLUMN input_source VARCHAR(30) NOT NULL DEFAULT ''DAILY_REPORT'' AFTER balance_tracking_flag',
+    'SELECT 1'
+);
+PREPARE statement FROM @input_source_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
 CREATE TABLE IF NOT EXISTS employee_payroll_item_enrollment (
     id BIGINT NOT NULL AUTO_INCREMENT,
     employee_id BIGINT NOT NULL,
@@ -273,12 +305,14 @@ WHERE deduction_code = 'DORMITORY_FEE'
 
 INSERT INTO payroll_item_balance_policy (
     target_type, target_master_id, target_code, display_name,
-    balance_unit, accrual_frequency, accrual_rule_name,
+    balance_unit, balance_tracking_flag, input_source,
+    accrual_frequency, accrual_rule_name,
     carry_forward_flag, advance_consumption_flag, active_flag,
     tenant_id, created_at, updated_at, deleted_at
 )
 SELECT 'DEDUCTION', deduction.id, deduction.deduction_code, deduction.deduction_name,
-       'DAYS', 'MONTHLY', 'CALENDAR_DAYS_IN_ENROLLMENT',
+       'DAYS', TRUE, 'DAILY_REPORT',
+       'MONTHLY', 'CALENDAR_DAYS_IN_ENROLLMENT',
        TRUE, FALSE, TRUE,
        deduction.tenant_id, NOW(6), NOW(6), NULL
 FROM deduction_masters deduction
@@ -288,6 +322,8 @@ ON DUPLICATE KEY UPDATE
     target_master_id = VALUES(target_master_id),
     display_name = VALUES(display_name),
     balance_unit = VALUES(balance_unit),
+    balance_tracking_flag = VALUES(balance_tracking_flag),
+    input_source = VALUES(input_source),
     accrual_frequency = VALUES(accrual_frequency),
     accrual_rule_name = VALUES(accrual_rule_name),
     updated_at = NOW(6),
@@ -329,8 +365,8 @@ INSERT INTO deduction_masters (
     tenant_id, created_at, updated_at, deleted_at
 )
 SELECT 'MOBILE_RENTAL', '携帯電話貸出料', 'COMPANY', 'FIXED',
-       0, TRUE, 'BOTH', 'NONE', TRUE, TRUE, TRUE, 120, TRUE,
-       '日次徴収・残日数繰越対象', 'default', NOW(6), NOW(6), NULL
+       0, TRUE, 'MONTHLY', 'NONE', FALSE, TRUE, TRUE, 120, TRUE,
+       '明細到着時に従業員別控除取引として登録', 'default', NOW(6), NOW(6), NULL
 WHERE NOT EXISTS (
     SELECT 1 FROM deduction_masters
     WHERE tenant_id = 'default' AND deduction_code = 'MOBILE_RENTAL'
@@ -338,9 +374,12 @@ WHERE NOT EXISTS (
 );
 
 UPDATE deduction_masters
-SET deduction_unit = 'BOTH',
-    show_on_daily_statement = TRUE,
+SET deduction_unit = 'MONTHLY',
+    show_on_daily_statement = FALSE,
+    show_on_monthly_statement = TRUE,
+    carry_to_monthly_settlement = TRUE,
     allow_manual_input = TRUE,
+    note = '明細到着時に従業員別控除取引として登録',
     updated_at = NOW(6)
 WHERE deduction_code = 'MOBILE_RENTAL'
   AND deleted_at IS NULL;
@@ -354,12 +393,14 @@ WHERE deduction_code = 'MOBILE_RENTAL'
 
 INSERT INTO payroll_item_balance_policy (
     target_type, target_master_id, target_code, display_name,
-    balance_unit, accrual_frequency, accrual_rule_name,
+    balance_unit, balance_tracking_flag, input_source,
+    accrual_frequency, accrual_rule_name,
     carry_forward_flag, advance_consumption_flag, active_flag,
     tenant_id, created_at, updated_at, deleted_at
 )
 SELECT 'DEDUCTION', deduction.id, deduction.deduction_code, deduction.deduction_name,
-       'DAYS', 'MONTHLY', 'CALENDAR_DAYS_IN_ENROLLMENT',
+       'DAYS', FALSE, 'TRANSACTION',
+       'MANUAL', 'MANUAL_TRANSACTION',
        TRUE, FALSE, TRUE,
        deduction.tenant_id, NOW(6), NOW(6), NULL
 FROM deduction_masters deduction
@@ -368,5 +409,9 @@ WHERE deduction.deduction_code = 'MOBILE_RENTAL'
 ON DUPLICATE KEY UPDATE
     target_master_id = VALUES(target_master_id),
     display_name = VALUES(display_name),
+    balance_tracking_flag = VALUES(balance_tracking_flag),
+    input_source = VALUES(input_source),
+    accrual_frequency = VALUES(accrual_frequency),
+    accrual_rule_name = VALUES(accrual_rule_name),
     active_flag = TRUE,
     updated_at = NOW(6);

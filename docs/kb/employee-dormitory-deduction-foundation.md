@@ -2,18 +2,19 @@
 
 ## 1. 目的
 
-従業員の入寮状態と寮タイプを管理し、日報の動的控除Ruleから日次寮費を計算できるようにする。
+従業員の入寮状態と寮タイプを管理し、日報の動的控除Ruleから日次寮費を計算できるようにする。例外的に月1回で徴収する従業員は、共通の明細型・月次型控除取引基盤を利用する。
 
 ## 2. 従業員項目
 
 | 画面項目 | DBカラム | 値 |
 | --- | --- | --- |
-| 入寮あり | `employee.dormitory_flag` | `true` / `false` |
-| 寮タイプ | `employee.dormitory_type` | `SINGLE_ROOM` / `SHARED_ROOM` |
+| 入寮あり | 従業員別控除設定 | `true` / `false` |
+| 寮タイプ | `parameters.dormitoryType` | `SINGLE_ROOM` / `SHARED_ROOM` |
+| 徴収方式 | `parameters.collectionMode` | `DAILY` / `MONTHLY` |
 
 - 入寮なしの場合、寮タイプは未設定にする。
 - 入寮ありの場合、寮タイプは必須とする。
-- 既存従業員は入寮なしとして移行する。
+- `employee.dormitory_flag` と `employee.dormitory_type` は既存コードとの互換用に同期するが、新規機能の判定元は従業員別控除設定とする。
 
 ## 3. 寮費を従業員マスターへ持たせない理由
 
@@ -69,9 +70,10 @@ dormitoryFlag ? dormitoryDailyAmount * dormitoryChargeDays : 0
 1. 日報入力時に寮費Ruleを実行する。
 2. 計算結果を日報控除明細へ保存する。
 3. 日報修正時は寮費も再計算する。
-4. 月次帳票は確定済み日報の寮費控除を合計して表示する。
+4. `DAILY` の月次帳票は確定済み日報の寮費控除を合計して表示する。
+5. `MONTHLY` は日報へ表示せず、従業員別控除取引へ登録した確定額を表示する。
 
-月次で寮費を再計算しない。日次に保存された確定値を集計するため、途中で寮費Ruleの金額を変更しても過去日報の金額は勝手に変化しない。
+月次で日次寮費を再計算しない。日次に保存された確定値または月次控除取引を集計するため、途中で寮費Ruleの金額を変更しても過去日報の金額は勝手に変化しない。詳細は `payroll-item-transaction-deduction-foundation.md` を参照する。
 
 ## 8. Rule基盤の柔軟性
 
