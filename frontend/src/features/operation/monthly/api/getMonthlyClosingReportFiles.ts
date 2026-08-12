@@ -3,7 +3,7 @@ import type { MonthlyClosingReportFileResponse } from '../types/monthlyReportFil
 
 export const getMonthlyClosingReportFiles = (
   targetMonth: string,
-  closingVersion: number,
+  closingVersion: number | null,
   reportCode: string,
 ) =>
   get<MonthlyClosingReportFileResponse[]>(
@@ -12,7 +12,7 @@ export const getMonthlyClosingReportFiles = (
       params: {
         query: {
           targetMonth,
-          closingVersion,
+          ...(closingVersion ? { closingVersion } : {}),
           reportCode,
         },
       },

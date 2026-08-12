@@ -1,14 +1,13 @@
 package com.project.backend.features.dailyreport.service;
 
 import java.math.BigDecimal;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 
 /**
  * V1の日報勤務時間区分を一か所で決定する。
  *
- * <p>土曜・日曜の勤務は休日勤務として扱う。会社カレンダー対応時は、
- * このポリシーの判定元だけを差し替える。</p>
+ * <p>休日割増の対象日は曜日から決めず、日報入力時に明示された
+ * holidayPremiumEligibleを使用する。</p>
  */
 public final class DailyReportWorkTimePolicy {
 
@@ -20,14 +19,15 @@ public final class DailyReportWorkTimePolicy {
             BigDecimal workHours,
             BigDecimal overtimeHours,
             BigDecimal nightWorkHours,
-            BigDecimal holidayWorkHours
+            BigDecimal holidayWorkHours,
+            boolean holidayPremiumEligible
     ) {
         BigDecimal normal = nvl(workHours);
         BigDecimal overtime = nvl(overtimeHours);
         BigDecimal night = nvl(nightWorkHours);
         BigDecimal holiday = nvl(holidayWorkHours);
 
-        if (!isWeekend(workDate)) {
+        if (!holidayPremiumEligible) {
             return new WorkTimes(normal, overtime, night, holiday);
         }
 
@@ -38,15 +38,6 @@ public final class DailyReportWorkTimePolicy {
                 night,
                 holiday.max(calculatedHoliday)
         );
-    }
-
-    public static boolean isWeekend(LocalDate workDate) {
-        if (workDate == null) {
-            return false;
-        }
-        DayOfWeek dayOfWeek = workDate.getDayOfWeek();
-        return dayOfWeek == DayOfWeek.SATURDAY
-                || dayOfWeek == DayOfWeek.SUNDAY;
     }
 
     private static BigDecimal nvl(BigDecimal value) {

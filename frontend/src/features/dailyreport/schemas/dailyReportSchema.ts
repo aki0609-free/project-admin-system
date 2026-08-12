@@ -47,6 +47,7 @@ export const dailyReportSchema = z.object({
   overtimeHours: z.number().min(0),
   nightWorkHours: z.number().min(0),
   holidayWorkHours: z.number().min(0),
+  holidayPremiumEligible: z.boolean(),
 
   allowanceAmount: z.number().min(0),
   deductionAmount: z.number().min(0),

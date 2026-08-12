@@ -147,6 +147,12 @@ export const useDailyReportFormFields = ({
           type: 'number',
         },
         {
+          key: 'holidayPremiumEligible',
+          label: '休日手当対象',
+          type: 'checkbox',
+          width: 160,
+        },
+        {
           key: 'holidayWorkHours',
           label: '休日時間',
           type: 'number',

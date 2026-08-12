@@ -21,6 +21,8 @@ const props = defineProps<{
   targetDate?: string | null
   targetMonth?: string | null
   closingVersion?: number | null
+  allowMixedClosingVersions?: boolean
+  allowedReportCodes?: string[]
 }>()
 
 const dialog = ref(false)
@@ -29,6 +31,12 @@ const selectedReport = ref<OperationReportPreviewResponse | null>(null)
 const { reports, refetch } = useOperationReportPreviewsQuery(
   computed(() => props.operationType),
 )
+const visibleReports = computed(() => {
+  if (!props.allowedReportCodes?.length) return reports.value
+  return reports.value.filter((report) =>
+    props.allowedReportCodes?.includes(report.reportCode),
+  )
+})
 
 const { previewUrl } = useOperationReportPreviewUrl({
   operationType: computed(() => props.operationType),
@@ -115,7 +123,9 @@ const canOutput = computed(() => {
   }
 
   if (props.operationType === 'MONTHLY') {
-    return !!props.targetMonth && !!props.closingVersion
+    return !!props.targetMonth && (
+      !!props.closingVersion || !!props.allowMixedClosingVersions
+    )
   }
 
   return !!selectedReport.value?.jobCode &&
@@ -198,14 +208,18 @@ const executeReport = async () => {
 }
 
 const openMonthlyStoredReport = async () => {
-  if (!selectedReport.value || !props.targetMonth || !props.closingVersion) {
+  if (
+    !selectedReport.value ||
+    !props.targetMonth ||
+    (!props.closingVersion && !props.allowMixedClosingVersions)
+  ) {
     showOutputMessage('締め処理後に印刷・出力できます。')
     return
   }
 
   const files = await getMonthlyClosingReportFiles(
     props.targetMonth,
-    props.closingVersion,
+    props.closingVersion ?? null,
     selectedReport.value.reportCode,
   )
 
@@ -313,7 +327,7 @@ function downloadBlob(blob: Blob, fileName: string) {
 
       <tbody>
         <tr
-          v-for="report in reports"
+          v-for="report in visibleReports"
           :key="report.reportCode"
           @click="selectReport(report)"
         >
@@ -343,7 +357,7 @@ function downloadBlob(blob: Blob, fileName: string) {
           </td>
         </tr>
 
-        <tr v-if="reports.length === 0">
+        <tr v-if="visibleReports.length === 0">
           <td colspan="4" class="empty-cell">帳票が登録されていません。</td>
         </tr>
       </tbody>

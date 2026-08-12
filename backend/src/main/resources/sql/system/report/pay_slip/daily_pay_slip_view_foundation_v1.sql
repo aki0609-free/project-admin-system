@@ -104,6 +104,9 @@ SELECT
         AS gross_amount,
     COALESCE(dp.actual_amount, 0) AS daily_payment_amount,
     COALESCE(dp.actual_amount, 0) AS net_payment_amount,
+    COALESCE(legal_deposit.current_balance, 0) AS legal_deposit_balance,
+    COALESCE(loan.current_balance, 0) AS loan_balance,
+    COALESCE(saving.current_balance, 0) AS saving_balance,
     dp.note,
 
     MAX(CASE WHEN item.item_type = 'ALLOWANCE' AND item.item_no = 1 THEN item.item_name END) AS allowance_item_name1,
@@ -160,6 +163,26 @@ LEFT JOIN vw_daily_pay_slip_item_ranked item
   ON item.tenant_id = dp.tenant_id
  AND item.payment_date = dp.payment_date
  AND item.employee_id = dp.employee_id
+LEFT JOIN vw_employee_legal_deposit_balance legal_deposit
+  ON legal_deposit.tenant_id = dp.tenant_id
+ AND legal_deposit.employee_id = dp.employee_id
+LEFT JOIN (
+    SELECT tenant_id, employee_id, SUM(current_balance) AS current_balance
+    FROM employee_loan
+    WHERE approval_status = 'APPROVED'
+      AND deleted_at IS NULL
+    GROUP BY tenant_id, employee_id
+) loan
+  ON loan.tenant_id = dp.tenant_id
+ AND loan.employee_id = dp.employee_id
+LEFT JOIN (
+    SELECT tenant_id, employee_id, SUM(current_balance) AS current_balance
+    FROM employee_saving
+    WHERE deleted_at IS NULL
+    GROUP BY tenant_id, employee_id
+) saving
+  ON saving.tenant_id = dp.tenant_id
+ AND saving.employee_id = dp.employee_id
 WHERE dp.deleted_at IS NULL
 GROUP BY
     dp.tenant_id,
@@ -173,6 +196,9 @@ GROUP BY
     dp.planned_amount,
     dp.actual_amount,
     dp.note,
+    legal_deposit.current_balance,
+    loan.current_balance,
+    saving.current_balance,
     work.labor_period_from,
     work.labor_period_to,
     work.work_hours,

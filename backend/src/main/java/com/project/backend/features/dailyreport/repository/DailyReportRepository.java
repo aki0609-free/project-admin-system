@@ -21,6 +21,11 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
         List<DailyReport> findByEmployeeIdAndDeletedAtIsNullOrderByWorkDateDescIdDesc(
                         Long employeeId);
 
+        List<DailyReport> findByEmployeeIdAndWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateAscIdAsc(
+                        Long employeeId,
+                        LocalDate from,
+                        LocalDate to);
+
         List<DailyReport> findByWorkDateAndDeletedAtIsNullOrderByEmployeeEmployeeCodeAscIdAsc(
                         LocalDate workDate);
 

@@ -202,6 +202,18 @@ public class DailyReport extends BaseEntity {
     )
     private BigDecimal holidayWorkHours = BigDecimal.ZERO;
 
+    /**
+     * この日報を法定休日割増の対象として扱うか。
+     *
+     * <p>曜日だけでは決めず、会社カレンダー・運用判断を反映した
+     * 日報保存時点のスナップショットとして保持する。</p>
+     */
+    @Column(
+            name = "holiday_premium_eligible",
+            nullable = false
+    )
+    private boolean holidayPremiumEligible = false;
+
     @Column(
             name = "allowance_amount",
             precision = 12,

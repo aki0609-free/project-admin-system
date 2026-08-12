@@ -28,6 +28,7 @@ public class MonthlyClosingCommandService {
     private final MonthlyClosingMapper mapper;
     private final MonthlyClosingJobService monthlyClosingJobService;
     private final MonthlyClosingPeriodService monthlyClosingPeriodService;
+    private final LegalDepositRefundService legalDepositRefundService;
     private final Clock clock;
 
     public MonthlyClosingResponse close(String targetMonthText) {
@@ -58,6 +59,12 @@ public class MonthlyClosingCommandService {
 
         Integer nextVersion =
                 entity.getClosingVersion() + 1;
+
+        legalDepositRefundService.prepareRefunds(
+                entity.getId(),
+                period,
+                nextVersion
+        );
 
         monthlyClosingJobService.executeClosing(
                 entity.getId(),
@@ -99,6 +106,12 @@ public class MonthlyClosingCommandService {
 
         Integer nextVersion =
                 entity.getClosingVersion() + 1;
+
+        legalDepositRefundService.prepareRefunds(
+                entity.getId(),
+                period,
+                nextVersion
+        );
 
         monthlyClosingJobService.executeClosing(
                 entity.getId(),

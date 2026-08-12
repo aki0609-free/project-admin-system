@@ -777,19 +777,70 @@ SELECT
         + COALESCE(SUM(CASE WHEN item.item_category = 'LEGAL_DEDUCTION' THEN item.item_value ELSE 0 END), 0)
         AS legal_deduction_total,
     COALESCE(SUM(CASE WHEN item.item_category = 'OTHER_DEDUCTION' THEN item.item_value ELSE 0 END), 0)
+        - COALESCE((
+            SELECT SUM(refund.amount)
+            FROM employee_legal_deposit_refund refund
+            WHERE refund.tenant_id = em.tenant_id
+              AND refund.employee_id = em.employee_id
+              AND refund.target_month = em.target_month
+              AND refund.status = 'ACTIVE'
+              AND refund.deleted_at IS NULL
+        ), 0)
         AS other_deduction_total,
     tax.social_insurance_total
         + COALESCE(tax.income_tax, 0)
         + COALESCE(tax.resident_tax, 0)
         + COALESCE(SUM(CASE WHEN item.item_category IN ('LEGAL_DEDUCTION', 'OTHER_DEDUCTION') THEN item.item_value ELSE 0 END), 0)
+        - COALESCE((
+            SELECT SUM(refund.amount)
+            FROM employee_legal_deposit_refund refund
+            WHERE refund.tenant_id = em.tenant_id
+              AND refund.employee_id = em.employee_id
+              AND refund.target_month = em.target_month
+              AND refund.status = 'ACTIVE'
+              AND refund.deleted_at IS NULL
+        ), 0)
         AS deduction_total,
     gross.gross_amount
         - tax.social_insurance_total
         - COALESCE(tax.income_tax, 0)
         - COALESCE(tax.resident_tax, 0)
         - COALESCE(SUM(CASE WHEN item.item_category IN ('LEGAL_DEDUCTION', 'OTHER_DEDUCTION') THEN item.item_value ELSE 0 END), 0)
+        + COALESCE((
+            SELECT SUM(refund.amount)
+            FROM employee_legal_deposit_refund refund
+            WHERE refund.tenant_id = em.tenant_id
+              AND refund.employee_id = em.employee_id
+              AND refund.target_month = em.target_month
+              AND refund.status = 'ACTIVE'
+              AND refund.deleted_at IS NULL
+        ), 0)
         AS net_payment_amount,
     COALESCE(adv.advance_payment_amount, 0) AS advance_payment_amount,
+    COALESCE((
+        SELECT SUM(saving.current_balance)
+        FROM employee_saving saving
+        WHERE saving.tenant_id = em.tenant_id
+          AND saving.employee_id = em.employee_id
+          AND saving.deleted_at IS NULL
+    ), 0) AS saving_balance,
+    COALESCE((
+        SELECT SUM(loan.current_balance)
+        FROM employee_loan loan
+        WHERE loan.tenant_id = em.tenant_id
+          AND loan.employee_id = em.employee_id
+          AND loan.approval_status = 'APPROVED'
+          AND loan.deleted_at IS NULL
+    ), 0) AS loan_balance,
+    COALESCE((
+        SELECT SUM(refund.amount)
+        FROM employee_legal_deposit_refund refund
+        WHERE refund.tenant_id = em.tenant_id
+          AND refund.employee_id = em.employee_id
+          AND refund.target_month = em.target_month
+          AND refund.status = 'ACTIVE'
+          AND refund.deleted_at IS NULL
+    ), 0) AS legal_deposit_refund_amount,
 
     COUNT(CASE WHEN item.item_category = 'ALLOWANCE' THEN 1 END) AS allowance_item_count,
     COUNT(CASE WHEN item.item_category = 'LEGAL_DEDUCTION' THEN 1 END) AS legal_deduction_item_count,

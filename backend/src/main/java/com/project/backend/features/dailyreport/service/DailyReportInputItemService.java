@@ -121,7 +121,8 @@ public class DailyReportInputItemService {
                         request.workHours(),
                         request.overtimeHours(),
                         request.nightWorkHours(),
-                        request.holidayWorkHours()
+                        request.holidayWorkHours(),
+                        Boolean.TRUE.equals(request.holidayPremiumEligible())
                 );
 
         putIfNotNull(variables, "workDate", request.workDate());

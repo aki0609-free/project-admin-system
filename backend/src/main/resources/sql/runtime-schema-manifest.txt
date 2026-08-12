@@ -8,13 +8,18 @@ sql/system/excelbook/labor_cost_payment_v1.sql
 sql/system/excelbook/receipt_confirmation_v1.sql
 sql/system/report/monthly_snapshot_foundation_v1.sql
 sql/operation/monthly/closing_output_foundation_v1.sql
+sql/operation/monthly/customer_billing_closing_v1.sql
 sql/operation/monthly/customer_transaction_sync_v1.sql
 sql/employee/business_settings_v1.sql
+sql/system/notice/closing_notice_foundation_v1.sql
 sql/employee/finance_foundation_v1.sql
 sql/employee/dormitory_foundation_v1.sql
 sql/daily_report/payroll_item_balance_foundation_v1.sql
 sql/daily_report/payroll_item_transaction_foundation_v1.sql
+sql/daily_report/legal_deposit_refund_foundation_v1.sql
 sql/master/statutory_deduction_master_foundation_v1.sql
+sql/master/fuyo_deduction_master_foundation_v1.sql
+sql/system/backup/business_data_backup_foundation_v1.sql
 sql/system/import/tax_import_foundation_v1.sql
 sql/system/import/resident_tax_editor_foundation_v1.sql
 sql/system/report/envelope/changeDefinition.sql
@@ -27,6 +32,7 @@ sql/system/report/employee/employee_csv_foundation_v1.sql
 sql/system/report/invoice/monthly_invoice_foundation_v1.sql
 sql/system/report/invoice/monthly_invoice_render_views_v1.sql
 sql/system/report/invoice/monthly_invoice_report_master_v1.sql
+sql/system/report/order_form/monthly_order_form_foundation_v1.sql
 sql/system/report/preview/daily_preview_foundation_v1.sql
 sql/system/report/preview/report_preview_catalog_v1.sql
 sql/system/report/labor_cost/monthly_labor_cost_list_foundation_v1.sql

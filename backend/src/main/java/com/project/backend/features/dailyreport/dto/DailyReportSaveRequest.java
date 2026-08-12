@@ -37,6 +37,7 @@ public record DailyReportSaveRequest(
         BigDecimal overtimeHours,
         BigDecimal nightWorkHours,
         BigDecimal holidayWorkHours,
+        Boolean holidayPremiumEligible,
 
         BigDecimal allowanceAmount,
         BigDecimal deductionAmount,

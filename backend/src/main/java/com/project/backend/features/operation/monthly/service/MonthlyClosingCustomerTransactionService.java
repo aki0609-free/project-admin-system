@@ -35,6 +35,14 @@ public class MonthlyClosingCustomerTransactionService {
             String targetMonthText,
             Integer closingVersion
     ) {
+        return synchronize(targetMonthText, closingVersion, null);
+    }
+
+    public int synchronize(
+            String targetMonthText,
+            Integer closingVersion,
+            Long customerId
+    ) {
         YearMonth targetMonth = YearMonth.parse(targetMonthText);
         if (closingVersion == null || closingVersion < 1) {
             throw new IllegalArgumentException(
@@ -42,11 +50,18 @@ public class MonthlyClosingCustomerTransactionService {
             );
         }
 
-        List<MonthlyInvoiceHistory> histories = historyRepository
-                .findByTargetMonthAndClosingVersionAndDeletedAtIsNullOrderByCustomerIdAsc(
-                        targetMonth.atDay(1),
-                        closingVersion
-                );
+        List<MonthlyInvoiceHistory> histories = customerId == null
+                ? historyRepository
+                        .findByTargetMonthAndClosingVersionAndDeletedAtIsNullOrderByCustomerIdAsc(
+                                targetMonth.atDay(1),
+                                closingVersion
+                        )
+                : historyRepository
+                        .findByTargetMonthAndClosingVersionAndCustomerIdAndDeletedAtIsNullOrderByIdAsc(
+                                targetMonth.atDay(1),
+                                closingVersion,
+                                customerId
+                        );
         if (histories.isEmpty()) {
             throw new IllegalStateException(
                     "顧客取引へ同期する確定請求履歴がありません。targetMonth="

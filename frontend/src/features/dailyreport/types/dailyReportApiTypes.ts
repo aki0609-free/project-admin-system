@@ -94,6 +94,7 @@ export type DailyReportResponse = {
   overtimeHours: number
   nightWorkHours: number
   holidayWorkHours: number
+  holidayPremiumEligible: boolean
 
   allowanceAmount: number
   deductionAmount: number
@@ -186,6 +187,7 @@ export type DailyReportSaveRequest = {
   overtimeHours: number
   nightWorkHours: number
   holidayWorkHours: number
+  holidayPremiumEligible: boolean
 
   allowanceAmount: number
   deductionAmount: number

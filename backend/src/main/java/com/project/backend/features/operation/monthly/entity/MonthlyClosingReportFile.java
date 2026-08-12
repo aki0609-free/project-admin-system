@@ -45,6 +45,9 @@ public class MonthlyClosingReportFile extends BaseEntity {
     @Column(name = "monthly_closing_id", nullable = false)
     private Long monthlyClosingId;
 
+    @Column(name = "closing_scope", nullable = false, length = 30)
+    private String closingScope = "COMPANY";
+
     @Column(name = "target_month", nullable = false, length = 7)
     private String targetMonth;
 

@@ -48,4 +48,12 @@ public class MonthlyInvoiceTargetCustomerQueryService {
                 periodTo
         );
     }
+
+    public boolean hasTargetData(
+            Long customerId,
+            LocalDate periodFrom,
+            LocalDate periodTo
+    ) {
+        return findTargetCustomerIds(periodFrom, periodTo).contains(customerId);
+    }
 }

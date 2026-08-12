@@ -1,6 +1,8 @@
 package com.project.backend.features.operation.monthly.service;
 
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,20 +30,40 @@ public class MonthlyClosingReportFileService {
         if (targetMonth == null || !targetMonth.matches("\\d{4}-\\d{2}")) {
             throw new IllegalArgumentException("targetMonthはyyyy-MM形式で指定してください。");
         }
-        if (closingVersion == null || closingVersion < 1) {
+        if (closingVersion != null && closingVersion < 1) {
             throw new IllegalArgumentException("closingVersionは1以上で指定してください。");
         }
         if (reportCode == null || reportCode.isBlank()) {
             throw new IllegalArgumentException("reportCodeは必須です。");
         }
 
-        return repository
-                .findAllByTargetMonthAndClosingVersionAndDeletedAtIsNullOrderByTargetNameAscIdAsc(
-                        targetMonth,
-                        closingVersion)
+        List<MonthlyClosingReportFile> files = closingVersion == null
+                ? findLatestCustomerBillingFiles(targetMonth)
+                : repository
+                        .findAllByTargetMonthAndClosingVersionAndDeletedAtIsNullOrderByTargetNameAscIdAsc(
+                                targetMonth,
+                                closingVersion
+                        );
+        return files
                 .stream()
                 .filter(file -> matchesReportCode(file.getReportCode(), reportCode))
                 .map(this::toResponse)
+                .toList();
+    }
+
+    private List<MonthlyClosingReportFile> findLatestCustomerBillingFiles(
+            String targetMonth
+    ) {
+        Set<String> latestTargets = new HashSet<>();
+        return repository
+                .findAllByTargetMonthAndClosingScopeAndDeletedAtIsNullOrderByIdDesc(
+                        targetMonth,
+                        "CUSTOMER_BILLING"
+                )
+                .stream()
+                .filter(file -> latestTargets.add(
+                        file.getReportCode() + ":" + file.getTargetId()
+                ))
                 .toList();
     }
 
