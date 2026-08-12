@@ -85,6 +85,7 @@ public interface DailyReportMapper {
             entity.setOvertimeHours(BigDecimal.ZERO);
             entity.setNightWorkHours(BigDecimal.ZERO);
             entity.setHolidayWorkHours(BigDecimal.ZERO);
+            entity.setHolidayPremiumEligible(false);
 
             entity.setAllowanceAmount(BigDecimal.ZERO);
             entity.setDeductionAmount(BigDecimal.ZERO);
@@ -114,12 +115,16 @@ public interface DailyReportMapper {
                         request.workHours(),
                         request.overtimeHours(),
                         request.nightWorkHours(),
-                        request.holidayWorkHours()
+                        request.holidayWorkHours(),
+                        Boolean.TRUE.equals(request.holidayPremiumEligible())
                 );
         entity.setWorkHours(workTimes.workHours());
         entity.setOvertimeHours(workTimes.overtimeHours());
         entity.setNightWorkHours(workTimes.nightWorkHours());
         entity.setHolidayWorkHours(workTimes.holidayWorkHours());
+        entity.setHolidayPremiumEligible(
+                Boolean.TRUE.equals(request.holidayPremiumEligible())
+        );
 
         entity.setAllowanceAmount(
                 nvl(request.allowanceAmount())

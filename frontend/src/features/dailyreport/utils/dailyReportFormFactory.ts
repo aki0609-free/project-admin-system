@@ -48,6 +48,7 @@ export const createEmptyDailyReportForm =
     overtimeHours: 0,
     nightWorkHours: 0,
     holidayWorkHours: 0,
+    holidayPremiumEligible: false,
 
     allowanceAmount: 0,
     deductionAmount: 0,
@@ -168,6 +169,9 @@ export const toDailyReportForm = (
 
   holidayWorkHours:
     item.holidayWorkHours ?? 0,
+
+  holidayPremiumEligible:
+    item.holidayPremiumEligible ?? false,
 
   allowanceAmount:
     item.allowanceAmount ?? 0,

@@ -50,6 +50,7 @@ import {
 
 import {
   calculateDailyReportWorkTimes,
+  isWeekendDate,
 } from '@/features/dailyreport/utils/dailyReportTimeCalculator'
 
 import {
@@ -273,6 +274,9 @@ export const useDailyReportEditDialog = (
 
         breakMinutes:
           formModel.breakMinutes,
+
+        holidayPremiumEligible:
+          formModel.holidayPremiumEligible,
       })
 
     if (!result) {
@@ -447,6 +451,8 @@ export const useDailyReportEditDialog = (
     ) {
       formModel.workDate =
         createParams.value.workDate
+      formModel.holidayPremiumEligible =
+        isWeekendDate(formModel.workDate)
     }
 
     activeTab.value = 'basic'
@@ -646,11 +652,27 @@ export const useDailyReportEditDialog = (
   )
 
   watch(
+    () => formModel.workDate,
+    (workDate, previousWorkDate) => {
+      if (
+        applyingDetail.value
+        || workDate === previousWorkDate
+      ) {
+        return
+      }
+
+      formModel.holidayPremiumEligible =
+        isWeekendDate(workDate)
+    },
+  )
+
+  watch(
     () => [
       formModel.workDate,
       formModel.startTime,
       formModel.endTime,
       formModel.breakMinutes,
+      formModel.holidayPremiumEligible,
     ],
     calculateWorkTimes,
   )

@@ -17,4 +17,11 @@ public interface MonthlyInvoiceHistoryRepository
                     LocalDate targetMonth,
                     Integer closingVersion
             );
+
+    List<MonthlyInvoiceHistory>
+            findByTargetMonthAndClosingVersionAndCustomerIdAndDeletedAtIsNullOrderByIdAsc(
+                    LocalDate targetMonth,
+                    Integer closingVersion,
+                    Long customerId
+            );
 }

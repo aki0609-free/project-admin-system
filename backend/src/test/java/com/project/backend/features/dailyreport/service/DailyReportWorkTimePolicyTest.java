@@ -10,14 +10,15 @@ import org.junit.jupiter.api.Test;
 class DailyReportWorkTimePolicyTest {
 
     @Test
-    void saturdayWork_shouldMoveNormalAndOvertimeToHoliday() {
+    void eligibleHolidayWork_shouldMoveNormalAndOvertimeToHoliday() {
         DailyReportWorkTimePolicy.WorkTimes result =
                 DailyReportWorkTimePolicy.resolve(
                         LocalDate.of(2026, 8, 8),
                         new BigDecimal("8"),
                         new BigDecimal("2"),
                         new BigDecimal("1"),
-                        BigDecimal.ZERO
+                        BigDecimal.ZERO,
+                        true
                 );
 
         assertThat(result.workHours()).isZero();
@@ -34,12 +35,30 @@ class DailyReportWorkTimePolicyTest {
                         new BigDecimal("8"),
                         new BigDecimal("2"),
                         new BigDecimal("1"),
-                        BigDecimal.ZERO
+                        BigDecimal.ZERO,
+                        false
                 );
 
         assertThat(result.workHours()).isEqualByComparingTo("8");
         assertThat(result.overtimeHours()).isEqualByComparingTo("2");
         assertThat(result.nightWorkHours()).isEqualByComparingTo("1");
+        assertThat(result.holidayWorkHours()).isZero();
+    }
+
+    @Test
+    void saturdayWork_shouldRemainRegularWhenHolidayPremiumIsNotSelected() {
+        DailyReportWorkTimePolicy.WorkTimes result =
+                DailyReportWorkTimePolicy.resolve(
+                        LocalDate.of(2026, 8, 8),
+                        new BigDecimal("8"),
+                        new BigDecimal("2"),
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        false
+                );
+
+        assertThat(result.workHours()).isEqualByComparingTo("8");
+        assertThat(result.overtimeHours()).isEqualByComparingTo("2");
         assertThat(result.holidayWorkHours()).isZero();
     }
 }

@@ -52,6 +52,9 @@
     <field name="deduction_total" class="java.math.BigDecimal"/>
     <field name="daily_payment_amount" class="java.math.BigDecimal"/>
     <field name="net_payment_amount" class="java.math.BigDecimal"/>
+    <field name="legal_deposit_balance" class="java.math.BigDecimal"/>
+    <field name="loan_balance" class="java.math.BigDecimal"/>
+    <field name="saving_balance" class="java.math.BigDecimal"/>
     <field name="note" class="java.lang.String"/>
 
     <field name="allowance_item_name1" class="java.lang.String"/>
@@ -209,10 +212,17 @@
                 <textField><reportElement style="CellRight" x="196" y="235" width="98" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{daily_payment_amount})]]></textFieldExpression></textField>
                 <textField><reportElement style="NetValue" x="294" y="235" width="194" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{net_payment_amount}) + " 円"]]></textFieldExpression></textField>
 
-                <staticText><reportElement style="Header" x="0" y="265" width="64" height="18"/><text><![CDATA[備考]]></text></staticText>
-                <textField isBlankWhenNull="true"><reportElement style="Cell" x="64" y="265" width="424" height="18"/><textFieldExpression><![CDATA[$F{note}]]></textFieldExpression></textField>
+                <staticText><reportElement style="Header" x="0" y="261" width="81" height="16"/><text><![CDATA[法定預り残高]]></text></staticText>
+                <textField><reportElement style="CellRight" x="81" y="261" width="81" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{legal_deposit_balance} == null ? java.math.BigDecimal.ZERO : $F{legal_deposit_balance})]]></textFieldExpression></textField>
+                <staticText><reportElement style="Header" x="162" y="261" width="81" height="16"/><text><![CDATA[借入金残高]]></text></staticText>
+                <textField><reportElement style="CellRight" x="243" y="261" width="81" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{loan_balance} == null ? java.math.BigDecimal.ZERO : $F{loan_balance})]]></textFieldExpression></textField>
+                <staticText><reportElement style="Header" x="324" y="261" width="81" height="16"/><text><![CDATA[貯金残高]]></text></staticText>
+                <textField><reportElement style="CellRight" x="405" y="261" width="83" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{saving_balance} == null ? java.math.BigDecimal.ZERO : $F{saving_balance})]]></textFieldExpression></textField>
+
+                <staticText><reportElement style="Header" x="0" y="281" width="64" height="18"/><text><![CDATA[備考]]></text></staticText>
+                <textField isBlankWhenNull="true"><reportElement style="Cell" x="64" y="281" width="424" height="18"/><textFieldExpression><![CDATA[$F{note}]]></textFieldExpression></textField>
                 <staticText>
-                    <reportElement style="Base" x="0" y="288" width="488" height="24"/>
+                    <reportElement style="Base" x="0" y="302" width="488" height="20"/>
                     <text><![CDATA[※上記の金額を正に領収しました。　氏名：　　　　　　　　　　　　　　印]]></text>
                 </staticText>
                 <line><reportElement x="0" y="325" width="488" height="1"/><graphicElement><pen lineStyle="Dashed" lineColor="#9CA3AF"/></graphicElement></line>

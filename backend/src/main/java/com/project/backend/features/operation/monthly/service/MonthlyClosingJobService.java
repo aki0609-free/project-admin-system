@@ -5,11 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.project.backend.features.customer.entity.Customer;
-import com.project.backend.features.customer.repository.CustomerRepository;
-import com.project.backend.features.customer.service.resolver.InvoiceReportCodeResolver;
 import com.project.backend.features.operation.monthly.dto.MonthlyClosingPeriod;
-import com.project.backend.features.operation.monthly.dto.MonthlyClosingReportTarget;
 import com.project.backend.features.operation.monthly.entity.MonthlyClosingOutputDefinition;
 import com.project.backend.features.operation.monthly.enums.MonthlyClosingOutputType;
 import com.project.backend.features.operation.monthly.repository.MonthlyClosingOutputDefinitionRepository;
@@ -27,16 +23,12 @@ public class MonthlyClosingJobService {
 
     private static final String MONTHLY_INVOICE_JOB_CODE =
             "PRINT_MONTHLY_INVOICE";
+    private static final String MONTHLY_ORDER_FORM_JOB_CODE =
+            "PRINT_MONTHLY_ORDER_FORM";
 
     private final OperationReportPreviewRepository previewRepository;
     private final MonthlyClosingOutputDefinitionRepository outputDefinitionRepository;
-    private final CustomerRepository customerRepository;
-    private final MonthlyInvoiceTargetCustomerQueryService
-            invoiceTargetCustomerQueryService;
-    private final InvoiceReportCodeResolver invoiceReportCodeResolver;
     private final MonthlyClosingJobExecutor executor;
-    private final MonthlyClosingCustomerTransactionService
-            customerTransactionService;
 
     public void executeClosing(
             Long monthlyClosingId,
@@ -50,8 +42,6 @@ public class MonthlyClosingJobService {
             );
         }
 
-        boolean monthlyInvoiceExecuted = false;
-
         for (OperationReportPreview preview : previews) {
             String jobCode =
                     preview.getJobCode();
@@ -63,15 +53,9 @@ public class MonthlyClosingJobService {
                 );
             }
 
-            if (MONTHLY_INVOICE_JOB_CODE.equals(jobCode)) {
-                int generatedInvoiceCount = executeMonthlyInvoice(
-                        monthlyClosingId,
-                        preview,
-                        period,
-                        closingVersion
-                );
-                monthlyInvoiceExecuted = generatedInvoiceCount > 0;
-
+            if (MONTHLY_INVOICE_JOB_CODE.equals(jobCode)
+                    || MONTHLY_ORDER_FORM_JOB_CODE.equals(jobCode)) {
+                // 顧客向け帳票は顧客別締日の「顧客請求締め」で確定する。
                 continue;
             }
 
@@ -83,12 +67,6 @@ public class MonthlyClosingJobService {
             );
         }
 
-        if (monthlyInvoiceExecuted) {
-            customerTransactionService.synchronize(
-                    period.targetMonth(),
-                    closingVersion
-            );
-        }
     }
 
     private List<OperationReportPreview> resolveClosingReports() {
@@ -128,45 +106,4 @@ public class MonthlyClosingJobService {
                 .toList();
     }
 
-    private int executeMonthlyInvoice(
-            Long monthlyClosingId,
-            OperationReportPreview preview,
-            MonthlyClosingPeriod period,
-            Integer closingVersion
-    ) {
-        List<Long> customerIds = invoiceTargetCustomerQueryService
-                .findTargetCustomerIds(
-                        period.startDate(),
-                        period.endDate()
-                );
-        if (customerIds.isEmpty()) {
-            return 0;
-        }
-        List<Customer> customers = customerRepository
-                .findByIdInAndDeletedAtIsNullOrderByIdAsc(customerIds);
-        if (customers.size() != customerIds.size()) {
-            throw new IllegalStateException(
-                    "月次請求対象に削除済みまたは存在しない顧客が含まれています。"
-            );
-        }
-
-        for (Customer customer : customers) {
-            String reportCode = invoiceReportCodeResolver.resolve(
-                    customer.getInvoiceType()
-            );
-
-            executor.execute(
-                    monthlyClosingId,
-                    preview,
-                    period,
-                    closingVersion,
-                    MonthlyClosingReportTarget.customer(
-                            customer.getId(),
-                            customer.getName()
-                    ),
-                    reportCode
-            );
-        }
-        return customers.size();
-    }
 }

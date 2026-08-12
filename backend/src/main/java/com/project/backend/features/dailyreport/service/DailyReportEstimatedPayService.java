@@ -44,7 +44,8 @@ public class DailyReportEstimatedPayService {
                         request.workHours(),
                         request.overtimeHours(),
                         request.nightWorkHours(),
-                        request.holidayWorkHours()
+                        request.holidayWorkHours(),
+                        Boolean.TRUE.equals(request.holidayPremiumEligible())
                 );
         DailyReport report = new DailyReport();
         report.setWorkDate(request.workDate());
@@ -57,6 +58,9 @@ public class DailyReportEstimatedPayService {
         report.setOvertimeHours(workTimes.overtimeHours());
         report.setNightWorkHours(workTimes.nightWorkHours());
         report.setHolidayWorkHours(workTimes.holidayWorkHours());
+        report.setHolidayPremiumEligible(
+                Boolean.TRUE.equals(request.holidayPremiumEligible())
+        );
         report.setMileage(nvl(request.mileage()));
         report.setAllowanceAmount(nvl(request.allowanceAmount()));
         report.setDeductionAmount(nvl(request.deductionAmount()));

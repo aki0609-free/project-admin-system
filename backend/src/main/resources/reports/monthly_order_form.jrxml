@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="monthly_order_form" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="802" leftMargin="20" rightMargin="20" topMargin="18" bottomMargin="18" whenNoDataType="NoDataSection">
+  <property name="net.sf.jasperreports.default.font.name" value="IPAexGothic"/>
+  <style name="Base" fontName="IPAexGothic" fontSize="9" pdfFontName="fonts/ipaexg.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+  <style name="Small" style="Base" fontSize="7"/>
+  <style name="Label" style="Base" isBold="true" hTextAlign="Center" vTextAlign="Middle"><box><pen lineWidth="0.6"/></box></style>
+  <style name="Cell" style="Base" vTextAlign="Middle"><box><pen lineWidth="0.6"/></box></style>
+  <style name="CellCenter" style="Cell" hTextAlign="Center"/>
+  <style name="CellRight" style="Cell" hTextAlign="Right"/>
+  <style name="Title" style="Base" fontSize="24" isBold="true" hTextAlign="Center"/>
+  <style name="Amount" style="CellRight" fontSize="16" isBold="true"/>
+  <parameter name="MONEY_FORMAT" class="java.text.DecimalFormat"><defaultValueExpression><![CDATA[new java.text.DecimalFormat("#,##0")]]></defaultValueExpression></parameter>
+  <parameter name="DATE_FORMAT" class="java.text.SimpleDateFormat"><defaultValueExpression><![CDATA[new java.text.SimpleDateFormat("yyyy年M月d日")]]></defaultValueExpression></parameter>
+  <field name="order_number" class="java.lang.String"/>
+  <field name="order_date" class="java.sql.Date"/>
+  <field name="contract_from" class="java.sql.Date"/>
+  <field name="contract_to" class="java.sql.Date"/>
+  <field name="subject_text" class="java.lang.String"/>
+  <field name="work_description" class="java.lang.String"/>
+  <field name="subcontractor_name" class="java.lang.String"/>
+  <field name="subcontractor_postal_code" class="java.lang.String"/>
+  <field name="subcontractor_address" class="java.lang.String"/>
+  <field name="prime_contractor_name" class="java.lang.String"/>
+  <field name="prime_contractor_postal_code" class="java.lang.String"/>
+  <field name="prime_contractor_address" class="java.lang.String"/>
+  <field name="show_prime_contractor" class="java.lang.Boolean"/>
+  <field name="construction_price" class="java.math.BigDecimal"/>
+  <field name="tax_amount" class="java.math.BigDecimal"/>
+  <field name="contract_amount" class="java.math.BigDecimal"/>
+  <title><band height="525" splitType="Prevent">
+    <staticText><reportElement style="Title" x="250" y="0" width="302" height="38"/><text><![CDATA[注　　文　　書]]></text></staticText>
+    <textField><reportElement style="Base" x="595" y="8" width="207" height="20"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA[$P{DATE_FORMAT}.format($F{order_date})]]></textFieldExpression></textField>
+    <staticText><reportElement style="Small" x="0" y="45" width="80" height="16"/><text><![CDATA[（下請負人）]]></text></staticText>
+    <rectangle><reportElement x="0" y="42" width="405" height="70"/></rectangle>
+    <staticText><reportElement style="Base" x="15" y="66" width="48" height="18"/><text><![CDATA[住　所]]></text></staticText>
+    <textField isBlankWhenNull="true"><reportElement style="Base" x="65" y="66" width="330" height="18"/><textFieldExpression><![CDATA[(($F{subcontractor_postal_code} == null || $F{subcontractor_postal_code}.isBlank()) ? "" : "〒" + $F{subcontractor_postal_code} + "　") + ($F{subcontractor_address} == null ? "" : $F{subcontractor_address})]]></textFieldExpression></textField>
+    <staticText><reportElement style="Base" x="15" y="89" width="48" height="18"/><text><![CDATA[氏　名]]></text></staticText>
+    <textField><reportElement style="Base" x="65" y="89" width="330" height="18"/><textFieldExpression><![CDATA[$F{subcontractor_name} + "　御中"]]></textFieldExpression></textField>
+    <staticText><reportElement style="Small" x="440" y="45" width="80" height="16"/><text><![CDATA[（元請負人）]]></text></staticText>
+    <staticText><reportElement style="Base" x="455" y="66" width="48" height="18"/><text><![CDATA[住　所]]></text></staticText>
+    <textField isBlankWhenNull="true"><reportElement style="Base" x="505" y="66" width="297" height="18"><printWhenExpression><![CDATA[Boolean.TRUE.equals($F{show_prime_contractor})]]></printWhenExpression></reportElement><textFieldExpression><![CDATA[(($F{prime_contractor_postal_code} == null || $F{prime_contractor_postal_code}.isBlank()) ? "" : "〒" + $F{prime_contractor_postal_code} + "　") + ($F{prime_contractor_address} == null ? "" : $F{prime_contractor_address})]]></textFieldExpression></textField>
+    <staticText><reportElement style="Base" x="455" y="89" width="48" height="18"/><text><![CDATA[氏　名]]></text></staticText>
+    <textField isBlankWhenNull="true"><reportElement style="Base" x="505" y="89" width="267" height="18"><printWhenExpression><![CDATA[Boolean.TRUE.equals($F{show_prime_contractor})]]></printWhenExpression></reportElement><textFieldExpression><![CDATA[$F{prime_contractor_name}]]></textFieldExpression></textField>
+    <staticText><reportElement style="Base" x="772" y="89" width="30" height="18"/><text><![CDATA[印]]></text></staticText>
+    <staticText><reportElement style="Base" x="0" y="125" width="802" height="36"/><text><![CDATA[下記のとおり注文いたします。また本工事に伴う注文内容は、双方取り交わした請負基本契約書に全て準じ、工事を円滑に進めていただくこととする。]]></text></staticText>
+    <staticText><reportElement style="Label" x="0" y="170" width="100" height="28"/><text><![CDATA[コード番号]]></text></staticText>
+    <textField><reportElement style="CellCenter" x="100" y="170" width="180" height="28"/><textFieldExpression><![CDATA[$F{order_number}]]></textFieldExpression></textField>
+    <staticText><reportElement style="Label" x="280" y="170" width="100" height="28"/><text><![CDATA[見積番号]]></text></staticText>
+    <staticText><reportElement style="Cell" x="380" y="170" width="120" height="28"/><text><![CDATA[]]></text></staticText>
+    <staticText><reportElement style="Label" x="500" y="170" width="145" height="28"/><text><![CDATA[請負代金額]]></text></staticText>
+    <textField><reportElement style="Amount" x="645" y="170" width="157" height="28"/><textFieldExpression><![CDATA["¥ " + $P{MONEY_FORMAT}.format($F{contract_amount})]]></textFieldExpression></textField>
+    <staticText><reportElement style="Label" x="0" y="198" width="100" height="78"/><text><![CDATA[件　名]]></text></staticText>
+    <textField><reportElement style="Cell" x="100" y="198" width="400" height="38"/><textFieldExpression><![CDATA[$F{subject_text}]]></textFieldExpression></textField>
+    <textField isBlankWhenNull="true"><reportElement style="Cell" x="100" y="236" width="400" height="40"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA[$F{work_description}]]></textFieldExpression></textField>
+    <staticText><reportElement style="Label" x="500" y="198" width="145" height="26"/><text><![CDATA[うち工事価格]]></text></staticText>
+    <textField><reportElement style="CellRight" x="645" y="198" width="157" height="26"/><textFieldExpression><![CDATA["¥ " + $P{MONEY_FORMAT}.format($F{construction_price})]]></textFieldExpression></textField>
+    <staticText><reportElement style="Label" x="500" y="224" width="145" height="52"/><text><![CDATA[取引に係る消費税及び地方消費税の額]]></text></staticText>
+    <textField><reportElement style="CellRight" x="645" y="224" width="157" height="52"/><textFieldExpression><![CDATA["¥ " + $P{MONEY_FORMAT}.format($F{tax_amount})]]></textFieldExpression></textField>
+    <staticText><reportElement style="Label" x="0" y="286" width="140" height="30"/><text><![CDATA[工期・納期]]></text></staticText>
+    <textField><reportElement style="CellCenter" x="140" y="286" width="360" height="30"/><textFieldExpression><![CDATA[$P{DATE_FORMAT}.format($F{contract_from}) + "　～　" + $P{DATE_FORMAT}.format($F{contract_to})]]></textFieldExpression></textField>
+    <staticText><reportElement style="Label" x="500" y="286" width="145" height="30"/><text><![CDATA[請求締切・支払]]></text></staticText>
+    <staticText><reportElement style="CellCenter" x="645" y="286" width="157" height="30"/><text><![CDATA[請負基本契約書に準ずる]]></text></staticText>
+    <staticText><reportElement style="Label" x="0" y="326" width="170" height="34"/><text><![CDATA[建設リサイクル法]]></text></staticText>
+    <staticText><reportElement style="CellCenter" x="170" y="326" width="130" height="34"/><text><![CDATA[該当しない]]></text></staticText>
+    <staticText><reportElement style="Label" x="300" y="326" width="100" height="34"/><text><![CDATA[運送]]></text></staticText>
+    <staticText><reportElement style="CellCenter" x="400" y="326" width="120" height="34"/><text><![CDATA[受注者負担]]></text></staticText>
+    <staticText><reportElement style="Label" x="520" y="326" width="100" height="34"/><text><![CDATA[労災保険]]></text></staticText>
+    <staticText><reportElement style="CellCenter" x="620" y="326" width="182" height="34"/><text><![CDATA[受注者加入]]></text></staticText>
+    <staticText><reportElement style="Label" x="0" y="372" width="90" height="48"/><text><![CDATA[支払条件]]></text></staticText>
+    <staticText><reportElement style="CellCenter" x="90" y="372" width="250" height="48"/><text><![CDATA[部分払・完成払　現金 100%]]></text></staticText>
+    <staticText><reportElement style="Label" x="340" y="372" width="120" height="48"/><text><![CDATA[履行遅滞の遅延利息]]></text></staticText>
+    <staticText><reportElement style="CellCenter" x="460" y="372" width="142" height="48"/><text><![CDATA[年 8.25%／14.6%]]></text></staticText>
+    <staticText><reportElement style="Label" x="602" y="372" width="100" height="48"/><text><![CDATA[その他]]></text></staticText>
+    <staticText><reportElement style="Cell" x="702" y="372" width="100" height="48"/><text><![CDATA[]]></text></staticText>
+    <staticText><reportElement style="Small" x="0" y="435" width="802" height="38"/><text><![CDATA[（注）関係法令及び請負基本契約書の定めに従うものとします。]]></text></staticText>
+    <staticText><reportElement style="Label" x="590" y="480" width="52" height="28"/><text><![CDATA[担当]]></text></staticText>
+    <staticText><reportElement style="Cell" x="642" y="480" width="53" height="28"/><text><![CDATA[]]></text></staticText>
+    <staticText><reportElement style="Cell" x="695" y="480" width="53" height="28"/><text><![CDATA[]]></text></staticText>
+    <staticText><reportElement style="Cell" x="748" y="480" width="54" height="28"/><text><![CDATA[]]></text></staticText>
+  </band></title>
+  <noData><band height="60"><staticText><reportElement style="Base" x="0" y="10" width="802" height="30"/><textElement textAlignment="Center"/><text><![CDATA[注文書対象データがありません。]]></text></staticText></band></noData>
+</jasperReport>

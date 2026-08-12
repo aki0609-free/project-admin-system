@@ -164,6 +164,9 @@ public class DailyReportQueryService {
                             .holidayWorkHours(
                                     response.holidayWorkHours()
                             )
+                            .holidayPremiumEligible(
+                                    response.holidayPremiumEligible()
+                            )
 
                             .allowanceAmount(
                                     response.allowanceAmount()
@@ -341,6 +344,9 @@ public class DailyReportQueryService {
                 )
                 .holidayWorkHours(
                         entity.getHolidayWorkHours()
+                )
+                .holidayPremiumEligible(
+                        entity.isHolidayPremiumEligible()
                 )
 
                 .allowanceAmount(

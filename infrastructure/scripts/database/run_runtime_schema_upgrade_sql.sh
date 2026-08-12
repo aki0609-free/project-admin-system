@@ -153,6 +153,127 @@ if [[ "${verification}" != "11:5:3:4:1" ]]; then
   exit 1
 fi
 
+deduction_master_verification="$(
+  run_mysql "" --batch --skip-column-names --execute "
+    SELECT CONCAT(
+      (SELECT COUNT(*)
+       FROM deduction_masters
+       WHERE tenant_id = 'default'
+         AND deduction_code IN (
+           'INCOME_TAX',
+           'RESIDENT_TAX',
+           'HEALTH_INSURANCE',
+           'CHILD_SUPPORT',
+           'WELFARE_PENSION',
+           'EMPLOYMENT_INSURANCE',
+           'LEGAL_DEPOSIT',
+           'DORMITORY_FEE',
+           'MOBILE_RENTAL',
+           'WIFI_FEE'
+         )
+         AND enabled = TRUE
+         AND deleted_at IS NULL),
+      ':',
+      (SELECT COUNT(*)
+       FROM deduction_masters
+       WHERE tenant_id = 'default'
+         AND (calculation_type IS NULL
+              OR calculation_type NOT IN ('MANUAL', 'FIXED', 'AUTO'))
+         AND deleted_at IS NULL),
+      ':',
+      (SELECT COUNT(*)
+       FROM deduction_masters
+       WHERE tenant_id = 'default'
+         AND deduction_code = 'LEGAL_DEPOSIT'
+         AND calculation_type = 'MANUAL'
+         AND allow_manual_input = TRUE
+         AND deduction_unit = 'DAILY'
+         AND show_on_daily_statement = TRUE
+         AND show_on_monthly_statement = FALSE
+         AND carry_to_monthly_settlement = TRUE
+         AND deleted_at IS NULL),
+      ':',
+      (SELECT COUNT(*)
+       FROM deduction_masters
+       WHERE tenant_id = 'default'
+         AND deduction_code = 'WIFI_FEE'
+         AND calculation_type = 'MANUAL'
+         AND deduction_unit = 'MONTHLY'
+         AND show_on_daily_statement = FALSE
+         AND show_on_monthly_statement = TRUE
+         AND carry_to_monthly_settlement = TRUE
+         AND deleted_at IS NULL)
+    );
+  "
+)"
+
+if [[ "${deduction_master_verification}" != "10:0:1:1" ]]; then
+  echo "Deduction master verification failed: ${deduction_master_verification}" >&2
+  exit 1
+fi
+
+closing_notice_backup_verification="$(
+  run_mysql "" --batch --skip-column-names --execute "
+    SELECT CONCAT(
+      (SELECT COUNT(*)
+       FROM notice_rule
+       WHERE tenant_id = 'default'
+         AND rule_code IN (
+           'CUSTOMER_CLOSING_DAY',
+           'COMPANY_PAYROLL_CLOSING_DAY'
+         )
+         AND target_date_source_type = 'DAY_RULE'
+         AND date_type = 'EXACT_DAY'
+         AND active_flag = TRUE
+         AND deleted_at IS NULL),
+      ':',
+      (SELECT COUNT(*)
+       FROM backup_target
+       WHERE tenant_id = 'default'
+         AND target_code IN (
+           'BACKUP_CUSTOMERS',
+           'BACKUP_CUSTOMER_TRANSACTIONS',
+           'BACKUP_EMPLOYEES',
+           'BACKUP_DAILY_REPORTS'
+         )
+         AND output_mode = 'DOWNLOAD'
+         AND zip_required = TRUE
+         AND backup_enabled = TRUE
+         AND active_flag = TRUE
+         AND deleted_at IS NULL),
+      ':',
+      (SELECT COUNT(*)
+       FROM backup_target target
+       WHERE target.tenant_id = 'default'
+         AND target.target_code IN (
+           'BACKUP_CUSTOMERS',
+           'BACKUP_CUSTOMER_TRANSACTIONS',
+           'BACKUP_EMPLOYEES',
+           'BACKUP_DAILY_REPORTS'
+         )
+         AND EXISTS (
+           SELECT 1
+           FROM information_schema.columns source_column
+           WHERE source_column.table_schema = DATABASE()
+             AND source_column.table_name = target.table_name
+             AND NOT EXISTS (
+               SELECT 1
+               FROM backup_column definition_column
+               WHERE definition_column.target_id = target.id
+                 AND definition_column.column_name = source_column.column_name
+                 AND definition_column.export_flag = TRUE
+                 AND definition_column.deleted_at IS NULL
+             )
+         ))
+    );
+  "
+)"
+
+if [[ "${closing_notice_backup_verification}" != "2:4:0" ]]; then
+  echo "Closing notice / business backup verification failed: ${closing_notice_backup_verification}" >&2
+  exit 1
+fi
+
 daily_preview_verification="$(
   run_mysql "" --batch --skip-column-names --execute "
     SELECT CONCAT(

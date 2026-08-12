@@ -79,6 +79,9 @@ CREATE TABLE IF NOT EXISTS monthly_pay_slip_history (
     other_deduction_total DECIMAL(15, 2) NOT NULL DEFAULT 0,
     deduction_total DECIMAL(15, 2) NOT NULL DEFAULT 0,
     advance_payment_amount DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    saving_balance DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    loan_balance DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    legal_deposit_refund_amount DECIMAL(15, 2) NOT NULL DEFAULT 0,
     net_payment_amount DECIMAL(15, 2) NOT NULL DEFAULT 0,
 
     source_view_name VARCHAR(200) NOT NULL,
@@ -106,6 +109,51 @@ CREATE TABLE IF NOT EXISTS monthly_pay_slip_history (
     INDEX idx_monthly_pay_slip_history_employee
         (tenant_id, employee_id, target_month, closing_version)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @monthly_history_saving_balance_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_pay_slip_history'
+      AND column_name = 'saving_balance'
+);
+SET @monthly_history_saving_balance_sql := IF(
+    @monthly_history_saving_balance_exists = 0,
+    'ALTER TABLE monthly_pay_slip_history ADD COLUMN saving_balance DECIMAL(15,2) NOT NULL DEFAULT 0 AFTER advance_payment_amount',
+    'SELECT 1'
+);
+PREPARE statement FROM @monthly_history_saving_balance_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
+SET @monthly_history_loan_balance_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_pay_slip_history'
+      AND column_name = 'loan_balance'
+);
+SET @monthly_history_loan_balance_sql := IF(
+    @monthly_history_loan_balance_exists = 0,
+    'ALTER TABLE monthly_pay_slip_history ADD COLUMN loan_balance DECIMAL(15,2) NOT NULL DEFAULT 0 AFTER saving_balance',
+    'SELECT 1'
+);
+PREPARE statement FROM @monthly_history_loan_balance_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
+SET @monthly_history_legal_refund_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_pay_slip_history'
+      AND column_name = 'legal_deposit_refund_amount'
+);
+SET @monthly_history_legal_refund_sql := IF(
+    @monthly_history_legal_refund_exists = 0,
+    'ALTER TABLE monthly_pay_slip_history ADD COLUMN legal_deposit_refund_amount DECIMAL(15,2) NOT NULL DEFAULT 0 AFTER loan_balance',
+    'SELECT 1'
+);
+PREPARE statement FROM @monthly_history_legal_refund_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
 
 CREATE TABLE IF NOT EXISTS monthly_pay_slip_history_item (
     id BIGINT NOT NULL AUTO_INCREMENT,
@@ -178,6 +226,9 @@ CREATE TABLE IF NOT EXISTS monthly_pay_slip_render_output (
     other_deduction_total DECIMAL(15, 2) NOT NULL DEFAULT 0,
     deduction_total DECIMAL(15, 2) NOT NULL DEFAULT 0,
     advance_payment_amount DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    saving_balance DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    loan_balance DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    legal_deposit_refund_amount DECIMAL(15, 2) NOT NULL DEFAULT 0,
     net_payment_amount DECIMAL(15, 2) NOT NULL DEFAULT 0,
 
     tenant_id VARCHAR(255) NOT NULL,
@@ -193,6 +244,51 @@ CREATE TABLE IF NOT EXISTS monthly_pay_slip_render_output (
     INDEX idx_monthly_pay_slip_render_delivery
         (tenant_id, execution_id, business_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @monthly_output_saving_balance_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_pay_slip_render_output'
+      AND column_name = 'saving_balance'
+);
+SET @monthly_output_saving_balance_sql := IF(
+    @monthly_output_saving_balance_exists = 0,
+    'ALTER TABLE monthly_pay_slip_render_output ADD COLUMN saving_balance DECIMAL(15,2) NOT NULL DEFAULT 0 AFTER advance_payment_amount',
+    'SELECT 1'
+);
+PREPARE statement FROM @monthly_output_saving_balance_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
+SET @monthly_output_loan_balance_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_pay_slip_render_output'
+      AND column_name = 'loan_balance'
+);
+SET @monthly_output_loan_balance_sql := IF(
+    @monthly_output_loan_balance_exists = 0,
+    'ALTER TABLE monthly_pay_slip_render_output ADD COLUMN loan_balance DECIMAL(15,2) NOT NULL DEFAULT 0 AFTER saving_balance',
+    'SELECT 1'
+);
+PREPARE statement FROM @monthly_output_loan_balance_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
+SET @monthly_output_legal_refund_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_pay_slip_render_output'
+      AND column_name = 'legal_deposit_refund_amount'
+);
+SET @monthly_output_legal_refund_sql := IF(
+    @monthly_output_legal_refund_exists = 0,
+    'ALTER TABLE monthly_pay_slip_render_output ADD COLUMN legal_deposit_refund_amount DECIMAL(15,2) NOT NULL DEFAULT 0 AFTER loan_balance',
+    'SELECT 1'
+);
+PREPARE statement FROM @monthly_output_legal_refund_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
 
 CREATE TABLE IF NOT EXISTS monthly_pay_slip_render_output_item (
     id BIGINT NOT NULL AUTO_INCREMENT,
@@ -480,6 +576,9 @@ BEGIN
             other_deduction_total,
             deduction_total,
             advance_payment_amount,
+            saving_balance,
+            loan_balance,
+            legal_deposit_refund_amount,
             net_payment_amount,
             source_view_name,
             source_execution_id,
@@ -522,6 +621,9 @@ BEGIN
             source.other_deduction_total,
             source.deduction_total,
             source.advance_payment_amount,
+            source.saving_balance,
+            source.loan_balance,
+            source.legal_deposit_refund_amount,
             source.net_payment_amount,
             'vw_monthly_pay_slip_latest',
             p_execution_id,
@@ -620,6 +722,9 @@ BEGIN
         other_deduction_total,
         deduction_total,
         advance_payment_amount,
+        saving_balance,
+        loan_balance,
+        legal_deposit_refund_amount,
         net_payment_amount,
         tenant_id,
         created_at,
@@ -665,6 +770,9 @@ BEGIN
         history.other_deduction_total,
         history.deduction_total,
         history.advance_payment_amount,
+        history.saving_balance,
+        history.loan_balance,
+        history.legal_deposit_refund_amount,
         history.net_payment_amount,
         history.tenant_id,
         NOW(6),

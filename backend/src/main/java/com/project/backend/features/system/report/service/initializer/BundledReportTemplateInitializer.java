@@ -34,6 +34,7 @@ public class BundledReportTemplateInitializer implements ApplicationRunner {
             "monthly_invoice_pattern_1.jrxml",
             "monthly_invoice_pattern_2.jrxml",
             "monthly_invoice_pattern_3.jrxml",
+            "monthly_order_form.jrxml",
             "daily_work_order.jrxml",
             "monthly_labor_cost_list.xlsx"
     );

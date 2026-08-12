@@ -71,6 +71,9 @@ export type DailyReportForm = {
    */
   holidayWorkHours: number
 
+  /** 会社カレンダー・運用判断による休日割増対象。 */
+  holidayPremiumEligible: boolean
+
   allowanceAmount: number
   deductionAmount: number
 

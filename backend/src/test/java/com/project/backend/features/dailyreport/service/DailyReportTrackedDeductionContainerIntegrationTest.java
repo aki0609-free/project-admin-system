@@ -128,7 +128,7 @@ class DailyReportTrackedDeductionContainerIntegrationTest
                     assertThat(item.isManualOverrideFlag()).isFalse();
                 });
         assertThat(created.deductionAmount()).isEqualByComparingTo("2350");
-        assertThat(created.estimatedNetPayAmount()).isEqualByComparingTo("12650");
+        assertThat(created.estimatedNetPayAmount()).isEqualByComparingTo("13400");
         assertRemaining(employee, dormitory, 28);
         assertRemaining(employee, mobile, 26);
 
@@ -145,7 +145,7 @@ class DailyReportTrackedDeductionContainerIntegrationTest
         assertThat(updatedMobile.isManualOverrideFlag()).isTrue();
         assertThat(updatedMobile.getOverrideReason()).isEqualTo("会社支給端末の調整");
         assertThat(updated.deductionAmount()).isEqualByComparingTo("2250");
-        assertThat(updated.estimatedNetPayAmount()).isEqualByComparingTo("12750");
+        assertThat(updated.estimatedNetPayAmount()).isEqualByComparingTo("13500");
         assertRemaining(employee, dormitory, 28);
         assertRemaining(employee, mobile, 26);
     }
@@ -283,6 +283,7 @@ class DailyReportTrackedDeductionContainerIntegrationTest
                 new BigDecimal("2"),
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,
+                false,
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,

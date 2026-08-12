@@ -101,6 +101,9 @@ export const toDailyReportSaveRequest = (
         form.holidayWorkHours ?? 0,
       ),
 
+    holidayPremiumEligible:
+      Boolean(form.holidayPremiumEligible),
+
     allowanceAmount:
       Number(
         form.allowanceAmount ?? 0,

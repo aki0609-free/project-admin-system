@@ -51,6 +51,24 @@ public class MonthlyClosingJobExecutor {
                         Integer closingVersion,
                         MonthlyClosingReportTarget target,
                         String resolvedReportCode) {
+                execute(
+                                monthlyClosingId,
+                                preview,
+                                period,
+                                closingVersion,
+                                target,
+                                resolvedReportCode,
+                                "COMPANY");
+        }
+
+        public void execute(
+                        Long closingReferenceId,
+                        OperationReportPreview preview,
+                        MonthlyClosingPeriod period,
+                        Integer closingVersion,
+                        MonthlyClosingReportTarget target,
+                        String resolvedReportCode,
+                        String closingScope) {
                 Map<String, Object> parameters = new HashMap<>();
 
                 parameters.put("targetMonth", period.targetMonth());
@@ -96,7 +114,8 @@ public class MonthlyClosingJobExecutor {
                 validateGeneratedFile(preview, result);
                 MonthlyClosingReportFile file = new MonthlyClosingReportFile();
 
-                file.setMonthlyClosingId(monthlyClosingId);
+                file.setMonthlyClosingId(closingReferenceId);
+                file.setClosingScope(closingScope);
                 file.setTargetMonth(period.targetMonth());
                 file.setClosingVersion(closingVersion);
                 file.setReportCode(

@@ -58,9 +58,9 @@ class PayrollBusinessFlowContainerIntegrationTest
         var report = dailyReportCommandService.create(dailyReportRequest(employee.getId()));
 
         assertThat(report.normalPayAmount()).isEqualByComparingTo("12000");
-        assertThat(report.overtimePayAmount()).isEqualByComparingTo("3000");
-        assertThat(report.estimatedGrossPayAmount()).isEqualByComparingTo("15000");
-        assertThat(report.estimatedNetPayAmount()).isEqualByComparingTo("15000");
+        assertThat(report.overtimePayAmount()).isEqualByComparingTo("3750");
+        assertThat(report.estimatedGrossPayAmount()).isEqualByComparingTo("15750");
+        assertThat(report.estimatedNetPayAmount()).isEqualByComparingTo("15750");
         assertThat(report.approvalStatus()).isEqualTo(ApprovalStatus.APPROVED);
 
         assertThat(residentTaxMonthlyRepository
@@ -72,10 +72,10 @@ class PayrollBusinessFlowContainerIntegrationTest
         var summary = monthlySummaryService.findSummary("2026-08");
         assertThat(summary.employeeCount()).isEqualTo(1);
         assertThat(summary.workReportCount()).isEqualTo(1);
-        assertThat(summary.totalGrossAmount()).isEqualByComparingTo("15000");
+        assertThat(summary.totalGrossAmount()).isEqualByComparingTo("15750");
         assertThat(summary.totalDeductionAmount()).isEqualByComparingTo("0");
         assertThat(summary.totalDailyPaymentAmount()).isEqualByComparingTo("0");
-        assertThat(summary.totalNetPaymentAmount()).isEqualByComparingTo("15000");
+        assertThat(summary.totalNetPaymentAmount()).isEqualByComparingTo("15750");
     }
 
     private Employee saveEmployeeAndContract() {
@@ -138,6 +138,7 @@ class PayrollBusinessFlowContainerIntegrationTest
                 new BigDecimal("2"),
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,
+                false,
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,

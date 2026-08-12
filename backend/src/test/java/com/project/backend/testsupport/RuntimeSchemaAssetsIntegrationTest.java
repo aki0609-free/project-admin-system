@@ -3,7 +3,12 @@ package com.project.backend.testsupport;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
+import java.io.ByteArrayInputStream;
 import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +21,11 @@ import com.project.backend.features.tax.dto.ResidentTaxDraftSaveRequest;
 import com.project.backend.features.tax.dto.ResidentTaxEmployeeInput;
 import com.project.backend.features.tax.dto.ResidentTaxMonthInput;
 import com.project.backend.features.tax.service.ResidentTaxEditorService;
+import com.project.backend.app.tenant.context.TenantContext;
+import com.project.backend.features.system.backup.dto.BackupExecutionResult;
+import com.project.backend.features.system.backup.service.BackupExecutionService;
+import com.project.backend.features.system.notice.dto.NoticeGenerateResult;
+import com.project.backend.features.system.notice.service.NoticeAutoGenerateService;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
@@ -29,11 +39,17 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
     @Autowired
     private ResidentTaxEditorService residentTaxEditorService;
 
+    @Autowired
+    private BackupExecutionService backupExecutionService;
+
+    @Autowired
+    private NoticeAutoGenerateService noticeAutoGenerateService;
+
     @Test
     void productionSchemaAssetsApplyToFreshMySql() throws Exception {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
-        assertThat(resources).hasSize(32);
+        assertThat(resources).hasSize(38);
         RuntimeSchemaAssetInstaller.apply(mysqlContainer, resources);
         RuntimeSchemaAssetInstaller.apply(
                 mysqlContainer,
@@ -49,22 +65,178 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 "employee_payroll_item_transaction",
                 "annual_report_backup_setting",
                 "annual_report_backup_execution",
-                "annual_report_backup_file"
-        )).isEqualTo(9);
+                "annual_report_backup_file",
+                "customer_billing_closings",
+                "monthly_order_form_input",
+                "monthly_order_form_history",
+                "monthly_order_form_render_execution",
+                "employee_legal_deposit_refund"
+        )).isEqualTo(14);
         assertThat(countViews(
                 "vw_daily_labor_cost_preview",
                 "vw_daily_payment_preparation_preview",
                 "vw_daily_pay_slip_latest",
                 "vw_monthly_pay_slip_latest",
-                "vw_employee_payroll_item_transaction_confirmed"
-        )).isEqualTo(5);
+                "vw_employee_payroll_item_transaction_confirmed",
+                "vw_employee_legal_deposit_balance",
+                "vw_monthly_order_form_render"
+        )).isEqualTo(7);
         assertThat(countProcedures(
                 "sp_daily_pay_slip_prepare",
                 "sp_monthly_pay_slip_snapshot",
                 "sp_monthly_invoice_snapshot",
                 "sp_monthly_labor_cost_list_snapshot",
-                "sp_daily_work_order_prepare"
-        )).isEqualTo(5);
+                "sp_daily_work_order_prepare",
+                "sp_monthly_order_form_snapshot"
+        )).isEqualTo(6);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM rule_master
+                WHERE tenant_id = 'default'
+                  AND rule_name IN (
+                      'DAILY_NORMAL_PAY',
+                      'DAILY_OVERTIME_PAY',
+                      'DAILY_NIGHT_PAY',
+                      'DAILY_HOLIDAY_PAY'
+                  )
+                  AND active_flag = TRUE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(4);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM daily_pay_rule_setting
+                WHERE tenant_id = 'default'
+                  AND active_flag = TRUE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(4);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM allowance_masters
+                WHERE allowance_code = 'ATTENDANCE_ATTITUDE'
+                  AND calculation_type = 'MANUAL'
+                  AND allowance_unit = 'BOTH'
+                  AND rule_name IS NULL
+                  AND allow_manual_input = TRUE
+                  AND show_on_daily_statement = TRUE
+                  AND show_on_monthly_statement = TRUE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM deduction_masters
+                WHERE tenant_id = 'default'
+                  AND deduction_code IN (
+                      'INCOME_TAX',
+                      'RESIDENT_TAX',
+                      'HEALTH_INSURANCE',
+                      'CHILD_SUPPORT',
+                      'WELFARE_PENSION',
+                      'EMPLOYMENT_INSURANCE',
+                      'LEGAL_DEPOSIT',
+                      'DORMITORY_FEE',
+                      'MOBILE_RENTAL',
+                      'WIFI_FEE'
+                  )
+                  AND calculation_type IN ('MANUAL', 'FIXED', 'AUTO')
+                  AND detail_view_type IN (
+                      'NONE',
+                      'INCOME_TAX',
+                      'RESIDENT_TAX',
+                      'HEALTH_INSURANCE',
+                      'PENSION',
+                      'EMPLOYMENT_INSURANCE'
+                  )
+                  AND enabled = TRUE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(10);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM deduction_masters
+                WHERE tenant_id = 'default'
+                  AND deduction_code = 'LEGAL_DEPOSIT'
+                  AND calculation_type = 'MANUAL'
+                  AND rule_name IS NULL
+                  AND allow_manual_input = TRUE
+                  AND deduction_unit = 'DAILY'
+                  AND show_on_daily_statement = TRUE
+                  AND show_on_monthly_statement = FALSE
+                  AND carry_to_monthly_settlement = TRUE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM deduction_masters
+                WHERE tenant_id = 'default'
+                  AND (calculation_type IS NULL
+                       OR calculation_type NOT IN ('MANUAL', 'FIXED', 'AUTO'))
+                  AND deleted_at IS NULL
+                """, Integer.class)).isZero();
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM notice_rule
+                WHERE tenant_id = 'default'
+                  AND rule_code IN (
+                      'CUSTOMER_CLOSING_DAY',
+                      'COMPANY_PAYROLL_CLOSING_DAY'
+                  )
+                  AND target_date_source_type = 'DAY_RULE'
+                  AND date_type = 'EXACT_DAY'
+                  AND active_flag = TRUE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(2);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM backup_target
+                WHERE tenant_id = 'default'
+                  AND target_code IN (
+                      'BACKUP_CUSTOMERS',
+                      'BACKUP_CUSTOMER_TRANSACTIONS',
+                      'BACKUP_EMPLOYEES',
+                      'BACKUP_DAILY_REPORTS'
+                  )
+                  AND output_mode = 'DOWNLOAD'
+                  AND zip_required = TRUE
+                  AND backup_enabled = TRUE
+                  AND active_flag = TRUE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(4);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM backup_target target
+                WHERE target.tenant_id = 'default'
+                  AND target.target_code IN (
+                      'BACKUP_CUSTOMERS',
+                      'BACKUP_CUSTOMER_TRANSACTIONS',
+                      'BACKUP_EMPLOYEES',
+                      'BACKUP_DAILY_REPORTS'
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM information_schema.columns source_column
+                      WHERE source_column.table_schema = DATABASE()
+                        AND source_column.table_name = target.table_name
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM backup_column definition_column
+                            WHERE definition_column.target_id = target.id
+                              AND definition_column.column_name = source_column.column_name
+                              AND definition_column.export_flag = TRUE
+                              AND definition_column.deleted_at IS NULL
+                        )
+                  )
+                """, Integer.class)).isEqualTo(4);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM deduction_masters
+                WHERE tenant_id = 'default'
+                  AND deduction_code = 'WIFI_FEE'
+                  AND calculation_type = 'MANUAL'
+                  AND deduction_unit = 'MONTHLY'
+                  AND show_on_daily_statement = FALSE
+                  AND show_on_monthly_statement = TRUE
+                  AND carry_to_monthly_settlement = TRUE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM import_target WHERE target_code LIKE 'IMPORT_%TAX%'"
                         + " OR target_code IN ("
@@ -83,7 +255,99 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND column_def.deleted_at IS NULL
                 """, Integer.class)).isEqualTo(4);
 
+        assertClosingDayNoticesAreGeneratedOnlyOnce();
+        assertBusinessDataBackupDownloadsAsZip();
         assertCareInsuranceAndOfficialRatesReachMonthlyPayrollView();
+    }
+
+    private void assertClosingDayNoticesAreGeneratedOnlyOnce() {
+        TenantContext.setTenantId("default");
+        try {
+            jdbcTemplate.update("""
+                    INSERT INTO customers (
+                        name, invoice_type,
+                        closing_day_type, closing_day_value,
+                        closing_month_offset, payment_month_offset,
+                        tenant_id, created_at, updated_at
+                    ) VALUES (
+                        '締日通知テスト顧客', 'PATTERN_1',
+                        'DAY_OF_MONTH', 1,
+                        0, 0,
+                        'default', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                    )
+                    """);
+            jdbcTemplate.update("""
+                    INSERT INTO closing_setting (
+                        setting_code,
+                        closing_day_type, closing_day_value,
+                        closing_month_offset, payment_month_offset,
+                        active_flag,
+                        tenant_id, created_at, updated_at
+                    ) VALUES (
+                        'PAYROLL',
+                        'DAY_OF_MONTH', 1,
+                        0, 0,
+                        TRUE,
+                        'default', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                    )
+                    """);
+
+            NoticeGenerateResult first = noticeAutoGenerateService.generateAll();
+            NoticeGenerateResult second = noticeAutoGenerateService.generateAll();
+
+            assertThat(first.ruleCount()).isEqualTo(2);
+            assertThat(first.generatedCount()).isEqualTo(2);
+            assertThat(second.generatedCount()).isZero();
+            assertThat(second.skippedCount()).isEqualTo(2);
+            assertThat(jdbcTemplate.queryForObject("""
+                    SELECT COUNT(*)
+                    FROM notices
+                    WHERE tenant_id = 'default'
+                      AND source_rule_code IN (
+                          'CUSTOMER_CLOSING_DAY',
+                          'COMPANY_PAYROLL_CLOSING_DAY'
+                      )
+                      AND deleted_at IS NULL
+                    """, Integer.class)).isEqualTo(2);
+        } finally {
+            TenantContext.setTenantId(TEST_TENANT_ID);
+        }
+    }
+
+    private void assertBusinessDataBackupDownloadsAsZip() throws Exception {
+        TenantContext.setTenantId("default");
+        try {
+            BackupExecutionResult result = backupExecutionService.execute(List.of(
+                    "BACKUP_CUSTOMERS",
+                    "BACKUP_CUSTOMER_TRANSACTIONS",
+                    "BACKUP_EMPLOYEES",
+                    "BACKUP_DAILY_REPORTS"
+            ));
+
+            assertThat(result.zipOutput()).isTrue();
+            assertThat(result.contentType()).isEqualTo("application/zip");
+            assertThat(result.fileName()).endsWith(".zip");
+            assertThat(result.storedFile()).isNull();
+
+            Set<String> entryNames = new LinkedHashSet<>();
+            try (ZipInputStream zip = new ZipInputStream(
+                    new ByteArrayInputStream(result.data())
+            )) {
+                ZipEntry entry;
+                while ((entry = zip.getNextEntry()) != null) {
+                    entryNames.add(entry.getName());
+                    zip.closeEntry();
+                }
+            }
+
+            assertThat(entryNames).hasSize(4);
+            assertThat(entryNames).anyMatch(name -> name.startsWith("customers_"));
+            assertThat(entryNames).anyMatch(name -> name.startsWith("customer_transactions_"));
+            assertThat(entryNames).anyMatch(name -> name.startsWith("employees_"));
+            assertThat(entryNames).anyMatch(name -> name.startsWith("daily_reports_"));
+        } finally {
+            TenantContext.setTenantId(TEST_TENANT_ID);
+        }
     }
 
     private void assertCareInsuranceAndOfficialRatesReachMonthlyPayrollView() {

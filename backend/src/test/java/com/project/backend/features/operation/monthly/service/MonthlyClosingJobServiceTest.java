@@ -57,11 +57,7 @@ class MonthlyClosingJobServiceTest {
         service = new MonthlyClosingJobService(
                 previewRepository,
                 outputDefinitionRepository,
-                customerRepository,
-                invoiceTargetCustomerQueryService,
-                reportCodeResolver,
-                executor,
-                transactionService
+                executor
         );
         when(outputDefinitionRepository
                 .findByOutputTypeAndDeletedAtIsNullOrderByExecutionOrderAscIdAsc(
@@ -70,7 +66,7 @@ class MonthlyClosingJobServiceTest {
     }
 
     @Test
-    void executeClosing_shouldGenerateAllReportsThenSyncTransactions() {
+    void executeClosing_shouldLeaveInvoiceToCustomerBillingClosing() {
         OperationReportPreview paySlip = preview(
                 "MONTHLY_PAY_SLIP",
                 "PRINT_MONTHLY_PAY_SLIP"
@@ -103,33 +99,17 @@ class MonthlyClosingJobServiceTest {
 
         service.executeClosing(10L, period, 3);
 
-        InOrder order = inOrder(executor, transactionService);
+        InOrder order = inOrder(executor);
         order.verify(executor).execute(10L, paySlip, period, 3);
-        order.verify(executor).execute(
-                org.mockito.ArgumentMatchers.eq(10L),
+        verify(executor, never()).execute(
+                org.mockito.ArgumentMatchers.anyLong(),
                 org.mockito.ArgumentMatchers.eq(invoice),
-                org.mockito.ArgumentMatchers.eq(period),
-                org.mockito.ArgumentMatchers.eq(3),
-                org.mockito.ArgumentMatchers.argThat(target ->
-                        target.targetId().equals(1L)
-                ),
-                org.mockito.ArgumentMatchers.eq(
-                        "MONTHLY_INVOICE_PATTERN_1"
-                )
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyInt(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
         );
-        order.verify(executor).execute(
-                org.mockito.ArgumentMatchers.eq(10L),
-                org.mockito.ArgumentMatchers.eq(invoice),
-                org.mockito.ArgumentMatchers.eq(period),
-                org.mockito.ArgumentMatchers.eq(3),
-                org.mockito.ArgumentMatchers.argThat(target ->
-                        target.targetId().equals(2L)
-                ),
-                org.mockito.ArgumentMatchers.eq(
-                        "MONTHLY_INVOICE_PATTERN_2"
-                )
-        );
-        order.verify(transactionService).synchronize("2026-07", 3);
+        verify(transactionService, never()).synchronize("2026-07", 3);
     }
 
     @Test

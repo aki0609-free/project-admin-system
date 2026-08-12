@@ -27,6 +27,7 @@ class MonthlyClosingCommandServiceTest {
     private MonthlyClosingRepository repository;
     private MonthlyClosingJobService jobService;
     private MonthlyClosingPeriodService periodService;
+    private LegalDepositRefundService legalDepositRefundService;
     private MonthlyClosingCommandService service;
     private MonthlyClosing entity;
     private MonthlyClosingPeriod period;
@@ -36,6 +37,7 @@ class MonthlyClosingCommandServiceTest {
         repository = mock(MonthlyClosingRepository.class);
         jobService = mock(MonthlyClosingJobService.class);
         periodService = mock(MonthlyClosingPeriodService.class);
+        legalDepositRefundService = mock(LegalDepositRefundService.class);
         entity = new MonthlyClosing();
         entity.setId(10L);
         entity.setTargetMonth(LocalDate.of(2026, 7, 1));
@@ -59,6 +61,7 @@ class MonthlyClosingCommandServiceTest {
                 mock(MonthlyClosingMapper.class),
                 jobService,
                 periodService,
+                legalDepositRefundService,
                 Clock.fixed(
                         Instant.parse("2026-08-01T00:00:00Z"),
                         ZoneId.of("Asia/Tokyo")
@@ -71,6 +74,7 @@ class MonthlyClosingCommandServiceTest {
         service.close("2026-07");
 
         verify(jobService).executeClosing(10L, period, 1);
+        verify(legalDepositRefundService).prepareRefunds(10L, period, 1);
         assertThat(entity.getStatus())
                 .isEqualTo(MonthlyClosingStatus.CLOSED);
         assertThat(entity.getClosingVersion()).isEqualTo(1);
@@ -89,6 +93,20 @@ class MonthlyClosingCommandServiceTest {
                 .hasMessageContaining("帳票生成失敗");
         assertThat(entity.getStatus())
                 .isNotEqualTo(MonthlyClosingStatus.CLOSED);
+        assertThat(entity.getClosingVersion()).isZero();
+    }
+
+    @Test
+    void close_shouldNotRunReportsWhenLegalDepositRefundFails() {
+        doThrow(new IllegalStateException("法定預り返金失敗"))
+                .when(legalDepositRefundService)
+                .prepareRefunds(10L, period, 1);
+
+        assertThatThrownBy(() -> service.close("2026-07"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("法定預り返金失敗");
+
+        org.mockito.Mockito.verifyNoInteractions(jobService);
         assertThat(entity.getClosingVersion()).isZero();
     }
 }

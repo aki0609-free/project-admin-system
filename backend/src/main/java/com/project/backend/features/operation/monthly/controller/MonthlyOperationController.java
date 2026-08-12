@@ -47,7 +47,7 @@ public class MonthlyOperationController {
     @GetMapping("/report-files")
     public List<MonthlyClosingReportFileResponse> findReportFiles(
             @RequestParam String targetMonth,
-            @RequestParam Integer closingVersion,
+            @RequestParam(required = false) Integer closingVersion,
             @RequestParam String reportCode) {
         return reportFileService.findAll(targetMonth, closingVersion, reportCode);
     }

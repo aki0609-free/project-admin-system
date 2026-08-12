@@ -4,6 +4,7 @@ import MonthlyOperationPage from '@/features/operation/monthly/pages/MonthlyOper
 import DailyOperationPage from '@/features/operation/daily/pages/DailyOperationPage.vue'
 import DailyReportPage from '@/features/dailyreport/page/DailyReportPage.vue'
 import BookOperationPage from '@/features/operation/book/pages/BookOperationPage.vue'
+import CustomerBillingClosingPage from '@/features/operation/customer-billing/pages/CustomerBillingClosingPage.vue'
 
 export const operationMenu: MenuItem = {
   title: '締め処理',
@@ -34,6 +35,13 @@ export const operationMenu: MenuItem = {
       title: '月次管理',
       to: '/operation/monthly',
       component: MonthlyOperationPage,
+      resource: 'operation',
+      action: 'view',
+    },
+    {
+      title: '顧客請求締め',
+      to: '/operation/customer-billing',
+      component: CustomerBillingClosingPage,
       resource: 'operation',
       action: 'view',
     },
