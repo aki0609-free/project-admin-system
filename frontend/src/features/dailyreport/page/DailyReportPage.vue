@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import ListDetailPageLayout from '@/toolbox/pages/ListDetailPageLayout.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import SearchPanel from '@/shared/components/search/SearchPanel.vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 

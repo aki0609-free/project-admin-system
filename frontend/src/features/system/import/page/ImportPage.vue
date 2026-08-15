@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
-import ListDetailPageLayout from '@/toolbox/pages/ListDetailPageLayout.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 
 import ImportExecuteTab from '@/features/system/import/components/ImportExecuteTab.vue'
 import ImportHistoryTab from '@/features/system/import/components/ImportHistoryTab.vue'

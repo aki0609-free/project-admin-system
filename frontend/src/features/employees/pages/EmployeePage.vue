@@ -2,7 +2,7 @@
 import EmployeeTable from '../components/EmployeeTable.vue'
 import EmployeeEditDialog from '../components/EmployeeEditDialog.vue'
 import { useEmployeePage } from '../composables/useEmployeePage'
-import ListDetailPageLayout from '@/toolbox/pages/ListDetailPageLayout.vue';
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue';
 
 const {
   employeesQuery,

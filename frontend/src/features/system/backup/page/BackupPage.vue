@@ -9,7 +9,7 @@ import BackupHistoryTable from '@/features/system/backup/components/BackupHistor
 
 import { useBackupPage } from '@/features/system/backup/composables/useBackupPage'
 import { useBackupHistoriesQuery } from '@/features/system/backup/api/useBackupHistoriesQuery'
-import ListDetailPageLayout from '@/toolbox/pages/ListDetailPageLayout.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
 
 const activeTab = ref<'targets' | 'histories'>('targets')

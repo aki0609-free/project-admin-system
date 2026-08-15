@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ListDetailPageLayout from '@/toolbox/pages/ListDetailPageLayout.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 import OperationReportTab from '@/features/operation/reportpreview/components/OperationReportTab.vue'
 

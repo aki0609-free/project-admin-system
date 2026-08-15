@@ -5,7 +5,7 @@ import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 
 import BatchDefinitionTab from '@/features/system/batch/components/BatchDefinitionTab.vue'
 import BatchExecutionLogTab from '@/features/system/batch/components/BatchExecutionLogTab.vue'
-import ListDetailPageLayout from '@/toolbox/pages/ListDetailPageLayout.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 
 const activeTab = ref<'definitions' | 'logs'>('definitions')
 

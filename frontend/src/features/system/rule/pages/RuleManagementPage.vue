@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ListDetailPageLayout from '@/toolbox/pages/ListDetailPageLayout.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import RuleTable from '@/features/system/rule/components/RuleTable.vue'
 import RuleEditDialog from '@/features/system/rule/components/RuleEditDialog.vue'
 import { useRulePage } from '@/features/system/rule/composables/useRulePage'

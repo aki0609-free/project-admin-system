@@ -6,7 +6,7 @@ import EmployeeLoanTable from '../components/EmployeeLoanTable.vue'
 import EmployeeLoanEditDialog from '../components/EmployeeLoanEditDialog.vue'
 import EmployeeSavingTable from '../components/EmployeeSavingTable.vue'
 import EmployeeSavingEditDialog from '../components/EmployeeSavingEditDialog.vue'
-import ListDetailPageLayout from '@/toolbox/pages/ListDetailPageLayout.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 
 const {
   activeTab,

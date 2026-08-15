@@ -6,7 +6,7 @@ import MailRecipientGroupTab from '@/features/system/mail/components/MailRecipie
 import MailTemplateTab from '@/features/system/mail/components/MailTemplateTab.vue'
 import MailTestSendTab from '@/features/system/mail/components/MailTestSendTab.vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
-import ListDetailPageLayout from '@/toolbox/pages/ListDetailPageLayout.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 
 const activeTab = ref<'recipientGroups' | 'templates' | 'queues' | 'testSend'>('recipientGroups')
 

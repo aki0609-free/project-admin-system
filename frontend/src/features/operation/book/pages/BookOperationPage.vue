@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
-import ListDetailPageLayout from '@/toolbox/pages/ListDetailPageLayout.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
 import { useOperationExcelBooksQuery } from '../api/useOperationExcelBooksQuery'
 import { useGenerateSpreadsheetLedgerMutation } from '../api/useGenerateSpreadsheetLedgerMutation'

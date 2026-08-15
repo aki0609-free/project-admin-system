@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ListDetailPageLayout from '@/toolbox/pages/ListDetailPageLayout.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 
 import NoticeRuleTable from '@/features/system/notice/components/NoticeRuleTable.vue'
 import NoticeRuleEditDialog from '@/features/system/notice/components/NoticeRuleEditDialog.vue'
