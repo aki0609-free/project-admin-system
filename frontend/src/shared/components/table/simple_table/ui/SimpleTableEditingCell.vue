@@ -1,6 +1,11 @@
 <!-- eslint-disable vue/attributes-order -->
 <template>
-  <div class="editable-cell" @click="handleClick">
+  <div
+    class="editable-cell"
+    :class="`overflow-${cellOverflow}`"
+    :title="tooltipText"
+    @click="handleClick"
+  >
     <!-- text -->
     <v-text-field
       v-if="isEditing && props.column.type === 'text'"
@@ -143,6 +148,20 @@ const displayValue = computed(() => {
   return val ?? ''
 })
 
+const cellOverflow = computed(() => props.column.overflow ?? 'ellipsis')
+
+const displayText = computed(() => {
+  if (props.column.type === 'date') {
+    return formattedDate(rawValue.value as string | Date | null)
+  }
+  return String(displayValue.value ?? '')
+})
+
+const tooltipText = computed(() => {
+  if (isEditing.value || cellOverflow.value !== 'ellipsis') return undefined
+  return displayText.value || undefined
+})
+
 const isEditing = computed(() => {
   if (!props.editingCell) return false
 
@@ -217,12 +236,40 @@ const formattedDate = (val: string | Date | null) => {
 <style lang="css" scoped>
 .editable-cell {
   min-height: 24px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .cell-placeholder {
   min-height: 24px;
-  display: inline-block;
+  display: block;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.overflow-ellipsis .cell-placeholder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overflow-wrap {
+  overflow: visible;
+}
+
+.overflow-wrap .cell-placeholder {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.overflow-visible {
+  overflow: visible;
+}
+
+.overflow-visible .cell-placeholder {
+  white-space: nowrap;
 }
 
 .required {

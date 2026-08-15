@@ -2,6 +2,7 @@ import { type SelectOption, type SimpleTableFilterPredicate } from "../filter/ty
 
 type SimpleTableColumnType = 'text' | 'date' | 'select' | 'checkbox' | 'number' | 'dayrule'
 type SimpleTableFilterType = 'text' | 'select' | 'number' | 'checkbox' | 'date'
+export type SimpleTableCellOverflow = 'ellipsis' | 'wrap' | 'visible'
 
 export type SimpleTableColumnFilter<T> = {
     type: SimpleTableFilterType
@@ -18,6 +19,12 @@ export type SimpleTableColumnDef<T> = {
     required?: boolean
 
     width?: string
+
+    /**
+     * How a read-only cell handles text wider than the configured column.
+     * Defaults to `ellipsis` so long values do not expand the table layout.
+     */
+    overflow?: SimpleTableCellOverflow
 
     enumOptions?: SelectOption[]
 

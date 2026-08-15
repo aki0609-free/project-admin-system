@@ -116,7 +116,12 @@ const tableColumns = reactive(props.columns.map(col => ({
 }
 
 .data-table {
-  min-width: max-content;
+  width: 100%;
+}
+
+.data-table :deep(table) {
+  width: 100%;
+  table-layout: fixed;
 }
 
 /* ヘッダー */
@@ -138,6 +143,8 @@ const tableColumns = reactive(props.columns.map(col => ({
 .data-table :deep(tbody td) {
   border-right: 1px solid #e0e0e0;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* ボディ最後の線消す */
