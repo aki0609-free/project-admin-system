@@ -38,6 +38,22 @@ public class PayrollItemEnrollmentService {
             Long employeeId, PayrollItemTargetType targetType, String targetCode,
             boolean enabled, Map<String, String> parameters
     ) {
+        synchronize(
+                employeeId,
+                targetType,
+                targetCode,
+                enabled,
+                parameters,
+                LocalDate.now(clock)
+        );
+    }
+
+    @Transactional
+    public void synchronize(
+            Long employeeId, PayrollItemTargetType targetType, String targetCode,
+            boolean enabled, Map<String, String> parameters,
+            LocalDate effectiveFrom
+    ) {
         var policy = policyRepository
                 .findByTenantIdAndTargetTypeAndTargetCodeAndDeletedAtIsNull(
                         TenantContext.getTenantId(), targetType, targetCode)
@@ -47,6 +63,7 @@ public class PayrollItemEnrollmentService {
         }
 
         LocalDate today = LocalDate.now(clock);
+        LocalDate enrollmentStart = effectiveFrom == null ? today : effectiveFrom;
         var current = enrollmentRepository
                 .findFirstByEmployeeIdAndBalancePolicyIdAndEffectiveToIsNullAndDeletedAtIsNullOrderByEffectiveFromDesc(
                         employeeId, policy.getId()
@@ -56,7 +73,7 @@ public class PayrollItemEnrollmentService {
             EmployeePayrollItemEnrollment enrollment = new EmployeePayrollItemEnrollment();
             enrollment.setEmployeeId(employeeId);
             enrollment.setBalancePolicyId(policy.getId());
-            enrollment.setEffectiveFrom(today);
+            enrollment.setEffectiveFrom(enrollmentStart);
             enrollment.setSettingsJson(write(parameters));
             enrollmentRepository.save(enrollment);
         } else if (enabled) {

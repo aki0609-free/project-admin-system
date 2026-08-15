@@ -56,6 +56,11 @@ test('employee can be registered with tracked deductions from the employee scree
   const uniqueSuffix = `${Date.now()}-${testInfo.workerIndex}`
   const employeeCode = `E2E-UI-${uniqueSuffix}`
   const employeeName = `E2E 画面登録社員 ${uniqueSuffix}`
+  const currentDate = new Date().toISOString().slice(0, 10)
+  const [currentYear, currentMonth, currentDay] = currentDate.split('-').map(Number)
+  const currentDateButtonName = new RegExp(
+    `${currentYear}年${currentMonth}月${currentDay}日`,
+  )
   let dailyReportId: number | null = null
 
   await page.goto('/employee/information')
@@ -113,7 +118,7 @@ test('employee can be registered with tracked deductions from the employee scree
     await editDialog.getByRole('button', { name: '閉じる', exact: true }).click()
   })
 
-  await test.step('override a Rule baseline and persist the reason', async () => {
+  await test.step('override a daily Rule baseline and persist the reason', async () => {
     await page.goto('/operation/daily-reports')
     await page.getByRole('button', { name: '新規作成', exact: true }).click()
 
@@ -131,12 +136,12 @@ test('employee can be registered with tracked deductions from the employee scree
       response.url().endsWith('/api/daily-reports/input-items/preview')
       && response.request().method() === 'POST',
     )
-    await datePicker.getByRole('button', { name: /2026年8月10日月曜日/ }).click()
+    await datePicker.getByRole('button', { name: currentDateButtonName }).click()
     expect((await initialPreviewPromise).status()).toBe(200)
 
     await dialog.getByRole('button', { name: '控除', exact: true }).click()
-    let mobileCard = dialog.locator('.amount-card').filter({ hasText: '携帯電話貸出料' })
-    await expect(mobileCard).toBeVisible()
+    let dormitoryCard = dialog.locator('.amount-card').filter({ hasText: '寮費' })
+    await expect(dormitoryCard).toBeVisible()
 
     const quantityPreviewPromise = page.waitForResponse(response => {
       if (!response.url().endsWith('/api/daily-reports/input-items/preview')
@@ -145,18 +150,18 @@ test('employee can be registered with tracked deductions from the employee scree
         deductions?: { deductionCode?: string; quantity?: number }[]
       }
       return body.deductions?.some(item =>
-        item.deductionCode === 'MOBILE_RENTAL' && item.quantity === 5) ?? false
+        item.deductionCode === 'DORMITORY_FEE' && item.quantity === 5) ?? false
     })
-    const mobilePaymentDays = mobileCard.getByLabel('支払い日数', { exact: true })
-    await mobilePaymentDays.click()
-    await mobilePaymentDays.press('ControlOrMeta+A')
-    await mobilePaymentDays.press('5')
+    const dormitoryPaymentDays = dormitoryCard.getByLabel('支払い日数', { exact: true })
+    await dormitoryPaymentDays.click()
+    await dormitoryPaymentDays.press('ControlOrMeta+A')
+    await dormitoryPaymentDays.press('5')
     expect((await quantityPreviewPromise).status()).toBe(200)
 
-    mobileCard = dialog.locator('.amount-card').filter({ hasText: '携帯電話貸出料' })
-    await expect(mobileCard.getByText('Rule基準額：1,000円', { exact: true })).toBeVisible()
-    await mobileCard.getByLabel('金額', { exact: true }).fill('900')
-    await mobileCard.getByLabel('金額変更理由', { exact: true }).fill('会社支給端末の調整')
+    dormitoryCard = dialog.locator('.amount-card').filter({ hasText: '寮費' })
+    await expect(dormitoryCard.getByText('Rule基準額：2,250円', { exact: true })).toBeVisible()
+    await dormitoryCard.getByLabel('金額', { exact: true }).fill('900')
+    await dormitoryCard.getByLabel('金額変更理由', { exact: true }).fill('寮費の日次調整')
 
     const createReportResponsePromise = page.waitForResponse(response =>
       response.url().endsWith('/api/daily-reports')
@@ -171,14 +176,14 @@ test('employee can be registered with tracked deductions from the employee scree
     await page.getByText(employeeName, { exact: true }).click()
     const editReportDialog = page.getByRole('dialog')
     await editReportDialog.getByRole('button', { name: '控除', exact: true }).click()
-    const persistedMobileCard = editReportDialog.locator('.amount-card')
-      .filter({ hasText: '携帯電話貸出料' })
-    await expect(persistedMobileCard.getByLabel('金額', { exact: true })).toHaveValue('900')
+    const persistedDormitoryCard = editReportDialog.locator('.amount-card')
+      .filter({ hasText: '寮費' })
+    await expect(persistedDormitoryCard.getByLabel('金額', { exact: true })).toHaveValue('900')
     await expect(
-      persistedMobileCard.getByLabel('金額変更理由', { exact: true }),
-    ).toHaveValue('会社支給端末の調整')
+      persistedDormitoryCard.getByLabel('金額変更理由', { exact: true }),
+    ).toHaveValue('寮費の日次調整')
     await expect(
-      persistedMobileCard.getByText('Rule基準額：1,000円', { exact: true }),
+      persistedDormitoryCard.getByText('Rule基準額：2,250円', { exact: true }),
     ).toBeVisible()
     await editReportDialog.getByRole('button', { name: '閉じる', exact: true }).click()
 
@@ -190,17 +195,17 @@ test('employee can be registered with tracked deductions from the employee scree
     expect(deleteReportResponse.ok(), await deleteReportResponse.text()).toBeTruthy()
   })
 
-  await test.step('disable an existing employee deduction setting', async () => {
+  await test.step('disable an existing daily deduction setting', async () => {
     await page.goto('/employee/information')
     await page.getByText(employeeName, { exact: true }).click()
     const editDialog = page.getByRole('dialog')
     await editDialog.getByRole('button', { name: '手当・控除設定', exact: true }).click()
-    const mobileRentalTab = editDialog.getByRole('tab', {
-      name: '携帯電話貸出料',
+    const dormitoryTab = editDialog.getByRole('tab', {
+      name: '寮費',
       exact: true,
     })
-    await expect(mobileRentalTab).toBeVisible()
-    await mobileRentalTab.click({ force: true })
+    await expect(dormitoryTab).toBeVisible()
+    await dormitoryTab.click({ force: true })
 
     await editDialog.getByLabel('この項目を適用する').uncheck()
     const updateResponsePromise = page.waitForResponse(response =>
@@ -226,19 +231,21 @@ test('employee can be registered with tracked deductions from the employee scree
       exact: true,
     }).click()
 
-    await dailyReportDialog.getByLabel('勤務日', { exact: true }).click()
-    const datePicker = page.locator('.v-date-picker')
-    await expect(datePicker).toBeVisible()
     const previewResponsePromise = page.waitForResponse(response =>
       response.url().endsWith('/api/daily-reports/input-items/preview')
       && response.request().method() === 'POST',
     )
-    await datePicker.getByRole('button', { name: /2026年8月10日月曜日/ }).click()
+    await dailyReportDialog.getByLabel('勤務日', { exact: true }).click()
+    const currentDatePicker = page.locator('.v-date-picker')
+    await expect(currentDatePicker).toBeVisible()
+    await currentDatePicker.getByRole('button', {
+      name: currentDateButtonName,
+    }).click()
     const previewResponse = await previewResponsePromise
     expect(previewResponse.status(), await previewResponse.text()).toBe(200)
 
     await dailyReportDialog.getByRole('button', { name: '控除', exact: true }).click()
-    await expect(dailyReportDialog.getByText('寮費', { exact: true })).toBeVisible()
+    await expect(dailyReportDialog.getByText('寮費', { exact: true })).toHaveCount(0)
     await expect(dailyReportDialog.getByText('携帯電話貸出料', { exact: true })).toHaveCount(0)
   })
 

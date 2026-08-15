@@ -122,10 +122,19 @@ public class EmployeePayrollItemSettingService {
 
     @Transactional
     public void synchronizeAll(Long employeeId, List<EmployeePayrollItemSettingRequest> settings) {
+        synchronizeAll(employeeId, settings, LocalDate.now(clock));
+    }
+
+    @Transactional
+    public void synchronizeAll(
+            Long employeeId,
+            List<EmployeePayrollItemSettingRequest> settings,
+            LocalDate effectiveFrom
+    ) {
         if (settings == null) return;
         settings.forEach(setting -> enrollmentService.synchronize(
                 employeeId, com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType.DEDUCTION,
-                setting.targetCode(), setting.enabled(), setting.parameters()));
+                setting.targetCode(), setting.enabled(), setting.parameters(), effectiveFrom));
     }
 
     private Map<String, String> read(String json) {

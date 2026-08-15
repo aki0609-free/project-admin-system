@@ -77,13 +77,22 @@ public class EmployeeAdminService {
         employee.initializeEmployment();
 
         Employee savedEmployee = employeeRepository.save(employee);
+        LocalDate initialSettingDate = request.hireDate() == null
+                ? LocalDate.now(clock)
+                : request.hireDate();
         payrollItemEnrollmentService.synchronize(
                 savedEmployee.getId(),
                 PayrollItemTargetType.DEDUCTION,
                 "DORMITORY_FEE",
-                savedEmployee.isDormitoryFlag()
+                savedEmployee.isDormitoryFlag(),
+                java.util.Map.of(),
+                initialSettingDate
         );
-        payrollItemSettingService.synchronizeAll(savedEmployee.getId(), request.payrollItemSettings());
+        payrollItemSettingService.synchronizeAll(
+                savedEmployee.getId(),
+                request.payrollItemSettings(),
+                initialSettingDate
+        );
 
         EmployeePayrollProfile profile = new EmployeePayrollProfile();
         profile.setEmployee(savedEmployee);

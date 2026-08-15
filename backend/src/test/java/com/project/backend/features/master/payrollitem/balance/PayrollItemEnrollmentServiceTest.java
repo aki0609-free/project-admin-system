@@ -60,4 +60,42 @@ class PayrollItemEnrollmentServiceTest {
                 .isEqualTo(LocalDate.of(2026, 8, 8));
         TenantContext.clear();
     }
+
+    @Test
+    void synchronize_shouldUseExplicitInitialEffectiveDate() {
+        TenantContext.setTenantId("default");
+        var policyRepository = mock(PayrollItemBalancePolicyRepository.class);
+        var enrollmentRepository = mock(EmployeePayrollItemEnrollmentRepository.class);
+        Clock clock = Clock.fixed(Instant.parse("2026-08-15T03:00:00Z"), ZoneOffset.UTC);
+        PayrollItemEnrollmentService service = new PayrollItemEnrollmentService(
+                policyRepository, enrollmentRepository, clock,
+                new com.fasterxml.jackson.databind.ObjectMapper()
+        );
+
+        PayrollItemBalancePolicy policy = new PayrollItemBalancePolicy();
+        policy.setId(5L);
+        when(policyRepository.findByTenantIdAndTargetTypeAndTargetCodeAndDeletedAtIsNull(
+                "default", PayrollItemTargetType.DEDUCTION, "DORMITORY_FEE"
+        )).thenReturn(Optional.of(policy));
+        when(enrollmentRepository
+                .findFirstByEmployeeIdAndBalancePolicyIdAndEffectiveToIsNullAndDeletedAtIsNullOrderByEffectiveFromDesc(
+                        10L, 5L
+                )).thenReturn(Optional.empty());
+
+        service.synchronize(
+                10L,
+                PayrollItemTargetType.DEDUCTION,
+                "DORMITORY_FEE",
+                true,
+                java.util.Map.of(),
+                LocalDate.of(2026, 4, 1)
+        );
+
+        var captor = org.mockito.ArgumentCaptor
+                .forClass(EmployeePayrollItemEnrollment.class);
+        verify(enrollmentRepository).save(captor.capture());
+        assertThat(captor.getValue().getEffectiveFrom())
+                .isEqualTo(LocalDate.of(2026, 4, 1));
+        TenantContext.clear();
+    }
 }

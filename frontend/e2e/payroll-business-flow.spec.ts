@@ -19,7 +19,7 @@ test('calculated daily report is visible on daily report page', async ({ page })
   await expect(page.getByText('APPROVED', { exact: true })).toBeVisible()
 })
 
-test('tracked deductions show amount, payment days and remaining days', async ({ page }) => {
+test('daily tracked deduction shows amount, payment days and remaining days', async ({ page }) => {
   await page.goto('/operation/daily-reports')
   await page.getByText(E2E_EMPLOYEE_NAME, { exact: true }).click()
 
@@ -27,10 +27,10 @@ test('tracked deductions show amount, payment days and remaining days', async ({
   await page.getByRole('button', { name: '控除', exact: true }).click()
 
   await expect(page.getByText('寮費', { exact: true })).toBeVisible()
-  await expect(page.getByText('携帯電話貸出料', { exact: true })).toBeVisible()
-  await expect(page.getByLabel('支払い日数')).toHaveCount(2)
-  await expect(page.getByText(/現在残/)).toHaveCount(2)
-  await expect(page.getByText(/保存後残日数/)).toHaveCount(2)
+  await expect(page.getByText('携帯電話貸出料', { exact: true })).toHaveCount(0)
+  await expect(page.getByLabel('支払い日数')).toHaveCount(1)
+  await expect(page.getByText(/現在残/)).toHaveCount(1)
+  await expect(page.getByText(/保存後残日数/)).toHaveCount(1)
 })
 
 test('monthly summary includes the fixed daily report', async ({ page }) => {

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { E2E_EMPLOYEE_NAME, E2E_WORK_DATE } from './support/business-fixture'
 
 const watchServerErrors = (page: Page) => {
   const errors: string[] = []
@@ -31,6 +32,7 @@ test('daily report HTML preview renders the fixed business data', async ({ page 
   const serverErrors = watchServerErrors(page)
 
   await page.goto('/operation/daily')
+  await page.getByLabel('対象日').fill(E2E_WORK_DATE)
   await page.getByRole('button', { name: '帳票', exact: true }).click()
 
   await expect(page.getByText('帳票一覧', { exact: true })).toBeVisible()
@@ -53,7 +55,7 @@ test('daily report HTML preview renders the fixed business data', async ({ page 
   await expect(previewDialog).toBeVisible()
   const previewFrame = previewDialog.frameLocator('iframe[title="帳票プレビュー"]')
   await expect(previewFrame.getByText('日別労務費一覧', { exact: true })).toBeVisible()
-  await expect(previewFrame.getByText('E2E 給与検証社員', { exact: true })).toBeVisible()
+  await expect(previewFrame.getByText(E2E_EMPLOYEE_NAME, { exact: true })).toBeVisible()
   expect(serverErrors, 'same-origin HTTP 5xx responses').toEqual([])
 })
 
