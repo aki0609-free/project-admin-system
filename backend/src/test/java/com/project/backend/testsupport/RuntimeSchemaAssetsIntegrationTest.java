@@ -49,7 +49,9 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
     void productionSchemaAssetsApplyToFreshMySql() throws Exception {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
-        assertThat(resources).hasSize(38);
+        assertThat(resources)
+                .hasSize(39)
+                .contains("sql/admin/external_support_links_v1.sql");
         RuntimeSchemaAssetInstaller.apply(mysqlContainer, resources);
         RuntimeSchemaAssetInstaller.apply(
                 mysqlContainer,
