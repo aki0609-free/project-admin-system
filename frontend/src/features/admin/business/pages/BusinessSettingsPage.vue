@@ -11,6 +11,7 @@ const {
   closingOutputs,
   dormitoryFees,
   annualReportBackup,
+  externalSupportLinks,
   manualBackupFiscalYear,
   lastBackupResult,
   checklistDialog,
@@ -25,6 +26,7 @@ const {
   saveDormitoryFeeSettings,
   saveBackupSetting,
   executeBackup,
+  saveExternalSupportLinks,
 } = useBusinessSettingsPage()
 
 const dormitoryTypeLabel = (type: 'SINGLE_ROOM' | 'SHARED_ROOM') =>
@@ -35,16 +37,17 @@ const dormitoryTypeLabel = (type: 'SINGLE_ROOM' | 'SHARED_ROOM') =>
   <div class="business-settings-page">
     <header>
       <h1>業務管理</h1>
-      <p>退職処理、給与締日、月次締め帳票、年度バックアップ、寮費を管理します。</p>
+      <p>退職処理、給与締日、月次締め帳票、年度バックアップ、寮費、外部リンクを管理します。</p>
     </header>
 
     <v-card :loading="loading" variant="outlined">
       <v-tabs v-model="activeTab" color="primary">
-        <v-tab value="resignation">退職時文言・TODO</v-tab>
+        <v-tab value="resignation">退職時設定</v-tab>
         <v-tab value="closing">締日設定</v-tab>
         <v-tab value="outputs">締め帳票</v-tab>
         <v-tab value="backup">帳票バックアップ</v-tab>
         <v-tab value="dormitory">寮費設定</v-tab>
+        <v-tab value="other">その他設定</v-tab>
       </v-tabs>
 
       <v-divider />
@@ -290,6 +293,40 @@ const dormitoryTypeLabel = (type: 'SINGLE_ROOM' | 'SHARED_ROOM') =>
             <div class="actions">
               <v-btn color="primary" :loading="loading" @click="saveDormitoryFeeSettings">
                 寮費設定を保存
+              </v-btn>
+            </div>
+          </section>
+        </v-window-item>
+
+        <v-window-item value="other">
+          <section class="settings-section narrow">
+            <h2>サポートリンク</h2>
+            <p>
+              ヘッダー右上のユーザーメニューから開くリンクを設定します。
+              変更内容はログイン済みの全ユーザーに反映されます。
+            </p>
+            <v-alert type="info" variant="tonal">
+              安全のためHTTPSのURLだけを登録できます。リンク先は新しいタブで開きます。
+            </v-alert>
+            <v-text-field
+              v-model="externalSupportLinks.incidentReportUrl"
+              label="インシデント報告のURL"
+              placeholder="https://..."
+              type="url"
+              variant="outlined"
+              autocomplete="off"
+            />
+            <v-text-field
+              v-model="externalSupportLinks.manualUrl"
+              label="マニュアルのURL"
+              placeholder="https://..."
+              type="url"
+              variant="outlined"
+              autocomplete="off"
+            />
+            <div class="actions">
+              <v-btn color="primary" :loading="loading" @click="saveExternalSupportLinks">
+                その他設定を保存
               </v-btn>
             </div>
           </section>

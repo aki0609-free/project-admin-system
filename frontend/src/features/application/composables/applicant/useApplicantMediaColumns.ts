@@ -1,11 +1,6 @@
 import { computed } from 'vue'
 import type { SimpleTableColumnDef } from '@/shared/components/table/simple_table/types/item/types'
 import type { ApplicantRow } from '@/features/application/types/applicantTypes'
-import {
-  applicantInterviewStatusLabelMap,
-  applicantInterviewStatusOptions,
-} from '@/features/application/constants/applicantConstants'
-import { formatYearMonthDay } from '@/shared/utils/DateUtils'
 
 export const useApplicantMediaColumns = () => {
   const columns = computed<SimpleTableColumnDef<ApplicantRow>[]>(() => [

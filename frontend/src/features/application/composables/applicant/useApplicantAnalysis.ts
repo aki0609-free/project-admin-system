@@ -16,7 +16,7 @@ export const useApplicantAnalysis = (
       `面接実施数は ${summary.interviewedCount.value} 名で、面接率は ${summary.interviewRate.value}% です。`,
     )
     comments.push(
-      `在籍中人数は ${summary.workingCount.value} 名で、在籍率は ${summary.workingRate.value}% です。`,
+      `在籍中人数は ${summary.workingCount.value} 名で、応募者に対する在籍者率は ${summary.workingRate.value}% です。`,
     )
     comments.push(`退職人数は ${summary.resignedCount.value} 名です。`)
 
@@ -33,11 +33,13 @@ export const useApplicantAnalysis = (
     return comments
   })
 
-  const canAnalyzeByAi = computed(() => summary.totalApplicants.value > 0)
-
   const aiAnalysisEnabled = false
 
-  const analyzeByAi = async () => {
+  const canAnalyzeByAi = computed(
+    () => aiAnalysisEnabled && summary.totalApplicants.value > 0,
+  )
+
+  const analyzeByAi = () => {
     // 将来ここで使う payload
     // const aiPayload = {
     //   totalApplicants: summary.totalApplicants.value,
@@ -53,7 +55,7 @@ export const useApplicantAnalysis = (
     // const aiAnalysisMutation = useApplicantAiAnalysisMutation()
     // return await aiAnalysisMutation.mutateAsync(aiPayload)
 
-    console.info('Applicant AI分析はまだ未接続です')
+    return Promise.resolve()
   }
 
   return {

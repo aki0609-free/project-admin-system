@@ -7,12 +7,14 @@ import {
   getClosingOutputs,
   getClosingSetting,
   getDormitoryFees,
+  getExternalSupportLinkSetting,
   getResignationChecklist,
   getResignationMessage,
   saveClosingOutputs,
   saveClosingSetting,
   saveAnnualReportBackupSetting,
   saveDormitoryFees,
+  saveExternalSupportLinkSetting,
   saveResignationMessage,
   updateResignationChecklist,
 } from '../api/businessSettingApi'
@@ -21,6 +23,7 @@ import type {
   AnnualReportBackupSetting,
   BusinessClosingSetting,
   DormitoryFeeSetting,
+  ExternalSupportLinkSetting,
   MonthlyClosingOutputSetting,
   ResignationChecklistItem,
   ResignationChecklistSaveRequest,
@@ -38,7 +41,9 @@ const emptyChecklist = (): ResignationChecklistItem => ({
 })
 
 export const useBusinessSettingsPage = () => {
-  const activeTab = ref<'resignation' | 'closing' | 'outputs' | 'backup' | 'dormitory'>('resignation')
+  const activeTab = ref<
+    'resignation' | 'closing' | 'outputs' | 'backup' | 'dormitory' | 'other'
+  >('resignation')
   const loading = ref(false)
   const message = reactive<ResignationMessage>({
     dialogTitle: '退職処理',
@@ -54,6 +59,10 @@ export const useBusinessSettingsPage = () => {
     graceDays: 14,
     startupEnabled: true,
     activeFlag: true,
+  })
+  const externalSupportLinks = reactive<ExternalSupportLinkSetting>({
+    incidentReportUrl: '',
+    manualUrl: '',
   })
   const manualBackupFiscalYear = ref(new Date().getFullYear())
   const lastBackupResult = ref<AnnualReportBackupResult | null>(null)
@@ -74,7 +83,15 @@ export const useBusinessSettingsPage = () => {
   }
 
   const load = () => run(async () => {
-    const [loadedMessage, loadedChecklist, loadedClosing, loadedOutputs, loadedDormitoryFees, loadedBackup] =
+    const [
+      loadedMessage,
+      loadedChecklist,
+      loadedClosing,
+      loadedOutputs,
+      loadedDormitoryFees,
+      loadedBackup,
+      loadedExternalSupportLinks,
+    ] =
       await Promise.all([
         getResignationMessage(),
         getResignationChecklist(),
@@ -82,6 +99,7 @@ export const useBusinessSettingsPage = () => {
         getClosingOutputs(),
         getDormitoryFees(),
         getAnnualReportBackupSetting(),
+        getExternalSupportLinkSetting(),
       ])
     Object.assign(message, loadedMessage)
     checklist.value = loadedChecklist
@@ -89,6 +107,7 @@ export const useBusinessSettingsPage = () => {
     closingOutputs.value = loadedOutputs
     dormitoryFees.value = loadedDormitoryFees
     Object.assign(annualReportBackup, loadedBackup)
+    Object.assign(externalSupportLinks, loadedExternalSupportLinks)
     const now = new Date()
     manualBackupFiscalYear.value = now.getFullYear()
       - (now.getMonth() + 1 < loadedBackup.fiscalYearStartMonth ? 1 : 0)
@@ -182,6 +201,13 @@ export const useBusinessSettingsPage = () => {
     })
   }
 
+  const saveExternalSupportLinks = () => run(async () => {
+    Object.assign(
+      externalSupportLinks,
+      await saveExternalSupportLinkSetting({ ...externalSupportLinks }),
+    )
+  })
+
   onMounted(() => { void load() })
 
   return {
@@ -193,6 +219,7 @@ export const useBusinessSettingsPage = () => {
     closingOutputs,
     dormitoryFees,
     annualReportBackup,
+    externalSupportLinks,
     manualBackupFiscalYear,
     lastBackupResult,
     checklistDialog,
@@ -208,5 +235,6 @@ export const useBusinessSettingsPage = () => {
     saveDormitoryFeeSettings,
     saveBackupSetting,
     executeBackup,
+    saveExternalSupportLinks,
   }
 }

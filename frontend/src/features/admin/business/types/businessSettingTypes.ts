@@ -79,3 +79,8 @@ export type AnnualReportBackupResult = {
   totalSize: number
   errorMessage: string | null
 }
+
+export type ExternalSupportLinkSetting = {
+  incidentReportUrl: string
+  manualUrl: string
+}

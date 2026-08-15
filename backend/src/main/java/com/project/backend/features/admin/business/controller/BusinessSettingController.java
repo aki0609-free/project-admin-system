@@ -18,6 +18,8 @@ import com.project.backend.features.admin.business.dto.AnnualReportBackupSetting
 import com.project.backend.features.admin.business.dto.BusinessClosingSettingSaveRequest;
 import com.project.backend.features.admin.business.dto.DormitoryFeeSettingResponse;
 import com.project.backend.features.admin.business.dto.DormitoryFeeSettingSaveRequest;
+import com.project.backend.features.admin.business.dto.ExternalSupportLinkSettingResponse;
+import com.project.backend.features.admin.business.dto.ExternalSupportLinkSettingSaveRequest;
 import com.project.backend.features.admin.business.dto.MonthlyClosingOutputAdminResponse;
 import com.project.backend.features.admin.business.dto.MonthlyClosingOutputSaveRequest;
 import com.project.backend.features.admin.business.dto.ResignationChecklistAdminResponse;
@@ -25,6 +27,7 @@ import com.project.backend.features.admin.business.dto.ResignationChecklistSaveR
 import com.project.backend.features.admin.business.dto.ResignationMessageSaveRequest;
 import com.project.backend.features.admin.business.service.BusinessSettingService;
 import com.project.backend.features.admin.business.service.AnnualReportBackupSettingService;
+import com.project.backend.features.admin.business.service.ExternalSupportLinkSettingService;
 import com.project.backend.features.operation.monthly.dto.AnnualReportBackupResult;
 import com.project.backend.features.employee.dto.EmployeeResignationMessageResponse;
 
@@ -39,6 +42,19 @@ public class BusinessSettingController {
 
     private final BusinessSettingService service;
     private final AnnualReportBackupSettingService annualReportBackupService;
+    private final ExternalSupportLinkSettingService externalSupportLinkSettingService;
+
+    @GetMapping("/external-support-links")
+    public ExternalSupportLinkSettingResponse findExternalSupportLinks() {
+        return externalSupportLinkSettingService.find();
+    }
+
+    @PutMapping("/external-support-links")
+    public ExternalSupportLinkSettingResponse saveExternalSupportLinks(
+            @Valid @RequestBody ExternalSupportLinkSettingSaveRequest request
+    ) {
+        return externalSupportLinkSettingService.save(request);
+    }
 
     @GetMapping("/annual-report-backup")
     public AnnualReportBackupSettingResponse findAnnualReportBackupSetting() {

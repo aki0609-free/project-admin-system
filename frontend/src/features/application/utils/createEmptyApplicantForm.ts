@@ -1,9 +1,11 @@
-import { ApplicantPersistedRow } from "../types/applicantTypes";
+import type { ApplicantPersistedRow } from '../types/applicantTypes'
 
-export function createEmptyApplicant(length: number): ApplicantPersistedRow {
+export function createEmptyApplicant(
+  applicationNumber: number,
+): ApplicantPersistedRow {
   return {
-    id: Date.now(),
-    no: length + 1,
+    id: 0,
+    no: applicationNumber,
 
     name: '',
     furiganaName: '',

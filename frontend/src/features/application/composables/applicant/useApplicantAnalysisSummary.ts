@@ -1,5 +1,11 @@
 import { computed, type Ref } from 'vue'
 import type { ApplicantRow } from '@/features/application/types/applicantTypes'
+import {
+  hasCompletedInterview,
+  isResigned,
+  isWorking,
+  percentage,
+} from '@/features/application/utils/applicantMetrics'
 
 export type ApplicantMediaSummaryItem = {
   mediaName: string
@@ -14,29 +20,25 @@ export const useApplicantAnalysisSummary = (
   const totalApplicants = computed(() => visibleApplicants.value.length)
 
   const interviewedCount = computed(() =>
-    visibleApplicants.value.filter(item => item.recruitmentStatus === 'INTERVIEW').length,
-  )
-
-  const workingCount = computed(() =>
-    visibleApplicants.value.filter(item => item.retirementStatus === 'WORKING').length,
-  )
-
-  const resignedCount = computed(() =>
-    visibleApplicants.value.filter(
-      item =>
-        item.retirementStatus === 'RESIGNED' ||
-        item.retirementStatus === 'BACKOUT',
+    visibleApplicants.value.filter(item =>
+      hasCompletedInterview(item.recruitmentStatus),
     ).length,
   )
 
+  const workingCount = computed(() =>
+    visibleApplicants.value.filter(item => isWorking(item.retirementStatus)).length,
+  )
+
+  const resignedCount = computed(() =>
+    visibleApplicants.value.filter(item => isResigned(item.retirementStatus)).length,
+  )
+
   const interviewRate = computed(() => {
-    if (totalApplicants.value === 0) return 0
-    return Math.round((interviewedCount.value / totalApplicants.value) * 100)
+    return percentage(interviewedCount.value, totalApplicants.value)
   })
 
   const workingRate = computed(() => {
-    if (totalApplicants.value === 0) return 0
-    return Math.round((workingCount.value / totalApplicants.value) * 100)
+    return percentage(workingCount.value, totalApplicants.value)
   })
 
   const mediaSummary = computed<ApplicantMediaSummaryItem[]>(() => {
@@ -80,12 +82,9 @@ export const useApplicantAnalysisSummary = (
       }
 
       current.applicants += 1
-      if (item.recruitmentStatus === 'INTERVIEW') current.interviewed += 1
-      if (item.retirementStatus === 'WORKING') current.working += 1
-      if (
-        item.retirementStatus === 'RESIGNED' ||
-        item.retirementStatus === 'BACKOUT'
-      ) {
+      if (hasCompletedInterview(item.recruitmentStatus)) current.interviewed += 1
+      if (isWorking(item.retirementStatus)) current.working += 1
+      if (isResigned(item.retirementStatus)) {
         current.resigned += 1
       }
 
@@ -98,13 +97,9 @@ export const useApplicantAnalysisSummary = (
         yearMonth,
         ...value,
         interviewRate:
-          value.applicants > 0
-            ? Math.round((value.interviewed / value.applicants) * 100)
-            : 0,
+          percentage(value.interviewed, value.applicants),
         workingRate:
-          value.applicants > 0
-            ? Math.round((value.working / value.applicants) * 100)
-            : 0,
+          percentage(value.working, value.applicants),
       }))
   })
 

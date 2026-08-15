@@ -6,6 +6,11 @@ import {
 } from 'vue'
 
 import { useAuth } from '@/shared/auth/composables/useAuth'
+import {
+  externalSupportLinks,
+  resolveHttpsUrl,
+} from '@/shared/support/externalSupportLinks'
+import { getExternalSupportLinks } from '@/shared/support/supportLinkApi'
 
 import CompanyProfileDialog from '@/features/system/company/components/CompanyProfileDialog.vue'
 
@@ -20,6 +25,8 @@ const {
 
 const now = ref('')
 const companyDialog = ref(false)
+const manualUrl = ref<string | null>(externalSupportLinks.manual)
+const incidentFormUrl = ref<string | null>(externalSupportLinks.incident)
 
 let timer: number | undefined
 
@@ -50,8 +57,20 @@ const formatDate = () => {
     + `${hh}時${mi}分`
 }
 
+const loadExternalSupportLinks = async () => {
+  try {
+    const setting = await getExternalSupportLinks()
+    manualUrl.value = resolveHttpsUrl(setting.manualUrl) ?? externalSupportLinks.manual
+    incidentFormUrl.value =
+      resolveHttpsUrl(setting.incidentReportUrl) ?? externalSupportLinks.incident
+  } catch {
+    // DB設定を取得できない場合も、ビルド時の既定URLでメニューを利用可能にする。
+  }
+}
+
 onMounted(() => {
   formatDate()
+  void loadExternalSupportLinks()
 
   timer = window.setInterval(
     formatDate,
@@ -106,6 +125,28 @@ onUnmounted(() => {
           prepend-icon="mdi-domain"
           @click="companyDialog = true"
         />
+
+        <v-list-item
+          v-if="manualUrl"
+          title="マニュアル"
+          subtitle="Confluenceを開く"
+          prepend-icon="mdi-book-open-page-variant-outline"
+          :href="manualUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        />
+
+        <v-list-item
+          v-if="incidentFormUrl"
+          title="不具合・Incident報告"
+          subtitle="Jira Formsを開く"
+          prepend-icon="mdi-bug-outline"
+          :href="incidentFormUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        />
+
+        <v-divider />
 
         <v-list-item
           title="ログアウト"

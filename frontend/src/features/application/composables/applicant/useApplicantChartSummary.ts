@@ -5,6 +5,12 @@ import {
   applicantGenderLabelMap,
   applicantRetirementStatusLabelMap,
 } from '@/features/application/constants/applicantConstants'
+import {
+  hasCompletedInterview,
+  isResigned,
+  isWorking,
+  percentage,
+} from '@/features/application/utils/applicantMetrics'
 
 export const useApplicantChartSummary = (
   applicants: Ref<ApplicantRow[]>,
@@ -32,9 +38,9 @@ export const useApplicantChartSummary = (
       }
 
       current.applicants += 1
-      if (item.recruitmentStatus === 'INTERVIEW') current.interviewed += 1
-      if (item.retirementStatus === 'WORKING') current.working += 1
-      if (item.retirementStatus === 'RESIGNED' || item.retirementStatus === 'BACKOUT') {
+      if (hasCompletedInterview(item.recruitmentStatus)) current.interviewed += 1
+      if (isWorking(item.retirementStatus)) current.working += 1
+      if (isResigned(item.retirementStatus)) {
         current.resigned += 1
       }
 
@@ -47,13 +53,9 @@ export const useApplicantChartSummary = (
         yearMonth,
         ...value,
         interviewRate:
-          value.applicants > 0
-            ? Math.round((value.interviewed / value.applicants) * 100)
-            : 0,
+          percentage(value.interviewed, value.applicants),
         workingRate:
-          value.applicants > 0
-            ? Math.round((value.working / value.applicants) * 100)
-            : 0,
+          percentage(value.working, value.applicants),
       }))
   })
 
@@ -77,8 +79,8 @@ export const useApplicantChartSummary = (
       }
 
       current.applicants += 1
-      if (item.retirementStatus === 'WORKING') current.working += 1
-      if (item.retirementStatus === 'RESIGNED' || item.retirementStatus === 'BACKOUT') {
+      if (isWorking(item.retirementStatus)) current.working += 1
+      if (isResigned(item.retirementStatus)) {
         current.resigned += 1
       }
 
@@ -90,9 +92,7 @@ export const useApplicantChartSummary = (
         mediaName,
         ...value,
         workingRate:
-          value.applicants > 0
-            ? Math.round((value.working / value.applicants) * 100)
-            : 0,
+          percentage(value.working, value.applicants),
       }))
       .sort((a, b) => a.mediaName.localeCompare(b.mediaName))
   })

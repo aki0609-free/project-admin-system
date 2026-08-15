@@ -15,6 +15,7 @@ import type {
 } from '@/features/application/types/applicantTypes'
 import { createEmptyApplicant } from '@/features/application/utils/createEmptyApplicantForm'
 import { toApplicantPersistedRow } from '@/features/application/utils/applicantMediaFormMapper'
+import { nextApplicantNumber } from '@/features/application/utils/applicantMetrics'
 
 const props = defineProps<{
   applicants: ApplicantRow[]
@@ -22,8 +23,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'create', payload: ApplicantPersistedRow): void
-  (e: 'update', payload: ApplicantPersistedRow): void
+  (e: 'create' | 'update', payload: ApplicantPersistedRow): void
   (e: 'delete', id: number): void
 }>()
 
@@ -42,7 +42,11 @@ const isCreateMode = ref(false)
 
 function handleCreate() {
   isCreateMode.value = true
-  editingApplicant.value = createEmptyApplicant(props.applicants.length)
+  editingApplicant.value = createEmptyApplicant(
+    nextApplicantNumber(
+      props.applicants.map(item => item.no),
+    ),
+  )
   dialog.value = true
 }
 

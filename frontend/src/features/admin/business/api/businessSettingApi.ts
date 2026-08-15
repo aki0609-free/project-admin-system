@@ -5,6 +5,7 @@ import type {
   BusinessClosingSetting,
   DormitoryFeeSetting,
   DormitoryFeeSettingSaveRequest,
+  ExternalSupportLinkSetting,
   MonthlyClosingOutputSaveRequest,
   MonthlyClosingOutputSetting,
   ResignationChecklistItem,
@@ -84,3 +85,13 @@ export const executeAnnualReportBackup = (fiscalYear: number) =>
   post<AnnualReportBackupResult>(
     `${basePath}/annual-report-backup/${fiscalYear}/execute`,
   )
+
+export const getExternalSupportLinkSetting = () =>
+  get<ExternalSupportLinkSetting>(`${basePath}/external-support-links`)
+
+export const saveExternalSupportLinkSetting = (
+  request: ExternalSupportLinkSetting,
+) => put<ExternalSupportLinkSetting, ExternalSupportLinkSetting>(
+  `${basePath}/external-support-links`,
+  request,
+)
