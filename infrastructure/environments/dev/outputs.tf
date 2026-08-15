@@ -186,3 +186,18 @@ output "github_actions_deploy_role_name" {
   description = "GitHub Actions deployment IAM role name."
   value       = module.github_actions_deploy_iam.role_name
 }
+
+output "cloudwatch_runtime_log_group_name" {
+  description = "CloudWatch Logs group for application runtime containers."
+  value       = module.cloudwatch_observability.log_group_name
+}
+
+output "cloudwatch_dashboard_name" {
+  description = "CloudWatch operations dashboard name."
+  value       = module.cloudwatch_observability.dashboard_name
+}
+
+output "cloudwatch_alarm_names" {
+  description = "CloudWatch alarms for the DEV runtime."
+  value       = module.cloudwatch_observability.alarm_names
+}

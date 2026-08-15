@@ -126,6 +126,23 @@ module "mysql_database" {
   }
 }
 
+module "cloudwatch_observability" {
+  source = "../../modules/cloudwatch_observability"
+
+  name_prefix                  = local.name_prefix
+  log_group_name               = local.runtime_log_group_name
+  log_retention_days           = 14
+  application_role_name        = module.application_host.instance_role_name
+  application_instance_id      = module.application_host.instance_id
+  database_instance_identifier = module.mysql_database.instance_identifier
+  aws_region                   = "ap-northeast-1"
+
+  tags = {
+    Component = "Observability"
+    Purpose   = "RuntimeLoggingAndMonitoring"
+  }
+}
+
 module "application_runtime_secret" {
   source = "../../modules/runtime_secret"
 

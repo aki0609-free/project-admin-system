@@ -2,7 +2,10 @@
 
     <!-- ===== プロパティ ===== -->
     <property name="LOG_PATH" value="logs"/>
-    <property name="APP_NAME" value="backend-app"/>
+    <springProperty scope="context" name="APP_NAME"
+                    source="spring.application.name" defaultValue="backend"/>
+    <springProperty scope="context" name="APP_ENVIRONMENT"
+                    source="PROJECT_ENVIRONMENT" defaultValue="local"/>
 
     <!-- 人間用ログフォーマット -->
     <property name="LOG_PATTERN"
@@ -50,7 +53,7 @@
     <!-- ===== JSONコンソール（ELK用） ===== -->
     <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <customFields>{"app":"${APP_NAME}"}</customFields>
+            <customFields>{"app":"${APP_NAME}","environment":"${APP_ENVIRONMENT}"}</customFields>
         </encoder>
     </appender>
 
@@ -64,17 +67,25 @@
         </rollingPolicy>
 
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <customFields>{"app":"${APP_NAME}"}</customFields>
+            <customFields>{"app":"${APP_NAME}","environment":"${APP_ENVIRONMENT}"}</customFields>
         </encoder>
     </appender>
 
-    <!-- ===== ログレベル ===== -->
-    <root level="INFO">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
-        <appender-ref ref="ERROR_FILE"/>
-        <appender-ref ref="JSON_CONSOLE"/>
-        <appender-ref ref="JSON_FILE"/>
-    </root>
+    <!-- AWSではDocker awslogsドライバーが標準出力をCloudWatchへ転送する。 -->
+    <springProfile name="aws | aws-bootstrap">
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- ローカルでは人間が読みやすいコンソール／ローテーションファイルを使用する。 -->
+    <springProfile name="!aws &amp; !aws-bootstrap">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="ERROR_FILE"/>
+            <appender-ref ref="JSON_FILE"/>
+        </root>
+    </springProfile>
 
 </configuration>

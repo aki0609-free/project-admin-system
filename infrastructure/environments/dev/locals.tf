@@ -10,4 +10,5 @@ locals {
   cloudflare_zone_id       = var.cloudflare_zone_id
   cloudflare_zone_name     = var.cloudflare_zone_name
   cloudflare_tunnel_name   = var.cloudflare_tunnel_name
+  runtime_log_group_name   = "/project-admin/dev/runtime"
 }

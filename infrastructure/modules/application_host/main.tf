@@ -104,6 +104,14 @@ resource "aws_instance" "this" {
     cpu_credits = "standard"
   }
 
+  lifecycle {
+    # The SSM parameter always points to the latest AL2023 AMI. Updating that
+    # parameter must not replace the stateful DEV host during an unrelated
+    # Terraform apply. OS/AMI replacement is handled as an explicit migration.
+    ignore_changes  = [ami]
+    prevent_destroy = true
+  }
+
   tags = merge(var.tags, {
     Name = "${var.name_prefix}-app"
   })
