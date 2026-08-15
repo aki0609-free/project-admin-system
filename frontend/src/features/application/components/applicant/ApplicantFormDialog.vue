@@ -26,7 +26,7 @@ const dialogModel = computed({
 
 const { tabs, fields } = useApplicantFormFields()
 
-const form = reactive<ApplicantPersistedRow>(createEmptyApplicant(-1))
+const form = reactive<ApplicantPersistedRow>(createEmptyApplicant(1))
 const formLayoutRef = ref<{ validateAll: () => boolean } | null>(null)
 
 watch(

@@ -85,7 +85,7 @@ const chart = useApplicantChart(toRef(props, 'applicants'))
 
         <v-col cols="12" md="6">
           <v-card>
-            <v-card-title>月別在籍率</v-card-title>
+            <v-card-title>月別在籍者率（応募者比）</v-card-title>
             <v-card-text>
               <GenericChart
                 type="line"
@@ -137,7 +137,7 @@ const chart = useApplicantChart(toRef(props, 'applicants'))
 
         <v-col cols="12">
           <v-card>
-            <v-card-title>媒体別在籍率</v-card-title>
+            <v-card-title>媒体別在籍者率（応募者比）</v-card-title>
             <v-card-text>
               <GenericChart
                 type="bar"
@@ -150,7 +150,7 @@ const chart = useApplicantChart(toRef(props, 'applicants'))
 
         <v-col cols="12" md="4">
           <v-card>
-            <v-card-title>ステータス内訳</v-card-title>
+            <v-card-title>在籍・退職ステータス内訳</v-card-title>
             <v-card-text>
               <GenericChart
                 type="pie"

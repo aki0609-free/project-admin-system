@@ -41,6 +41,46 @@ WHERE NOT EXISTS (
       AND setting_row.deleted_at IS NULL
 );
 
+-- 過去にUTF-8文字列がLatin-1として二重変換された既定文言だけを修復する。
+-- 管理画面から利用者が変更した正常な文言は上書きしない。
+UPDATE employee_resignation_setting
+SET
+    dialog_title = '退職処理',
+    guidance_message = '退職日と確認項目を確認してから退職処理を実行してください。',
+    confirmation_message = '実行すると従業員の在籍状態が退職になります。',
+    updated_at = NOW(6)
+WHERE setting_code = 'DEFAULT'
+  AND deleted_at IS NULL
+  AND CONVERT(
+      BINARY CONVERT(dialog_title USING latin1)
+      USING utf8mb4
+  ) = '退職処理';
+
+-- TODOは管理者が自由入力できるため、文字化け特有のLatin文字を含む項目だけ
+-- 1段階逆変換する。通常の日本語・英数字は対象外とする。
+UPDATE employee_resignation_checklist_master
+SET
+    name = CONVERT(BINARY CONVERT(name USING latin1) USING utf8mb4),
+    updated_at = NOW(6)
+WHERE deleted_at IS NULL
+  AND name REGEXP '[ÃÂãäåæçèé]'
+  AND CONVERT(BINARY CONVERT(name USING latin1) USING utf8mb4) IS NOT NULL;
+
+UPDATE employee_resignation_checklist_master
+SET
+    description = CONVERT(
+        BINARY CONVERT(description USING latin1)
+        USING utf8mb4
+    ),
+    updated_at = NOW(6)
+WHERE deleted_at IS NULL
+  AND description IS NOT NULL
+  AND description REGEXP '[ÃÂãäåæçèé]'
+  AND CONVERT(
+      BINARY CONVERT(description USING latin1)
+      USING utf8mb4
+  ) IS NOT NULL;
+
 SET @checklist_duplicate_count := (
     SELECT COUNT(*)
     FROM (

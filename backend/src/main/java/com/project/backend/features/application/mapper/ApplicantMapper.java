@@ -1,10 +1,8 @@
 package com.project.backend.features.application.mapper;
 
-import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 
 import com.project.backend.features.application.dto.ApplicantCreateRequest;
@@ -42,7 +40,6 @@ public interface ApplicantMapper {
     @Mapping(target = "mediaYearMonthSnapshot", ignore = true)
     Applicant toEntity(ApplicantCreateRequest request);
 
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "applicationMedia", ignore = true)
     @Mapping(target = "mediaNameSnapshot", ignore = true)
     @Mapping(target = "mediaYearMonthSnapshot", ignore = true)

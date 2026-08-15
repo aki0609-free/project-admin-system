@@ -1,5 +1,6 @@
 # AWS実行環境とTestcontainersで共通利用するSQL資産一覧。
 # 依存順で記載し、パスはsrc/main/resourcesからの相対パスとする。
+sql/admin/external_support_links_v1.sql
 sql/daily_report/pay_component_rule_foundation_v1.sql
 sql/system/excelbook/renderer_selection_v1.sql
 sql/system/excelbook/monthly_summary_v1.sql

@@ -75,7 +75,7 @@ const handleAiAnalysis = async () => {
 
       <v-col cols="12" md="4">
         <v-card>
-          <v-card-title>在籍率</v-card-title>
+          <v-card-title>在籍者率（応募者比）</v-card-title>
           <v-card-text class="text-h5 font-weight-bold">
             {{ analysis.workingRate.value }}%
           </v-card-text>

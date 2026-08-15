@@ -81,6 +81,15 @@ VITE_SYNCFUSION_LICENSE_KEY=発行されたライセンスキー
 docker compose --env-file frontend/.env.local up --build -d
 ```
 
+キーなしで一度ビルドした後にキーを設定した場合、BuildKit Secretの変更だけでは古いビルド層が再利用されることがある。その場合は、次の手順でフロントエンドだけキャッシュを破棄して再生成する。
+
+```bash
+docker compose --env-file frontend/.env.local build --no-cache frontend
+docker compose --env-file frontend/.env.local up -d --no-deps frontend
+```
+
+アプリ起動時にライセンスを登録してからVueを描画する。これにより、ライセンスが設定済みでも初回描画時だけ試用版バーが表示される現象を防ぐ。
+
 ### 4.2 GitHub Actions／DEVデプロイ
 
 GitHubのDEV Environmentへ次のSecretを登録する。

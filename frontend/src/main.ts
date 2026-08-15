@@ -8,6 +8,11 @@ import 'vuetify/styles'
 import { queryPlugin } from './app/plugins/query'
 import { useAuthStore } from './shared/auth/store/useAuthStore'
 import { setupMonacoWorkers } from './app/monaco/setupMonacoWorkers'
+import { configureSyncfusion } from './app/plugins/syncfusion'
+
+// Syncfusionコンポーネントが初回描画される前にライセンスを登録する。
+// 各画面での遅延登録では、開発環境で試用版バナーが先に生成される場合がある。
+configureSyncfusion()
 
 const app = createApp(App)
 

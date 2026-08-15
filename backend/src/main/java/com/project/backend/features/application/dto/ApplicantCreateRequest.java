@@ -2,17 +2,18 @@ package com.project.backend.features.application.dto;
 
 import java.time.LocalDate;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 public class ApplicantCreateRequest {
-    @NotNull
+    @NotBlank
     private String applicationNo;
     
     private String contractType;
+    @NotBlank
     private String name;
     private String furiganaName;
     private LocalDate birthDate;

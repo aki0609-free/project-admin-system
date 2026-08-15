@@ -403,6 +403,34 @@ if [[ "${business_settings_verification}" != "1:2" ]]; then
   exit 1
 fi
 
+external_support_links_verification="$(
+  run_mysql "" --batch --skip-column-names --execute "
+    SELECT CONCAT(
+      (SELECT COUNT(*)
+       FROM information_schema.tables
+       WHERE table_schema = DATABASE()
+         AND table_name = 'external_support_link_setting'),
+      ':',
+      (SELECT COUNT(*)
+       FROM information_schema.statistics
+       WHERE table_schema = DATABASE()
+         AND table_name = 'external_support_link_setting'
+         AND index_name = 'uk_external_support_link_setting_code'),
+      ':',
+      (SELECT COUNT(*)
+       FROM external_support_link_setting
+       WHERE tenant_id = 'default'
+         AND setting_code = 'DEFAULT'
+         AND deleted_at IS NULL)
+    );
+  "
+)"
+
+if [[ "${external_support_links_verification}" != "1:2:1" ]]; then
+  echo "External support links verification failed: ${external_support_links_verification}" >&2
+  exit 1
+fi
+
 run_mysql "" --table --execute "
   SELECT table_name, column_name, column_type
   FROM information_schema.columns

@@ -100,6 +100,9 @@ export const useDailyReportEditDialog = (
   const applyingDetail =
     ref(false)
 
+  const applyingPayrollPreview =
+    ref(false)
+
   const payrollItemsError =
     ref('')
 
@@ -312,19 +315,25 @@ export const useDailyReportEditDialog = (
       >
     >,
   ) => {
-    formModel.allowances =
-      response.allowances.map(item => ({
-        ...item,
-        amount: item.amount ?? 0,
-        overrideReason: item.overrideReason ?? '',
-      }))
+    applyingPayrollPreview.value = true
 
-    formModel.deductions =
-      response.deductions.map(item => ({
-        ...item,
-        amount: item.amount ?? 0,
-        overrideReason: item.overrideReason ?? '',
-      }))
+    try {
+      formModel.allowances =
+        response.allowances.map(item => ({
+          ...item,
+          amount: item.amount ?? 0,
+          overrideReason: item.overrideReason ?? '',
+        }))
+
+      formModel.deductions =
+        response.deductions.map(item => ({
+          ...item,
+          amount: item.amount ?? 0,
+          overrideReason: item.overrideReason ?? '',
+        }))
+    } finally {
+      applyingPayrollPreview.value = false
+    }
   }
 
   const previewPayrollItems =
@@ -716,8 +725,16 @@ export const useDailyReportEditDialog = (
     () => formModel.deductions.map(
       item => `${item.masterId}:${item.quantity}`,
     ),
-    schedulePayrollItemPreview,
-    { deep: true },
+    () => {
+      if (applyingPayrollPreview.value) {
+        return
+      }
+
+      schedulePayrollItemPreview()
+    },
+    {
+      flush: 'sync',
+    },
   )
 
   watch(

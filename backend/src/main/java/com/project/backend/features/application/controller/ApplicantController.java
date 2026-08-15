@@ -18,6 +18,8 @@ import com.project.backend.features.application.dto.ApplicantUpdateRequest;
 import com.project.backend.features.application.service.ApplicantCommandService;
 import com.project.backend.features.application.service.ApplicantQueryService;
 
+import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -39,14 +41,14 @@ public class ApplicantController {
     }
 
     @PostMapping
-    public Long create(@RequestBody ApplicantCreateRequest request) {
+    public Long create(@Valid @RequestBody ApplicantCreateRequest request) {
         return applicantCommandService.create(request);
     }
 
     @PutMapping("/{id}")
     public void update(
             @PathVariable Long id,
-            @RequestBody ApplicantUpdateRequest request
+            @Valid @RequestBody ApplicantUpdateRequest request
     ) {
         applicantCommandService.update(id, request);
     }
