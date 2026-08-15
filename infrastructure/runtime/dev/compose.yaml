@@ -22,10 +22,11 @@ services:
     networks:
       - application
     logging:
-      driver: json-file
+      driver: awslogs
       options:
-        max-size: 10m
-        max-file: "3"
+        awslogs-region: ap-northeast-1
+        awslogs-group: /project-admin/dev/runtime
+        awslogs-stream: cloudflared
 
   redis:
     image: redis:7.4-alpine
@@ -57,10 +58,11 @@ services:
     networks:
       - application
     logging:
-      driver: json-file
+      driver: awslogs
       options:
-        max-size: 10m
-        max-file: "3"
+        awslogs-region: ap-northeast-1
+        awslogs-group: /project-admin/dev/runtime
+        awslogs-stream: redis
 
   backend:
     image: ${BACKEND_IMAGE:?BACKEND_IMAGE must be set}
@@ -92,6 +94,7 @@ services:
       PROJECT_STORAGE_S3_BUCKET: ${PROJECT_STORAGE_S3_BUCKET:?PROJECT_STORAGE_S3_BUCKET must be set}
       PROJECT_STORAGE_LOCAL_BASE_PATH: /app/storage
       PROJECT_IMPORTS_SCRIPT_PYTHON_COMMAND: /opt/projectadmin-python/bin/python
+      PROJECT_ENVIRONMENT: dev
     ports:
       - 127.0.0.1:8080:8080
     volumes:
@@ -117,10 +120,11 @@ services:
     networks:
       - application
     logging:
-      driver: json-file
+      driver: awslogs
       options:
-        max-size: 20m
-        max-file: "5"
+        awslogs-region: ap-northeast-1
+        awslogs-group: /project-admin/dev/runtime
+        awslogs-stream: backend
 
   frontend:
     image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE must be set}
@@ -149,10 +153,11 @@ services:
     networks:
       - application
     logging:
-      driver: json-file
+      driver: awslogs
       options:
-        max-size: 10m
-        max-file: "3"
+        awslogs-region: ap-northeast-1
+        awslogs-group: /project-admin/dev/runtime
+        awslogs-stream: frontend
 
 volumes:
   backend_storage:
