@@ -11,7 +11,7 @@ import type {
   BackupTargetDialogForm,
 } from '@/features/system/backup/types/backupFormTypes'
 import { createEmptyBackupColumnForm } from '@/features/system/backup/utils/backupFormFactory'
-import type { ToolbarItem } from '@/toolbox/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 
 export type BackupColumnTableRow = SimpleTableEditableRow & {
   id: number
@@ -212,17 +212,19 @@ export const useBackupColumnEditor = (formModel: BackupTargetDialogForm) => {
 
   const hasSelection = computed(() => selectedColumn.value != null)
 
-  const toolbarItems = computed<ToolbarItem[]>(() => [
+  const leftToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: '追加',
       color: 'primary',
+      intent: 'primary',
       onClick: add,
     },
     {
       type: 'button',
       label: '↑',
       color: 'secondary',
+      intent: 'secondary',
       disabled: !hasSelection.value,
       onClick: moveUp,
     },
@@ -230,13 +232,18 @@ export const useBackupColumnEditor = (formModel: BackupTargetDialogForm) => {
       type: 'button',
       label: '↓',
       color: 'secondary',
+      intent: 'secondary',
       disabled: !hasSelection.value,
       onClick: moveDown,
     },
+  ])
+
+  const rightToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: '削除',
       color: 'error',
+      intent: 'danger',
       disabled: !hasSelection.value,
       onClick: remove,
     },
@@ -249,7 +256,8 @@ export const useBackupColumnEditor = (formModel: BackupTargetDialogForm) => {
     selectedColumn,
     fields,
     schema: backupColumnSchema,
-    toolbarItems,
+    leftToolbarItems,
+    rightToolbarItems,
     selectRow,
     add,
     remove,

@@ -189,6 +189,14 @@ export const useDailyReportFormFields = ({
           type: 'number',
           editable: false,
         },
+        {
+          key: 'workDescription',
+          label: '作業内容',
+          type: 'textarea',
+          rows: 4,
+          autoGrow: true,
+          gridColumn: '1 / span 4',
+        },
       ]
 
     return result

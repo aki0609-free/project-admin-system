@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 
 import SearchPanel from '@/shared/components/search/SearchPanel.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
@@ -62,7 +64,7 @@ const columns: SimpleTableColumnDef<CustomerTransactionReviewRow>[] = [
     title: '入金済',
     key: 'paymentStatus',
     width: '100px',
-    formatter: value => ['PAID', 'OVERPAID'].includes(String(value)) ? '済' : '未',
+    formatter: (value) => (['PAID', 'OVERPAID'].includes(String(value)) ? '済' : '未'),
   },
   { title: '備考', key: 'note', width: '240px' },
 ]
@@ -70,7 +72,7 @@ const columns: SimpleTableColumnDef<CustomerTransactionReviewRow>[] = [
 const filterRules = createSimpleTableFilterRules<CustomerTransactionReviewRow>(columns)
 
 const filteredTransactions = computed(() =>
-  props.transactions.filter(row => {
+  props.transactions.filter((row) => {
     if (filter.targetMonth && row.targetMonth !== filter.targetMonth) return false
 
     if (filter.customerName) {
@@ -91,46 +93,35 @@ const clearFilter = () => {
   filter.customerName = ''
   filter.paymentStatus = ''
 }
+
+const rightFooterItems: ToolbarItem[] = [
+  {
+    type: 'button',
+    label: '閉じる',
+    intent: 'utility',
+    onClick: () => emit('update:modelValue', false),
+  },
+]
 </script>
 
 <template>
-  <v-dialog
+  <AppDialog
     :model-value="modelValue"
-    max-width="1200"
-    scrollable
+    title="取引確認"
+    size="xl"
+    :max-width="1200"
+    body-layout="stack"
+    :right-footer-items="rightFooterItems"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <v-card rounded="xl">
-      <v-card-title class="font-weight-bold">
-        取引確認
-      </v-card-title>
+    <SearchPanel v-model="filter" :fields="fields" @clear="clearFilter" />
 
-      <v-divider />
-
-      <v-card-text>
-        <SearchPanel
-          v-model="filter"
-          :fields="fields"
-          @clear="clearFilter"
-        />
-
-        <SimpleTable
-          table-key="customer-transaction-review"
-          item-key="id"
-          :items="filteredTransactions"
-          :columns="columns"
-          :filter-rules="filterRules"
-        />
-      </v-card-text>
-
-      <v-card-actions class="justify-end">
-        <v-btn
-          variant="text"
-          @click="emit('update:modelValue', false)"
-        >
-          閉じる
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+    <SimpleTable
+      table-key="customer-transaction-review"
+      item-key="id"
+      :items="filteredTransactions"
+      :columns="columns"
+      :filter-rules="filterRules"
+    />
+  </AppDialog>
 </template>

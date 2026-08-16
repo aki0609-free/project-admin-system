@@ -5,7 +5,10 @@ import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
 import { EmployeeListItemResponse } from '../types/employeeApiTypes'
 import { EmployeeTimesheetForm } from '../types/employeeTimesheetFormTypes'
 import { EmployeeTimesheetResponse } from '../types/employeeWorkApiTypes'
-import { createEmptyEmployeeTimesheetForm, toEmployeeTimesheetForm } from '../utils/employeeTimesheetFormFactory'
+import {
+  createEmptyEmployeeTimesheetForm,
+  toEmployeeTimesheetForm,
+} from '../utils/employeeTimesheetFormFactory'
 
 export const employeeTimesheetSchema = z.object({
   id: z.number(),
@@ -28,9 +31,7 @@ export const useEmployeeTimesheetEditDialog = (
   emitSave: (form: EmployeeTimesheetForm) => void,
   emitDelete: (form: EmployeeTimesheetForm) => void,
 ) => {
-  const formModel = reactive<EmployeeTimesheetForm>(
-    createEmptyEmployeeTimesheetForm(),
-  )
+  const formModel = reactive<EmployeeTimesheetForm>(createEmptyEmployeeTimesheetForm())
 
   const resetForm = () => {
     Object.assign(formModel, createEmptyEmployeeTimesheetForm())
@@ -113,41 +114,40 @@ export const useEmployeeTimesheetEditDialog = (
     emitDelete({ ...formModel })
   }
 
-  const footerItems = computed<ToolbarItem[]>(() => {
-    const items: ToolbarItem[] = []
+  const leftFooterItems = computed<ToolbarItem[]>(() =>
+    isEdit.value
+      ? [
+          {
+            type: 'button',
+            label: '削除',
+            intent: 'danger',
+            onClick: remove,
+          },
+        ]
+      : [],
+  )
 
-    if (isEdit.value) {
-      items.push({
-        type: 'button',
-        label: '削除',
-        color: 'error',
-        onClick: remove,
-      })
-    }
-
-    items.push(
-      {
-        type: 'button',
-        label: '閉じる',
-        color: 'secondary',
-        onClick: close,
-      },
-      {
-        type: 'button',
-        label: '保存',
-        color: 'primary',
-        onClick: save,
-      },
-    )
-
-    return items
-  })
+  const rightFooterItems = computed<ToolbarItem[]>(() => [
+    {
+      type: 'button',
+      label: '閉じる',
+      intent: 'secondary',
+      onClick: close,
+    },
+    {
+      type: 'button',
+      label: '保存',
+      intent: 'primary',
+      onClick: save,
+    },
+  ])
 
   return {
     formModel,
     isEdit,
     fields,
     schema: employeeTimesheetSchema,
-    footerItems,
+    leftFooterItems,
+    rightFooterItems,
   }
 }

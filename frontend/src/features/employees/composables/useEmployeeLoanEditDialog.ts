@@ -80,8 +80,8 @@ export const useEmployeeLoanEditDialog = (
       label: '借入元本',
       type: 'number',
       editable:
-        formModel.id === 0
-        || formModel.currentBalance === (loan.value?.principal ?? formModel.principal),
+        formModel.id === 0 ||
+        formModel.currentBalance === (loan.value?.principal ?? formModel.principal),
       gridColumn: '3 / span 1',
     },
     {
@@ -130,41 +130,40 @@ export const useEmployeeLoanEditDialog = (
     emitDelete({ ...formModel })
   }
 
-  const footerItems = computed<ToolbarItem[]>(() => {
-    const items: ToolbarItem[] = []
+  const leftFooterItems = computed<ToolbarItem[]>(() =>
+    formModel.id > 0
+      ? [
+          {
+            type: 'button',
+            label: '削除',
+            intent: 'danger',
+            onClick: remove,
+          },
+        ]
+      : [],
+  )
 
-    if (formModel.id > 0) {
-      items.push({
-        type: 'button',
-        label: '削除',
-        color: 'error',
-        onClick: remove,
-      })
-    }
-
-    items.push(
-      {
-        type: 'button',
-        label: '閉じる',
-        color: 'secondary',
-        onClick: close,
-      },
-      {
-        type: 'button',
-        label: '保存',
-        color: 'primary',
-        onClick: save,
-      },
-    )
-
-    return items
-  })
+  const rightFooterItems = computed<ToolbarItem[]>(() => [
+    {
+      type: 'button',
+      label: '閉じる',
+      intent: 'secondary',
+      onClick: close,
+    },
+    {
+      type: 'button',
+      label: '保存',
+      intent: 'primary',
+      onClick: save,
+    },
+  ])
 
   return {
     formModel,
     fields,
     schema: employeeLoanSchema,
-    footerItems,
+    leftFooterItems,
+    rightFooterItems,
     isEdit: computed(() => formModel.id > 0),
   }
 }

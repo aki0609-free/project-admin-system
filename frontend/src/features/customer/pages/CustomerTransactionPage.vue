@@ -2,14 +2,17 @@
 import { computed, ref } from 'vue'
 import CardLayout from '@/shared/components/layout/card_layout/CardLayout.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
 import PaymentConfirmDialog from '../components/PaymentConfirmDialog.vue'
 import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
 import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
 import { useCustomersQuery } from '../api/useCustomersQuery'
 import { useCustomerTransactionsQuery } from '../api/useCustomerTransactionQuery'
 import { useConfirmCustomerPaymentMutation } from '../api/useConfirmCustomerPaymentMutation'
-import { toCustomerTransaction, toCustomerPaymentConfirmRequest } from '../mapper/customerTransactionMapper'
+import {
+  toCustomerTransaction,
+  toCustomerPaymentConfirmRequest,
+} from '../mapper/customerTransactionMapper'
 import { toCustomerListItem } from '../mapper/customerMapper'
 import { useCustomerTransactionColumns } from '../composables/useCustomerTransactionColumns'
 import type { CustomerTransaction, CustomerPaymentConfirmPayload } from '../types/customerTypes'
@@ -24,32 +27,28 @@ const confirmPaymentMutation = useConfirmCustomerPaymentMutation()
 
 const { columns } = useCustomerTransactionColumns()
 
-const customers = computed(() =>
-  customersQuery.customers.value.map(toCustomerListItem),
-)
+const customers = computed(() => customersQuery.customers.value.map(toCustomerListItem))
 
 const customerOptions = computed(() => [
   { title: 'すべて', value: null },
-  ...customers.value.map(customer => ({
+  ...customers.value.map((customer) => ({
     title: customer.name,
     value: customer.id,
   })),
 ])
 
 const customerNameMap = computed(() =>
-  Object.fromEntries(customers.value.map(customer => [customer.id, customer.name])),
+  Object.fromEntries(customers.value.map((customer) => [customer.id, customer.name])),
 )
 
 const items = computed<CustomerTransaction[]>(() =>
-  transactionsQuery.transactions.value.map(response => ({
+  transactionsQuery.transactions.value.map((response) => ({
     ...toCustomerTransaction(response),
     customerName: customerNameMap.value[response.customerId] ?? '',
   })),
 )
 
-const filterRules = computed(() =>
-  createSimpleTableFilterRules<CustomerTransaction>(columns.value),
-)
+const filterRules = computed(() => createSimpleTableFilterRules<CustomerTransaction>(columns.value))
 
 const toolbarItems = computed<ToolbarItem[]>(() => [
   {
@@ -81,7 +80,7 @@ async function handleConfirmPayment(payload: CustomerPaymentConfirmPayload) {
 <template>
   <CardLayout title="取引管理" subtitle="顧客別の請求・入金状況">
     <div class="d-flex flex-column ga-4">
-      <div class="d-flex align-center ga-3">
+      <div class="customer-transaction-controls">
         <v-select
           v-model="selectedCustomerId"
           :items="customerOptions"
@@ -94,14 +93,10 @@ async function handleConfirmPayment(payload: CustomerPaymentConfirmPayload) {
           style="max-width: 360px"
         />
 
-        <GenericToolbar :items="toolbarItems" />
+        <AppToolbar :right-items="toolbarItems" class="control-toolbar" />
       </div>
 
-      <v-alert
-        v-if="transactionsQuery.isError.value"
-        type="error"
-        variant="tonal"
-      >
+      <v-alert v-if="transactionsQuery.isError.value" type="error" variant="tonal">
         取引情報の取得に失敗しました。
       </v-alert>
 
@@ -123,3 +118,22 @@ async function handleConfirmPayment(payload: CustomerPaymentConfirmPayload) {
     </div>
   </CardLayout>
 </template>
+
+<style scoped>
+.customer-transaction-controls {
+  display: grid;
+  grid-template-columns: minmax(240px, 360px) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.control-toolbar {
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .customer-transaction-controls {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

@@ -2,7 +2,7 @@
 import { computed, toRef } from 'vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 import FormGridTab from '@/toolbox/tab/FormGridTab.vue'
-import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 
 import type { DailyReportDetailResponse } from '@/features/dailyreport/types/dailyReportApiTypes'
 import type { DailyReportForm } from '@/features/dailyreport/types/dailyReportFormTypes'
@@ -39,7 +39,8 @@ const {
   billingFields,
   financeFields,
   schema,
-  footerItems,
+  leftFooterItems,
+  rightFooterItems,
   billingRateLoading,
   payrollItemsLoading,
   payrollItemsError,
@@ -82,11 +83,13 @@ const updateBalanceQuantity = (
 </script>
 
 <template>
-  <DetailDialogLayout
+  <AppDialog
     v-model="visible"
     :title="isEdit ? '日報編集' : '日報新規作成'"
-    max-width="1280"
-    :footer-items="footerItems"
+    size="xl"
+    body-layout="stack"
+    :left-footer-items="leftFooterItems"
+    :right-footer-items="rightFooterItems"
   >
     <TabLayout
       v-model="activeTab"
@@ -98,16 +101,7 @@ const updateBalanceQuantity = (
           v-model="formModel"
           :schema="schema"
           :fields="fields"
-        >
-          <v-textarea
-            v-model="formModel.workDescription"
-            label="作業内容"
-            variant="outlined"
-            rows="4"
-            auto-grow
-            hide-details
-          />
-        </FormGridTab>
+        />
 
         <div
           v-else-if="active === 'billing'"
@@ -178,6 +172,7 @@ const updateBalanceQuantity = (
               v-for="item in formModel.allowances"
               :key="item.masterId"
               class="amount-card"
+              :data-testid="`daily-report-allowance-${item.code}`"
             >
               <div class="amount-info">
                 <div class="amount-name">
@@ -249,6 +244,7 @@ const updateBalanceQuantity = (
               v-for="item in formModel.deductions"
               :key="item.masterId"
               class="amount-card"
+              :data-testid="`daily-report-deduction-${item.code}`"
             >
               <div class="amount-info">
                 <div class="amount-name">
@@ -339,7 +335,7 @@ const updateBalanceQuantity = (
         />
       </template>
     </TabLayout>
-  </DetailDialogLayout>
+  </AppDialog>
 </template>
 
 <style scoped>
@@ -454,5 +450,16 @@ const updateBalanceQuantity = (
   border: 1px dashed #cbd5e1;
   border-radius: 14px;
   background: #f8fafc;
+}
+
+@media (max-width: 720px) {
+  .amount-card,
+  .balance-section {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .amount-input {
+    width: 100%;
+  }
 }
 </style>

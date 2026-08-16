@@ -5,7 +5,7 @@ import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedFor
 import type { BatchJobDefinitionResponse } from '@/features/system/batch/types/batchApiTypes'
 import type { BatchJobDefinitionForm } from '@/features/system/batch/types/batchFormTypes'
 import { useBatchDefinitionEditDialog } from '@/features/system/batch/composables/useBatchDefinitionEditDialog'
-import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -40,10 +40,12 @@ const {
 </script>
 
 <template>
-  <DetailDialogLayout
+  <AppDialog
     v-model="visible"
     :title="title"
-    max-width="1120"
+    size="lg"
+    :max-width="1120"
+    body-layout="stack"
     :left-footer-items="leftFooterItems"
     :right-footer-items="rightFooterItems"
   >
@@ -57,30 +59,13 @@ const {
       />
     </FormLayout>
 
-    <v-textarea
-      v-model="formModel.description"
-      class="dialog-description"
-      label="説明"
-      variant="outlined"
-      rows="4"
-      auto-grow
-      hide-details
-    />
-
     <v-alert
       v-if="formModel.scheduleEnabled"
       type="info"
       variant="tonal"
       density="compact"
-      class="mt-4"
     >
       保存するとスケジュールは自動で再読込されます。
     </v-alert>
-  </DetailDialogLayout>
+  </AppDialog>
 </template>
-
-<style scoped>
-.dialog-description {
-  margin-top: 20px;
-}
-</style>

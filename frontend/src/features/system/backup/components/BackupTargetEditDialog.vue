@@ -4,13 +4,13 @@ import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
 
 import type { BackupTargetResponse } from '@/features/system/backup/types/backupApiTypes'
 import type { BackupTargetDialogForm } from '@/features/system/backup/types/backupFormTypes'
 import { useBackupTargetEditDialog } from '@/features/system/backup/composables/useBackupTargetEditDialog'
 import { useBackupColumnEditor } from '@/features/system/backup/composables/useBackupColumnEditor'
-import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -50,16 +50,18 @@ const {
   selectedColumn,
   fields: columnFields,
   schema: columnSchema,
-  toolbarItems: columnToolbarItems,
+  leftToolbarItems: columnLeftToolbarItems,
+  rightToolbarItems: columnRightToolbarItems,
   selectRow: selectColumnRow,
 } = useBackupColumnEditor(formModel)
 </script>
 
 <template>
-  <DetailDialogLayout
+  <AppDialog
     v-model="visible"
     :title="title"
-    max-width="1280"
+    size="xl"
+    body-layout="stack"
     :left-footer-items="leftFooterItems"
     :right-footer-items="rightFooterItems"
   >
@@ -106,7 +108,11 @@ const {
           v-else-if="active === 'columns'"
           class="column-tab-page"
         >
-          <GenericToolbar :items="columnToolbarItems" />
+          <AppToolbar
+            :left-items="columnLeftToolbarItems"
+            :right-items="columnRightToolbarItems"
+            surface="plain"
+          />
 
           <v-alert
             type="info"
@@ -167,7 +173,7 @@ const {
         </div>
       </template>
     </TabLayout>
-  </DetailDialogLayout>
+  </AppDialog>
 </template>
 
 <style scoped>

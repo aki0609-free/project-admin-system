@@ -57,7 +57,11 @@ export function configureSyncfusion(): boolean {
 
   if (configured) return true
 
-  const licenseKey = import.meta.env.VITE_SYNCFUSION_LICENSE_KEY?.trim()
+  const licenseKey = import.meta.env.VITE_SYNCFUSION_LICENSE_KEY
+    ?.split(';')
+    .map((key: string) => key.trim())
+    .filter(Boolean)
+    .join(';')
 
   if (!licenseKey) {
     return false

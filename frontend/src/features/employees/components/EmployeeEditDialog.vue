@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, toRef, watch } from 'vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
-import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 import FormGridTab from '@/toolbox/tab/FormGridTab.vue'
-import type {
-  EmployeeDetailResponse,
-  EmployeeResignRequest,
-} from '../types/employeeApiTypes'
+import type { EmployeeDetailResponse, EmployeeResignRequest } from '../types/employeeApiTypes'
 import type { EmployeeForm } from '../types/employeeFormTypes'
 import { useEmployeeEditDialog } from '../composables/useEmployeeEditDialog'
 import EmployeeResignDialog from './EmployeeResignDialog.vue'
@@ -49,7 +46,8 @@ const {
   basicSchema,
   payrollSchema,
   contractSchema,
-  footerItems,
+  leftFooterItems,
+  rightFooterItems,
   resignDialogVisible,
 } = useEmployeeEditDialog(
   visible,
@@ -80,44 +78,50 @@ const handleResign = async (request: EmployeeResignRequest) => {
   emit('resigned')
 }
 
-watch(() => formModel.payrollItemSettings, (items) => {
-  if (items.length && !items.some(item => item.targetCode === activePayrollItemCode.value)) {
-    const firstItem = items[0]
-    if (firstItem) activePayrollItemCode.value = firstItem.targetCode
-  }
-}, { immediate: true, deep: true })
+watch(
+  () => formModel.payrollItemSettings,
+  (items) => {
+    if (items.length && !items.some((item) => item.targetCode === activePayrollItemCode.value)) {
+      const firstItem = items[0]
+      if (firstItem) activePayrollItemCode.value = firstItem.targetCode
+    }
+  },
+  { immediate: true, deep: true },
+)
 
 watch(
   [visible, () => props.employee, payrollItemCatalogQuery.settings],
   ([opened, currentEmployee, catalog]) => {
     if (!opened || currentEmployee || !catalog.length) return
-    formModel.payrollItemSettings = catalog.map(item => ({
+    formModel.payrollItemSettings = catalog.map((item) => ({
       ...item,
       effectiveFrom: item.effectiveFrom ?? '',
       effectiveTo: item.effectiveTo ?? '',
-      parameters: item.targetCode === 'DORMITORY_FEE'
-        ? {
-            ...item.parameters,
-            dormitoryType: item.parameters.dormitoryType ?? '',
-            collectionMode: item.parameters.collectionMode ?? 'DAILY',
-          }
-        : { ...item.parameters },
+      parameters:
+        item.targetCode === 'DORMITORY_FEE'
+          ? {
+              ...item.parameters,
+              dormitoryType: item.parameters.dormitoryType ?? '',
+              collectionMode: item.parameters.collectionMode ?? 'DAILY',
+            }
+          : { ...item.parameters },
     }))
   },
   { immediate: true },
 )
 
 const activePayrollItem = computed(() =>
-  formModel.payrollItemSettings.find(item => item.targetCode === activePayrollItemCode.value),
+  formModel.payrollItemSettings.find((item) => item.targetCode === activePayrollItemCode.value),
 )
 </script>
 
 <template>
-  <DetailDialogLayout
+  <AppDialog
     v-model="visible"
     :title="isEdit ? '従業員情報編集' : '従業員情報新規作成'"
-    max-width="1280"
-    :footer-items="footerItems"
+    size="xl"
+    :left-footer-items="leftFooterItems"
+    :right-footer-items="rightFooterItems"
   >
     <TabLayout v-model="activeTab" :tabs="tabs">
       <template #default="{ active }">
@@ -130,49 +134,92 @@ const activePayrollItem = computed(() =>
 
         <div v-else-if="active === 'payrollItems'" class="payroll-item-settings">
           <v-tabs v-model="activePayrollItemCode" color="primary">
-            <v-tab v-for="item in formModel.payrollItemSettings" :key="item.targetCode" :value="item.targetCode">
+            <v-tab
+              v-for="item in formModel.payrollItemSettings"
+              :key="item.targetCode"
+              :value="item.targetCode"
+            >
               {{ item.displayName }}
             </v-tab>
           </v-tabs>
           <v-card v-if="activePayrollItem" variant="outlined" class="pa-5 mt-4">
-            <v-switch v-model="activePayrollItem.enabled" label="この項目を適用する" color="primary" />
+            <v-switch
+              v-model="activePayrollItem.enabled"
+              label="この項目を適用する"
+              color="primary"
+            />
             <template v-if="activePayrollItem.enabled">
               <v-select
                 v-if="activePayrollItem.targetCode === 'DORMITORY_FEE'"
                 v-model="activePayrollItem.parameters.dormitoryType"
                 label="寮タイプ"
-                :items="[{ title: '一人部屋', value: 'SINGLE_ROOM' }, { title: '複数人部屋', value: 'SHARED_ROOM' }]"
+                :items="[
+                  { title: '一人部屋', value: 'SINGLE_ROOM' },
+                  { title: '複数人部屋', value: 'SHARED_ROOM' },
+                ]"
                 variant="outlined"
               />
               <v-select
                 v-if="activePayrollItem.targetCode === 'DORMITORY_FEE'"
                 v-model="activePayrollItem.parameters.collectionMode"
                 label="徴収方式"
-                :items="[{ title: '日報で日次徴収', value: 'DAILY' }, { title: '月1回の一括徴収', value: 'MONTHLY' }]"
+                :items="[
+                  { title: '日報で日次徴収', value: 'DAILY' },
+                  { title: '月1回の一括徴収', value: 'MONTHLY' },
+                ]"
                 variant="outlined"
               />
               <div v-if="activePayrollItem.balanceTracked" class="balance-grid">
-                <v-text-field :model-value="activePayrollItem.effectiveFrom" label="適用開始日（自動）" readonly variant="outlined" />
-                <v-text-field :model-value="activePayrollItem.openingQuantity" label="前月繰越日数" readonly variant="outlined" />
-                <v-text-field :model-value="activePayrollItem.accruedQuantity" label="当月対象日数" readonly variant="outlined" />
-                <v-text-field :model-value="activePayrollItem.consumedQuantity" label="支払い日数" readonly variant="outlined" />
-                <v-text-field :model-value="activePayrollItem.remainingQuantity" label="残日数" readonly variant="outlined" />
+                <v-text-field
+                  :model-value="activePayrollItem.effectiveFrom"
+                  label="適用開始日（自動）"
+                  readonly
+                  variant="outlined"
+                />
+                <v-text-field
+                  :model-value="activePayrollItem.openingQuantity"
+                  label="前月繰越日数"
+                  readonly
+                  variant="outlined"
+                />
+                <v-text-field
+                  :model-value="activePayrollItem.accruedQuantity"
+                  label="当月対象日数"
+                  readonly
+                  variant="outlined"
+                />
+                <v-text-field
+                  :model-value="activePayrollItem.consumedQuantity"
+                  label="支払い日数"
+                  readonly
+                  variant="outlined"
+                />
+                <v-text-field
+                  :model-value="activePayrollItem.remainingQuantity"
+                  label="残日数"
+                  readonly
+                  variant="outlined"
+                />
               </div>
               <PayrollItemTransactionPanel
-                v-if="formModel.id > 0 && (
-                  activePayrollItem.inputSource === 'TRANSACTION'
-                    || activePayrollItem.parameters.collectionMode === 'MONTHLY'
-                )"
+                v-if="
+                  formModel.id > 0 &&
+                  (activePayrollItem.inputSource === 'TRANSACTION' ||
+                    activePayrollItem.parameters.collectionMode === 'MONTHLY')
+                "
                 :employee-id="formModel.id"
                 :target-code="activePayrollItem.targetCode"
                 :target-name="activePayrollItem.displayName"
-                :quantity-unit="activePayrollItem.balanceTracked ? activePayrollItem.balanceUnit : null"
+                :quantity-unit="
+                  activePayrollItem.balanceTracked ? activePayrollItem.balanceUnit : null
+                "
               />
               <v-alert
-                v-else-if="formModel.id === 0 && (
-                  activePayrollItem.inputSource === 'TRANSACTION'
-                    || activePayrollItem.parameters.collectionMode === 'MONTHLY'
-                )"
+                v-else-if="
+                  formModel.id === 0 &&
+                  (activePayrollItem.inputSource === 'TRANSACTION' ||
+                    activePayrollItem.parameters.collectionMode === 'MONTHLY')
+                "
                 type="info"
                 variant="tonal"
               >
@@ -206,7 +253,7 @@ const activePayrollItem = computed(() =>
         </FormGridTab>
       </template>
     </TabLayout>
-  </DetailDialogLayout>
+  </AppDialog>
 
   <EmployeeResignDialog
     v-model="resignDialogVisible"
@@ -218,7 +265,17 @@ const activePayrollItem = computed(() =>
 </template>
 
 <style scoped>
-.payroll-item-settings { padding: 16px; }
-.balance-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-@media (max-width: 760px) { .balance-grid { grid-template-columns: 1fr; } }
+.payroll-item-settings {
+  padding: 16px;
+}
+.balance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 760px) {
+  .balance-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

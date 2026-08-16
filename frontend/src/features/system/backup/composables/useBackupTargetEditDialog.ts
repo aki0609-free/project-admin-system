@@ -1,5 +1,5 @@
 import { computed, reactive, ref, watch, type Ref } from 'vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { BackupTargetResponse } from '@/features/system/backup/types/backupApiTypes'
 import type { BackupTargetDialogForm } from '@/features/system/backup/types/backupFormTypes'
 import {
@@ -94,6 +94,7 @@ export const useBackupTargetEditDialog = (
         type: 'button',
         label: '削除',
         color: 'error',
+        intent: 'danger',
         onClick: () => emitDelete(snapshot()),
       },
     ]
@@ -104,12 +105,14 @@ export const useBackupTargetEditDialog = (
       type: 'button',
       label: '閉じる',
       color: 'secondary',
+      intent: 'utility',
       onClick: close,
     },
     {
       type: 'button',
       label: '保存',
       color: 'primary',
+      intent: 'primary',
       onClick: () => emitSave(snapshot()),
     },
   ])

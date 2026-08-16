@@ -1,11 +1,6 @@
 <template>
   <div v-if="tableState?.enabled" class="filter-row">
-    <div
-      v-for="col in filterableColumns"
-      :key="String(col.key)"
-      class="cell filter-cell"
-      :style="{ minWidth: col.width }"
-    >
+    <div v-for="col in columns" :key="String(col.key)" class="cell filter-cell">
       <!-- text -->
       <v-text-field
         v-if="col.filter?.type === 'text'"
@@ -13,8 +8,10 @@
         @update:model-value="(val) => setFilter(col.key as string, val)"
         :label="col.title"
         density="compact"
+        variant="underlined"
+        hide-details
         clearable
-        class="w-100"
+        class="filter-control w-100"
       />
 
       <!-- select -->
@@ -27,8 +24,10 @@
         item-value="value"
         :label="col.title"
         density="compact"
+        variant="underlined"
+        hide-details
         clearable
-        class="w-100"
+        class="filter-control w-100"
       />
 
       <!-- checkbox -->
@@ -57,9 +56,11 @@
             @click:clear="setFilter(col.key as string, '')"
             :label="col.title"
             density="compact"
+            variant="underlined"
+            hide-details
             clearable
             readonly
-            class="w-100"
+            class="filter-control w-100"
           />
         </template>
 
@@ -102,9 +103,24 @@ onMounted(() => {
 
 const tableState = computed(() => filterStore.tables[props.tableKey])
 
-const filterableColumns = computed(() => props.columns.filter((col) => col.filter))
-
 const dateMenus = reactive<Record<string, boolean>>({})
+
+const DEFAULT_COLUMN_WIDTH = 160
+const getColumnWidth = (width?: string) => {
+  if (!width) return DEFAULT_COLUMN_WIDTH
+
+  const parsed = Number.parseFloat(width)
+  return Number.isFinite(parsed) ? parsed : DEFAULT_COLUMN_WIDTH
+}
+
+const gridTemplateColumns = computed(() =>
+  props.columns
+    .map((column) => {
+      const width = getColumnWidth(column.width)
+      return `minmax(${width}px, ${width}fr)`
+    })
+    .join(' '),
+)
 
 const setFilter = (key: string, value: unknown) => {
   filterStore.setFilter(props.tableKey, key, value)
@@ -119,15 +135,32 @@ const handleDateFilterUpdate = (key: string, value: unknown) => {
 
 <style scoped>
 .filter-row {
-  display: flex;
-  flex-wrap: nowrap;
-  margin-bottom: -20px;
+  display: grid;
+  grid-template-columns: v-bind(gridTemplateColumns);
+  width: 100%;
 }
 
 .filter-cell {
   padding: 4px;
   border-right: 1px solid #ddd;
-  flex: 1 1 auto; /* ← 幅を伸縮可能に */
   border-bottom: 1px solid #ddd;
+  min-width: 0;
+  height: 48px;
+  overflow: hidden;
+}
+
+.filter-cell:last-child {
+  border-right: none;
+}
+
+.filter-control :deep(.v-field) {
+  min-height: 40px;
+  height: 40px;
+}
+
+.filter-control :deep(.v-field__input) {
+  min-height: 40px;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 </style>

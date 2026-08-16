@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { useDailyReportsQuery } from '@/features/dailyreport/api/useDailyReportsQuery'
 import { useUpdateDailyReportMutation } from '@/features/dailyreport/api/useUpdateDailyReportMutation'
 import { useDeleteDailyReportMutation } from '@/features/dailyreport/api/useDeleteDailyReportMutation'

@@ -1,5 +1,5 @@
 import { computed, type Ref } from 'vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { BatchJobDefinitionForm } from '@/features/system/batch/types/batchFormTypes'
 
 export const useBatchDefinitionFooterItems = (
@@ -27,12 +27,14 @@ export const useBatchDefinitionFooterItems = (
         type: 'button',
         label: '削除',
         color: 'error',
+        intent: 'danger',
         onClick: () => emitDelete(snapshot()),
       },
       {
         type: 'button',
         label: '即時実行',
         color: 'secondary',
+        intent: 'secondary',
         disabled: !formModel.immediateExecutable,
         onClick: () => emitExecuteNow(snapshot()),
       },
@@ -40,6 +42,7 @@ export const useBatchDefinitionFooterItems = (
         type: 'button',
         label: 'スケジュール実行テスト',
         color: 'secondary',
+        intent: 'secondary',
         disabled: !formModel.scheduleEnabled,
         onClick: () => emitExecuteScheduled(snapshot()),
       },
@@ -51,12 +54,14 @@ export const useBatchDefinitionFooterItems = (
       type: 'button',
       label: '閉じる',
       color: 'secondary',
+      intent: 'utility',
       onClick: close,
     },
     {
       type: 'button',
       label: '保存',
       color: 'primary',
+      intent: 'primary',
       onClick: () => emitSave(snapshot()),
     },
   ])

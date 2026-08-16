@@ -1,5 +1,5 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { useBatchJobDefinitionsQuery } from '@/features/system/batch/api/queries/useBatchJobDefinitionsQuery'
 import { useCreateBatchJobDefinitionMutation } from '@/features/system/batch/api/mutations/useCreateBatchJobDefinitionMutation'
 import { useUpdateBatchJobDefinitionMutation } from '@/features/system/batch/api/mutations/useUpdateBatchJobDefinitionMutation'
@@ -156,6 +156,7 @@ export const useBatchDefinitionTab = () => {
       type: 'button',
       label: '新規作成',
       color: 'primary',
+      intent: 'primary',
       disabled: busy.value,
       onClick: dialog.openCreate,
     },

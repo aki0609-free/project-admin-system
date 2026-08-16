@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { BatchJobDefinitionResponse } from '@/features/system/batch/types/batchApiTypes'
-import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue';
 
 const props = defineProps<{
   modelValue: boolean
@@ -24,8 +24,10 @@ const paramsJson = ref('{}')
 const errorMessage = ref('')
 
 watch(
-  () => props.definition,
-  () => {
+  [() => props.modelValue, () => props.definition?.id],
+  ([opened]) => {
+    if (!opened) return
+
     paramsJson.value = '{}'
     errorMessage.value = ''
   },
@@ -66,6 +68,7 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
     type: 'button',
     label: '閉じる',
     color: 'secondary',
+    intent: 'utility',
     disabled: props.loading,
     onClick: close,
   },
@@ -73,6 +76,7 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
     type: 'button',
     label: '実行',
     color: 'primary',
+    intent: 'primary',
     disabled: !props.definition || props.loading,
     loading: props.loading,
     onClick: execute,
@@ -81,10 +85,12 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
 </script>
 
 <template>
-  <DetailDialogLayout
+  <AppDialog
     v-model="visible"
     title="バッチ実行"
-    max-width="760"
+    size="md"
+    :max-width="760"
+    body-layout="stack"
     :right-footer-items="rightFooterItems"
   >
     <div
@@ -108,7 +114,7 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
       :error="!!errorMessage"
       :error-messages="errorMessage"
     />
-  </DetailDialogLayout>
+  </AppDialog>
 </template>
 
 <style scoped>

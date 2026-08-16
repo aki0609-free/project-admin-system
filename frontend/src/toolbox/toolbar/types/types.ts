@@ -1,64 +1,12 @@
-export type BatchParameterType =
-  | 'text'
-  | 'number'
-  | 'date'
-  | 'month'
-  | 'select'
-  | 'checkbox'
-
-export type BatchParameterOption = {
-  title: string
-  value: string | number | boolean
-}
-
-export type BatchParameterDefinition = {
-  key: string
-  label: string
-  type: BatchParameterType
-  required?: boolean
-  defaultValue?: unknown
-  options?: BatchParameterOption[]
-  gridColumn?: string
-  width?: number
-}
-
-export type ToolbarItem =
-  | {
-      type: 'button'
-      label: string
-      onClick: () => void
-      color?: string
-      disabled?: boolean
-    }
-  | {
-      type: 'batch'
-      label: string
-      jobCode: string
-      color?: string
-      disabled?: boolean
-      confirmMessage?: string
-      parameterDefinitions?: BatchParameterDefinition[]
-      defaultParams?: Record<string, unknown>
-      outputAction?: 'none' | 'download' | 'preview'
-      onSuccess?: (message: string) => void
-    }
-  | {
-      type: 'icon'
-      icon: string
-      onClick: () => void
-      disabled?: boolean
-    }
-  | {
-      type: 'dropdown'
-      label: string
-      options: { label: string; value: string }[]
-      onSelect: (value: string) => void
-      disabled?: boolean
-    }
-  | {
-      type: 'search'
-      modelValue: string
-      'onUpdate:modelValue': (value: string) => void
-      placeholder?: string
-      disabled?: boolean
-    }
+export type {
+  BatchParameterDefinition,
+  BatchParameterOption,
+  BatchParameterType,
+  ToolbarBatchItem,
+  ToolbarButtonItem,
+  ToolbarDropdownItem,
+  ToolbarIconItem,
+  ToolbarIntent,
+  ToolbarItem,
+  ToolbarSearchItem,
+} from '@/shared/ui/toolbar/types'

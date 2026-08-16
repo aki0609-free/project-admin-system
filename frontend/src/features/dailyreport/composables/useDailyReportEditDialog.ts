@@ -13,7 +13,7 @@ import {
 
 import type {
   ToolbarItem,
-} from '@/shared/components/toolbar/types/types'
+} from '@/shared/ui/toolbar/types'
 
 import type {
   DailyReportDetailResponse,
@@ -897,7 +897,7 @@ export const useDailyReportEditDialog = (
     })
   }
 
-  const footerItems = computed<
+  const leftFooterItems = computed<
     ToolbarItem[]
   >(() => {
     const items: ToolbarItem[] = []
@@ -906,28 +906,33 @@ export const useDailyReportEditDialog = (
       items.push({
         type: 'button',
         label: '削除',
-        color: 'error',
+        intent: 'danger',
         onClick: remove,
       })
     }
 
-    items.push(
+    return items
+  })
+
+  const rightFooterItems = computed<
+    ToolbarItem[]
+  >(() => [
       {
         type: 'button',
         label: '閉じる',
-        color: 'secondary',
+        intent: 'secondary',
         onClick: close,
       },
       {
         type: 'button',
         label: '保存',
-        color: 'primary',
+        intent: 'primary',
+        disabled:
+          payrollItemsLoading.value
+          || billingRateLoading.value,
         onClick: save,
       },
-    )
-
-    return items
-  })
+    ])
 
   return {
     activeTab,
@@ -940,7 +945,8 @@ export const useDailyReportEditDialog = (
     financeFields,
 
     schema: dailyReportSchema,
-    footerItems,
+    leftFooterItems,
+    rightFooterItems,
 
     billingRateLoading,
     payrollItemsLoading,

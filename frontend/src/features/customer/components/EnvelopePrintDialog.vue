@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type {
   EnvelopePrintCustomerOption,
   EnvelopePrintPayload,
@@ -18,7 +20,7 @@ const emit = defineEmits<{
 
 const dialogModel = computed({
   get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
+  set: (value) => emit('update:modelValue', value),
 })
 
 const form = reactive<EnvelopePrintPayload>({
@@ -35,34 +37,15 @@ const envelopeTypeOptions: { title: string; value: EnvelopeType }[] = [
   { title: '角2封筒', value: 'KAKU2' },
 ]
 
-const stampOptions = [
-  '請求書在中',
-  '見積書在中',
-  '納品書在中',
-  '重要書類在中',
-  '書類在中',
-]
+const stampOptions = ['請求書在中', '見積書在中', '納品書在中', '重要書類在中', '書類在中']
 
-const honorificOptions = [
-  '御中',
-  '様',
-  '先生',
-  '各位',
-  '行',
-  '宛',
-]
+const honorificOptions = ['御中', '様', '先生', '各位', '行', '宛']
 
-const fontOptions = [
-  'Yu Gothic',
-  'Yu Mincho',
-  'Meiryo',
-  'MS Gothic',
-  'MS Mincho',
-]
+const fontOptions = ['Yu Gothic', 'Yu Mincho', 'Meiryo', 'MS Gothic', 'MS Mincho']
 
 const selectedPreviewCustomer = computed(() => {
   const id = form.customerIds[0]
-  return props.customers.find(customer => customer.id === id) ?? null
+  return props.customers.find((customer) => customer.id === id) ?? null
 })
 
 const previewName = computed(() => {
@@ -93,7 +76,7 @@ const previewClass = computed(() => {
 
 watch(
   () => props.modelValue,
-  value => {
+  (value) => {
     if (!value) return
     form.customerIds = []
     form.envelopeType = 'NAGA3'
@@ -120,133 +103,126 @@ function handlePrint() {
 
   dialogModel.value = false
 }
+
+const rightFooterItems = computed<ToolbarItem[]>(() => [
+  {
+    type: 'button',
+    label: 'キャンセル',
+    intent: 'utility',
+    onClick: handleClose,
+  },
+  {
+    type: 'button',
+    label: '宛名印刷',
+    color: 'primary',
+    intent: 'primary',
+    disabled: form.customerIds.length === 0,
+    onClick: handlePrint,
+  },
+])
 </script>
 
 <template>
-  <v-dialog v-model="dialogModel" max-width="900">
-    <v-card>
-      <v-card-title>封筒宛名印刷</v-card-title>
+  <AppDialog
+    v-model="dialogModel"
+    title="封筒宛名印刷"
+    size="lg"
+    :max-width="900"
+    :right-footer-items="rightFooterItems"
+  >
+    <div class="d-flex flex-column ga-4">
+      <v-select
+        v-model="form.customerIds"
+        :items="customers"
+        item-title="name"
+        item-value="id"
+        label="印刷する企業"
+        multiple
+        chips
+        closable-chips
+        density="compact"
+        hide-details="auto"
+      />
 
-      <v-card-text>
-        <div class="d-flex flex-column ga-4">
-          <v-select
-            v-model="form.customerIds"
-            :items="customers"
-            item-title="name"
-            item-value="id"
-            label="印刷する企業"
-            multiple
-            chips
-            closable-chips
-            density="compact"
-            hide-details="auto"
-          />
+      <div class="d-flex ga-3">
+        <v-select
+          v-model="form.envelopeType"
+          :items="envelopeTypeOptions"
+          item-title="title"
+          item-value="value"
+          label="封筒タイプ"
+          density="compact"
+          hide-details="auto"
+        />
 
-          <div class="d-flex ga-3">
-            <v-select
-              v-model="form.envelopeType"
-              :items="envelopeTypeOptions"
-              item-title="title"
-              item-value="value"
-              label="封筒タイプ"
-              density="compact"
-              hide-details="auto"
-            />
+        <v-select
+          v-model="form.stamp"
+          :items="stampOptions"
+          label="封筒スタンプ"
+          density="compact"
+          hide-details="auto"
+        />
 
-            <v-select
-              v-model="form.stamp"
-              :items="stampOptions"
-              label="封筒スタンプ"
-              density="compact"
-              hide-details="auto"
-            />
+        <v-select
+          v-model="form.honorific"
+          :items="honorificOptions"
+          label="敬称"
+          density="compact"
+          hide-details="auto"
+        />
+      </div>
 
-            <v-select
-              v-model="form.honorific"
-              :items="honorificOptions"
-              label="敬称"
-              density="compact"
-              hide-details="auto"
-            />
+      <div class="d-flex ga-3">
+        <v-select
+          v-model="form.fontFamily"
+          :items="fontOptions"
+          label="フォント"
+          density="compact"
+          hide-details="auto"
+        />
+
+        <v-text-field
+          v-model.number="form.fontSize"
+          label="文字サイズ"
+          type="number"
+          density="compact"
+          hide-details="auto"
+        />
+      </div>
+
+      <v-alert v-if="form.customerIds.length === 0" type="info" variant="tonal">
+        印刷する企業を1件以上選択してください。プレビューはサンプル表示です。
+      </v-alert>
+
+      <v-divider />
+
+      <div>
+        <div class="text-caption text-medium-emphasis mb-2">印刷イメージ</div>
+
+        <div
+          :class="previewClass"
+          :style="{
+            fontFamily: form.fontFamily,
+            fontSize: `${form.fontSize}px`,
+          }"
+        >
+          <div class="preview-address">
+            {{ previewAddress }}
           </div>
 
-          <div class="d-flex ga-3">
-            <v-select
-              v-model="form.fontFamily"
-              :items="fontOptions"
-              label="フォント"
-              density="compact"
-              hide-details="auto"
-            />
-
-            <v-text-field
-              v-model.number="form.fontSize"
-              label="文字サイズ"
-              type="number"
-              density="compact"
-              hide-details="auto"
-            />
+          <div class="preview-name">
+            {{ previewName }}
           </div>
 
-          <v-alert
-            v-if="form.customerIds.length === 0"
-            type="info"
-            variant="tonal"
-          >
-            印刷する企業を1件以上選択してください。プレビューはサンプル表示です。
-          </v-alert>
+          <div class="preview-line">==================================================</div>
 
-          <v-divider />
-
-          <div>
-            <div class="text-caption text-medium-emphasis mb-2">
-              印刷イメージ
-            </div>
-
-            <div
-              :class="previewClass"
-              :style="{
-                fontFamily: form.fontFamily,
-                fontSize: `${form.fontSize}px`,
-              }"
-            >
-              <div class="preview-address">
-                {{ previewAddress }}
-              </div>
-
-              <div class="preview-name">
-                {{ previewName }}
-              </div>
-
-              <div class="preview-line">
-                ==================================================
-              </div>
-
-              <div class="preview-stamp">
-                {{ form.stamp }}
-              </div>
-            </div>
+          <div class="preview-stamp">
+            {{ form.stamp }}
           </div>
         </div>
-      </v-card-text>
-
-      <v-card-actions>
-        <v-spacer />
-
-        <v-btn variant="text" @click="handleClose">
-          キャンセル
-        </v-btn>
-
-        <v-btn
-          color="primary"
-          :disabled="form.customerIds.length === 0"
-          @click="handlePrint"
-        >
-          宛名印刷
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+      </div>
+    </div>
+  </AppDialog>
 </template>
 
 <style scoped>

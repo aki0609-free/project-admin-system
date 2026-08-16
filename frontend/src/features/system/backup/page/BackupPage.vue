@@ -10,7 +10,7 @@ import BackupHistoryTable from '@/features/system/backup/components/BackupHistor
 import { useBackupPage } from '@/features/system/backup/composables/useBackupPage'
 import { useBackupHistoriesQuery } from '@/features/system/backup/api/useBackupHistoriesQuery'
 import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
 
 const activeTab = ref<'targets' | 'histories'>('targets')
 
@@ -24,7 +24,8 @@ const {
   selectedCodes,
   dialogVisible,
   dialogTarget,
-  toolbarItems,
+  leftToolbarItems,
+  rightToolbarItems,
   openEditDialog,
   onSaveTarget,
   onDeleteTarget,
@@ -47,7 +48,10 @@ const historiesQuery = useBackupHistoriesQuery()
           v-if="active === 'targets'"
           class="tab-page"
         >
-          <GenericToolbar :items="toolbarItems" />
+          <AppToolbar
+            :left-items="leftToolbarItems"
+            :right-items="rightToolbarItems"
+          />
 
           <BackupTargetTable
             :items="backupTargetsQuery.targets.value"

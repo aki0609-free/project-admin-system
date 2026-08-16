@@ -43,15 +43,11 @@ export const useEmployeeResignDialog = (
   )
 
   const missingRequiredIds = computed(() =>
-    requiredChecklistIds.value.filter(
-      (id) => !formModel.checkedChecklistIds.includes(id),
-    ),
+    requiredChecklistIds.value.filter((id) => !formModel.checkedChecklistIds.includes(id)),
   )
 
   const canSubmit = computed(
-    () =>
-      formModel.resignDate.trim().length > 0 &&
-      missingRequiredIds.value.length === 0,
+    () => formModel.resignDate.trim().length > 0 && missingRequiredIds.value.length === 0,
   )
 
   const close = () => {
@@ -68,11 +64,11 @@ export const useEmployeeResignDialog = (
     })
   }
 
-  const footerItems = computed<ToolbarItem[]>(() => [
+  const rightFooterItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: '閉じる',
-      color: 'secondary',
+      intent: 'secondary',
       onClick: close,
     },
     {
@@ -88,7 +84,7 @@ export const useEmployeeResignDialog = (
     formModel,
     missingRequiredIds,
     canSubmit,
-    footerItems,
+    rightFooterItems,
     schema: employeeResignSchema,
   }
 }

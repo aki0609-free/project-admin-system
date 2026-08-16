@@ -2,6 +2,10 @@
 import { computed, ref } from 'vue'
 import { formatYearMonthDay } from '@/shared/utils/DateUtils'
 
+defineOptions({
+  inheritAttrs: false,
+})
+
 const props = defineProps<{
   modelValue?: string | null
   label?: string
@@ -70,7 +74,7 @@ function formatDateToIso(date: Date): string {
   >
     <template #activator="{ props: menuProps }">
       <v-text-field
-        v-bind="menuProps"
+        v-bind="{ ...menuProps, ...$attrs }"
         :model-value="displayValue"
         :label="label"
         :density="density ?? 'comfortable'"

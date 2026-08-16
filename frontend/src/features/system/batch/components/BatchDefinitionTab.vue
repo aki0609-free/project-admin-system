@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
 import BatchDefinitionTable from '@/features/system/batch/components/BatchDefinitionTable.vue'
 import BatchDefinitionEditDialog from '@/features/system/batch/components/BatchDefinitionEditDialog.vue'
 import BatchExecuteDialog from '@/features/system/batch/components/BatchExecuteDialog.vue'
@@ -38,7 +38,7 @@ const {
       </p>
     </div>
 
-    <GenericToolbar :items="toolbarItems" />
+    <AppToolbar :left-items="toolbarItems" />
 
     <BatchDefinitionTable
       :items="definitionsQuery.definitions.value"

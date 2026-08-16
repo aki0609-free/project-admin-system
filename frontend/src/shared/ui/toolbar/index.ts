@@ -1,3 +1,4 @@
+export { default as AppToolbar } from './AppToolbar.vue'
 export { default as BatchPageToolbar } from './BatchPageToolbar.vue'
 export type {
   BatchParameterDefinition,

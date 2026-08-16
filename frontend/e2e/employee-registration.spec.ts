@@ -19,15 +19,23 @@ const authenticatedHeaders = async (page: Page) => {
   }
 }
 
+const currentBusinessDate = () =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
+
 const removeTestEmployees = async (page: Page, employeeCode?: string) => {
   const headers = await authenticatedHeaders(page)
   const response = await page.request.get('/api/employees', { headers })
   expect(response.ok(), await response.text()).toBeTruthy()
 
-  const employees = await response.json() as EmployeeListItem[]
-  const targets = employees.filter(item => employeeCode
-    ? item.employeeCode === employeeCode
-    : item.employeeCode.startsWith('E2E-UI-'))
+  const employees = (await response.json()) as EmployeeListItem[]
+  const targets = employees.filter((item) =>
+    employeeCode ? item.employeeCode === employeeCode : item.employeeCode.startsWith('E2E-UI-'),
+  )
 
   for (const employee of targets) {
     const reportsResponse = await page.request.get('/api/daily-reports', {
@@ -35,12 +43,11 @@ const removeTestEmployees = async (page: Page, employeeCode?: string) => {
       params: { employeeId: employee.id },
     })
     expect(reportsResponse.ok(), await reportsResponse.text()).toBeTruthy()
-    const reports = await reportsResponse.json() as DailyReportListItem[]
+    const reports = (await reportsResponse.json()) as DailyReportListItem[]
     for (const report of reports) {
-      const deleteReportResponse = await page.request.delete(
-        `/api/daily-reports/${report.id}`,
-        { headers },
-      )
+      const deleteReportResponse = await page.request.delete(`/api/daily-reports/${report.id}`, {
+        headers,
+      })
       expect(deleteReportResponse.ok(), await deleteReportResponse.text()).toBeTruthy()
     }
 
@@ -51,16 +58,19 @@ const removeTestEmployees = async (page: Page, employeeCode?: string) => {
   }
 }
 
-test('employee can be registered with tracked deductions from the employee screen', async ({ page }, testInfo) => {
+test('employee can be registered with tracked deductions from the employee screen', async ({
+  page,
+}, testInfo) => {
   test.setTimeout(60_000)
   const uniqueSuffix = `${Date.now()}-${testInfo.workerIndex}`
   const employeeCode = `E2E-UI-${uniqueSuffix}`
   const employeeName = `E2E 画面登録社員 ${uniqueSuffix}`
-  const currentDate = new Date().toISOString().slice(0, 10)
+  // バックエンドの業務日付（Asia/Tokyo）と揃える。
+  // UTCのtoISOString()では日本時間の深夜帯に前日となり、当日開始の
+  // 従業員別控除設定が日報プレビューから除外されるため使用しない。
+  const currentDate = currentBusinessDate()
   const [currentYear, currentMonth, currentDay] = currentDate.split('-').map(Number)
-  const currentDateButtonName = new RegExp(
-    `${currentYear}年${currentMonth}月${currentDay}日`,
-  )
+  const currentDateButtonName = new RegExp(`${currentYear}年${currentMonth}月${currentDay}日`)
   let dailyReportId: number | null = null
 
   await page.goto('/employee/information')
@@ -74,7 +84,9 @@ test('employee can be registered with tracked deductions from the employee scree
 
     await createDialog.getByLabel('社員コード', { exact: true }).fill(employeeCode)
     await createDialog.getByLabel('氏名', { exact: true }).fill(employeeName)
-    await createDialog.getByLabel('フリガナ', { exact: true }).fill('イーツーイー ガメントウロクシャイン')
+    await createDialog
+      .getByLabel('フリガナ', { exact: true })
+      .fill('イーツーイー ガメントウロクシャイン')
     await createDialog.getByLabel('メール', { exact: true }).fill('e2e-ui-employee@example.invalid')
 
     await createDialog.getByRole('button', { name: '手当・控除設定', exact: true }).click()
@@ -88,9 +100,9 @@ test('employee can be registered with tracked deductions from the employee scree
     await createDialog.getByRole('tab', { name: '携帯電話貸出料', exact: true }).click()
     await createDialog.getByLabel('この項目を適用する').check()
 
-    const createResponsePromise = page.waitForResponse(response =>
-      response.url().endsWith('/api/employees')
-      && response.request().method() === 'POST',
+    const createResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/employees') && response.request().method() === 'POST',
     )
     await createDialog.getByRole('button', { name: '保存', exact: true }).click()
     const createResponse = await createResponsePromise
@@ -108,9 +120,9 @@ test('employee can be registered with tracked deductions from the employee scree
 
     await editDialog.getByRole('tab', { name: '寮費', exact: true }).click()
     await expect(editDialog.getByLabel('この項目を適用する')).toBeChecked()
-    await expect(
-      editDialog.locator('.v-select').filter({ hasText: '寮タイプ' }),
-    ).toContainText('複数人部屋')
+    await expect(editDialog.locator('.v-select').filter({ hasText: '寮タイプ' })).toContainText(
+      '複数人部屋',
+    )
 
     await editDialog.getByRole('tab', { name: '携帯電話貸出料', exact: true }).click()
     await expect(editDialog.getByLabel('この項目を適用する')).toBeChecked()
@@ -125,16 +137,19 @@ test('employee can be registered with tracked deductions from the employee scree
     const dialog = page.getByRole('dialog')
     const employeeSelect = dialog.locator('.v-select').filter({ hasText: '従業員' })
     await employeeSelect.click()
-    await page.getByRole('option', {
-      name: `${employeeCode} / ${employeeName}`,
-      exact: true,
-    }).click()
+    await page
+      .getByRole('option', {
+        name: `${employeeCode} / ${employeeName}`,
+        exact: true,
+      })
+      .click()
 
     await dialog.getByLabel('勤務日', { exact: true }).click()
     const datePicker = page.locator('.v-date-picker')
-    const initialPreviewPromise = page.waitForResponse(response =>
-      response.url().endsWith('/api/daily-reports/input-items/preview')
-      && response.request().method() === 'POST',
+    const initialPreviewPromise = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/daily-reports/input-items/preview') &&
+        response.request().method() === 'POST',
     )
     await datePicker.getByRole('button', { name: currentDateButtonName }).click()
     expect((await initialPreviewPromise).status()).toBe(200)
@@ -143,14 +158,20 @@ test('employee can be registered with tracked deductions from the employee scree
     let dormitoryCard = dialog.locator('.amount-card').filter({ hasText: '寮費' })
     await expect(dormitoryCard).toBeVisible()
 
-    const quantityPreviewPromise = page.waitForResponse(response => {
-      if (!response.url().endsWith('/api/daily-reports/input-items/preview')
-        || response.request().method() !== 'POST') return false
+    const quantityPreviewPromise = page.waitForResponse((response) => {
+      if (
+        !response.url().endsWith('/api/daily-reports/input-items/preview') ||
+        response.request().method() !== 'POST'
+      )
+        return false
       const body = response.request().postDataJSON() as {
         deductions?: { deductionCode?: string; quantity?: number }[]
       }
-      return body.deductions?.some(item =>
-        item.deductionCode === 'DORMITORY_FEE' && item.quantity === 5) ?? false
+      return (
+        body.deductions?.some(
+          (item) => item.deductionCode === 'DORMITORY_FEE' && item.quantity === 5,
+        ) ?? false
+      )
     })
     const dormitoryPaymentDays = dormitoryCard.getByLabel('支払い日数', { exact: true })
     await dormitoryPaymentDays.click()
@@ -163,9 +184,9 @@ test('employee can be registered with tracked deductions from the employee scree
     await dormitoryCard.getByLabel('金額', { exact: true }).fill('900')
     await dormitoryCard.getByLabel('金額変更理由', { exact: true }).fill('寮費の日次調整')
 
-    const createReportResponsePromise = page.waitForResponse(response =>
-      response.url().endsWith('/api/daily-reports')
-      && response.request().method() === 'POST',
+    const createReportResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/daily-reports') && response.request().method() === 'POST',
     )
     await dialog.getByRole('button', { name: '保存', exact: true }).click()
     const createReportResponse = await createReportResponsePromise
@@ -176,22 +197,22 @@ test('employee can be registered with tracked deductions from the employee scree
     await page.getByText(employeeName, { exact: true }).click()
     const editReportDialog = page.getByRole('dialog')
     await editReportDialog.getByRole('button', { name: '控除', exact: true }).click()
-    const persistedDormitoryCard = editReportDialog.locator('.amount-card')
+    const persistedDormitoryCard = editReportDialog
+      .locator('.amount-card')
       .filter({ hasText: '寮費' })
     await expect(persistedDormitoryCard.getByLabel('金額', { exact: true })).toHaveValue('900')
-    await expect(
-      persistedDormitoryCard.getByLabel('金額変更理由', { exact: true }),
-    ).toHaveValue('寮費の日次調整')
+    await expect(persistedDormitoryCard.getByLabel('金額変更理由', { exact: true })).toHaveValue(
+      '寮費の日次調整',
+    )
     await expect(
       persistedDormitoryCard.getByText('Rule基準額：2,250円', { exact: true }),
     ).toBeVisible()
     await editReportDialog.getByRole('button', { name: '閉じる', exact: true }).click()
 
     const headers = await authenticatedHeaders(page)
-    const deleteReportResponse = await page.request.delete(
-      `/api/daily-reports/${dailyReportId}`,
-      { headers },
-    )
+    const deleteReportResponse = await page.request.delete(`/api/daily-reports/${dailyReportId}`, {
+      headers,
+    })
     expect(deleteReportResponse.ok(), await deleteReportResponse.text()).toBeTruthy()
   })
 
@@ -208,9 +229,10 @@ test('employee can be registered with tracked deductions from the employee scree
     await dormitoryTab.click({ force: true })
 
     await editDialog.getByLabel('この項目を適用する').uncheck()
-    const updateResponsePromise = page.waitForResponse(response =>
-      /\/api\/employees\/\d+$/.test(new URL(response.url()).pathname)
-      && response.request().method() === 'PUT',
+    const updateResponsePromise = page.waitForResponse(
+      (response) =>
+        /\/api\/employees\/\d+$/.test(new URL(response.url()).pathname) &&
+        response.request().method() === 'PUT',
     )
     await editDialog.getByRole('button', { name: '保存', exact: true }).click()
     const updateResponse = await updateResponsePromise
@@ -226,21 +248,26 @@ test('employee can be registered with tracked deductions from the employee scree
 
     const employeeSelect = dailyReportDialog.locator('.v-select').filter({ hasText: '従業員' })
     await employeeSelect.click()
-    await page.getByRole('option', {
-      name: `${employeeCode} / ${employeeName}`,
-      exact: true,
-    }).click()
+    await page
+      .getByRole('option', {
+        name: `${employeeCode} / ${employeeName}`,
+        exact: true,
+      })
+      .click()
 
-    const previewResponsePromise = page.waitForResponse(response =>
-      response.url().endsWith('/api/daily-reports/input-items/preview')
-      && response.request().method() === 'POST',
+    const previewResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/daily-reports/input-items/preview') &&
+        response.request().method() === 'POST',
     )
     await dailyReportDialog.getByLabel('勤務日', { exact: true }).click()
     const currentDatePicker = page.locator('.v-date-picker')
     await expect(currentDatePicker).toBeVisible()
-    await currentDatePicker.getByRole('button', {
-      name: currentDateButtonName,
-    }).click()
+    await currentDatePicker
+      .getByRole('button', {
+        name: currentDateButtonName,
+      })
+      .click()
     const previewResponse = await previewResponsePromise
     expect(previewResponse.status(), await previewResponse.text()).toBe(200)
 

@@ -11,35 +11,37 @@ import type {
 import { createEmptyEmployeeForm, toEmployeeForm } from '../utils/employeeFormFactory'
 import { formatZipCode } from '@/shared/utils/BusinessUtils'
 
-export const employeeBasicSchema = z.object({
-  id: z.number(),
-  employeeCode: z.string().min(1, '必須です'),
-  employeeName: z.string().min(1, '必須です'),
-  employeeNameKana: z.string(),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).nullable(),
-  birthDate: z.string(),
-  hireDate: z.string(),
-  resignDate: z.string(),
-  employmentType: z.enum(['FULL_TIME', 'CONTRACT', 'PART_TIME', 'TEMPORARY', 'DAILY_WORKER']),
-  employmentStatus: z.enum(['ACTIVE', 'LEAVE', 'RESIGNED']),
-  phone: z.string(),
-  email: z.string().email('メールアドレスの形式が不正です。').or(z.literal('')),
-  postalCode: z.string(),
-  address: z.string(),
-  dormitoryFlag: z.boolean(),
-  dormitoryType: z.enum(['SINGLE_ROOM', 'SHARED_ROOM']).nullable(),
-  activeFlag: z.boolean(),
-  payrollProfile: z.any(),
-  contract: z.any(),
-}).superRefine((value, context) => {
-  if (value.dormitoryFlag && value.dormitoryType == null) {
-    context.addIssue({
-      code: 'custom',
-      path: ['dormitoryType'],
-      message: '入寮ありの場合は寮タイプを選択してください。',
-    })
-  }
-})
+export const employeeBasicSchema = z
+  .object({
+    id: z.number(),
+    employeeCode: z.string().min(1, '必須です'),
+    employeeName: z.string().min(1, '必須です'),
+    employeeNameKana: z.string(),
+    gender: z.enum(['MALE', 'FEMALE', 'OTHER']).nullable(),
+    birthDate: z.string(),
+    hireDate: z.string(),
+    resignDate: z.string(),
+    employmentType: z.enum(['FULL_TIME', 'CONTRACT', 'PART_TIME', 'TEMPORARY', 'DAILY_WORKER']),
+    employmentStatus: z.enum(['ACTIVE', 'LEAVE', 'RESIGNED']),
+    phone: z.string(),
+    email: z.string().email('メールアドレスの形式が不正です。').or(z.literal('')),
+    postalCode: z.string(),
+    address: z.string(),
+    dormitoryFlag: z.boolean(),
+    dormitoryType: z.enum(['SINGLE_ROOM', 'SHARED_ROOM']).nullable(),
+    activeFlag: z.boolean(),
+    payrollProfile: z.any(),
+    contract: z.any(),
+  })
+  .superRefine((value, context) => {
+    if (value.dormitoryFlag && value.dormitoryType == null) {
+      context.addIssue({
+        code: 'custom',
+        path: ['dormitoryType'],
+        message: '入寮ありの場合は寮タイプを選択してください。',
+      })
+    }
+  })
 
 export const employeePayrollSchema = z.object({
   taxCategory: z.enum(['KOU', 'OTSU', 'HEI']),
@@ -59,31 +61,33 @@ export const employeePayrollSchema = z.object({
   commuteAllowanceMonthly: z.number().min(0),
 })
 
-export const employeeContractSchema = z.object({
-  contractStartDate: z.string(),
-  contractEndDate: z.string(),
-  renewalFlag: z.boolean(),
-  salaryType: z.enum(['MONTHLY', 'WEEKLY', 'DAILY', 'HOURLY']),
-  paymentCycle: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']),
-  monthlySalary: z.number().min(0),
-  weeklyWage: z.number().min(0),
-  dailyWage: z.number().min(0),
-  hourlyWage: z.number().min(0),
-  standardWorkingHours: z.number().min(0),
-  note: z.string(),
-}).superRefine((value, context) => {
-  if (
-    value.contractStartDate &&
-    value.contractEndDate &&
-    value.contractEndDate < value.contractStartDate
-  ) {
-    context.addIssue({
-      code: 'custom',
-      path: ['contractEndDate'],
-      message: '契約終了日は契約開始日以降で指定してください。',
-    })
-  }
-})
+export const employeeContractSchema = z
+  .object({
+    contractStartDate: z.string(),
+    contractEndDate: z.string(),
+    renewalFlag: z.boolean(),
+    salaryType: z.enum(['MONTHLY', 'WEEKLY', 'DAILY', 'HOURLY']),
+    paymentCycle: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']),
+    monthlySalary: z.number().min(0),
+    weeklyWage: z.number().min(0),
+    dailyWage: z.number().min(0),
+    hourlyWage: z.number().min(0),
+    standardWorkingHours: z.number().min(0),
+    note: z.string(),
+  })
+  .superRefine((value, context) => {
+    if (
+      value.contractStartDate &&
+      value.contractEndDate &&
+      value.contractEndDate < value.contractStartDate
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['contractEndDate'],
+        message: '契約終了日は契約開始日以降で指定してください。',
+      })
+    }
+  })
 
 export const useEmployeeEditDialog = (
   visible: Ref<boolean>,
@@ -134,7 +138,13 @@ export const useEmployeeEditDialog = (
   const isEdit = computed(() => formModel.id > 0)
 
   const basicFields = computed<GridFormFieldDef<EmployeeForm>[]>(() => [
-    { key: 'employeeCode', label: '社員コード', type: 'text', gridColumn: '1 / span 4', editable: !isEdit.value },
+    {
+      key: 'employeeCode',
+      label: '社員コード',
+      type: 'text',
+      gridColumn: '1 / span 4',
+      editable: !isEdit.value,
+    },
     { key: 'employeeName', label: '氏名', type: 'text', gridColumn: '1 / span 2' },
     { key: 'employeeNameKana', label: 'フリガナ', type: 'text', gridColumn: '3 / span 2' },
     {
@@ -273,7 +283,7 @@ export const useEmployeeEditDialog = (
     resignDialogVisible.value = true
   }
 
-  const footerItems = computed<ToolbarItem[]>(() => {
+  const leftFooterItems = computed<ToolbarItem[]>(() => {
     const items: ToolbarItem[] = []
 
     if (isEdit.value && formModel.employmentStatus === 'RESIGNED') {
@@ -283,12 +293,6 @@ export const useEmployeeEditDialog = (
           label: '退職取消',
           color: 'warning',
           onClick: () => emitCancelResignation(formModel.id),
-        },
-        {
-          type: 'button',
-          label: '閉じる',
-          color: 'secondary',
-          onClick: close,
         },
       ]
     }
@@ -311,20 +315,27 @@ export const useEmployeeEditDialog = (
       })
     }
 
-    items.push(
+    return items
+  })
+
+  const rightFooterItems = computed<ToolbarItem[]>(() => {
+    const items: ToolbarItem[] = [
       {
         type: 'button',
         label: '閉じる',
-        color: 'secondary',
+        intent: 'secondary',
         onClick: close,
       },
-      {
+    ]
+
+    if (formModel.employmentStatus !== 'RESIGNED') {
+      items.push({
         type: 'button',
         label: '保存',
-        color: 'primary',
+        intent: 'primary',
         onClick: save,
-      },
-    )
+      })
+    }
 
     return items
   })
@@ -340,7 +351,8 @@ export const useEmployeeEditDialog = (
     basicSchema: employeeBasicSchema,
     payrollSchema: employeePayrollSchema,
     contractSchema: employeeContractSchema,
-    footerItems,
+    leftFooterItems,
+    rightFooterItems,
     resignDialogVisible,
   }
 }

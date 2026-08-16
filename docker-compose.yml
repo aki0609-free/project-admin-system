@@ -138,4 +138,7 @@ volumes:
 
 secrets:
   syncfusion_license:
-    environment: VITE_SYNCFUSION_LICENSE_KEY
+    # .env.local is excluded from both Git and the Docker build context.
+    # Pass it only as a BuildKit secret so the license is not stored in an
+    # intermediate image layer. The Dockerfile extracts the license variable.
+    file: ./frontend/.env.local

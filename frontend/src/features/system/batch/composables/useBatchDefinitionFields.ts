@@ -72,6 +72,14 @@ export const useBatchDefinitionFields = (
       gridColumn: '1 / span 4',
       disabled: !formModel.scheduleEnabled || formModel.scheduleType !== 'CRON',
     },
+    {
+      key: 'description',
+      label: '説明',
+      type: 'textarea',
+      rows: 4,
+      autoGrow: true,
+      gridColumn: '1 / span 4',
+    },
   ])
 
   return {

@@ -1,51 +1,48 @@
 <template>
   <v-card>
     <div class="scroll-container">
-      <!-- ===== Filter ===== -->
-      <SimpleTableFilter
-        :table-key="tableKey"
-        :columns="columns"
-      />
-      <!-- ===== Table ===== -->
-      <v-data-table
-        v-model:items-per-page="itemsPerPage"
-        v-model:page="page"
-        :headers="tableColumns"
-        :items="filteredItems"
-        :item-key="itemKey"
-        density="compact"
-        class="data-table"
-        @click:row="handleRowClick"
-      >
-        <template
-          v-for="col in columns"
-          #[`item.${String(col.key)}`]="{ item }"
-          :key="`${item.id}-${String(col.key)}`"
+      <div class="table-surface" :style="{ width: tableWidth, minWidth: '100%' }">
+        <!-- ===== Filter ===== -->
+        <SimpleTableFilter :table-key="tableKey" :columns="columns" />
+        <!-- ===== Table ===== -->
+        <v-data-table
+          v-model:items-per-page="itemsPerPage"
+          v-model:page="page"
+          :headers="tableColumns"
+          :items="filteredItems"
+          :item-key="itemKey"
+          density="compact"
+          class="data-table"
+          @click:row="handleRowClick"
         >
-          <slot
-            v-if="$slots[`item.${String(col.key)}`]"
-            :name="`item.${String(col.key)}`"
-            :item="item"
-          />
-
-          <EditingCell
-            v-else
-            :item="item"
-            :field="col.key"
-            :column="col"
-            :editing-cell="editingCell"
-            @update:editing-cell="editingCell = $event"
-            @update="onCellUpdate"
-          />
-        </template>
-                
-        <!-- ===== Total ===== -->
-        <template #bottom>
-            <SimpleTableTotal
-                :filtered-items="computed(() => filteredItems)"
+          <template
+            v-for="col in columns"
+            #[`item.${String(col.key)}`]="{ item }"
+            :key="`${item.id}-${String(col.key)}`"
+          >
+            <slot
+              v-if="$slots[`item.${String(col.key)}`]"
+              :name="`item.${String(col.key)}`"
+              :item="item"
             />
-        </template>
-      </v-data-table>
+
+            <EditingCell
+              v-else
+              :item="item"
+              :field="col.key"
+              :column="col"
+              :editing-cell="editingCell"
+              @update:editing-cell="editingCell = $event"
+              @update="onCellUpdate"
+            />
+          </template>
+
+          <!-- ===== Total ===== -->
+          <template #bottom>
+            <SimpleTableTotal :filtered-items="computed(() => filteredItems)" />
+          </template>
+        </v-data-table>
+      </div>
     </div>
   </v-card>
 </template>
@@ -79,8 +76,16 @@ defineSlots<{
 }>()
 
 // Emit Functions
-const onCellUpdate = ({id, field, value}: {id: number, field: keyof T, value: unknown}): void => {
-  emit('update:items', {id: id, field: field, value: value})
+const onCellUpdate = ({
+  id,
+  field,
+  value,
+}: {
+  id: number
+  field: keyof T
+  value: unknown
+}): void => {
+  emit('update:items', { id: id, field: field, value: value })
 }
 const handleRowClick = (_: unknown, ctx: { item: T }) => {
   if (!props.enableRowClick) return
@@ -98,25 +103,44 @@ const editingCell = ref<{ id: number; key: string } | null>(null)
 // computed Functions
 const filteredItems = computed(() => applyFilter(props.items, props.filterRules))
 
-const tableColumns = reactive(props.columns.map(col => ({
-  title: col.title,
-  key: String(col.key),
-  width: col.width ?? 160,
-})))
+const DEFAULT_COLUMN_WIDTH = 160
+const getColumnWidth = (width?: string): number => {
+  if (!width) return DEFAULT_COLUMN_WIDTH
+
+  const parsed = Number.parseFloat(width)
+  return Number.isFinite(parsed) ? parsed : DEFAULT_COLUMN_WIDTH
+}
+
+const tableWidth = computed(
+  () => `${props.columns.reduce((total, column) => total + getColumnWidth(column.width), 0)}px`,
+)
+
+const tableColumns = reactive(
+  props.columns.map((col) => ({
+    title: col.title,
+    key: String(col.key),
+    width: col.width ?? 160,
+  })),
+)
 </script>
 
 <style scoped>
 .scroll-container {
   overflow-x: auto;
-  overflow-y: auto;  /* 追加 */
+  overflow-y: auto; /* 追加 */
   width: 100%;
-  height: 100%;      /* v-card の高さに合わせる */
+  height: 100%; /* v-card の高さに合わせる */
   box-sizing: border-box;
-  padding: 16px;     /* v-card の padding を考慮 */
+  padding: 16px; /* v-card の padding を考慮 */
+}
+
+.table-surface {
+  box-sizing: border-box;
 }
 
 .data-table {
   width: 100%;
+  min-width: 100%;
 }
 
 .data-table :deep(table) {
@@ -150,6 +174,23 @@ const tableColumns = reactive(props.columns.map(col => ({
 /* ボディ最後の線消す */
 .data-table :deep(tbody td:last-child) {
   border-right: none;
+}
+
+.data-table :deep(.v-data-table-footer) {
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.data-table :deep(.v-data-table-footer__items-per-page .v-field) {
+  min-height: 40px;
+  height: 40px;
+}
+
+.data-table :deep(.v-data-table-footer__items-per-page .v-field__input) {
+  min-height: 40px;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .table-toolbar {

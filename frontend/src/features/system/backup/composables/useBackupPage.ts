@@ -1,6 +1,6 @@
 import { computed, ref, type Ref } from 'vue'
 
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 
 import { useBackupTargetsQuery } from '@/features/system/backup/api/useBackupTargetsQuery'
 import { useBackupTargetDetailQuery } from '@/features/system/backup/api/useBackupTargetDetailQuery'
@@ -152,18 +152,23 @@ export const useBackupPage = (
     closeDialog()
   }
 
-  const toolbarItems = computed<ToolbarItem[]>(() => [
+  const leftToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: '新規追加',
       color: 'primary',
+      intent: 'primary',
       disabled: busy.value,
       onClick: openCreateDialog,
     },
+  ])
+
+  const rightToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: isAllSelected.value ? '全解除' : '全選択',
       color: 'secondary',
+      intent: 'secondary',
       disabled: busy.value || backupTargetsQuery.targets.value.length === 0,
       onClick: toggleAll,
     },
@@ -173,6 +178,7 @@ export const useBackupPage = (
         ? '出力中...'
         : `選択した ${selectedCount.value} 件を出力`,
       color: 'success',
+      intent: 'primary',
       disabled: busy.value || selectedCount.value === 0,
       loading: executeBackupMutation.isPending.value,
       onClick: executeBackup,
@@ -187,7 +193,8 @@ export const useBackupPage = (
     dialogTarget,
 
     selectedCount,
-    toolbarItems,
+    leftToolbarItems,
+    rightToolbarItems,
 
     openEditDialog,
     onSaveTarget,

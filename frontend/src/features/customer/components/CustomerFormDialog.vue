@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import {
-  computed,
-  reactive,
-  ref,
-  watch,
-} from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 import { z } from 'zod'
 
@@ -12,6 +7,9 @@ import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import TabbedForm from '@/shared/components/form/tabbed_form/TabbedForm.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 
 import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
 
@@ -38,26 +36,16 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (
-    e: 'update:modelValue',
-    value: boolean,
-  ): void
+  (e: 'update:modelValue', value: boolean): void
 
-  (
-    e: 'save',
-    value: CustomerSavePayload,
-  ): void
+  (e: 'save', value: CustomerSavePayload): void
 
-  (
-    e: 'delete',
-    id: number,
-  ): void
+  (e: 'delete', id: number): void
 }>()
 
 const dialogModel = computed({
   get: () => props.modelValue,
-  set: value =>
-    emit('update:modelValue', value),
+  set: (value) => emit('update:modelValue', value),
 })
 
 const activeTab = ref('basic')
@@ -97,17 +85,12 @@ const form = reactive<Customer>({
   paymentDayRule: null,
 })
 
-const siteRows =
-  useEditableChildRows<CustomerSite>()
+const siteRows = useEditableChildRows<CustomerSite>()
 
-const employeeRows =
-  useEditableChildRows<CustomerEmployee>()
+const employeeRows = useEditableChildRows<CustomerEmployee>()
 
 const customerId = computed<number | null>(() => {
-  if (
-    props.isCreateMode
-    || form.id <= 0
-  ) {
+  if (props.isCreateMode || form.id <= 0) {
     return null
   }
 
@@ -116,7 +99,7 @@ const customerId = computed<number | null>(() => {
 
 watch(
   () => props.modelValue,
-  opened => {
+  (opened) => {
     if (!opened) {
       return
     }
@@ -127,7 +110,7 @@ watch(
 
 watch(
   () => props.customer,
-  value => {
+  (value) => {
     if (!value) {
       return
     }
@@ -141,7 +124,7 @@ watch(
 
 watch(
   () => props.sites,
-  value => {
+  (value) => {
     siteRows.resetRows(value)
   },
   {
@@ -151,7 +134,7 @@ watch(
 
 watch(
   () => props.employees,
-  value => {
+  (value) => {
     employeeRows.resetRows(value)
   },
   {
@@ -159,42 +142,26 @@ watch(
   },
 )
 
-const {
-  tabs: formTabs,
-  fields,
-} = useCustomerFormFields()
+const { tabs: formTabs, fields } = useCustomerFormFields()
 
-const {
-  columns: siteColumns,
-} = useCustomerSiteColumns()
+const { columns: siteColumns } = useCustomerSiteColumns()
 
-const {
-  columns: employeeColumns,
-} = useCustomerEmployeeColumns()
+const { columns: employeeColumns } = useCustomerEmployeeColumns()
 
 const siteFilterRules = computed(() =>
-  createSimpleTableFilterRules<CustomerSite>(
-    siteColumns.value,
-  ),
+  createSimpleTableFilterRules<CustomerSite>(siteColumns.value),
 )
 
 const employeeFilterRules = computed(() =>
-  createSimpleTableFilterRules<CustomerEmployee>(
-    employeeColumns.value,
-  ),
+  createSimpleTableFilterRules<CustomerEmployee>(employeeColumns.value),
 )
 
-const schema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, '顧客名は必須です'),
-  invoiceType: z.enum([
-    'PATTERN_1',
-    'PATTERN_2',
-    'PATTERN_3',
-  ]),
-}).passthrough()
+const schema = z
+  .object({
+    name: z.string().trim().min(1, '顧客名は必須です'),
+    invoiceType: z.enum(['PATTERN_1', 'PATTERN_2', 'PATTERN_3']),
+  })
+  .passthrough()
 
 function handleClose() {
   dialogModel.value = false
@@ -206,13 +173,9 @@ function handleSave() {
       ...form,
     },
 
-    sites: [
-      ...siteRows.rows.value,
-    ],
+    sites: [...siteRows.rows.value],
 
-    employees: [
-      ...employeeRows.rows.value,
-    ],
+    employees: [...employeeRows.rows.value],
   })
 }
 
@@ -221,9 +184,7 @@ function handleDelete() {
     return
   }
 
-  const confirmed = window.confirm(
-    `顧客「${form.name}」を削除しますか？`,
-  )
+  const confirmed = window.confirm(`顧客「${form.name}」を削除しますか？`)
 
   if (!confirmed) {
     return
@@ -277,199 +238,131 @@ function handleBillingRateSaved() {
   // 請求単価タブ側で再取得済み。
   // 顧客画面側で追加処理が必要になった場合の拡張用。
 }
+
+const leftFooterItems = computed<ToolbarItem[]>(() => [
+  {
+    type: 'button',
+    label: '顧客削除',
+    color: 'error',
+    intent: 'danger',
+    visible: !props.isCreateMode,
+    onClick: handleDelete,
+  },
+])
+
+const rightFooterItems = computed<ToolbarItem[]>(() => [
+  {
+    type: 'button',
+    label: 'キャンセル',
+    intent: 'utility',
+    onClick: handleClose,
+  },
+  {
+    type: 'button',
+    label: '顧客情報を保存',
+    color: 'primary',
+    intent: 'primary',
+    onClick: handleSave,
+  },
+])
+
+const siteToolbarItems = computed<ToolbarItem[]>(() => [
+  {
+    type: 'button',
+    label: '現場追加',
+    color: 'primary',
+    intent: 'primary',
+    onClick: addSite,
+  },
+  {
+    type: 'button',
+    label: '選択行を削除',
+    color: 'error',
+    intent: 'danger',
+    disabled: !siteRows.hasDeleteSelected.value,
+    onClick: siteRows.markSelectedDeleted,
+  },
+])
+
+const employeeToolbarItems = computed<ToolbarItem[]>(() => [
+  {
+    type: 'button',
+    label: '顧客社員追加',
+    color: 'primary',
+    intent: 'primary',
+    onClick: addEmployee,
+  },
+  {
+    type: 'button',
+    label: '選択行を削除',
+    color: 'error',
+    intent: 'danger',
+    disabled: !employeeRows.hasDeleteSelected.value,
+    onClick: employeeRows.markSelectedDeleted,
+  },
+])
 </script>
 
 <template>
-  <v-dialog
+  <AppDialog
     v-model="dialogModel"
-    max-width="1600"
-    scrollable
+    :title="isCreateMode ? '顧客 新規登録' : '顧客 編集'"
+    size="xl"
+    :max-width="1600"
+    :left-footer-items="leftFooterItems"
+    :right-footer-items="rightFooterItems"
   >
-    <v-card class="customer-edit-dialog">
-      <v-card-title>
-        {{
-          isCreateMode
-            ? '顧客 新規登録'
-            : '顧客 編集'
-        }}
-      </v-card-title>
+    <TabLayout v-model="activeTab" :tabs="pageTabs">
+      <template #default="{ active }">
+        <div v-if="active === 'basic'">
+          <FormLayout v-model="form" :schema="schema">
+            <TabbedForm v-model="form" :tabs="[...formTabs]" :fields="fields" />
+          </FormLayout>
+        </div>
 
-      <v-divider />
+        <div v-else-if="active === 'sites'">
+          <AppToolbar :left-items="siteToolbarItems" surface="plain" />
 
-      <v-card-text class="dialog-body">
-        <TabLayout
-          v-model="activeTab"
-          :tabs="pageTabs"
-        >
-          <template #default="{ active }">
-            <div v-if="active === 'basic'">
-              <FormLayout
-                v-model="form"
-                :schema="schema"
-              >
-                <TabbedForm
-                  v-model="form"
-                  :tabs="[...formTabs]"
-                  :fields="fields"
-                />
-              </FormLayout>
-            </div>
-
-            <div
-              v-else-if="active === 'sites'"
-            >
-              <div class="child-toolbar">
-                <v-btn
-                  color="primary"
-                  prepend-icon="mdi-plus"
-                  @click="addSite"
-                >
-                  現場追加
-                </v-btn>
-
-                <v-btn
-                  color="error"
-                  variant="tonal"
-                  prepend-icon="mdi-delete-outline"
-                  :disabled="
-                    !siteRows.hasDeleteSelected.value
-                  "
-                  @click="
-                    siteRows.markSelectedDeleted
-                  "
-                >
-                  選択行を削除
-                </v-btn>
-              </div>
-
-              <div class="table-wrapper">
-                <SimpleTable
-                  table-key="customer-sites"
-                  item-key="id"
-                  :items="
-                    siteRows.visibleRows.value
-                  "
-                  :columns="siteColumns"
-                  :filter-rules="
-                    siteFilterRules
-                  "
-                  @update:items="
-                    siteRows.updateCell
-                  "
-                />
-              </div>
-            </div>
-
-            <div
-              v-else-if="active === 'employees'"
-            >
-              <div class="child-toolbar">
-                <v-btn
-                  color="primary"
-                  prepend-icon="mdi-plus"
-                  @click="addEmployee"
-                >
-                  顧客社員追加
-                </v-btn>
-
-                <v-btn
-                  color="error"
-                  variant="tonal"
-                  prepend-icon="mdi-delete-outline"
-                  :disabled="
-                    !employeeRows.hasDeleteSelected.value
-                  "
-                  @click="
-                    employeeRows.markSelectedDeleted
-                  "
-                >
-                  選択行を削除
-                </v-btn>
-              </div>
-
-              <div class="table-wrapper">
-                <SimpleTable
-                  table-key="customer-employees"
-                  item-key="id"
-                  :items="
-                    employeeRows.visibleRows.value
-                  "
-                  :columns="employeeColumns"
-                  :filter-rules="
-                    employeeFilterRules
-                  "
-                  @update:items="
-                    employeeRows.updateCell
-                  "
-                />
-              </div>
-            </div>
-
-            <CustomerBillingRateTab
-              v-else-if="
-                active === 'billingRates'
-              "
-              :customer-id="customerId"
-              :sites="siteRows.rows.value"
-              :is-create-mode="isCreateMode"
-              @saved="handleBillingRateSaved"
+          <div class="table-wrapper">
+            <SimpleTable
+              table-key="customer-sites"
+              item-key="id"
+              :items="siteRows.visibleRows.value"
+              :columns="siteColumns"
+              :filter-rules="siteFilterRules"
+              @update:items="siteRows.updateCell"
             />
-          </template>
-        </TabLayout>
-      </v-card-text>
+          </div>
+        </div>
 
-      <v-divider />
+        <div v-else-if="active === 'employees'">
+          <AppToolbar :left-items="employeeToolbarItems" surface="plain" />
 
-      <v-card-actions>
-        <v-btn
-          v-if="!isCreateMode"
-          color="error"
-          variant="text"
-          @click="handleDelete"
-        >
-          顧客削除
-        </v-btn>
+          <div class="table-wrapper">
+            <SimpleTable
+              table-key="customer-employees"
+              item-key="id"
+              :items="employeeRows.visibleRows.value"
+              :columns="employeeColumns"
+              :filter-rules="employeeFilterRules"
+              @update:items="employeeRows.updateCell"
+            />
+          </div>
+        </div>
 
-        <v-spacer />
-
-        <v-btn
-          variant="text"
-          @click="handleClose"
-        >
-          キャンセル
-        </v-btn>
-
-        <v-btn
-          color="primary"
-          @click="handleSave"
-        >
-          顧客情報を保存
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+        <CustomerBillingRateTab
+          v-else-if="active === 'billingRates'"
+          :customer-id="customerId"
+          :sites="siteRows.rows.value"
+          :is-create-mode="isCreateMode"
+          @saved="handleBillingRateSaved"
+        />
+      </template>
+    </TabLayout>
+  </AppDialog>
 </template>
 
 <style scoped>
-.customer-edit-dialog {
-  height: 92vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.dialog-body {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-}
-
-.child-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
 .table-wrapper {
   max-width: 100%;
   overflow: auto;

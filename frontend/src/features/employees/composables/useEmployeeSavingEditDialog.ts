@@ -5,7 +5,10 @@ import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
 import type { EmployeeListItemResponse } from '../types/employeeApiTypes'
 import type { EmployeeSavingForm } from '../types/employeeLoanSavingFormTypes'
 import type { EmployeeSavingResponse } from '../types/employeeWorkApiTypes'
-import { createEmptyEmployeeSavingForm, toEmployeeSavingForm } from '../utils/employeeLoanSavingFormFactory'
+import {
+  createEmptyEmployeeSavingForm,
+  toEmployeeSavingForm,
+} from '../utils/employeeLoanSavingFormFactory'
 
 export const employeeSavingSchema = z.object({
   id: z.number(),
@@ -25,9 +28,7 @@ export const useEmployeeSavingEditDialog = (
   emitSave: (form: EmployeeSavingForm) => void,
   emitDelete: (form: EmployeeSavingForm) => void,
 ) => {
-  const formModel = reactive<EmployeeSavingForm>(
-    createEmptyEmployeeSavingForm(),
-  )
+  const formModel = reactive<EmployeeSavingForm>(createEmptyEmployeeSavingForm())
 
   const resetForm = () => {
     Object.assign(formModel, createEmptyEmployeeSavingForm())
@@ -92,24 +93,27 @@ export const useEmployeeSavingEditDialog = (
     emitDelete({ ...formModel })
   }
 
-  const footerItems = computed<ToolbarItem[]>(() => [
+  const leftFooterItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: '削除',
-      color: 'error',
+      intent: 'danger',
       onClick: remove,
       visible: formModel.id > 0,
     },
+  ])
+
+  const rightFooterItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: '閉じる',
-      color: 'secondary',
+      intent: 'secondary',
       onClick: close,
     },
     {
       type: 'button',
       label: '保存',
-      color: 'primary',
+      intent: 'primary',
       onClick: save,
     },
   ])
@@ -118,7 +122,8 @@ export const useEmployeeSavingEditDialog = (
     formModel,
     fields,
     schema: employeeSavingSchema,
-    footerItems,
+    leftFooterItems,
+    rightFooterItems,
     isEdit: computed(() => formModel.id > 0),
   }
 }

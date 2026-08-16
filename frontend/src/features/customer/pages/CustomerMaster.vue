@@ -1,33 +1,22 @@
 <script setup lang="ts">
 import CardLayout from '@/shared/components/layout/card_layout/CardLayout.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
 import CustomerFormDialog from '../components/CustomerFormDialog.vue'
 import EnvelopePrintDialog from '../components/EnvelopePrintDialog.vue'
 import { useCustomerMasterPage } from '../composables/useCustomerMasterPage'
 import PdfPreviewDialog from '@/shared/components/pdf/PdfPreviewDialog.vue'
 
-const {
-  columns,
-  customersQuery,
-  items,
-  filterRules,
-  toolbarItems,
-  editDialog,
-  envelopePrint,
-} = useCustomerMasterPage()
+const { columns, customersQuery, items, filterRules, toolbarItems, editDialog, envelopePrint } =
+  useCustomerMasterPage()
 </script>
 
 <template>
   <CardLayout title="顧客マスター" subtitle="顧客情報一覧">
     <div class="d-flex flex-column ga-4">
-      <GenericToolbar :items="toolbarItems" />
+      <AppToolbar :left-items="toolbarItems.slice(0, 1)" :right-items="toolbarItems.slice(1)" />
 
-      <v-alert
-        v-if="customersQuery.isError.value"
-        type="error"
-        variant="tonal"
-      >
+      <v-alert v-if="customersQuery.isError.value" type="error" variant="tonal">
         顧客一覧の取得に失敗しました。
       </v-alert>
 

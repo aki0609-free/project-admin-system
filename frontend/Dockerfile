@@ -13,7 +13,10 @@ ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
 RUN --mount=type=secret,id=syncfusion_license \
     if [ -s /run/secrets/syncfusion_license ]; then \
-      export VITE_SYNCFUSION_LICENSE_KEY="$(cat /run/secrets/syncfusion_license)"; \
+      license_secret="$(cat /run/secrets/syncfusion_license)"; \
+      license_key="$(printf '%s\n' "$license_secret" | sed -n 's/^VITE_SYNCFUSION_LICENSE_KEY=//p' | head -n 1)"; \
+      if [ -z "$license_key" ]; then license_key="$license_secret"; fi; \
+      export VITE_SYNCFUSION_LICENSE_KEY="$license_key"; \
     fi; \
     npm run build-only
 

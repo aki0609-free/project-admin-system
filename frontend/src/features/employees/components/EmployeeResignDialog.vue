@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
-import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 import type {
   EmployeeResignRequest,
   EmployeeResignationChecklistResponse,
@@ -27,25 +27,17 @@ const visible = computed({
 })
 
 const requiredChecklistIds = computed(() =>
-  props.checklist
-    .filter((item) => item.requiredFlag)
-    .map((item) => item.id),
+  props.checklist.filter((item) => item.requiredFlag).map((item) => item.id),
 )
 
-const {
-  formModel,
-  missingRequiredIds,
-  canSubmit,
-  footerItems,
-} = useEmployeeResignDialog(
+const { formModel, missingRequiredIds, canSubmit, rightFooterItems } = useEmployeeResignDialog(
   visible,
   toRef(props, 'employee'),
   requiredChecklistIds,
   (request) => emit('submit', request),
 )
 
-const isChecked = (id: number): boolean =>
-  formModel.checkedChecklistIds.includes(id)
+const isChecked = (id: number): boolean => formModel.checkedChecklistIds.includes(id)
 
 const toggleChecklist = (id: number, checked: boolean) => {
   if (checked) {
@@ -60,16 +52,15 @@ const toggleChecklist = (id: number, checked: boolean) => {
   )
 }
 
-const isMissing = (id: number): boolean =>
-  missingRequiredIds.value.includes(id)
+const isMissing = (id: number): boolean => missingRequiredIds.value.includes(id)
 </script>
 
 <template>
-  <DetailDialogLayout
+  <AppDialog
     v-model="visible"
     :title="message.dialogTitle"
-    max-width="760"
-    :footer-items="footerItems"
+    size="md"
+    :right-footer-items="rightFooterItems"
   >
     <div class="resign-dialog">
       <div class="warning-card">
@@ -80,12 +71,8 @@ const isMissing = (id: number): boolean =>
       </div>
 
       <div class="employee-card">
-        <div class="employee-name">
-          {{ employee.employeeCode }} / {{ employee.employeeName }}
-        </div>
-        <div class="employee-status">
-          現在の状態：{{ employee.employmentStatus }}
-        </div>
+        <div class="employee-name">{{ employee.employeeCode }} / {{ employee.employeeName }}</div>
+        <div class="employee-status">現在の状態：{{ employee.employmentStatus }}</div>
       </div>
 
       <v-text-field
@@ -114,12 +101,7 @@ const isMissing = (id: number): boolean =>
             @update:model-value="toggleChecklist(item.id, Boolean($event))"
           />
 
-          <v-chip
-            v-if="item.requiredFlag"
-            size="x-small"
-            color="error"
-            variant="tonal"
-          >
+          <v-chip v-if="item.requiredFlag" size="x-small" color="error" variant="tonal">
             必須
           </v-chip>
 
@@ -142,7 +124,7 @@ const isMissing = (id: number): boolean =>
         退職日を入力し、必須チェック項目をすべて確認してください。
       </div>
     </div>
-  </DetailDialogLayout>
+  </AppDialog>
 </template>
 
 <style scoped>
