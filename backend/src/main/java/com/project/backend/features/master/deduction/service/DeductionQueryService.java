@@ -12,6 +12,8 @@ import com.project.backend.features.master.deduction.mapper.DeductionMapper;
 import com.project.backend.features.master.deduction.repository.DeductionMasterRepository;
 import com.project.backend.features.master.deduction.service.resolver.DeductionDetailResolver;
 import com.project.backend.app.tenant.context.TenantContext;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemPolicyService;
+import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ public class DeductionQueryService {
     private final DeductionMasterRepository deductionMasterRepository;
     private final DeductionMapper deductionMapper;
     private final DeductionDetailResolver deductionDetailResolver;
+    private final PayrollItemPolicyService policyService;
 
     public List<DeductionListItemResponse> findAll() {
         return deductionMasterRepository
@@ -45,7 +48,8 @@ public class DeductionQueryService {
 
         return deductionMapper.toDetail(
                 deduction,
-                deductionDetailResolver.resolve(deduction)
+                deductionDetailResolver.resolve(deduction),
+                policyService.find(PayrollItemTargetType.DEDUCTION, deduction.getId())
         );
     }
 }

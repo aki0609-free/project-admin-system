@@ -6,6 +6,8 @@ import com.project.backend.features.master.allowance.enums.AllowanceType;
 import com.project.backend.features.master.allowance.enums.AllowanceUnit;
 
 import jakarta.validation.constraints.NotBlank;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemPolicySaveRequest;
+import jakarta.validation.Valid;
 
 public record AllowanceSaveRequest(
         @NotBlank String allowanceCode,
@@ -24,6 +26,7 @@ public record AllowanceSaveRequest(
         Boolean showOnMonthlyStatement,
         Integer displayOrder,
         Boolean enabled,
-        String note
+        String note,
+        @Valid PayrollItemPolicySaveRequest policy
 ) {
 }

@@ -26,7 +26,8 @@ class PayrollItemEnrollmentServiceTest {
         Clock clock = Clock.fixed(Instant.parse("2026-08-09T03:00:00Z"), ZoneOffset.UTC);
         PayrollItemEnrollmentService service = new PayrollItemEnrollmentService(
                 policyRepository, enrollmentRepository, clock,
-                new com.fasterxml.jackson.databind.ObjectMapper()
+                new com.fasterxml.jackson.databind.ObjectMapper(),
+                mock(PayrollItemParameterDefinitionRepository.class)
         );
 
         PayrollItemBalancePolicy policy = new PayrollItemBalancePolicy();
@@ -69,7 +70,8 @@ class PayrollItemEnrollmentServiceTest {
         Clock clock = Clock.fixed(Instant.parse("2026-08-15T03:00:00Z"), ZoneOffset.UTC);
         PayrollItemEnrollmentService service = new PayrollItemEnrollmentService(
                 policyRepository, enrollmentRepository, clock,
-                new com.fasterxml.jackson.databind.ObjectMapper()
+                new com.fasterxml.jackson.databind.ObjectMapper(),
+                mock(PayrollItemParameterDefinitionRepository.class)
         );
 
         PayrollItemBalancePolicy policy = new PayrollItemBalancePolicy();

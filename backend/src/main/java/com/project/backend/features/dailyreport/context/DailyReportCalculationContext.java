@@ -27,10 +27,6 @@ public class DailyReportCalculationContext {
 
         if (employee != null) {
             parameters.put("employeeId", employee.getId());
-            parameters.put("dormitoryFlag", employee.isDormitoryFlag());
-            if (employee.getDormitoryType() != null) {
-                parameters.put("dormitoryType", employee.getDormitoryType().name());
-            }
         }
 
         if (dailyReport != null) {

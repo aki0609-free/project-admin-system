@@ -46,6 +46,11 @@ public class PayrollItemBalancePolicy extends BaseEntity {
     private String displayName;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "application_scope", nullable = false, length = 30)
+    private PayrollItemApplicationScope applicationScope =
+            PayrollItemApplicationScope.EMPLOYEE_ENROLLMENT;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "balance_unit", nullable = false, length = 20)
     private BalanceUnit balanceUnit;
 

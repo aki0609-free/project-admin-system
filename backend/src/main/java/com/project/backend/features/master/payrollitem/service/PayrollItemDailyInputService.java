@@ -2,6 +2,7 @@ package com.project.backend.features.master.payrollitem.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,12 +32,16 @@ public class PayrollItemDailyInputService {
 
     public List<DailyReportInputItemResponse> findAllowanceItems(
             Map<String, Object> parameters,
-            Map<Long, Integer> manualAmounts
+            Map<Long, Integer> manualAmounts,
+            Map<Long, Map<String, Object>> itemParameters,
+            Set<Long> excludedMasterIds
     ) {
         return findItems(
                 PayrollItemTargetType.ALLOWANCE,
                 parameters,
-                manualAmounts
+                manualAmounts,
+                itemParameters,
+                excludedMasterIds
         );
     }
 
@@ -48,31 +53,53 @@ public class PayrollItemDailyInputService {
 
     public List<DailyReportInputItemResponse> findDeductionItems(
             Map<String, Object> parameters,
-            Map<Long, Integer> manualAmounts
+            Map<Long, Integer> manualAmounts,
+            Map<Long, Map<String, Object>> itemParameters,
+            Set<Long> excludedMasterIds
     ) {
         return findItems(
                 PayrollItemTargetType.DEDUCTION,
                 parameters,
-                manualAmounts
+                manualAmounts,
+                itemParameters,
+                excludedMasterIds
         );
     }
 
     private List<DailyReportInputItemResponse> findItems(
             PayrollItemTargetType targetType,
             Map<String, Object> parameters,
-            Map<Long, Integer> manualAmounts
+            Map<Long, Integer> manualAmounts,
+            Map<Long, Map<String, Object>> itemParameters,
+            Set<Long> excludedMasterIds
     ) {
         return calculationService.calculate(
                         new PayrollItemCalculationRequest(
                                 PayrollItemQueryType.DAILY,
                                 targetType,
-                                parameters
+                                parameters,
+                                itemParameters,
+                                excludedMasterIds
                 ),
                         manualAmounts
                 )
                 .stream()
                 .map(this::toDailyInputItem)
                 .toList();
+    }
+
+    public List<DailyReportInputItemResponse> findAllowanceItems(
+            Map<String, Object> parameters,
+            Map<Long, Integer> manualAmounts
+    ) {
+        return findAllowanceItems(parameters, manualAmounts, Map.of(), Set.of());
+    }
+
+    public List<DailyReportInputItemResponse> findDeductionItems(
+            Map<String, Object> parameters,
+            Map<Long, Integer> manualAmounts
+    ) {
+        return findDeductionItems(parameters, manualAmounts, Map.of(), Set.of());
     }
 
     private DailyReportInputItemResponse toDailyInputItem(

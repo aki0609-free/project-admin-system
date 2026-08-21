@@ -23,10 +23,7 @@ import com.project.backend.features.employee.repository.EmployeeContractReposito
 import com.project.backend.features.employee.repository.EmployeePayrollProfileRepository;
 import com.project.backend.features.employee.repository.EmployeeRepository;
 import com.project.backend.features.employee.repository.EmployeeResignationChecklistRepository;
-import com.project.backend.features.master.payrollitem.balance.PayrollItemEnrollmentService;
-import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceQueryService;
 import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceSnapshot;
-import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -40,8 +37,6 @@ public class EmployeeAdminService {
     private final EmployeeResignationChecklistRepository resignationChecklistRepository;
     private final EmployeeMapper mapper;
     private final EmployeeDeletionPolicy deletionPolicy;
-    private final PayrollItemEnrollmentService payrollItemEnrollmentService;
-    private final PayrollItemBalanceQueryService payrollItemBalanceQueryService;
     private final com.project.backend.features.master.payrollitem.balance.EmployeePayrollItemSettingService payrollItemSettingService;
     private final Clock clock;
 
@@ -72,7 +67,6 @@ public class EmployeeAdminService {
         Employee employee = new Employee();
         employee.setEmployeeCode(request.employeeCode().trim());
         mapper.updateEmployeeFromRequest(request, employee);
-        applyDormitoryCompatibility(employee, request);
         employee.setEmployeeName(request.employeeName().trim());
         employee.initializeEmployment();
 
@@ -80,14 +74,6 @@ public class EmployeeAdminService {
         LocalDate initialSettingDate = request.hireDate() == null
                 ? LocalDate.now(clock)
                 : request.hireDate();
-        payrollItemEnrollmentService.synchronize(
-                savedEmployee.getId(),
-                PayrollItemTargetType.DEDUCTION,
-                "DORMITORY_FEE",
-                savedEmployee.isDormitoryFlag(),
-                java.util.Map.of(),
-                initialSettingDate
-        );
         payrollItemSettingService.synchronizeAll(
                 savedEmployee.getId(),
                 request.payrollItemSettings(),
@@ -115,10 +101,7 @@ public class EmployeeAdminService {
 
         validateRequest(request, id, employee);
 
-        boolean wasDormitoryResident = employee.isDormitoryFlag();
-
         mapper.updateEmployeeFromRequest(request, employee);
-        applyDormitoryCompatibility(employee, request);
         employee.setEmployeeName(request.employeeName().trim());
         employee.changeEmploymentStatus(request.employmentStatus());
 
@@ -144,14 +127,6 @@ public class EmployeeAdminService {
 
         Employee savedEmployee = employeeRepository.save(employee);
 
-        if (wasDormitoryResident != savedEmployee.isDormitoryFlag()) {
-            payrollItemEnrollmentService.synchronize(
-                    savedEmployee.getId(),
-                    PayrollItemTargetType.DEDUCTION,
-                    "DORMITORY_FEE",
-                    savedEmployee.isDormitoryFlag()
-            );
-        }
         payrollItemSettingService.synchronizeAll(savedEmployee.getId(), request.payrollItemSettings());
 
         return toDetailResponse(savedEmployee, profile, contract);
@@ -222,42 +197,11 @@ public class EmployeeAdminService {
             EmployeePayrollProfile payrollProfile,
             EmployeeContract contract
     ) {
-        PayrollItemBalanceSnapshot dormitoryBalance = employee.isDormitoryFlag()
-                ? payrollItemBalanceQueryService.findDeductionBalance(
-                        employee.getId(),
-                        findDormitoryDeductionMasterId(),
-                        LocalDate.now(clock),
-                        null
-                )
-                : PayrollItemBalanceSnapshot.untracked();
         return mapper.toDetailResponse(
-                employee, payrollProfile, contract, dormitoryBalance,
+                employee, payrollProfile, contract,
+                PayrollItemBalanceSnapshot.untracked(),
                 payrollItemSettingService.findAll(employee.getId())
         );
-    }
-
-    private Long findDormitoryDeductionMasterId() {
-        return payrollItemBalanceQueryService.findPolicyMasterId(
-                PayrollItemTargetType.DEDUCTION,
-                "DORMITORY_FEE"
-        ).orElse(null);
-    }
-
-    private void applyDormitoryCompatibility(Employee employee, EmployeeSaveRequest request) {
-        var setting = request.payrollItemSettings() == null ? null
-                : request.payrollItemSettings().stream()
-                .filter(item -> "DORMITORY_FEE".equals(item.targetCode()))
-                .findFirst().orElse(null);
-        if (setting == null) {
-            employee.updateDormitory(Boolean.TRUE.equals(request.dormitoryFlag()), request.dormitoryType());
-            return;
-        }
-        var typeValue = setting.parameters() == null ? null
-                : setting.parameters().get("dormitoryType");
-        com.project.backend.features.employee.enums.DormitoryType type =
-                typeValue == null || typeValue.isBlank() ? null
-                        : com.project.backend.features.employee.enums.DormitoryType.valueOf(typeValue);
-        employee.updateDormitory(setting.enabled(), type);
     }
 
     private void validateRequest(
@@ -345,21 +289,6 @@ public class EmployeeAdminService {
             );
         }
 
-        var dormitorySetting = request.payrollItemSettings() == null ? null
-                : request.payrollItemSettings().stream()
-                .filter(item -> "DORMITORY_FEE".equals(item.targetCode()))
-                .findFirst().orElse(null);
-        boolean missingDynamicDormitoryType = dormitorySetting != null
-                && dormitorySetting.enabled()
-                && (dormitorySetting.parameters() == null
-                || dormitorySetting.parameters().getOrDefault("dormitoryType", "").isBlank());
-        if (missingDynamicDormitoryType || (dormitorySetting == null
-                && Boolean.TRUE.equals(request.dormitoryFlag())
-                && request.dormitoryType() == null)) {
-            throw new IllegalArgumentException(
-                    "入寮ありの場合は寮タイプを選択してください。"
-            );
-        }
     }
 
     private void validateResignRequest(EmployeeResignRequest request) {

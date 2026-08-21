@@ -47,7 +47,25 @@ public class DailyReportAllowanceCommandService {
         entity.setAllowanceCode(request.allowanceCode());
         entity.setAllowanceName(request.allowanceName());
         entity.setAmount(request.amount() != null ? request.amount() : 0);
+        entity.setCalculatedAmount(request.calculatedAmount() != null
+                ? request.calculatedAmount() : entity.getAmount());
+        entity.setManualOverrideFlag(Boolean.TRUE.equals(request.manualOverride()));
+        entity.setOverrideReason(entity.isManualOverrideFlag()
+                ? normalizeReason(request.overrideReason()) : null);
+        entity.setQuantity(request.quantity());
+        entity.setBalanceUnit(request.balanceUnit());
 
         return entity;
+    }
+
+    private String normalizeReason(String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("金額を変更した場合は変更理由が必須です。");
+        }
+        String normalized = reason.trim();
+        if (normalized.length() > 500) {
+            throw new IllegalArgumentException("変更理由は500文字以内で入力してください。");
+        }
+        return normalized;
     }
 }

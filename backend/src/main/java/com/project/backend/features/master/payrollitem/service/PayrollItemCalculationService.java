@@ -54,9 +54,16 @@ public class PayrollItemCalculationService {
                         );
 
         return snapshots.stream()
+                .filter(snapshot -> request.excludedMasterIds() == null
+                        || !request.excludedMasterIds().contains(snapshot.id()))
                 .map(snapshot -> calculateOne(
                         snapshot,
-                        request.parameters(),
+                        mergeParameters(
+                                request.parameters(),
+                                request.itemParameters() == null
+                                        ? null
+                                        : request.itemParameters().get(snapshot.id())
+                        ),
                         manualAmounts
                 ))
                 .sorted(Comparator.comparing(
@@ -64,6 +71,16 @@ public class PayrollItemCalculationService {
                         Comparator.nullsLast(Integer::compareTo)
                 ))
                 .toList();
+    }
+
+    private Map<String, Object> mergeParameters(
+            Map<String, Object> common,
+            Map<String, Object> itemSpecific
+    ) {
+        Map<String, Object> merged = new LinkedHashMap<>();
+        if (common != null) merged.putAll(common);
+        if (itemSpecific != null) merged.putAll(itemSpecific);
+        return merged;
     }
 
     private PayrollItemCalculationResult calculateOne(

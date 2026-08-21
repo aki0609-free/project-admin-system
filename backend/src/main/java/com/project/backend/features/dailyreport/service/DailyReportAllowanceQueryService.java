@@ -27,7 +27,12 @@ public class DailyReportAllowanceQueryService {
                         .allowanceMasterId(entity.getAllowanceMasterId())
                         .allowanceCode(entity.getAllowanceCode())
                         .allowanceName(entity.getAllowanceName())
+                        .calculatedAmount(entity.getCalculatedAmount())
                         .amount(entity.getAmount())
+                        .manualOverride(entity.isManualOverrideFlag())
+                        .overrideReason(entity.getOverrideReason())
+                        .quantity(entity.getQuantity())
+                        .balanceUnit(entity.getBalanceUnit())
                         .build())
                 .toList();
     }

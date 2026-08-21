@@ -3,8 +3,10 @@ package com.project.backend.features.employee.dto;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.List;
 
 public record EmployeePayrollItemSettingResponse(
+        String targetType,
         String targetCode,
         String displayName,
         boolean enabled,
@@ -17,6 +19,7 @@ public record EmployeePayrollItemSettingResponse(
         BigDecimal accruedQuantity,
         BigDecimal consumedQuantity,
         BigDecimal remainingQuantity,
-        Map<String, String> parameters
+        Map<String, String> parameters,
+        List<PayrollItemParameterDefinitionResponse> parameterDefinitions
 ) {
 }

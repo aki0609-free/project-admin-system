@@ -2,6 +2,7 @@ package com.project.backend.features.master.allowance.dto;
 
 import java.util.List;
 import java.util.Map;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemPolicyResponse;
 
 public record AllowanceDetailResponse(
         Long id,
@@ -22,6 +23,7 @@ public record AllowanceDetailResponse(
         Integer displayOrder,
         Boolean enabled,
         String note,
-        Map<String, List<BaseAllowanceDetailResponse>> details
+        Map<String, List<BaseAllowanceDetailResponse>> details,
+        PayrollItemPolicyResponse policy
 ) {
 }

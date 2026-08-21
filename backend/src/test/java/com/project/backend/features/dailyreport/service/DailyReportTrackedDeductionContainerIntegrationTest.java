@@ -35,7 +35,11 @@ import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanc
 import com.project.backend.features.master.payrollitem.balance.PayrollItemBalancePolicyRepository;
 import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceQueryService;
 import com.project.backend.features.master.payrollitem.balance.PayrollItemEnrollmentService;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemParameterDefinition;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemParameterDefinitionRepository;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemParameterInputType;
 import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
+import com.project.backend.features.admin.business.service.DormitoryDailyAmountRuleParameterResolver;
 import com.project.backend.features.system.rule.entity.RuleMaster;
 import com.project.backend.features.system.rule.enums.RuleDslType;
 import com.project.backend.features.system.rule.enums.RuleType;
@@ -59,6 +63,9 @@ class DailyReportTrackedDeductionContainerIntegrationTest
 
     @Autowired
     private PayrollItemBalancePolicyRepository policyRepository;
+
+    @Autowired
+    private PayrollItemParameterDefinitionRepository parameterDefinitionRepository;
 
     @Autowired
     private PayrollItemEnrollmentService enrollmentService;
@@ -97,7 +104,8 @@ class DailyReportTrackedDeductionContainerIntegrationTest
         savePolicy(mobile);
         enrollmentService.synchronize(
                 employee.getId(), PayrollItemTargetType.DEDUCTION,
-                dormitory.getDeductionCode(), true);
+                dormitory.getDeductionCode(), true,
+                java.util.Map.of("dormitoryType", "SHARED_ROOM"));
         enrollmentService.synchronize(
                 employee.getId(), PayrollItemTargetType.DEDUCTION,
                 mobile.getDeductionCode(), true);
@@ -166,7 +174,8 @@ class DailyReportTrackedDeductionContainerIntegrationTest
         savePolicy(mobile);
         enrollmentService.synchronize(
                 employee.getId(), PayrollItemTargetType.DEDUCTION,
-                dormitory.getDeductionCode(), true);
+                dormitory.getDeductionCode(), true,
+                java.util.Map.of("dormitoryType", "SHARED_ROOM"));
         enrollmentService.synchronize(
                 employee.getId(), PayrollItemTargetType.DEDUCTION,
                 mobile.getDeductionCode(), true);
@@ -207,7 +216,7 @@ class DailyReportTrackedDeductionContainerIntegrationTest
         rule.setRuleType(RuleType.DEDUCTION);
         rule.setDslType(RuleDslType.JEXL);
         rule.setDslText(
-                "dormitoryFlag ? dormitoryDailyAmount * dormitoryChargeDays : 0");
+                "dormitoryDailyAmount * itemQuantity");
         rule.setResultFactKey("result");
         rule.setActiveFlag(true);
         ruleMasterRepository.saveAndFlush(rule);
@@ -256,7 +265,35 @@ class DailyReportTrackedDeductionContainerIntegrationTest
         policy.setCarryForwardFlag(true);
         policy.setAdvanceConsumptionFlag(false);
         policy.setActiveFlag(true);
-        policyRepository.saveAndFlush(policy);
+        policy = policyRepository.saveAndFlush(policy);
+
+        if ("DORMITORY_FEE".equals(master.getDeductionCode())) {
+            PayrollItemParameterDefinition dormitoryType =
+                    new PayrollItemParameterDefinition();
+            dormitoryType.setBalancePolicyId(policy.getId());
+            dormitoryType.setParameterKey("dormitoryType");
+            dormitoryType.setDisplayName("寮タイプ");
+            dormitoryType.setInputType(PayrollItemParameterInputType.SELECT);
+            dormitoryType.setRequiredFlag(true);
+            dormitoryType.setOptionsJson("[{\"label\":\"複数人部屋\",\"value\":\"SHARED_ROOM\"}]");
+            dormitoryType.setRuleParameterFlag(false);
+            dormitoryType.setActiveFlag(true);
+            parameterDefinitionRepository.saveAndFlush(dormitoryType);
+
+            PayrollItemParameterDefinition dailyAmount =
+                    new PayrollItemParameterDefinition();
+            dailyAmount.setBalancePolicyId(policy.getId());
+            dailyAmount.setParameterKey("dormitoryDailyAmount");
+            dailyAmount.setDisplayName("寮費日額");
+            dailyAmount.setInputType(PayrollItemParameterInputType.NUMBER);
+            dailyAmount.setRequiredFlag(true);
+            dailyAmount.setDefaultValue("0");
+            dailyAmount.setRuleParameterFlag(true);
+            dailyAmount.setRuleValueResolverKey(
+                    DormitoryDailyAmountRuleParameterResolver.KEY);
+            dailyAmount.setActiveFlag(true);
+            parameterDefinitionRepository.saveAndFlush(dailyAmount);
+        }
     }
 
     private DailyReportSaveRequest request(

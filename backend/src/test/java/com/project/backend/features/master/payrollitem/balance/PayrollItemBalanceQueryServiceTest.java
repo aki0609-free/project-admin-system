@@ -14,14 +14,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.project.backend.app.tenant.context.TenantContext;
+import com.project.backend.features.dailyreport.repository.DailyReportAllowanceRepository;
 import com.project.backend.features.dailyreport.repository.DailyReportDeductionRepository;
 import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
+import com.project.backend.features.master.payrollitem.transaction.EmployeePayrollItemTransactionRepository;
 
 class PayrollItemBalanceQueryServiceTest {
 
     private PayrollItemBalancePolicyRepository policyRepository;
     private EmployeePayrollItemEnrollmentRepository enrollmentRepository;
+    private DailyReportAllowanceRepository allowanceRepository;
     private DailyReportDeductionRepository deductionRepository;
+    private EmployeePayrollItemTransactionRepository transactionRepository;
     private PayrollItemBalanceQueryService service;
 
     @BeforeEach
@@ -29,9 +33,12 @@ class PayrollItemBalanceQueryServiceTest {
         TenantContext.setTenantId("default");
         policyRepository = mock(PayrollItemBalancePolicyRepository.class);
         enrollmentRepository = mock(EmployeePayrollItemEnrollmentRepository.class);
+        allowanceRepository = mock(DailyReportAllowanceRepository.class);
         deductionRepository = mock(DailyReportDeductionRepository.class);
+        transactionRepository = mock(EmployeePayrollItemTransactionRepository.class);
         service = new PayrollItemBalanceQueryService(
-                policyRepository, enrollmentRepository, deductionRepository
+                policyRepository, enrollmentRepository,
+                allowanceRepository, deductionRepository, transactionRepository
         );
     }
 
@@ -118,5 +125,55 @@ class PayrollItemBalanceQueryServiceTest {
 
         assertThat(result.tracked()).isFalse();
         assertThat(result.remainingQuantity()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    void findAllowanceBalance_shouldUseAllowanceQuantities() {
+        PayrollItemBalancePolicy policy = new PayrollItemBalancePolicy();
+        policy.setId(7L);
+        policy.setTargetType(PayrollItemTargetType.ALLOWANCE);
+        policy.setTargetMasterId(12L);
+        policy.setBalanceUnit(BalanceUnit.COUNT);
+        policy.setAccrualRuleName("CALENDAR_DAYS_IN_ENROLLMENT");
+        policy.setActiveFlag(true);
+
+        EmployeePayrollItemEnrollment enrollment = new EmployeePayrollItemEnrollment();
+        enrollment.setEmployeeId(10L);
+        enrollment.setBalancePolicyId(7L);
+        enrollment.setEffectiveFrom(LocalDate.of(2026, 8, 1));
+
+        when(policyRepository
+                .findByTenantIdAndTargetTypeAndTargetMasterIdAndActiveFlagTrueAndDeletedAtIsNull(
+                        "default", PayrollItemTargetType.ALLOWANCE, 12L
+                )).thenReturn(Optional.of(policy));
+        when(enrollmentRepository
+                .findAllByEmployeeIdAndBalancePolicyIdAndEffectiveFromLessThanEqualAndDeletedAtIsNullOrderByEffectiveFromAsc(
+                        10L, 7L, LocalDate.of(2026, 8, 31)
+                )).thenReturn(List.of(enrollment));
+        when(allowanceRepository.sumQuantity(
+                "default", 10L, 12L, LocalDate.of(2026, 8, 1),
+                LocalDate.of(2026, 7, 31), null
+        )).thenReturn(BigDecimal.ZERO);
+        when(allowanceRepository.sumQuantity(
+                "default", 10L, 12L, LocalDate.of(2026, 8, 1),
+                LocalDate.of(2026, 8, 31), null
+        )).thenReturn(BigDecimal.valueOf(6));
+        when(transactionRepository.sumConfirmedQuantityByEffect(
+                "default", 10L, "ALLOWANCE", 12L, "CREDIT",
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31)
+        )).thenReturn(BigDecimal.TEN);
+        when(transactionRepository.sumConfirmedQuantityByEffect(
+                "default", 10L, "ALLOWANCE", 12L, "DEBIT",
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31)
+        )).thenReturn(BigDecimal.valueOf(2));
+
+        PayrollItemBalanceSnapshot result = service.findAllowanceBalance(
+                10L, 12L, LocalDate.of(2026, 8, 10), null
+        );
+
+        assertThat(result.tracked()).isTrue();
+        assertThat(result.accruedQuantity()).isEqualByComparingTo("41");
+        assertThat(result.consumedQuantity()).isEqualByComparingTo("8");
+        assertThat(result.remainingQuantity()).isEqualByComparingTo("33");
     }
 }

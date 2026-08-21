@@ -148,7 +148,7 @@ SELECT
     '日次寮費',
     'DEDUCTION',
     'JEXL',
-    'dormitoryFlag ? dormitoryDailyAmount * dormitoryChargeDays : 0',
+    'dormitoryDailyAmount * itemQuantity',
     NULL,
     'result',
     '寮費日額×日報の寮費徴収日数。日報を作成しない休日分は別の日報へまとめられる。',
@@ -165,6 +165,39 @@ FROM (
 ) tenants
 WHERE TRUE
 ON DUPLICATE KEY UPDATE rule_name = VALUES(rule_name);
+
+-- 数量は日報明細の汎用quantityからRuleへ渡す。
+UPDATE rule_master
+SET dsl_text = 'dormitoryDailyAmount * itemQuantity',
+    description = '寮費日額×日報明細の消化数量。日報を作成しない休日分は別の日報へまとめられる。',
+    updated_at = NOW(6)
+WHERE rule_name = 'DORMITORY_DAILY_FEE'
+  AND deleted_at IS NULL;
+
+UPDATE rule_parameter parameter_item
+JOIN rule_master rule ON rule.id = parameter_item.rule_id
+SET parameter_item.deleted_at = NOW(6),
+    parameter_item.updated_at = NOW(6)
+WHERE rule.rule_name = 'DORMITORY_DAILY_FEE'
+  AND rule.deleted_at IS NULL
+  AND parameter_item.param_name IN ('dormitoryFlag', 'dormitoryChargeDays')
+  AND parameter_item.deleted_at IS NULL;
+
+-- 過去に接続文字コード未指定で投入された表示名だけを補正する。
+-- 正常な表示名や管理画面で変更した名称は上書きしない。
+UPDATE rule_master
+SET rule_display_name = '日次寮費',
+    updated_at = NOW(6)
+WHERE rule_name = 'DORMITORY_DAILY_FEE'
+  AND rule_display_name = 'æ—¥æ¬¡å¯®è²»'
+  AND deleted_at IS NULL;
+
+UPDATE rule_master
+SET description = '寮費日額×日報の寮費徴収日数。日報を作成しない休日分は別の日報へまとめられる。',
+    updated_at = NOW(6)
+WHERE rule_name = 'DORMITORY_DAILY_FEE'
+  AND HEX(description) LIKE 'C3A5C2AFC2AE%'
+  AND deleted_at IS NULL;
 
 INSERT INTO rule_parameter (
     rule_id,
@@ -193,15 +226,13 @@ SELECT
     NULL
 FROM rule_master rule
 CROSS JOIN (
-    SELECT 'dormitoryFlag' AS param_name,
-           'BOOLEAN' AS data_type,
-           'false' AS default_value,
-           '入寮区分' AS description,
-           1 AS order_no
+    SELECT 'dormitoryDailyAmount' AS param_name,
+           'DECIMAL' AS data_type,
+           '0' AS default_value,
+           '寮費マスターの日額' AS description,
+           2 AS order_no
     UNION ALL
-    SELECT 'dormitoryDailyAmount', 'DECIMAL', '0', '寮費マスターの日額', 2
-    UNION ALL
-    SELECT 'dormitoryChargeDays', 'INTEGER', '0', 'この日報で徴収する日数', 3
+    SELECT 'itemQuantity', 'DECIMAL', '0', 'この日報で消化する数量', 3
 ) parameter
 WHERE rule.rule_name = 'DORMITORY_DAILY_FEE'
   AND rule.deleted_at IS NULL

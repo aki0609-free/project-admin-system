@@ -12,6 +12,8 @@ import com.project.backend.features.master.allowance.mapper.AllowanceMapper;
 import com.project.backend.features.master.allowance.repository.AllowanceMasterRepository;
 import com.project.backend.features.master.payrollitem.exception.PayrollItemMasterConflictException;
 import com.project.backend.features.master.payrollitem.service.validation.PayrollItemMasterValidator;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemPolicyService;
+import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
 
 import jakarta.persistence.EntityNotFoundException;
 import com.project.backend.features.system.rule.enums.RuleType;
@@ -25,6 +27,7 @@ public class AllowanceCommandService {
     private final AllowanceMasterRepository repository;
     private final AllowanceMapper mapper;
     private final PayrollItemMasterValidator validator;
+    private final PayrollItemPolicyService policyService;
 
     public Long create(AllowanceSaveRequest request) {
         validateRequest(request);
@@ -40,7 +43,11 @@ public class AllowanceCommandService {
         AllowanceMaster entity = mapper.toEntity(request);
         normalize(entity, request);
         entity.setTenantId(tenantId);
-        return repository.save(entity).getId();
+        entity = repository.save(entity);
+        policyService.synchronize(
+                PayrollItemTargetType.ALLOWANCE, entity.getId(),
+                entity.getAllowanceCode(), entity.getAllowanceName(), request.policy());
+        return entity.getId();
     }
 
     public void update(Long id, AllowanceSaveRequest request) {
@@ -60,6 +67,9 @@ public class AllowanceCommandService {
         mapper.update(entity, request);
         normalize(entity, request);
         repository.save(entity);
+        policyService.synchronize(
+                PayrollItemTargetType.ALLOWANCE, entity.getId(),
+                entity.getAllowanceCode(), entity.getAllowanceName(), request.policy());
     }
 
     public void delete(Long id) {

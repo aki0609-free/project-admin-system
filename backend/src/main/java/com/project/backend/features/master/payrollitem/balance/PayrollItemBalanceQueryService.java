@@ -9,8 +9,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.project.backend.app.tenant.context.TenantContext;
+import com.project.backend.features.dailyreport.repository.DailyReportAllowanceRepository;
 import com.project.backend.features.dailyreport.repository.DailyReportDeductionRepository;
 import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
+import com.project.backend.features.master.payrollitem.transaction.EmployeePayrollItemTransactionRepository;
+import com.project.backend.features.master.payrollitem.transaction.PayrollItemBalanceEffect;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,7 +27,9 @@ public class PayrollItemBalanceQueryService {
 
     private final PayrollItemBalancePolicyRepository policyRepository;
     private final EmployeePayrollItemEnrollmentRepository enrollmentRepository;
+    private final DailyReportAllowanceRepository allowanceRepository;
     private final DailyReportDeductionRepository deductionRepository;
+    private final EmployeePayrollItemTransactionRepository transactionRepository;
 
     public Optional<Long> findPolicyMasterId(
             PayrollItemTargetType targetType,
@@ -52,15 +57,46 @@ public class PayrollItemBalanceQueryService {
             LocalDate targetDate,
             Long excludeDailyReportId
     ) {
-        if (employeeId == null || deductionMasterId == null || targetDate == null) {
+        return findBalance(
+                PayrollItemTargetType.DEDUCTION,
+                employeeId,
+                deductionMasterId,
+                targetDate,
+                excludeDailyReportId
+        );
+    }
+
+    public PayrollItemBalanceSnapshot findAllowanceBalance(
+            Long employeeId,
+            Long allowanceMasterId,
+            LocalDate targetDate,
+            Long excludeDailyReportId
+    ) {
+        return findBalance(
+                PayrollItemTargetType.ALLOWANCE,
+                employeeId,
+                allowanceMasterId,
+                targetDate,
+                excludeDailyReportId
+        );
+    }
+
+    private PayrollItemBalanceSnapshot findBalance(
+            PayrollItemTargetType targetType,
+            Long employeeId,
+            Long targetMasterId,
+            LocalDate targetDate,
+            Long excludeDailyReportId
+    ) {
+        if (employeeId == null || targetMasterId == null || targetDate == null) {
             return PayrollItemBalanceSnapshot.untracked();
         }
 
         var policy = policyRepository
                 .findByTenantIdAndTargetTypeAndTargetMasterIdAndActiveFlagTrueAndDeletedAtIsNull(
                         TenantContext.getTenantId(),
-                        PayrollItemTargetType.DEDUCTION,
-                        deductionMasterId
+                        targetType,
+                        targetMasterId
                 )
                 .orElse(null);
         if (policy == null) {
@@ -69,7 +105,8 @@ public class PayrollItemBalanceQueryService {
         if (!policy.isBalanceTrackingFlag()) {
             return PayrollItemBalanceSnapshot.untracked();
         }
-        if (!CALENDAR_DAYS_IN_ENROLLMENT.equals(policy.getAccrualRuleName())) {
+        if (!CALENDAR_DAYS_IN_ENROLLMENT.equals(policy.getAccrualRuleName())
+                && !"MANUAL_TRANSACTION".equals(policy.getAccrualRuleName())) {
             throw new IllegalStateException(
                     "未対応の残高加算Ruleです。rule=" + policy.getAccrualRuleName()
             );
@@ -96,34 +133,47 @@ public class PayrollItemBalanceQueryService {
             return PayrollItemBalanceSnapshot.untracked();
         }
         BigDecimal accruedThroughPreviousMonth = accrued(
-                employeeId, policy.getId(), monthStart.minusDays(1)
+                employeeId, policy, monthStart.minusDays(1)
         );
         BigDecimal accruedThroughTargetMonth = accrued(
-                employeeId, policy.getId(), monthEnd
+                employeeId, policy, monthEnd
         );
 
         String tenantId = TenantContext.getTenantId();
-        BigDecimal consumedBeforeMonth = deductionRepository.sumQuantity(
-                tenantId,
-                employeeId,
-                deductionMasterId,
-                enrollmentStart,
-                monthStart.minusDays(1),
-                excludeDailyReportId
-        );
-        BigDecimal consumedThroughMonth = deductionRepository.sumQuantity(
-                tenantId,
-                employeeId,
-                deductionMasterId,
-                enrollmentStart,
-                monthEnd,
-                excludeDailyReportId
-        );
+        BigDecimal consumedBeforeMonth = sumQuantity(
+                targetType, tenantId, employeeId, targetMasterId,
+                enrollmentStart, monthStart.minusDays(1), excludeDailyReportId);
+        BigDecimal consumedThroughMonth = sumQuantity(
+                targetType, tenantId, employeeId, targetMasterId,
+                enrollmentStart, monthEnd, excludeDailyReportId);
 
-        BigDecimal opening = accruedThroughPreviousMonth.subtract(consumedBeforeMonth);
+        BigDecimal creditedBeforeMonth = sumTransactionQuantity(
+                targetType, employeeId, targetMasterId,
+                PayrollItemBalanceEffect.CREDIT,
+                enrollmentStart, monthStart.minusDays(1));
+        BigDecimal creditedThroughMonth = sumTransactionQuantity(
+                targetType, employeeId, targetMasterId,
+                PayrollItemBalanceEffect.CREDIT,
+                enrollmentStart, monthEnd);
+        BigDecimal debitedBeforeMonth = sumTransactionQuantity(
+                targetType, employeeId, targetMasterId,
+                PayrollItemBalanceEffect.DEBIT,
+                enrollmentStart, monthStart.minusDays(1));
+        BigDecimal debitedThroughMonth = sumTransactionQuantity(
+                targetType, employeeId, targetMasterId,
+                PayrollItemBalanceEffect.DEBIT,
+                enrollmentStart, monthEnd);
+
+        BigDecimal opening = accruedThroughPreviousMonth
+                .add(creditedBeforeMonth)
+                .subtract(consumedBeforeMonth)
+                .subtract(debitedBeforeMonth);
         BigDecimal currentAccrual = accruedThroughTargetMonth
-                .subtract(accruedThroughPreviousMonth);
-        BigDecimal currentConsumed = consumedThroughMonth.subtract(consumedBeforeMonth);
+                .subtract(accruedThroughPreviousMonth)
+                .add(creditedThroughMonth.subtract(creditedBeforeMonth));
+        BigDecimal currentConsumed = consumedThroughMonth
+                .subtract(consumedBeforeMonth)
+                .add(debitedThroughMonth.subtract(debitedBeforeMonth));
         BigDecimal remaining = opening.add(currentAccrual).subtract(currentConsumed);
 
         return new PayrollItemBalanceSnapshot(
@@ -136,22 +186,64 @@ public class PayrollItemBalanceQueryService {
         );
     }
 
+    private BigDecimal sumQuantity(
+            PayrollItemTargetType targetType,
+            String tenantId,
+            Long employeeId,
+            Long masterId,
+            LocalDate from,
+            LocalDate through,
+            Long excludeDailyReportId
+    ) {
+        return switch (targetType) {
+            case ALLOWANCE -> allowanceRepository.sumQuantity(
+                    tenantId, employeeId, masterId, from, through,
+                    excludeDailyReportId);
+            case DEDUCTION -> deductionRepository.sumQuantity(
+                    tenantId, employeeId, masterId, from, through,
+                    excludeDailyReportId);
+        };
+    }
+
     private BigDecimal accrued(
             Long employeeId,
-            Long policyId,
+            PayrollItemBalancePolicy policy,
             LocalDate through
     ) {
         if (through == null) {
             return BigDecimal.ZERO;
         }
+        if ("MANUAL_TRANSACTION".equals(policy.getAccrualRuleName())) {
+            return BigDecimal.ZERO;
+        }
         long days = enrollmentRepository
                 .findAllByEmployeeIdAndBalancePolicyIdAndEffectiveFromLessThanEqualAndDeletedAtIsNullOrderByEffectiveFromAsc(
-                        employeeId, policyId, through
+                        employeeId, policy.getId(), through
                 )
                 .stream()
                 .mapToLong(enrollment -> overlapDays(enrollment, through))
                 .sum();
         return BigDecimal.valueOf(days);
+    }
+
+    private BigDecimal sumTransactionQuantity(
+            PayrollItemTargetType targetType,
+            Long employeeId,
+            Long masterId,
+            PayrollItemBalanceEffect effect,
+            LocalDate from,
+            LocalDate through
+    ) {
+        if (through.isBefore(from)) {
+            return BigDecimal.ZERO;
+        }
+        return Optional.ofNullable(
+                transactionRepository.sumConfirmedQuantityByEffect(
+                        TenantContext.getTenantId(), employeeId,
+                        targetType.name(), masterId, effect.name(), from,
+                        through
+                )
+        ).orElse(BigDecimal.ZERO);
     }
 
     private long overlapDays(

@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS payroll_item_balance_policy (
     target_master_id BIGINT NOT NULL,
     target_code VARCHAR(50) NOT NULL,
     display_name VARCHAR(200) NOT NULL,
+    application_scope VARCHAR(30) NOT NULL DEFAULT 'EMPLOYEE_ENROLLMENT',
     balance_unit VARCHAR(20) NOT NULL,
     accrual_frequency VARCHAR(20) NOT NULL,
     accrual_rule_name VARCHAR(100) NOT NULL,
@@ -59,6 +60,21 @@ PREPARE statement FROM @balance_tracking_sql;
 EXECUTE statement;
 DEALLOCATE PREPARE statement;
 
+SET @application_scope_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'payroll_item_balance_policy'
+      AND column_name = 'application_scope'
+);
+SET @application_scope_sql := IF(
+    @application_scope_exists = 0,
+    'ALTER TABLE payroll_item_balance_policy ADD COLUMN application_scope VARCHAR(30) NOT NULL DEFAULT ''EMPLOYEE_ENROLLMENT'' AFTER display_name',
+    'SELECT 1'
+);
+PREPARE statement FROM @application_scope_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
 SET @input_source_exists := (
     SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE()
@@ -96,6 +112,34 @@ CREATE TABLE IF NOT EXISTS employee_payroll_item_enrollment (
         CHECK (effective_to IS NULL OR effective_to >= effective_from)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS payroll_item_parameter_definition (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    balance_policy_id BIGINT NOT NULL,
+    parameter_key VARCHAR(100) NOT NULL,
+    display_name VARCHAR(200) NOT NULL,
+    input_type VARCHAR(20) NOT NULL,
+    required_flag BOOLEAN NOT NULL DEFAULT FALSE,
+    default_value VARCHAR(500) NULL,
+    options_json JSON NULL,
+    rule_parameter_flag BOOLEAN NOT NULL DEFAULT FALSE,
+    daily_display_flag BOOLEAN NOT NULL DEFAULT FALSE,
+    input_source_override_flag BOOLEAN NOT NULL DEFAULT FALSE,
+    rule_value_resolver_key VARCHAR(100) NULL,
+    display_order INT NOT NULL DEFAULT 0,
+    active_flag BOOLEAN NOT NULL DEFAULT TRUE,
+    tenant_id VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP(6) NOT NULL,
+    updated_at TIMESTAMP(6) NOT NULL,
+    deleted_at TIMESTAMP(6) NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_payroll_item_parameter_definition_key
+        UNIQUE (tenant_id, balance_policy_id, parameter_key),
+    CONSTRAINT fk_payroll_item_parameter_definition_policy
+        FOREIGN KEY (balance_policy_id) REFERENCES payroll_item_balance_policy (id),
+    CONSTRAINT chk_payroll_item_parameter_definition_type
+        CHECK (input_type IN ('TEXT', 'NUMBER', 'SELECT', 'BOOLEAN', 'DATE'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET @enrollment_settings_exists := (
     SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema = DATABASE()
@@ -108,6 +152,21 @@ SET @enrollment_settings_sql := IF(
     'SELECT 1'
 );
 PREPARE statement FROM @enrollment_settings_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
+SET @parameter_resolver_key_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'payroll_item_parameter_definition'
+      AND column_name = 'rule_value_resolver_key'
+);
+SET @parameter_resolver_key_sql := IF(
+    @parameter_resolver_key_exists = 0,
+    'ALTER TABLE payroll_item_parameter_definition ADD COLUMN rule_value_resolver_key VARCHAR(100) NULL AFTER input_source_override_flag',
+    'SELECT 1'
+);
+PREPARE statement FROM @parameter_resolver_key_sql;
 EXECUTE statement;
 DEALLOCATE PREPARE statement;
 
@@ -172,6 +231,88 @@ SET @deduction_calculated_amount_exists := (
       AND table_name = 'daily_report_deductions'
       AND column_name = 'calculated_amount'
 );
+
+-- 手当・控除で同じ基準額、上書き理由、数量、残高単位を保持する。
+SET @allowance_calculated_amount_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'daily_report_allowances'
+      AND column_name = 'calculated_amount'
+);
+SET @allowance_calculated_amount_sql := IF(
+    @allowance_calculated_amount_exists = 0,
+    'ALTER TABLE daily_report_allowances ADD COLUMN calculated_amount INT NOT NULL DEFAULT 0 AFTER amount',
+    'SELECT 1'
+);
+PREPARE statement FROM @allowance_calculated_amount_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
+SET @allowance_manual_override_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'daily_report_allowances'
+      AND column_name = 'manual_override_flag'
+);
+SET @allowance_manual_override_sql := IF(
+    @allowance_manual_override_exists = 0,
+    'ALTER TABLE daily_report_allowances ADD COLUMN manual_override_flag BOOLEAN NOT NULL DEFAULT FALSE AFTER calculated_amount',
+    'SELECT 1'
+);
+PREPARE statement FROM @allowance_manual_override_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
+SET @allowance_override_reason_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'daily_report_allowances'
+      AND column_name = 'override_reason'
+);
+SET @allowance_override_reason_sql := IF(
+    @allowance_override_reason_exists = 0,
+    'ALTER TABLE daily_report_allowances ADD COLUMN override_reason VARCHAR(500) NULL AFTER manual_override_flag',
+    'SELECT 1'
+);
+PREPARE statement FROM @allowance_override_reason_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
+SET @allowance_quantity_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'daily_report_allowances'
+      AND column_name = 'quantity'
+);
+SET @allowance_quantity_sql := IF(
+    @allowance_quantity_exists = 0,
+    'ALTER TABLE daily_report_allowances ADD COLUMN quantity DECIMAL(12,2) NULL AFTER override_reason',
+    'SELECT 1'
+);
+PREPARE statement FROM @allowance_quantity_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
+SET @allowance_balance_unit_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'daily_report_allowances'
+      AND column_name = 'balance_unit'
+);
+SET @allowance_balance_unit_sql := IF(
+    @allowance_balance_unit_exists = 0,
+    'ALTER TABLE daily_report_allowances ADD COLUMN balance_unit VARCHAR(20) NULL AFTER quantity',
+    'SELECT 1'
+);
+PREPARE statement FROM @allowance_balance_unit_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
+UPDATE daily_report_allowances
+SET calculated_amount = amount
+WHERE calculated_amount = 0
+  AND amount <> 0;
+
 SET @deduction_calculated_amount_sql := IF(
     @deduction_calculated_amount_exists = 0,
     'ALTER TABLE daily_report_deductions ADD COLUMN calculated_amount INT NOT NULL DEFAULT 0 AFTER amount',
@@ -328,6 +469,102 @@ ON DUPLICATE KEY UPDATE
     accrual_rule_name = VALUES(accrual_rule_name),
     updated_at = NOW(6),
     deleted_at = NULL;
+
+-- 寮費固有の入力欄はアプリケーションへ直書きせず、定義データから生成する。
+INSERT INTO payroll_item_parameter_definition (
+    balance_policy_id, parameter_key, display_name, input_type,
+    required_flag, default_value, options_json,
+    rule_parameter_flag, daily_display_flag, input_source_override_flag,
+    display_order, active_flag, tenant_id,
+    created_at, updated_at, deleted_at
+)
+SELECT policy.id, 'dormitoryType', '寮タイプ', 'SELECT',
+       TRUE, NULL,
+       JSON_ARRAY(
+           JSON_OBJECT('label', '一人部屋', 'value', 'SINGLE_ROOM'),
+           JSON_OBJECT('label', '複数人部屋', 'value', 'SHARED_ROOM')
+       ),
+       FALSE, FALSE, FALSE,
+       10, TRUE, policy.tenant_id, NOW(6), NOW(6), NULL
+FROM payroll_item_balance_policy policy
+WHERE policy.target_type = 'DEDUCTION'
+  AND policy.target_code = 'DORMITORY_FEE'
+  AND policy.deleted_at IS NULL
+ON DUPLICATE KEY UPDATE
+    display_name = VALUES(display_name), input_type = VALUES(input_type),
+    required_flag = VALUES(required_flag), options_json = VALUES(options_json),
+    rule_parameter_flag = FALSE,
+    input_source_override_flag = VALUES(input_source_override_flag),
+    active_flag = TRUE, updated_at = NOW(6), deleted_at = NULL;
+
+-- Rule値Resolverにより、Fuyo固有の寮費マスターをCoreの日報計算から分離する。
+INSERT INTO payroll_item_parameter_definition (
+    balance_policy_id, parameter_key, display_name, input_type,
+    required_flag, default_value, options_json,
+    rule_parameter_flag, daily_display_flag, input_source_override_flag,
+    rule_value_resolver_key, display_order, active_flag, tenant_id,
+    created_at, updated_at, deleted_at
+)
+SELECT policy.id, 'dormitoryDailyAmount', '寮費日額', 'NUMBER',
+       TRUE, '0', NULL,
+       TRUE, FALSE, FALSE,
+       'DORMITORY_DAILY_AMOUNT', 15, TRUE, policy.tenant_id,
+       NOW(6), NOW(6), NULL
+FROM payroll_item_balance_policy policy
+WHERE policy.target_type = 'DEDUCTION'
+  AND policy.target_code = 'DORMITORY_FEE'
+  AND policy.deleted_at IS NULL
+ON DUPLICATE KEY UPDATE
+    display_name = VALUES(display_name), input_type = VALUES(input_type),
+    required_flag = VALUES(required_flag),
+    rule_parameter_flag = TRUE,
+    rule_value_resolver_key = VALUES(rule_value_resolver_key),
+    display_order = VALUES(display_order), active_flag = TRUE,
+    updated_at = NOW(6), deleted_at = NULL;
+
+INSERT INTO payroll_item_parameter_definition (
+    balance_policy_id, parameter_key, display_name, input_type,
+    required_flag, default_value, options_json,
+    rule_parameter_flag, daily_display_flag, input_source_override_flag,
+    display_order, active_flag, tenant_id,
+    created_at, updated_at, deleted_at
+)
+SELECT policy.id, 'inputSource', '徴収方式', 'SELECT',
+       TRUE, 'DAILY_REPORT',
+       JSON_ARRAY(
+           JSON_OBJECT('label', '日報で日次徴収', 'value', 'DAILY_REPORT'),
+           JSON_OBJECT('label', '月1回の一括徴収', 'value', 'TRANSACTION')
+       ),
+       FALSE, FALSE, TRUE,
+       20, TRUE, policy.tenant_id, NOW(6), NOW(6), NULL
+FROM payroll_item_balance_policy policy
+WHERE policy.target_type = 'DEDUCTION'
+  AND policy.target_code = 'DORMITORY_FEE'
+  AND policy.deleted_at IS NULL
+ON DUPLICATE KEY UPDATE
+    display_name = VALUES(display_name), input_type = VALUES(input_type),
+    required_flag = VALUES(required_flag), default_value = VALUES(default_value),
+    options_json = VALUES(options_json),
+    input_source_override_flag = VALUES(input_source_override_flag),
+    active_flag = TRUE, updated_at = NOW(6), deleted_at = NULL;
+
+-- 旧設定値は共通入力元コードへ移行する。
+UPDATE employee_payroll_item_enrollment enrollment
+JOIN payroll_item_balance_policy policy ON policy.id = enrollment.balance_policy_id
+SET enrollment.settings_json = JSON_SET(
+        COALESCE(enrollment.settings_json, JSON_OBJECT()),
+        '$.inputSource',
+        CASE JSON_UNQUOTE(JSON_EXTRACT(enrollment.settings_json, '$.collectionMode'))
+            WHEN 'MONTHLY' THEN 'TRANSACTION'
+            ELSE 'DAILY_REPORT'
+        END
+    ),
+    enrollment.updated_at = NOW(6)
+WHERE policy.target_type = 'DEDUCTION'
+  AND policy.target_code = 'DORMITORY_FEE'
+  AND policy.deleted_at IS NULL
+  AND enrollment.deleted_at IS NULL
+  AND JSON_EXTRACT(enrollment.settings_json, '$.inputSource') IS NULL;
 
 -- 既に入寮中の従業員は、基盤適用日から自動的に対象とする。
 INSERT INTO employee_payroll_item_enrollment (

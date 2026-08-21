@@ -6,6 +6,8 @@ import com.project.backend.features.master.deduction.enums.DeductionType;
 import com.project.backend.features.master.deduction.enums.DeductionUnit;
 
 import jakarta.validation.constraints.NotBlank;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemPolicySaveRequest;
+import jakarta.validation.Valid;
 
 public record DeductionSaveRequest(
         @NotBlank String deductionCode,
@@ -24,6 +26,7 @@ public record DeductionSaveRequest(
         Boolean carryToMonthlySettlement,
         Integer displayOrder,
         Boolean enabled,
-        String note
+        String note,
+        @Valid PayrollItemPolicySaveRequest policy
 ) {
 }

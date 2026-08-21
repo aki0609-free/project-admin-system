@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.project.backend.features.master.payrollitem.transaction.EmployeePayrollItemTransactionRequest;
 import com.project.backend.features.master.payrollitem.transaction.EmployeePayrollItemTransactionResponse;
 import com.project.backend.features.master.payrollitem.transaction.EmployeePayrollItemTransactionService;
+import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,10 +30,11 @@ public class EmployeePayrollItemTransactionController {
     @GetMapping
     public List<EmployeePayrollItemTransactionResponse> findAll(
             @PathVariable Long employeeId,
+            @RequestParam PayrollItemTargetType targetType,
             @RequestParam String targetCode,
             @RequestParam String targetMonth
     ) {
-        return service.findAll(employeeId, targetCode, targetMonth);
+        return service.findAll(employeeId, targetType, targetCode, targetMonth);
     }
 
     @PostMapping

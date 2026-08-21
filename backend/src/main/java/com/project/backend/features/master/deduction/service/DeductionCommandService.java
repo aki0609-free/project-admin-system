@@ -12,6 +12,8 @@ import com.project.backend.features.master.deduction.mapper.DeductionMapper;
 import com.project.backend.features.master.deduction.repository.DeductionMasterRepository;
 import com.project.backend.features.master.payrollitem.exception.PayrollItemMasterConflictException;
 import com.project.backend.features.master.payrollitem.service.validation.PayrollItemMasterValidator;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemPolicyService;
+import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
 
 import jakarta.persistence.EntityNotFoundException;
 import com.project.backend.features.system.rule.enums.RuleType;
@@ -25,6 +27,7 @@ public class DeductionCommandService {
     private final DeductionMasterRepository repository;
     private final DeductionMapper mapper;
     private final PayrollItemMasterValidator validator;
+    private final PayrollItemPolicyService policyService;
 
     public Long create(DeductionSaveRequest request) {
         validateRequest(request);
@@ -40,7 +43,11 @@ public class DeductionCommandService {
         DeductionMaster entity = mapper.toEntity(request);
         normalize(entity, request);
         entity.setTenantId(tenantId);
-        return repository.save(entity).getId();
+        entity = repository.save(entity);
+        policyService.synchronize(
+                PayrollItemTargetType.DEDUCTION, entity.getId(),
+                entity.getDeductionCode(), entity.getDeductionName(), request.policy());
+        return entity.getId();
     }
 
     public void update(Long id, DeductionSaveRequest request) {
@@ -60,6 +67,9 @@ public class DeductionCommandService {
         mapper.update(entity, request);
         normalize(entity, request);
         repository.save(entity);
+        policyService.synchronize(
+                PayrollItemTargetType.DEDUCTION, entity.getId(),
+                entity.getDeductionCode(), entity.getDeductionName(), request.policy());
     }
 
     public void delete(Long id) {

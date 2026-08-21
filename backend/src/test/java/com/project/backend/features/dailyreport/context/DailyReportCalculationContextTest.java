@@ -10,7 +10,7 @@ import com.project.backend.features.employee.enums.DormitoryType;
 class DailyReportCalculationContextTest {
 
     @Test
-    void toParameters_shouldExposeDormitoryFactsForPayrollItemRules() {
+    void toParameters_shouldExposeOnlyGenericEmployeeFactsForPayrollItemRules() {
         Employee employee = new Employee();
         employee.setId(10L);
         employee.updateDormitory(true, DormitoryType.SHARED_ROOM);
@@ -22,7 +22,6 @@ class DailyReportCalculationContextTest {
 
         assertThat(parameters)
                 .containsEntry("employeeId", 10L)
-                .containsEntry("dormitoryFlag", true)
-                .containsEntry("dormitoryType", "SHARED_ROOM");
+                .doesNotContainKeys("dormitoryFlag", "dormitoryType");
     }
 }

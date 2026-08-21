@@ -23,12 +23,9 @@ import com.project.backend.features.dailyreport.dto.DailyReportAllowanceSaveRequ
 import com.project.backend.features.dailyreport.dto.DailyReportDeductionSaveRequest;
 import com.project.backend.features.dailyreport.dto.DailyReportInputItemResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
-import com.project.backend.features.admin.business.repository.DormitoryFeeSettingRepository;
-import com.project.backend.features.admin.business.entity.DormitoryFeeSetting;
 import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.enums.SalaryType;
-import com.project.backend.features.employee.enums.DormitoryType;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.employee.repository.EmployeeRepository;
 import com.project.backend.features.master.payrollitem.service.PayrollItemDailyInputService;
@@ -43,7 +40,6 @@ class DailyReportInputItemServiceTest {
     private PayrollItemDailyInputService payrollItemDailyInputService;
     private EmployeeRepository employeeRepository;
     private EmployeeContractRepository employeeContractRepository;
-    private DormitoryFeeSettingRepository dormitoryFeeSettingRepository;
     private PayrollItemBalanceQueryService balanceQueryService;
     private EmployeePayrollItemSettingService payrollItemSettingService;
     private DailyReportRepository dailyReportRepository;
@@ -54,7 +50,6 @@ class DailyReportInputItemServiceTest {
         payrollItemDailyInputService = mock(PayrollItemDailyInputService.class);
         employeeRepository = mock(EmployeeRepository.class);
         employeeContractRepository = mock(EmployeeContractRepository.class);
-        dormitoryFeeSettingRepository = mock(DormitoryFeeSettingRepository.class);
         balanceQueryService = mock(PayrollItemBalanceQueryService.class);
         payrollItemSettingService = mock(EmployeePayrollItemSettingService.class);
         dailyReportRepository = mock(DailyReportRepository.class);
@@ -64,14 +59,22 @@ class DailyReportInputItemServiceTest {
         when(balanceQueryService.findDeductionBalance(
                 anyLong(), anyLong(), any(LocalDate.class), any()))
                 .thenReturn(PayrollItemBalanceSnapshot.untracked());
+        when(balanceQueryService.findAllowanceBalance(
+                anyLong(), anyLong(), any(LocalDate.class), any()))
+                .thenReturn(PayrollItemBalanceSnapshot.untracked());
         when(payrollItemSettingService.isDailyReportInputEnabled(
                 anyLong(), anyLong(), any(LocalDate.class)))
                 .thenReturn(true);
+        when(payrollItemSettingService.findDailyRuleParameters(
+                anyLong(), any(), any(LocalDate.class)))
+                .thenReturn(Map.of());
+        when(payrollItemSettingService.findExcludedDailyMasterIds(
+                anyLong(), any(), any(LocalDate.class)))
+                .thenReturn(java.util.Set.of());
         service = new DailyReportInputItemService(
                 payrollItemDailyInputService,
                 employeeRepository,
                 employeeContractRepository,
-                dormitoryFeeSettingRepository,
                 balanceQueryService,
                 payrollItemSettingService,
                 dailyReportRepository
@@ -92,9 +95,11 @@ class DailyReportInputItemServiceTest {
                 .thenReturn(Optional.of(employee));
         when(employeeContractRepository.findByEmployeeIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(contract));
-        when(payrollItemDailyInputService.findAllowanceItems(anyMap(), anyMap()))
+        when(payrollItemDailyInputService.findAllowanceItems(
+                anyMap(), anyMap(), anyMap(), any()))
                 .thenReturn(List.of(inputItem(1L, "OVERTIME", 1200)));
-        when(payrollItemDailyInputService.findDeductionItems(anyMap(), anyMap()))
+        when(payrollItemDailyInputService.findDeductionItems(
+                anyMap(), anyMap(), anyMap(), any()))
                 .thenReturn(List.of());
 
         var response = service.calculate(request);
@@ -110,7 +115,9 @@ class DailyReportInputItemServiceTest {
 
         verify(payrollItemDailyInputService).findAllowanceItems(
                 parametersCaptor.capture(),
-                amountsCaptor.capture()
+                amountsCaptor.capture(),
+                anyMap(),
+                any()
         );
 
         assertThat(parametersCaptor.getValue())
@@ -144,31 +151,33 @@ class DailyReportInputItemServiceTest {
     }
 
     @Test
-    void calculate_shouldPassDormitoryMasterAmountAndChargeDaysToRule() {
+    void calculate_shouldPassMasterAmountAndGenericQuantityToRule() {
         DailyReportSaveRequest request = mockRequest();
-        when(request.dormitoryChargeDays()).thenReturn(3);
+        when(request.deductions()).thenReturn(List.of(
+                new DailyReportDeductionSaveRequest(
+                        2L, "DORMITORY_FEE", "寮費",
+                        0, 0, false, null,
+                        BigDecimal.valueOf(3), BalanceUnit.DAYS.name())
+        ));
 
         Employee employee = new Employee();
         employee.setId(10L);
-        employee.updateDormitory(true, DormitoryType.SHARED_ROOM);
-
-        DormitoryFeeSetting setting = new DormitoryFeeSetting();
-        setting.setDormitoryType(DormitoryType.SHARED_ROOM);
-        setting.setDailyAmount(BigDecimal.valueOf(450));
-        setting.setActiveFlag(true);
-
         when(employeeRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(employee));
         when(employeeContractRepository.findByEmployeeIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.empty());
-        when(dormitoryFeeSettingRepository
-                .findByDormitoryTypeAndActiveFlagTrueAndDeletedAtIsNull(
-                        DormitoryType.SHARED_ROOM
-                ))
-                .thenReturn(Optional.of(setting));
-        when(payrollItemDailyInputService.findAllowanceItems(anyMap(), anyMap()))
+        when(payrollItemSettingService.findDailyRuleParameters(
+                10L,
+                com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType.DEDUCTION,
+                LocalDate.of(2026, 7, 27)
+        )).thenReturn(Map.of(
+                2L, Map.of("dormitoryDailyAmount", BigDecimal.valueOf(450))
+        ));
+        when(payrollItemDailyInputService.findAllowanceItems(
+                anyMap(), anyMap(), anyMap(), any()))
                 .thenReturn(List.of());
-        when(payrollItemDailyInputService.findDeductionItems(anyMap(), anyMap()))
+        when(payrollItemDailyInputService.findDeductionItems(
+                anyMap(), anyMap(), anyMap(), any()))
                 .thenReturn(List.of());
 
         service.calculate(request);
@@ -176,15 +185,21 @@ class DailyReportInputItemServiceTest {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<String, Object>> parametersCaptor =
                 ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<Long, Map<String, Object>>> itemParametersCaptor =
+                ArgumentCaptor.forClass(Map.class);
         verify(payrollItemDailyInputService).findDeductionItems(
                 parametersCaptor.capture(),
-                anyMap()
+                anyMap(),
+                itemParametersCaptor.capture(),
+                any()
         );
         assertThat(parametersCaptor.getValue())
-                .containsEntry("dormitoryFlag", true)
-                .containsEntry("dormitoryType", "SHARED_ROOM")
-                .containsEntry("dormitoryChargeDays", 3)
-                .containsEntry("dormitoryDailyAmount", BigDecimal.valueOf(450));
+                .doesNotContainKeys(
+                        "dormitoryFlag", "dormitoryType", "dormitoryDailyAmount");
+        assertThat(itemParametersCaptor.getValue().get(2L))
+                .containsEntry("dormitoryDailyAmount", BigDecimal.valueOf(450))
+                .containsEntry("itemQuantity", BigDecimal.valueOf(3));
     }
 
     @Test
@@ -210,9 +225,11 @@ class DailyReportInputItemServiceTest {
                 .thenReturn(Optional.of(employee));
         when(employeeContractRepository.findByEmployeeIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.empty());
-        when(payrollItemDailyInputService.findAllowanceItems(anyMap(), anyMap()))
+        when(payrollItemDailyInputService.findAllowanceItems(
+                anyMap(), anyMap(), anyMap(), any()))
                 .thenReturn(List.of());
-        when(payrollItemDailyInputService.findDeductionItems(anyMap(), anyMap()))
+        when(payrollItemDailyInputService.findDeductionItems(
+                anyMap(), anyMap(), anyMap(), any()))
                 .thenReturn(List.of(inputItem(9L, "MOBILE_RENTAL", 12_345)));
         when(balanceQueryService.findDeductionBalance(
                 10L,
@@ -245,9 +262,11 @@ class DailyReportInputItemServiceTest {
                 .thenReturn(Optional.of(employee));
         when(employeeContractRepository.findByEmployeeIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.empty());
-        when(payrollItemDailyInputService.findAllowanceItems(anyMap(), anyMap()))
+        when(payrollItemDailyInputService.findAllowanceItems(
+                anyMap(), anyMap(), anyMap(), any()))
                 .thenReturn(List.of());
-        when(payrollItemDailyInputService.findDeductionItems(anyMap(), anyMap()))
+        when(payrollItemDailyInputService.findDeductionItems(
+                anyMap(), anyMap(), anyMap(), any()))
                 .thenReturn(List.of(
                         inputItem(2L, "DAILY_ITEM", 300),
                         inputItem(3L, "MOBILE_RENTAL", 5000),

@@ -27,6 +27,9 @@ class PayrollItemEnrollmentContainerIntegrationTest
     private EmployeePayrollItemEnrollmentRepository enrollmentRepository;
 
     @Autowired
+    private PayrollItemParameterDefinitionRepository parameterDefinitionRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     @Test
@@ -44,6 +47,20 @@ class PayrollItemEnrollmentContainerIntegrationTest
         policy.setAdvanceConsumptionFlag(false);
         policy.setActiveFlag(true);
         policy = policyRepository.saveAndFlush(policy);
+
+        PayrollItemParameterDefinition definition =
+                new PayrollItemParameterDefinition();
+        definition.setBalancePolicyId(policy.getId());
+        definition.setParameterKey("dormitoryType");
+        definition.setDisplayName("寮タイプ");
+        definition.setInputType(PayrollItemParameterInputType.TEXT);
+        definition.setRequiredFlag(true);
+        definition.setRuleParameterFlag(true);
+        definition.setDailyDisplayFlag(false);
+        definition.setInputSourceOverrideFlag(false);
+        definition.setDisplayOrder(10);
+        definition.setActiveFlag(true);
+        parameterDefinitionRepository.saveAndFlush(definition);
 
         testClock.setDate(LocalDate.of(2026, 1, 31));
         enrollmentService.synchronize(

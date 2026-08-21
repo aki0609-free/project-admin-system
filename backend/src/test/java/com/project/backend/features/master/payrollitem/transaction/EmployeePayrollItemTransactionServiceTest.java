@@ -25,6 +25,7 @@ import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.repository.EmployeeRepository;
 import com.project.backend.features.master.deduction.entity.DeductionMaster;
 import com.project.backend.features.master.deduction.repository.DeductionMasterRepository;
+import com.project.backend.features.master.allowance.repository.AllowanceMasterRepository;
 import com.project.backend.features.master.payrollitem.balance.BalanceUnit;
 import com.project.backend.features.master.payrollitem.balance.EmployeePayrollItemEnrollment;
 import com.project.backend.features.master.payrollitem.balance.EmployeePayrollItemEnrollmentRepository;
@@ -46,6 +47,8 @@ class EmployeePayrollItemTransactionServiceTest {
         EmployeeRepository employeeRepository = mock(EmployeeRepository.class);
         DeductionMasterRepository deductionMasterRepository =
                 mock(DeductionMasterRepository.class);
+        AllowanceMasterRepository allowanceMasterRepository =
+                mock(AllowanceMasterRepository.class);
         PayrollItemBalancePolicyRepository policyRepository =
                 mock(PayrollItemBalancePolicyRepository.class);
         EmployeePayrollItemEnrollmentRepository enrollmentRepository =
@@ -66,6 +69,7 @@ class EmployeePayrollItemTransactionServiceTest {
         policy.setTargetCode("MOBILE_RENTAL");
         policy.setDisplayName("携帯電話料");
         policy.setBalanceUnit(BalanceUnit.AMOUNT);
+        policy.setBalanceTrackingFlag(false);
         policy.setInputSource(PayrollItemInputSource.TRANSACTION);
         policy.setActiveFlag(true);
         when(policyRepository
@@ -104,13 +108,15 @@ class EmployeePayrollItemTransactionServiceTest {
                 repository,
                 employeeRepository,
                 deductionMasterRepository,
+                allowanceMasterRepository,
                 policyRepository,
                 enrollmentRepository,
                 new ObjectMapper(),
                 Clock.fixed(
                         Instant.parse("2026-08-11T00:00:00Z"),
                         ZoneOffset.UTC
-                )
+                ),
+                mock(com.project.backend.features.master.payrollitem.balance.PayrollItemParameterDefinitionRepository.class)
         );
     }
 
@@ -141,6 +147,26 @@ class EmployeePayrollItemTransactionServiceTest {
                 10L, request(LocalDate.of(2026, 9, 1))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("対象月の範囲内");
+    }
+
+    @Test
+    void create_shouldRejectBalanceEffectForUntrackedItem() {
+        var request = new EmployeePayrollItemTransactionRequest(
+                PayrollItemTargetType.DEDUCTION,
+                "MOBILE_RENTAL",
+                "2026-08",
+                LocalDate.of(2026, 8, 5),
+                BigDecimal.valueOf(2500),
+                BigDecimal.ONE,
+                PayrollItemTransactionStatus.CONFIRMED,
+                "MOBILE-202608-2",
+                null,
+                PayrollItemBalanceEffect.CREDIT
+        );
+
+        assertThatThrownBy(() -> service.create(10L, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("残高管理しない項目");
     }
 
     private EmployeePayrollItemTransactionRequest request(LocalDate date) {

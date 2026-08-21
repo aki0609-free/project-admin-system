@@ -256,12 +256,6 @@ public class DailyReportCommandService {
     ) {
         report.setAllowanceAmount(sumAmounts(calculatedItems.allowances()));
         report.setDeductionAmount(sumAmounts(calculatedItems.deductions()));
-        calculatedItems.deductions().stream()
-                .filter(item -> "DORMITORY_FEE".equals(item.code()))
-                .map(com.project.backend.features.dailyreport.dto.DailyReportInputItemResponse::quantity)
-                .filter(java.util.Objects::nonNull)
-                .findFirst()
-                .ifPresent(quantity -> report.setDormitoryChargeDays(quantity.intValueExact()));
     }
 
     private BigDecimal sumAmounts(
@@ -280,7 +274,12 @@ public class DailyReportCommandService {
                         item.masterId(),
                         item.code(),
                         item.name(),
-                        item.amount()
+                        item.calculatedAmount(),
+                        item.amount(),
+                        item.manualOverride(),
+                        item.overrideReason(),
+                        item.quantity(),
+                        item.balanceUnit()
                 ))
                 .toList();
     }
@@ -296,23 +295,10 @@ public class DailyReportCommandService {
                         item.calculatedAmount(),
                         item.amount(),
                         item.manualOverride(),
-                        findOverrideReason(item.masterId(), calculatedItems),
+                        item.overrideReason(),
                         item.quantity(),
                         item.balanceUnit()
                 ))
                 .toList();
-    }
-
-    private String findOverrideReason(
-            Long masterId,
-            DailyReportInputResponse calculatedItems
-    ) {
-        var item = calculatedItems.deductions().stream()
-                .filter(candidate -> candidate.masterId().equals(masterId))
-                .findFirst()
-                .orElse(null);
-        return item != null && Boolean.TRUE.equals(item.manualOverride())
-                ? item.overrideReason()
-                : null;
     }
 }

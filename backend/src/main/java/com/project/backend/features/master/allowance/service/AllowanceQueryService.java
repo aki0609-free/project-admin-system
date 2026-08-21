@@ -12,6 +12,8 @@ import com.project.backend.features.master.allowance.mapper.AllowanceMapper;
 import com.project.backend.features.master.allowance.repository.AllowanceMasterRepository;
 import com.project.backend.features.master.allowance.service.resolver.AllowanceDetailResolver;
 import com.project.backend.app.tenant.context.TenantContext;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemPolicyService;
+import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ public class AllowanceQueryService {
     private final AllowanceMasterRepository allowanceMasterRepository;
     private final AllowanceMapper allowanceMapper;
     private final AllowanceDetailResolver allowanceDetailResolver;
+    private final PayrollItemPolicyService policyService;
 
     public List<AllowanceListItemResponse> findAll() {
         return allowanceMasterRepository
@@ -45,7 +48,8 @@ public class AllowanceQueryService {
 
         return allowanceMapper.toDetail(
                 allowance,
-                allowanceDetailResolver.resolve(allowance)
+                allowanceDetailResolver.resolve(allowance),
+                policyService.find(PayrollItemTargetType.ALLOWANCE, allowance.getId())
         );
     }
 }

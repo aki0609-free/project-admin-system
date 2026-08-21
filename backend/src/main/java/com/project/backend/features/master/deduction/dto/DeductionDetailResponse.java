@@ -2,6 +2,7 @@ package com.project.backend.features.master.deduction.dto;
 
 import java.util.List;
 import java.util.Map;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemPolicyResponse;
 
 public record DeductionDetailResponse(
         Long id,
@@ -25,6 +26,7 @@ public record DeductionDetailResponse(
         Boolean enabled,
         String note,
 
-        Map<String, List<BaseDeductionDetailResponse>> details
+        Map<String, List<BaseDeductionDetailResponse>> details,
+        PayrollItemPolicyResponse policy
 ) {
 }

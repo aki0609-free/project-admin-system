@@ -12,7 +12,6 @@ import com.project.backend.features.dailyreport.dto.DailyReportDeductionSaveRequ
 import com.project.backend.features.dailyreport.dto.DailyReportInputResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportInputItemResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
-import com.project.backend.features.admin.business.repository.DormitoryFeeSettingRepository;
 import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
@@ -21,6 +20,7 @@ import com.project.backend.features.master.payrollitem.service.PayrollItemDailyI
 import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceQueryService;
 import com.project.backend.features.master.payrollitem.balance.EmployeePayrollItemSettingService;
 import com.project.backend.features.dailyreport.repository.DailyReportRepository;
+import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,7 +32,6 @@ public class DailyReportInputItemService {
     private final PayrollItemDailyInputService payrollItemDailyInputService;
     private final EmployeeRepository employeeRepository;
     private final EmployeeContractRepository employeeContractRepository;
-    private final DormitoryFeeSettingRepository dormitoryFeeSettingRepository;
     private final PayrollItemBalanceQueryService balanceQueryService;
     private final EmployeePayrollItemSettingService payrollItemSettingService;
     private final DailyReportRepository dailyReportRepository;
@@ -73,7 +72,7 @@ public class DailyReportInputItemService {
                 .findByEmployeeIdAndDeletedAtIsNull(employee.getId())
                 .orElse(null);
 
-        Map<String, Object> variables = buildVariables(request, contract, employee);
+        Map<String, Object> variables = buildVariables(request, contract);
         DailyReportCalculationContext context = DailyReportCalculationContext.builder()
                 .employee(employee)
                 .targetDate(request.workDate())
@@ -83,7 +82,9 @@ public class DailyReportInputItemService {
         DailyReportInputResponse calculated = findItems(
                 context,
                 allowanceManualAmounts(request),
-                deductionManualAmounts(request)
+                deductionManualAmounts(request),
+                allowanceQuantities(request),
+                deductionQuantities(request)
         );
         return enrichBalances(calculated, request);
     }
@@ -93,26 +94,90 @@ public class DailyReportInputItemService {
             Map<Long, Integer> allowanceManualAmounts,
             Map<Long, Integer> deductionManualAmounts
     ) {
+        return findItems(
+                context,
+                allowanceManualAmounts,
+                deductionManualAmounts,
+                Map.of(),
+                Map.of()
+        );
+    }
+
+    private DailyReportInputResponse findItems(
+            DailyReportCalculationContext context,
+            Map<Long, Integer> allowanceManualAmounts,
+            Map<Long, Integer> deductionManualAmounts,
+            Map<Long, java.math.BigDecimal> allowanceQuantities,
+            Map<Long, java.math.BigDecimal> deductionQuantities
+    ) {
         return DailyReportInputResponse.builder()
                 .allowances(
                         payrollItemDailyInputService.findAllowanceItems(
                                 context.toParameters(),
-                                allowanceManualAmounts
+                                allowanceManualAmounts,
+                                dailyItemParameters(
+                                        context,
+                                        PayrollItemTargetType.ALLOWANCE,
+                                        allowanceQuantities),
+                                excludedDailyMasterIds(
+                                        context, PayrollItemTargetType.ALLOWANCE)
                         )
                 )
                 .deductions(
                         payrollItemDailyInputService.findDeductionItems(
                                 context.toParameters(),
-                                deductionManualAmounts
+                                deductionManualAmounts,
+                                dailyItemParameters(
+                                        context,
+                                        PayrollItemTargetType.DEDUCTION,
+                                        deductionQuantities),
+                                excludedDailyMasterIds(
+                                        context, PayrollItemTargetType.DEDUCTION)
                         )
                 )
                 .build();
     }
 
+    private Map<Long, Map<String, Object>> dailyItemParameters(
+            DailyReportCalculationContext context,
+            PayrollItemTargetType targetType
+    ) {
+        return dailyItemParameters(context, targetType, Map.of());
+    }
+
+    private Map<Long, Map<String, Object>> dailyItemParameters(
+            DailyReportCalculationContext context,
+            PayrollItemTargetType targetType,
+            Map<Long, java.math.BigDecimal> quantities
+    ) {
+        if (context.getEmployee() == null || context.getTargetDate() == null) {
+            return Map.of();
+        }
+        Map<Long, Map<String, Object>> parameters = new LinkedHashMap<>();
+        payrollItemSettingService.findDailyRuleParameters(
+                        context.getEmployee().getId(), targetType, context.getTargetDate())
+                .forEach((masterId, values) ->
+                        parameters.put(masterId, new LinkedHashMap<>(values)));
+        quantities.forEach((masterId, quantity) -> parameters
+                .computeIfAbsent(masterId, ignored -> new LinkedHashMap<>())
+                .put("itemQuantity", quantity));
+        return parameters;
+    }
+
+    private java.util.Set<Long> excludedDailyMasterIds(
+            DailyReportCalculationContext context,
+            PayrollItemTargetType targetType
+    ) {
+        if (context.getEmployee() == null || context.getTargetDate() == null) {
+            return java.util.Set.of();
+        }
+        return payrollItemSettingService.findExcludedDailyMasterIds(
+                context.getEmployee().getId(), targetType, context.getTargetDate());
+    }
+
     private Map<String, Object> buildVariables(
             DailyReportSaveRequest request,
-            EmployeeContract contract,
-            Employee employee
+            EmployeeContract contract
     ) {
         Map<String, Object> variables = new LinkedHashMap<>();
         DailyReportWorkTimePolicy.WorkTimes workTimes =
@@ -141,13 +206,6 @@ public class DailyReportInputItemService {
         putIfNotNull(variables, "vehicleUsedFlag", request.vehicleUsedFlag());
         putIfNotNull(variables, "mileage", request.mileage());
         putIfNotNull(variables, "paidLeaveDays", request.paidLeaveDays());
-        putIfNotNull(
-                variables,
-                "dormitoryChargeDays",
-                resolveDormitoryChargeDays(request)
-        );
-        variables.put("dormitoryDailyAmount", java.math.BigDecimal.ZERO);
-
         if (contract != null) {
             putIfNotNull(variables, "salaryType", contract.getSalaryType());
             putIfNotNull(variables, "hourlyWage", contract.getHourlyWage());
@@ -159,17 +217,6 @@ public class DailyReportInputItemService {
                     "standardWorkingHours",
                     contract.getStandardWorkingHours()
             );
-        }
-
-        if (employee != null && employee.isDormitoryFlag()) {
-            java.util.Optional.ofNullable(employee.getDormitoryType())
-                    .flatMap(dormitoryFeeSettingRepository
-                            ::findByDormitoryTypeAndActiveFlagTrueAndDeletedAtIsNull)
-                    .ifPresent(setting -> putIfNotNull(
-                            variables,
-                            "dormitoryDailyAmount",
-                            setting.getDailyAmount()
-                    ));
         }
 
         return variables;
@@ -196,6 +243,42 @@ public class DailyReportInputItemService {
         return amounts;
     }
 
+    private Map<Long, java.math.BigDecimal> deductionQuantities(
+            DailyReportSaveRequest request
+    ) {
+        Map<Long, java.math.BigDecimal> quantities = new LinkedHashMap<>();
+        for (DailyReportDeductionSaveRequest item : request.deductions()) {
+            if (item.deductionMasterId() != null && item.quantity() != null) {
+                if (quantities.putIfAbsent(
+                        item.deductionMasterId(), item.quantity()) != null) {
+                    throw new IllegalArgumentException(
+                            "控除マスターIDが重複しています。masterId="
+                                    + item.deductionMasterId()
+                    );
+                }
+            }
+        }
+        return quantities;
+    }
+
+    private Map<Long, java.math.BigDecimal> allowanceQuantities(
+            DailyReportSaveRequest request
+    ) {
+        Map<Long, java.math.BigDecimal> quantities = new LinkedHashMap<>();
+        for (DailyReportAllowanceSaveRequest item : request.allowances()) {
+            if (item.allowanceMasterId() != null && item.quantity() != null) {
+                if (quantities.putIfAbsent(
+                        item.allowanceMasterId(), item.quantity()) != null) {
+                    throw new IllegalArgumentException(
+                            "手当マスターIDが重複しています。masterId="
+                                    + item.allowanceMasterId()
+                    );
+                }
+            }
+        }
+        return quantities;
+    }
+
     private DailyReportInputResponse enrichBalances(
             DailyReportInputResponse calculated,
             DailyReportSaveRequest request
@@ -207,6 +290,9 @@ public class DailyReportInputItemService {
                 .map(report -> report.getId())
                 .orElse(null);
 
+        var allowances = calculated.allowances().stream()
+                .map(item -> enrichAllowance(item, request, existingId))
+                .toList();
         var deductions = calculated.deductions().stream()
                 .map(item -> enrichDeduction(item, request, existingId))
                 .filter(item -> payrollItemSettingService.isDailyReportInputEnabled(
@@ -214,9 +300,31 @@ public class DailyReportInputItemService {
                 ))
                 .toList();
         return DailyReportInputResponse.builder()
-                .allowances(calculated.allowances())
+                .allowances(allowances)
                 .deductions(deductions)
                 .build();
+    }
+
+    private DailyReportInputItemResponse enrichAllowance(
+            DailyReportInputItemResponse item,
+            DailyReportSaveRequest request,
+            Long existingId
+    ) {
+        DailyReportAllowanceSaveRequest submitted = request.allowances().stream()
+                .filter(candidate -> item.masterId().equals(candidate.allowanceMasterId()))
+                .findFirst()
+                .orElse(null);
+        var balance = balanceQueryService.findAllowanceBalance(
+                request.employeeId(), item.masterId(), request.workDate(), existingId
+        );
+        java.math.BigDecimal quantity = submitted != null && submitted.quantity() != null
+                ? submitted.quantity() : java.math.BigDecimal.ZERO;
+        validateQuantity(item, balance, quantity);
+
+        boolean overridden = submitted != null
+                && Boolean.TRUE.equals(submitted.manualOverride());
+        return withBalance(item, submitted == null ? null : submitted.overrideReason(),
+                overridden, balance, quantity);
     }
 
     private DailyReportInputItemResponse enrichDeduction(
@@ -233,10 +341,20 @@ public class DailyReportInputItemService {
         );
         java.math.BigDecimal quantity = submitted != null && submitted.quantity() != null
                 ? submitted.quantity()
-                : ("DORMITORY_FEE".equals(item.code())
-                ? java.math.BigDecimal.valueOf(
-                        request.dormitoryChargeDays() == null ? 0 : request.dormitoryChargeDays())
-                : java.math.BigDecimal.ZERO);
+                : java.math.BigDecimal.ZERO;
+        validateQuantity(item, balance, quantity);
+
+        boolean overridden = submitted != null
+                && Boolean.TRUE.equals(submitted.manualOverride());
+        return withBalance(item, submitted == null ? null : submitted.overrideReason(),
+                overridden, balance, quantity);
+    }
+
+    private void validateQuantity(
+            DailyReportInputItemResponse item,
+            com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceSnapshot balance,
+            java.math.BigDecimal quantity
+    ) {
         if (quantity.signum() < 0) {
             throw new IllegalArgumentException("消化数量は0以上で指定してください。");
         }
@@ -251,9 +369,15 @@ public class DailyReportInputItemService {
                             + balance.remainingQuantity() + ", quantity=" + quantity
             );
         }
+    }
 
-        boolean overridden = submitted != null
-                && Boolean.TRUE.equals(submitted.manualOverride());
+    private DailyReportInputItemResponse withBalance(
+            DailyReportInputItemResponse item,
+            String overrideReason,
+            boolean overridden,
+            com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceSnapshot balance,
+            java.math.BigDecimal quantity
+    ) {
         int calculatedAmount = item.calculatedAmount() == null
                 ? 0 : item.calculatedAmount();
         int amount = item.amount() == null ? 0 : item.amount();
@@ -277,7 +401,7 @@ public class DailyReportInputItemService {
                 .calculatedAmount(calculatedAmount)
                 .amount(amount)
                 .manualOverride(overridden)
-                .overrideReason(overridden ? submitted.overrideReason() : null)
+                .overrideReason(overridden ? overrideReason : null)
                 .editable(item.editable())
                 .displayOrder(item.displayOrder())
                 .balanceTracked(balance.tracked())
@@ -310,14 +434,4 @@ public class DailyReportInputItemService {
         }
     }
 
-    private int resolveDormitoryChargeDays(DailyReportSaveRequest request) {
-        return request.deductions().stream()
-                .filter(item -> "DORMITORY_FEE".equals(item.deductionCode()))
-                .map(DailyReportDeductionSaveRequest::quantity)
-                .filter(java.util.Objects::nonNull)
-                .map(java.math.BigDecimal::intValueExact)
-                .findFirst()
-                .orElse(request.dormitoryChargeDays() == null
-                        ? 0 : request.dormitoryChargeDays());
-    }
 }

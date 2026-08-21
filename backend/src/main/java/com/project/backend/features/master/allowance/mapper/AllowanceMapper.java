@@ -15,6 +15,7 @@ import com.project.backend.features.master.allowance.dto.BaseAllowanceDetailResp
 import com.project.backend.features.master.allowance.entity.AllowanceMaster;
 import com.project.backend.features.master.allowance.enums.AllowanceDetailViewType;
 import com.project.backend.features.master.allowance.enums.AllowanceCalculationType;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemPolicyResponse;
 
 @Mapper(componentModel = "spring")
 public interface AllowanceMapper {
@@ -30,7 +31,8 @@ public interface AllowanceMapper {
 
     default AllowanceDetailResponse toDetail(
             AllowanceMaster entity,
-            Map<String, List<BaseAllowanceDetailResponse>> details
+            Map<String, List<BaseAllowanceDetailResponse>> details,
+            PayrollItemPolicyResponse policy
     ) {
         return new AllowanceDetailResponse(
                 entity.getId(),
@@ -54,7 +56,8 @@ public interface AllowanceMapper {
                 Boolean.TRUE.equals(entity.getEnabled()),
                 entity.getNote(),
 
-                details == null ? Collections.emptyMap() : details
+                details == null ? Collections.emptyMap() : details,
+                policy
         );
     }
 

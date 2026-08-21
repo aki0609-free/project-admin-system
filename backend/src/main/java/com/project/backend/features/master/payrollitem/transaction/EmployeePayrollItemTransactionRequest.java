@@ -8,8 +8,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
 
 public record EmployeePayrollItemTransactionRequest(
+        @NotNull PayrollItemTargetType targetType,
         @NotBlank String targetCode,
         @NotBlank @Pattern(regexp = "\\d{4}-\\d{2}") String targetMonth,
         @NotNull LocalDate transactionDate,
@@ -17,6 +19,21 @@ public record EmployeePayrollItemTransactionRequest(
         @DecimalMin(value = "0.00") BigDecimal quantity,
         @NotNull PayrollItemTransactionStatus status,
         @Size(max = 150) String sourceReference,
-        @Size(max = 500) String note
+        @Size(max = 500) String note,
+        PayrollItemBalanceEffect balanceEffect
 ) {
+    public EmployeePayrollItemTransactionRequest(
+            String targetCode,
+            String targetMonth,
+            LocalDate transactionDate,
+            BigDecimal amount,
+            BigDecimal quantity,
+            PayrollItemTransactionStatus status,
+            String sourceReference,
+            String note
+    ) {
+        this(PayrollItemTargetType.DEDUCTION, targetCode, targetMonth,
+                transactionDate, amount, quantity, status,
+                sourceReference, note, null);
+    }
 }

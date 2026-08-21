@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS employee_payroll_item_transaction (
     transaction_date DATE NOT NULL,
     amount DECIMAL(15,2) NOT NULL,
     quantity DECIMAL(12,2) NULL,
+    balance_effect VARCHAR(20) NOT NULL DEFAULT 'NONE',
     source_type VARCHAR(30) NOT NULL,
     source_reference VARCHAR(150) NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
@@ -86,6 +87,8 @@ CREATE TABLE IF NOT EXISTS employee_payroll_item_transaction (
         CHECK (target_type IN ('ALLOWANCE', 'DEDUCTION')),
     CONSTRAINT chk_payroll_item_transaction_source_type
         CHECK (source_type IN ('MANUAL', 'CSV', 'EXTERNAL', 'MONTHLY_OPERATION')),
+    CONSTRAINT chk_payroll_item_transaction_balance_effect
+        CHECK (balance_effect IN ('NONE', 'CREDIT', 'DEBIT')),
     CONSTRAINT chk_payroll_item_transaction_status
         CHECK (status IN ('DRAFT', 'CONFIRMED')),
     CONSTRAINT chk_payroll_item_transaction_amount
@@ -93,6 +96,21 @@ CREATE TABLE IF NOT EXISTS employee_payroll_item_transaction (
     CONSTRAINT chk_payroll_item_transaction_month
         CHECK (DAY(target_month) = 1)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @transaction_balance_effect_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'employee_payroll_item_transaction'
+      AND column_name = 'balance_effect'
+);
+SET @transaction_balance_effect_sql := IF(
+    @transaction_balance_effect_exists = 0,
+    'ALTER TABLE employee_payroll_item_transaction ADD COLUMN balance_effect VARCHAR(20) NOT NULL DEFAULT ''NONE'' AFTER quantity',
+    'SELECT 1'
+);
+PREPARE statement FROM @transaction_balance_effect_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
 
 CREATE OR REPLACE VIEW vw_employee_payroll_item_transaction_confirmed AS
 SELECT
@@ -106,13 +124,19 @@ SELECT
     END AS item_category,
     transaction_item.target_code AS item_code,
     MAX(transaction_item.target_name) AS item_name,
-    COALESCE(deduction.display_order, 9000) AS display_order,
+    COALESCE(allowance.display_order, deduction.display_order, 9000) AS display_order,
     SUM(transaction_item.amount) AS item_value
 FROM employee_payroll_item_transaction transaction_item
 LEFT JOIN deduction_masters deduction
   ON deduction.tenant_id = transaction_item.tenant_id
  AND deduction.id = transaction_item.target_master_id
+ AND transaction_item.target_type = 'DEDUCTION'
  AND deduction.deleted_at IS NULL
+LEFT JOIN allowance_masters allowance
+  ON allowance.tenant_id = transaction_item.tenant_id
+ AND allowance.id = transaction_item.target_master_id
+ AND transaction_item.target_type = 'ALLOWANCE'
+ AND allowance.deleted_at IS NULL
 WHERE transaction_item.status = 'CONFIRMED'
   AND transaction_item.deleted_at IS NULL
 GROUP BY
@@ -125,4 +149,53 @@ GROUP BY
         ELSE 'OTHER_DEDUCTION'
     END,
     transaction_item.target_code,
+    allowance.display_order,
     deduction.display_order;
+
+-- 日報明細と明細取引を同じイベント形式で参照する残高台帳View。
+CREATE OR REPLACE VIEW vw_employee_payroll_item_balance_event AS
+SELECT report.tenant_id,
+       report.employee_id,
+       'ALLOWANCE' AS target_type,
+       item.allowance_master_id AS target_master_id,
+       item.allowance_code AS target_code,
+       report.work_date AS event_date,
+       'DAILY_REPORT' AS source_type,
+       CAST(report.id AS CHAR) AS source_reference,
+       'DEBIT' AS balance_effect,
+       COALESCE(item.quantity, 0) AS quantity
+FROM daily_report_allowances item
+JOIN daily_report report ON report.id = item.daily_report_id
+WHERE report.deleted_at IS NULL
+  AND item.quantity IS NOT NULL
+UNION ALL
+SELECT report.tenant_id,
+       report.employee_id,
+       'DEDUCTION' AS target_type,
+       item.deduction_master_id AS target_master_id,
+       item.deduction_code AS target_code,
+       report.work_date AS event_date,
+       'DAILY_REPORT' AS source_type,
+       CAST(report.id AS CHAR) AS source_reference,
+       'DEBIT' AS balance_effect,
+       COALESCE(item.quantity, 0) AS quantity
+FROM daily_report_deductions item
+JOIN daily_report report ON report.id = item.daily_report_id
+WHERE report.deleted_at IS NULL
+  AND item.quantity IS NOT NULL
+UNION ALL
+SELECT transaction_item.tenant_id,
+       transaction_item.employee_id,
+       transaction_item.target_type,
+       transaction_item.target_master_id,
+       transaction_item.target_code,
+       transaction_item.transaction_date AS event_date,
+       transaction_item.source_type,
+       COALESCE(transaction_item.source_reference,
+                CAST(transaction_item.id AS CHAR)) AS source_reference,
+       transaction_item.balance_effect,
+       COALESCE(transaction_item.quantity, 0) AS quantity
+FROM employee_payroll_item_transaction transaction_item
+WHERE transaction_item.status = 'CONFIRMED'
+  AND transaction_item.deleted_at IS NULL
+  AND transaction_item.balance_effect <> 'NONE';

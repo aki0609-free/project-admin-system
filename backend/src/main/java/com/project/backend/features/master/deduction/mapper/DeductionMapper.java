@@ -13,6 +13,7 @@ import com.project.backend.features.master.deduction.dto.DeductionSaveRequest;
 import com.project.backend.features.master.deduction.entity.DeductionMaster;
 import com.project.backend.features.master.deduction.enums.DeductionDetailViewType;
 import com.project.backend.features.master.deduction.enums.DeductionCalculationType;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemPolicyResponse;
 
 @Component
 public class DeductionMapper {
@@ -85,7 +86,8 @@ public class DeductionMapper {
 
     public DeductionDetailResponse toDetail(
             DeductionMaster entity,
-            Map<String, List<BaseDeductionDetailResponse>> details
+            Map<String, List<BaseDeductionDetailResponse>> details,
+            PayrollItemPolicyResponse policy
     ) {
         DeductionListItemResponse base = toListItem(entity);
 
@@ -111,7 +113,8 @@ public class DeductionMapper {
                 base.enabled(),
                 base.note(),
 
-                details == null ? Collections.emptyMap() : details
+                details == null ? Collections.emptyMap() : details,
+                policy
         );
     }
 
