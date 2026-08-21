@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { ComputedRef, InjectionKey, Ref } from "vue"
-import type { z } from 'zod'
+import type { ComputedRef, InjectionKey, Ref } from 'vue'
 
 export type FormFieldType =
   | 'text'
@@ -9,6 +8,7 @@ export type FormFieldType =
   | 'select'
   | 'checkbox'
   | 'date'
+  | 'month'
   | 'time'
   | 'object'
   | 'array'
@@ -37,9 +37,4 @@ export interface FormContext {
   validateAll: () => boolean
 }
 
-export interface NestedFormContext<T = any> extends FormContext {
-  zodError: Ref<z.ZodError<T> | null>
-}
-
 export const FormContextKey = Symbol('FormContext') as InjectionKey<FormContext>
-export const NestedFormContextKey = Symbol('NestedFormContextKey') as InjectionKey<NestedFormContext>

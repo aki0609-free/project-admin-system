@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toRef } from 'vue'
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
 import GenericChart from '@/shared/components/chart/GenericChart.vue'
 import type { ApplicantRow } from '@/features/application/types/applicantTypes'
 import { useApplicantChart } from '@/features/application/composables/applicant/useApplicantChart'
@@ -14,7 +14,7 @@ const chart = useApplicantChart(toRef(props, 'applicants'))
 
 <template>
   <div class="d-flex flex-column ga-4">
-    <GenericToolbar :items="chart.toolbarItems.value" />
+    <AppToolbar :left-items="chart.toolbarItems.value" surface="plain" />
 
     <v-container fluid class="pa-0">
       <v-row>

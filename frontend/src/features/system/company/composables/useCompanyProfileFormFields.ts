@@ -1,12 +1,8 @@
 import { computed } from 'vue'
 
-import type {
-  GridFormFieldDef,
-} from '@/shared/components/form/grid_based_form/types/types'
+import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
 
-import type {
-  CompanyProfileForm,
-} from '../types/companyProfileTypes'
+import type { CompanyProfileForm } from '../types/companyProfileTypes'
 
 export const useCompanyProfileFormFields = () => {
   const tabs = [
@@ -24,9 +20,7 @@ export const useCompanyProfileFormFields = () => {
     },
   ]
 
-  const basicFields = computed<
-    GridFormFieldDef<CompanyProfileForm>[]
-  >(() => [
+  const basicFields = computed<GridFormFieldDef<CompanyProfileForm>[]>(() => [
     {
       key: 'companyCode',
       label: '会社コード',
@@ -137,9 +131,7 @@ export const useCompanyProfileFormFields = () => {
     },
   ])
 
-  const invoiceFields = computed<
-    GridFormFieldDef<CompanyProfileForm>[]
-  >(() => [
+  const invoiceFields = computed<GridFormFieldDef<CompanyProfileForm>[]>(() => [
     {
       key: 'qualifiedInvoiceIssuerNumber',
       label: '適格請求書発行事業者登録番号',
@@ -190,16 +182,38 @@ export const useCompanyProfileFormFields = () => {
       type: 'text',
       gridColumn: '3 / span 2',
     },
+    {
+      key: 'invoiceNote',
+      label: '請求書備考',
+      type: 'textarea',
+      rows: 5,
+      autoGrow: true,
+      gridColumn: '1 / -1',
+    },
   ])
 
-  const certificationFields = computed<
-    GridFormFieldDef<CompanyProfileForm>[]
-  >(() => [
+  const certificationFields = computed<GridFormFieldDef<CompanyProfileForm>[]>(() => [
     {
       key: 'permitNumber',
       label: '代表許可番号',
       type: 'text',
       gridColumn: '1 / span 4',
+    },
+    {
+      key: 'businessContentsText',
+      label: '事業内容（1行につき1項目）',
+      type: 'textarea',
+      rows: 8,
+      autoGrow: true,
+      gridColumn: '1 / -1',
+    },
+    {
+      key: 'certificationInformationText',
+      label: '許認可・資格情報（1行につき1項目）',
+      type: 'textarea',
+      rows: 8,
+      autoGrow: true,
+      gridColumn: '1 / -1',
     },
   ])
 

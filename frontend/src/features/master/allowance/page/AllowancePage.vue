@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import CardLayout from '@/shared/components/layout/card_layout/CardLayout.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
 import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
@@ -16,6 +16,8 @@ import { useAllowancesQuery } from '@/features/master/allowance/api/useAllowance
 import { useCreateAllowanceMutation } from '@/features/master/allowance/api/useCreateAllowanceMutation'
 import { useUpdateAllowanceMutation } from '@/features/master/allowance/api/useUpdateAllowanceMutation'
 import { useDeleteAllowanceMutation } from '@/features/master/allowance/api/useDeleteAllowanceMutation'
+import { useAllowanceDetailQuery } from '@/features/master/allowance/api/useAllowanceDetailQuery'
+import { createDefaultPayrollItemPolicy } from '@/features/master/payrollitem/types/payrollItemPolicyTypes'
 import { usePermission } from '@/shared/auth/composables/usePermission'
 
 import {
@@ -31,8 +33,10 @@ const canManage = computed(() => can('master', 'manage'))
 const dialog = ref(false)
 const isCreateMode = ref(false)
 const editingAllowance = ref<AllowanceMaster | null>(null)
+const selectedAllowanceId = ref<number | null>(null)
 
 const allowancesQuery = useAllowancesQuery()
+const allowanceDetailQuery = useAllowanceDetailQuery(selectedAllowanceId)
 const createMutation = useCreateAllowanceMutation()
 const updateMutation = useUpdateAllowanceMutation()
 const deleteMutation = useDeleteAllowanceMutation()
@@ -76,20 +80,31 @@ function createEmptyAllowance(): AllowanceMaster {
     displayOrder: null,
     enabled: true,
     note: '',
+    policy: createDefaultPayrollItemPolicy(),
   }
 }
 
 function handleCreate() {
   isCreateMode.value = true
+  selectedAllowanceId.value = null
   editingAllowance.value = createEmptyAllowance()
   dialog.value = true
 }
 
 function handleEdit(row: AllowanceListItem) {
   isCreateMode.value = false
+  selectedAllowanceId.value = row.id
   editingAllowance.value = toAllowanceMaster(row)
   dialog.value = true
 }
+
+watch(
+  () => allowanceDetailQuery.data.value,
+  detail => {
+    if (!detail || !dialog.value || isCreateMode.value) return
+    editingAllowance.value = toAllowanceMaster(detail)
+  },
+)
 
 async function handleSave(payload: AllowanceMaster) {
   const body = toAllowanceSaveRequest(payload)

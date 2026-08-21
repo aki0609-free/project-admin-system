@@ -8,7 +8,11 @@ import { useEmployeeDialog } from '../composables/useEmployeeDialog'
 import { toEmployeeSaveRequest } from '../utils/employeeConverters'
 import type { EmployeeForm } from '../types/employeeFormTypes'
 import { useBatchToolbarItems } from '@/shared/components/toolbar/composables/useBatchToolbarItems'
-import { batchParams, createBatchItem, createButtonItem } from '@/toolbox/toolbar/utils/toolbarItemFactory'
+import {
+  batchParams,
+  createBatchItem,
+  createButtonItem,
+} from '@/shared/ui/toolbar/toolbarItemFactory'
 
 export const useEmployeePage = () => {
   const employeesQuery = useEmployeesQuery()
@@ -67,7 +71,6 @@ export const useEmployeePage = () => {
   ])
 
   const rightToolbarItems = computed<ToolbarItem[]>(() => [
-
     createBatchItem({
       label: '個別日別給与明細',
       jobCode: 'PRINT_DAILY_PAY_SLIP',
@@ -85,7 +88,7 @@ export const useEmployeePage = () => {
           key: 'employeeId',
           label: '従業員',
           required: true,
-          options: employeesQuery.employees.value.map(employee => ({
+          options: employeesQuery.employees.value.map((employee) => ({
             title: `${employee.employeeCode} / ${employee.employeeName}`,
             value: employee.id,
           })),

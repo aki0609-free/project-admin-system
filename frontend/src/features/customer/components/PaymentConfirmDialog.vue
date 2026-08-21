@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
+import { z } from 'zod'
 import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 import type { ToolbarItem } from '@/shared/ui/toolbar/types'
+import FormLayout from '@/shared/components/form/base/FormLayout.vue'
+import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
+import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
 import type { CustomerPaymentConfirmPayload, CustomerTransaction } from '../types/customerTypes'
 
 const props = defineProps<{
@@ -26,6 +30,27 @@ const form = reactive<CustomerPaymentConfirmPayload>({
   confirmedPaymentDate: new Date().toISOString().slice(0, 10),
   note: null,
 })
+
+const schema = z.object({
+  paidAmount: z.number().nullable(),
+  fee: z.number().min(0),
+  offsetAmount: z.number().min(0),
+  confirmedPaymentDate: z.string().min(1, '必須です'),
+  note: z.string().nullable(),
+})
+
+const fields: GridFormFieldDef<CustomerPaymentConfirmPayload>[] = [
+  { key: 'fee', label: '手数料', type: 'number', gridColumn: '1 / span 2' },
+  { key: 'paidAmount', label: '入金額', type: 'number', gridColumn: '3 / span 2' },
+  { key: 'offsetAmount', label: '相殺額', type: 'number', gridColumn: '1 / span 2' },
+  {
+    key: 'confirmedPaymentDate',
+    label: '入金確認日',
+    type: 'date',
+    gridColumn: '3 / span 2',
+  },
+  { key: 'note', label: '備考', type: 'text', gridColumn: '1 / -1' },
+]
 
 const billingAmount = computed(() => props.transaction?.billingAmount ?? 0)
 
@@ -103,24 +128,8 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
       <div>判定予定：{{ expectedStatus }}</div>
     </v-alert>
 
-    <v-text-field v-model.number="form.fee" label="手数料" type="number" density="compact" />
-
-    <v-text-field v-model.number="form.paidAmount" label="入金額" type="number" density="compact" />
-
-    <v-text-field
-      v-model.number="form.offsetAmount"
-      label="相殺額"
-      type="number"
-      density="compact"
-    />
-
-    <v-text-field
-      v-model="form.confirmedPaymentDate"
-      label="入金確認日"
-      type="date"
-      density="compact"
-    />
-
-    <v-text-field v-model="form.note" label="備考" density="compact" />
+    <FormLayout v-model="form" :schema="schema">
+      <GridBasedForm v-model="form" :fields="fields" />
+    </FormLayout>
   </AppDialog>
 </template>

@@ -2,8 +2,8 @@
 import { computed, ref } from 'vue'
 
 import DslEditor from '@/shared/components/editor/DslEditor.vue'
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { useExecuteRuleMutation } from '@/features/system/rule/api/useExecuteRuleMutation'
 import type { RuleMasterForm } from '@/features/system/rule/types/ruleFormTypes'
 import type { RuleExecutionResponse } from '@/features/system/rule/types/ruleApiTypes'
@@ -84,20 +84,22 @@ const clear = () => {
   errorMessage.value = ''
 }
 
-const toolbarItems = computed<ToolbarItem[]>(() => [
+const leftToolbarItems = computed<ToolbarItem[]>(() => [
   {
     type: 'button',
     label: '実行',
     color: 'primary',
-    icon: 'mdi-play',
+    intent: 'primary',
     disabled: !canExecute.value || executeMutation.isPending.value,
     onClick: execute,
   },
+])
+
+const rightToolbarItems = computed<ToolbarItem[]>(() => [
   {
     type: 'button',
     label: 'クリア',
-    variant: 'text',
-    icon: 'mdi-close',
+    intent: 'utility',
     onClick: clear,
   },
 ])
@@ -105,7 +107,11 @@ const toolbarItems = computed<ToolbarItem[]>(() => [
 
 <template>
   <div class="rule-test-tab">
-    <GenericToolbar :items="toolbarItems" />
+    <AppToolbar
+      :left-items="leftToolbarItems"
+      :right-items="rightToolbarItems"
+      surface="plain"
+    />
 
     <v-alert
       v-if="!canExecute"

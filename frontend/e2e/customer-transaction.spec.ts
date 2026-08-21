@@ -117,6 +117,18 @@ test('customer registration and transaction management are available from the UI
     await expect(page.getByText('2026-08', { exact: true })).toBeVisible()
     await expect(page.getByText('120,000円', { exact: true })).toHaveCount(2)
     await expect(page.getByText('未入金', { exact: true })).toBeVisible()
+
+    await page.getByText('2026-08', { exact: true }).click()
+    const paymentDialog = page.getByRole('dialog')
+    await expect(paymentDialog.getByText('入金確認', { exact: true })).toBeVisible()
+    await expect(paymentDialog.getByLabel('手数料', { exact: true })).toBeVisible()
+    await expect(paymentDialog.getByLabel('入金額', { exact: true })).toBeVisible()
+    await expect(paymentDialog.getByLabel('相殺額', { exact: true })).toBeVisible()
+    await expect(paymentDialog.getByLabel('入金確認日', { exact: true })).toBeVisible()
+    await expect(paymentDialog.getByLabel('備考', { exact: true })).toBeVisible()
+    await expect(paymentDialog.getByText('判定予定：未入金', { exact: true })).toBeVisible()
+    await paymentDialog.getByRole('button', { name: 'キャンセル', exact: true }).click()
+    await expect(paymentDialog).not.toBeVisible()
   })
 
   await cleanupCustomers(page)

@@ -88,13 +88,8 @@ export const toEmployeeForm = (detail: EmployeeDetailResponse): EmployeeForm => 
     ...item,
     effectiveFrom: item.effectiveFrom ?? '',
     effectiveTo: item.effectiveTo ?? '',
-    parameters: item.targetCode === 'DORMITORY_FEE'
-      ? {
-          ...item.parameters,
-          dormitoryType: item.parameters.dormitoryType ?? '',
-          collectionMode: item.parameters.collectionMode ?? 'DAILY',
-        }
-      : { ...item.parameters },
+    parameters: { ...item.parameters },
+    parameterDefinitions: [...item.parameterDefinitions],
   })),
 
   payrollProfile: {

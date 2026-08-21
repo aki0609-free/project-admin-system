@@ -11,7 +11,7 @@ import type {
 } from '@/shared/components/table/simple_table/types/item/types'
 import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { ImportColumnForm, ImportTargetDialogForm } from '@/features/system/import/types/importFormTypes'
 import type {
   ImportDataType,
@@ -283,11 +283,14 @@ export const useImportColumnEditor = (
 
   const hasSelection = computed(() => selectedColumn.value != null)
 
-  const toolbarItems = computed<ToolbarItem[]>(() => [
-    { type: 'button', label: '追加', color: 'primary', onClick: add },
-    { type: 'button', label: '↑', color: 'secondary', disabled: !hasSelection.value, onClick: moveUp },
-    { type: 'button', label: '↓', color: 'secondary', disabled: !hasSelection.value, onClick: moveDown },
-    { type: 'button', label: '削除', color: 'error', disabled: !hasSelection.value, onClick: remove },
+  const leftToolbarItems = computed<ToolbarItem[]>(() => [
+    { type: 'button', label: '追加', intent: 'primary', onClick: add },
+  ])
+
+  const rightToolbarItems = computed<ToolbarItem[]>(() => [
+    { type: 'button', label: '上へ移動', intent: 'utility', disabled: !hasSelection.value, onClick: moveUp },
+    { type: 'button', label: '下へ移動', intent: 'utility', disabled: !hasSelection.value, onClick: moveDown },
+    { type: 'button', label: '削除', intent: 'danger', disabled: !hasSelection.value, onClick: remove },
   ])
 
   return {
@@ -297,7 +300,8 @@ export const useImportColumnEditor = (
     selectedColumn,
     fields,
     schema: importColumnSchema,
-    toolbarItems,
+    leftToolbarItems,
+    rightToolbarItems,
     selectRow,
   }
 }

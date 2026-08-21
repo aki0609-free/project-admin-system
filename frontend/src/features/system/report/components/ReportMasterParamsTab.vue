@@ -5,7 +5,7 @@ import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import SectionedForm from '@/shared/components/form/sectioned_form/SectionedForm.vue'
 import type { ReportMasterForm } from '@/features/system/report/types/reportFormTypes'
 import { useReportMasterParamsTab } from '@/features/system/report/composables/useReportMasterParamsTab'
-import DetailPanelLayout from '@/toolbox/panel/DetailPanelLayout.vue'
+import DetailPanelLayout from '@/shared/components/layout/detail_panel/DetailPanelLayout.vue'
 
 const props = defineProps<{
   modelValue: ReportMasterForm
@@ -42,14 +42,7 @@ const {
       <h4>パラメータ定義</h4>
 
       <div class="param-actions">
-        <v-btn
-          variant="outlined"
-          color="primary"
-          size="small"
-          @click="add"
-        >
-          追加
-        </v-btn>
+        <v-btn variant="outlined" color="primary" size="small" @click="add"> 追加 </v-btn>
 
         <v-btn
           variant="outlined"
@@ -103,11 +96,7 @@ const {
         :chip="selectedParamModel?.paramName || '未設定'"
         empty-message="左の一覧からパラメータを選択してください。新規追加する場合は「追加」を押してください。"
       >
-        <FormLayout
-          v-if="selectedParamModel"
-          v-model="selectedParamModel"
-          :schema="schema"
-        >
+        <FormLayout v-if="selectedParamModel" v-model="selectedParamModel" :schema="schema">
           <SectionedForm :sections="sections" />
         </FormLayout>
       </DetailPanelLayout>

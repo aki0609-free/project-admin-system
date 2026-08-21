@@ -30,6 +30,7 @@ export type DeductionListItemResponse = {
 
 export type DeductionDetailResponse = DeductionListItemResponse & {
   details: Record<string, BaseDeductionDetailResponse[]>
+  policy: PayrollItemPolicy
 }
 
 export type DeductionSaveRequest = {
@@ -52,4 +53,6 @@ export type DeductionSaveRequest = {
   displayOrder: number | null
   enabled: boolean
   note: string | null
+  policy: PayrollItemPolicy
 }
+import type { PayrollItemPolicy } from '@/features/master/payrollitem/types/payrollItemPolicyTypes'

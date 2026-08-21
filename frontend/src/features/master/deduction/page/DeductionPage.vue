@@ -18,6 +18,7 @@ import { useCreateDeductionMutation } from '@/features/master/deduction/api/useC
 import { useUpdateDeductionMutation } from '@/features/master/deduction/api/useUpdateDeductionMutation'
 import { useDeleteDeductionMutation } from '@/features/master/deduction/api/useDeleteDeductionMutation'
 import { usePermission } from '@/shared/auth/composables/usePermission'
+import { createDefaultPayrollItemPolicy } from '@/features/master/payrollitem/types/payrollItemPolicyTypes'
 
 import {
   toDeductionListItem,
@@ -82,6 +83,7 @@ function createEmptyDeduction(): DeductionMaster {
     displayOrder: null,
     enabled: true,
     note: '',
+    policy: createDefaultPayrollItemPolicy(),
   }
 }
 

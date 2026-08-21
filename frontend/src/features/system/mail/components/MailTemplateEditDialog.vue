@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, toRef } from 'vue'
-import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 import NoticeRichEditor from '@/shared/components/notice/NoticeRichEditor.vue'
 import type { MailTemplateResponse } from '@/features/system/mail/types/mailApiTypes'
 import type { MailTemplateForm } from '@/features/system/mail/types/mailFormTypes'
@@ -42,11 +42,14 @@ const placeholders = [
 </script>
 
 <template>
-  <DetailDialogLayout
+  <AppDialog
     v-model="visible"
     :title="templateDialog.isEdit ? 'メッセージテンプレート編集' : 'メッセージテンプレート新規作成'"
-    max-width="1280"
-    :footer-items="templateDialog.footerItems"
+    size="xl"
+    :max-width="1280"
+    body-layout="stack"
+    :left-footer-items="templateDialog.leftFooterItems"
+    :right-footer-items="templateDialog.rightFooterItems"
   >
     <div class="template-form">
       <div class="basic-grid">
@@ -140,7 +143,7 @@ const placeholders = [
         </v-card-text>
       </v-card>
     </div>
-  </DetailDialogLayout>
+  </AppDialog>
 </template>
 
 <style scoped>

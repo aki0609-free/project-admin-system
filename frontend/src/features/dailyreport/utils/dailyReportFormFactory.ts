@@ -5,6 +5,9 @@ import type {
 import type {
   DailyReportForm,
 } from '@/features/dailyreport/types/dailyReportFormTypes'
+import type {
+  DailyReportAmountItemForm,
+} from '@/features/dailyreport/types/dailyReportInputItemTypes'
 
 export const createEmptyDailyReportForm =
   (): DailyReportForm => ({
@@ -198,13 +201,15 @@ export const toDailyReportForm = (
           'MANUAL',
 
         calculatedAmount:
-          allowance.amount ?? 0,
+          allowance.calculatedAmount ?? allowance.amount ?? 0,
 
         amount:
           allowance.amount ?? 0,
 
-        manualOverride: false,
-        overrideReason: '',
+        manualOverride:
+          allowance.manualOverride ?? false,
+        overrideReason:
+          allowance.overrideReason ?? '',
 
         editable:
           true,
@@ -212,13 +217,16 @@ export const toDailyReportForm = (
         displayOrder:
           0,
 
-        balanceTracked: false,
-        balanceUnit: null,
+        balanceTracked:
+          allowance.quantity != null,
+        balanceUnit:
+          (allowance.balanceUnit as DailyReportAmountItemForm['balanceUnit']) ?? null,
         openingQuantity: 0,
         accruedQuantity: 0,
         consumedQuantity: 0,
         remainingQuantity: 0,
-        quantity: 0,
+        quantity:
+          allowance.quantity ?? 0,
         remainingAfterQuantity: 0,
       }),
     ),

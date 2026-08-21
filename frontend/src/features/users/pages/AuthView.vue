@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { z } from 'zod'
-import CardLayout from '@/shared/components/layout/card_layout/CardLayout.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import PermissionSelector from '@/features/users/components/PermissionSelector.vue'
 
 import type { RoleDetail } from '@/features/users/types/types'
@@ -54,6 +56,16 @@ const saving = computed(
 
 const deleting = computed(() => deleteRoleMutation.isPending.value)
 
+const leftToolbarItems = computed<ToolbarItem[]>(() => [
+  {
+    type: 'button',
+    label: '新規追加',
+    intent: 'primary',
+    disabled: loading.value,
+    onClick: openCreate,
+  },
+])
+
 const schema = z.object({
   id: z.number().nullable(),
   name: z.string().min(1, 'ロール名は必須です'),
@@ -84,6 +96,36 @@ const removeCurrentRole = async () => {
   closeDialog()
 }
 
+const leftFooterItems = computed<ToolbarItem[]>(() =>
+  form.value.id
+    ? [
+        {
+          type: 'button',
+          label: '削除',
+          intent: 'danger',
+          loading: deleting.value,
+          onClick: removeCurrentRole,
+        },
+      ]
+    : [],
+)
+
+const rightFooterItems = computed<ToolbarItem[]>(() => [
+  {
+    type: 'button',
+    label: 'キャンセル',
+    intent: 'secondary',
+    onClick: closeDialog,
+  },
+  {
+    type: 'button',
+    label: '保存',
+    intent: 'primary',
+    loading: saving.value,
+    onClick: save,
+  },
+])
+
 const filterRules = computed(() =>
   createSimpleTableFilterRules<RoleDetail>(columns.value)
 )
@@ -92,12 +134,11 @@ const formatPermission = (name: string) => name
 </script>
 
 <template>
-  <v-container>
-    <CardLayout title="権限管理">
-      <v-btn color="primary" @click="openCreate">
-        新規追加
-      </v-btn>
-
+  <ListDetailPageLayout
+    title="権限管理"
+    description="ロールごとに利用可能な画面と操作権限を管理します。"
+    :left-toolbar-items="leftToolbarItems"
+  >
       <SimpleTable
         table-key="role-table"
         item-key="id"
@@ -108,7 +149,7 @@ const formatPermission = (name: string) => name
         :loading="loading"
         @row-click="openEdit"
       >
-        <template #item.permissions="{ item }: { item: RoleDetail }">
+        <template #[`item.permissions`]="{ item }: { item: RoleDetail }">
           <div style="display: flex; gap: 4px; flex-wrap: wrap">
             <v-chip
               v-for="perm in item.permissions"
@@ -121,15 +162,16 @@ const formatPermission = (name: string) => name
           </div>
         </template>
       </SimpleTable>
-    </CardLayout>
 
-    <v-dialog v-model="dialog" max-width="700">
-      <v-card>
-        <v-card-title>
-          {{ form.id ? 'ロール編集' : 'ロール新規作成' }}
-        </v-card-title>
-
-        <v-card-text>
+    <template #dialogs>
+      <AppDialog
+        v-model="dialog"
+        :title="form.id ? 'ロール編集' : 'ロール新規作成'"
+        size="md"
+        body-layout="stack"
+        :left-footer-items="leftFooterItems"
+        :right-footer-items="rightFooterItems"
+      >
           <FormLayout
             v-model="form"
             :schema="schema"
@@ -150,34 +192,7 @@ const formatPermission = (name: string) => name
               :items="allPermissions"
             />
           </div>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-btn
-            v-if="form.id"
-            color="error"
-            variant="text"
-            :loading="deleting"
-            @click="removeCurrentRole"
-          >
-            削除
-          </v-btn>
-
-          <v-spacer />
-
-          <v-btn variant="text" @click="closeDialog">
-            キャンセル
-          </v-btn>
-
-          <v-btn
-            color="primary"
-            :loading="saving"
-            @click="save"
-          >
-            保存
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </v-container>
+      </AppDialog>
+    </template>
+  </ListDetailPageLayout>
 </template>

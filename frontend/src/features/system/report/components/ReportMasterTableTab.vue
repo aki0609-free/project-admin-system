@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { useReportMastersQuery } from '@/features/system/report/api/queries/useReportMastersQuery'
 import ReportMasterEditDialog from '@/features/system/report/components/ReportMasterEditDialog.vue'
 import {
@@ -29,11 +29,11 @@ const openEdit = (row: ReportMasterTableRow) => {
   dialogVisible.value = true
 }
 
-const toolbarItems = computed<ToolbarItem[]>(() => [
+const leftToolbarItems = computed<ToolbarItem[]>(() => [
   {
     type: 'button',
     label: '新規作成',
-    color: 'primary',
+    intent: 'primary',
     onClick: openCreate,
   },
 ])
@@ -41,15 +41,15 @@ const toolbarItems = computed<ToolbarItem[]>(() => [
 
 <template>
   <div class="tab-page">
-    <GenericToolbar :items="toolbarItems" />
+    <AppToolbar :left-items="leftToolbarItems" />
 
     <SimpleTable
-      tableKey="report-master-admin"
-      itemKey="id"
+      table-key="report-master-admin"
+      item-key="id"
       :items="rows"
       :columns="columns"
-      :filterRules="filterRules"
-      enableRowClick
+      :filter-rules="filterRules"
+      enable-row-click
       @row-click="openEdit"
     />
 

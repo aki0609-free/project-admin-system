@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 
 import ApplicantTableBasicTab from '@/features/application/components/applicant/ApplicantTableBasicTab.vue'
 import ApplicantTableRecruitmentTab from '@/features/application/components/applicant/ApplicantTableRecruitmentTab.vue'
@@ -40,6 +42,17 @@ const dialog = ref(false)
 const editingApplicant = ref<ApplicantPersistedRow | null>(null)
 const isCreateMode = ref(false)
 
+const leftToolbarItems = computed<ToolbarItem[]>(() => [
+  {
+    id: 'create-applicant',
+    type: 'button',
+    label: '新規登録',
+    intent: 'primary',
+    loading: props.saving ?? false,
+    onClick: handleCreate,
+  },
+])
+
 function handleCreate() {
   isCreateMode.value = true
   editingApplicant.value = createEmptyApplicant(
@@ -76,11 +89,7 @@ function handleDelete(id: number) {
 
 <template>
   <div class="d-flex flex-column ga-4">
-    <div class="d-flex justify-start">
-      <v-btn color="primary" :loading="props.saving" @click="handleCreate">
-        新規登録
-      </v-btn>
-    </div>
+    <AppToolbar :left-items="leftToolbarItems" surface="page" />
 
     <TabLayout v-model="activeTab" :tabs="tabs">
       <template #default="{ active }">

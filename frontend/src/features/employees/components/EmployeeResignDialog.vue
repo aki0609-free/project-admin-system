@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
 import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import FormLayout from '@/shared/components/form/base/FormLayout.vue'
+import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
 import type {
   EmployeeResignRequest,
   EmployeeResignationChecklistResponse,
@@ -30,11 +32,16 @@ const requiredChecklistIds = computed(() =>
   props.checklist.filter((item) => item.requiredFlag).map((item) => item.id),
 )
 
-const { formModel, missingRequiredIds, canSubmit, rightFooterItems } = useEmployeeResignDialog(
-  visible,
-  toRef(props, 'employee'),
-  requiredChecklistIds,
-  (request) => emit('submit', request),
+const {
+  formModel,
+  missingRequiredIds,
+  canSubmit,
+  dateFields,
+  noteFields,
+  rightFooterItems,
+  schema,
+} = useEmployeeResignDialog(visible, toRef(props, 'employee'), requiredChecklistIds, (request) =>
+  emit('submit', request),
 )
 
 const isChecked = (id: number): boolean => formModel.checkedChecklistIds.includes(id)
@@ -75,50 +82,38 @@ const isMissing = (id: number): boolean => missingRequiredIds.value.includes(id)
         <div class="employee-status">現在の状態：{{ employee.employmentStatus }}</div>
       </div>
 
-      <v-text-field
-        v-model="formModel.resignDate"
-        type="date"
-        label="退職日"
-        variant="outlined"
-        density="comfortable"
-        hide-details="auto"
-      />
+      <FormLayout v-model="formModel" :schema="schema">
+        <GridBasedForm v-model="formModel" :fields="dateFields" />
 
-      <div class="checklist-section">
-        <div class="section-title">退職前確認チェックリスト</div>
+        <div class="checklist-section">
+          <div class="section-title">退職前確認チェックリスト</div>
 
-        <div
-          v-for="item in checklist"
-          :key="item.id"
-          class="checklist-item"
-          :class="{ missing: isMissing(item.id) }"
-        >
-          <v-checkbox
-            :model-value="isChecked(item.id)"
-            :label="item.name"
-            density="compact"
-            hide-details
-            @update:model-value="toggleChecklist(item.id, Boolean($event))"
-          />
+          <div
+            v-for="item in checklist"
+            :key="item.id"
+            class="checklist-item"
+            :class="{ missing: isMissing(item.id) }"
+          >
+            <v-checkbox
+              :model-value="isChecked(item.id)"
+              :label="item.name"
+              density="compact"
+              hide-details
+              @update:model-value="toggleChecklist(item.id, Boolean($event))"
+            />
 
-          <v-chip v-if="item.requiredFlag" size="x-small" color="error" variant="tonal">
-            必須
-          </v-chip>
+            <v-chip v-if="item.requiredFlag" size="x-small" color="error" variant="tonal">
+              必須
+            </v-chip>
 
-          <div v-if="item.description" class="checklist-description">
-            {{ item.description }}
+            <div v-if="item.description" class="checklist-description">
+              {{ item.description }}
+            </div>
           </div>
         </div>
-      </div>
 
-      <v-textarea
-        v-model="formModel.note"
-        label="備考"
-        variant="outlined"
-        rows="3"
-        auto-grow
-        hide-details
-      />
+        <GridBasedForm v-model="formModel" :fields="noteFields" />
+      </FormLayout>
 
       <div v-if="!canSubmit" class="cannot-submit">
         退職日を入力し、必須チェック項目をすべて確認してください。

@@ -2,10 +2,12 @@
 import { computed } from 'vue'
 import { z } from 'zod'
 
-import CardLayout from '@/shared/components/layout/card_layout/CardLayout.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 
 import type { RoleDetail, UserListItem } from '@/features/users/types/types'
 
@@ -67,6 +69,16 @@ const saving = computed(
 
 const deleting = computed(() => deleteUserMutation.isPending.value)
 
+const leftToolbarItems = computed<ToolbarItem[]>(() => [
+  {
+    type: 'button',
+    label: '新規追加',
+    intent: 'primary',
+    disabled: loading.value,
+    onClick: openCreate,
+  },
+])
+
 // ----------------------
 // Validation schema
 // ----------------------
@@ -103,25 +115,55 @@ const removeCurrentUser = async () => {
   closeDialog()
 }
 
+const leftFooterItems = computed<ToolbarItem[]>(() =>
+  isEdit.value
+    ? [
+        {
+          type: 'button',
+          label: '削除',
+          intent: 'danger',
+          loading: deleting.value,
+          onClick: removeCurrentUser,
+        },
+      ]
+    : [],
+)
+
+const rightFooterItems = computed<ToolbarItem[]>(() => [
+  {
+    type: 'button',
+    label: 'キャンセル',
+    intent: 'secondary',
+    onClick: closeDialog,
+  },
+  {
+    type: 'button',
+    label: '保存',
+    intent: 'primary',
+    loading: saving.value,
+    onClick: save,
+  },
+])
+
 </script>
 
 <template>
-  <CardLayout title="ユーザ一覧">
-    <div style="margin-bottom: 12px; display: flex; gap: 8px">
-      <v-btn color="primary" @click="openCreate"> 新規追加 </v-btn>
-    </div>
-
+  <ListDetailPageLayout
+    title="ユーザー管理"
+    description="ログインユーザー、利用状態、割り当てロールを管理します。"
+    :left-toolbar-items="leftToolbarItems"
+  >
     <SimpleTable
-      tableKey="users"
-      itemKey="id"
+      table-key="users"
+      item-key="id"
       :items="users"
       :columns="columns"
-      :filterRules="filterRules"
-      :enableRowClick="true"
+      :filter-rules="filterRules"
+      :enable-row-click="true"
       :loading="loading"
       @row-click="openEdit"
     >
-      <template #item.roles="{ item }">
+      <template #[`item.roles`]="{ item }">
         <div style="display: flex; gap: 4px; flex-wrap: wrap">
           <v-chip v-for="role in item.roles" :key="role" size="small" variant="outlined">
             {{ roleLabelMap[role] ?? role }}
@@ -130,34 +172,20 @@ const removeCurrentUser = async () => {
       </template>
     </SimpleTable>
 
-    <v-dialog v-model="dialog" width="720">
-      <v-card>
-        <v-card-title>
-          {{ isEdit ? 'ユーザー編集' : 'ユーザー新規作成' }}
-        </v-card-title>
-
-        <v-card-text>
+    <template #dialogs>
+      <AppDialog
+        v-model="dialog"
+        :title="isEdit ? 'ユーザー編集' : 'ユーザー新規作成'"
+        size="md"
+        body-layout="stack"
+        :left-footer-items="leftFooterItems"
+        :right-footer-items="rightFooterItems"
+      >
           <FormLayout v-model="form" :schema="schema">
             <GridBasedForm v-model="form" :fields="fields" />
           </FormLayout>
           <RolePermissionPanel :roles="selectedRoleDetails" />
-        </v-card-text>
-        <v-card-actions>
-          <v-btn
-            v-if="isEdit"
-            color="error"
-            variant="text"
-            :loading="deleting"
-            @click="removeCurrentUser"
-          >
-            削除
-          </v-btn>
-          <v-spacer />
-          <v-btn variant="text" @click="closeDialog"> キャンセル </v-btn>
-
-          <v-btn color="primary" :loading="saving" @click="save"> 保存 </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </CardLayout>
+      </AppDialog>
+    </template>
+  </ListDetailPageLayout>
 </template>

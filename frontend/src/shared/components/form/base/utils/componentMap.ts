@@ -14,6 +14,7 @@ export const componentMap: Record<string, any> = {
     checkbox: VCheckbox,
     textarea: VTextarea,
     date: DateFormField,
+    month: VTextField,
     selectboxWithChips: MultiSelectWithChips,
     dayrule: DayRuleField,
     time: TimeFormField,

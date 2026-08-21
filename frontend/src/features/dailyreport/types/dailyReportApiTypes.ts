@@ -20,7 +20,12 @@ export type DailyReportAllowanceResponse = {
   allowanceMasterId: number
   allowanceCode: string
   allowanceName: string
+  calculatedAmount: number
   amount: number
+  manualOverride: boolean
+  overrideReason: string | null
+  quantity: number | null
+  balanceUnit: string | null
 }
 
 export type DailyReportDeductionResponse = {
@@ -140,7 +145,12 @@ export type DailyReportAllowanceSaveRequest = {
   allowanceMasterId: number
   allowanceCode: string
   allowanceName: string
+  calculatedAmount: number
   amount: number
+  manualOverride: boolean
+  overrideReason: string | null
+  quantity: number | null
+  balanceUnit: string | null
 }
 
 export type DailyReportDeductionSaveRequest = {

@@ -9,6 +9,8 @@ import type { DeductionMaster } from '@/features/master/deduction/types/deductio
 import type { DeductionDetailResponse } from '@/features/master/deduction/types/deductionApiTypes'
 import { useDeductionFormFields } from '@/features/master/deduction/composables/useDeductionFormFields'
 import { usePayrollRuleOptionsQuery } from '@/features/master/payrollitem/api/usePayrollRuleOptionsQuery'
+import PayrollItemPolicyEditor from '@/features/master/payrollitem/components/PayrollItemPolicyEditor.vue'
+import { createDefaultPayrollItemPolicy } from '@/features/master/payrollitem/types/payrollItemPolicyTypes'
 
 const props = defineProps<{
   modelValue: boolean
@@ -26,10 +28,10 @@ const emit = defineEmits<{
 
 const dialogModel = computed({
   get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
+  set: (value) => emit('update:modelValue', value),
 })
 
-const activeTab = ref<'basic' | 'details'>('basic')
+const activeTab = ref<'basic' | 'application' | 'details'>('basic')
 
 const form = reactive<DeductionMaster>({
   id: -1,
@@ -50,13 +52,15 @@ const form = reactive<DeductionMaster>({
   displayOrder: null,
   enabled: true,
   note: '',
+  policy: createDefaultPayrollItemPolicy(),
 })
 
 const hasDetailTab = computed(() => form.detailViewType !== 'NONE')
 
 const pageTabs = computed(() => {
-  const tabs: { label: string; value: 'basic' | 'details' }[] = [
+  const tabs: { label: string; value: 'basic' | 'application' | 'details' }[] = [
     { label: '基本情報', value: 'basic' },
+    { label: '適用・連携設定', value: 'application' },
   ]
 
   if (hasDetailTab.value) {
@@ -68,7 +72,7 @@ const pageTabs = computed(() => {
 
 watch(
   () => props.modelValue,
-  opened => {
+  (opened) => {
     if (!opened) return
 
     activeTab.value = 'basic'
@@ -93,6 +97,7 @@ watch(
         displayOrder: null,
         enabled: true,
         note: '',
+        policy: createDefaultPayrollItemPolicy(),
       })
       return
     }
@@ -102,8 +107,19 @@ watch(
 )
 
 watch(
+  () => props.detailResponse,
+  (detail) => {
+    if (!props.modelValue || !detail || props.isCreateMode) return
+    form.policy = detail.policy
+      ? structuredClone(detail.policy)
+      : createDefaultPayrollItemPolicy()
+  },
+  { immediate: true },
+)
+
+watch(
   () => form.detailViewType,
-  value => {
+  (value) => {
     if (value === 'NONE' && activeTab.value === 'details') {
       activeTab.value = 'basic'
     }
@@ -119,10 +135,12 @@ const { tabs: formTabs, fields } = useDeductionFormFields({
   ruleOptions: ruleOptionsQuery.options,
 })
 
-const schema = z.object({
-  code: z.string().trim().min(1, '控除コードは必須です'),
-  name: z.string().trim().min(1, '控除名は必須です'),
-}).passthrough()
+const schema = z
+  .object({
+    code: z.string().trim().min(1, '控除コードは必須です'),
+    name: z.string().trim().min(1, '控除名は必須です'),
+  })
+  .passthrough()
 
 function handleClose() {
   dialogModel.value = false
@@ -178,17 +196,17 @@ function handleDelete() {
           <template #default="{ active }">
             <div v-if="active === 'basic'">
               <FormLayout v-model="form" :schema="schema">
-                <TabbedForm
-                  v-model="form"
-                  :tabs="[...formTabs]"
-                  :fields="fields"
-                />
+                <TabbedForm v-model="form" :tabs="[...formTabs]" :fields="fields" />
               </FormLayout>
             </div>
 
-            <div
-              v-else-if="active === 'details' && hasDetailTab"
-            >
+            <PayrollItemPolicyEditor
+              v-else-if="active === 'application'"
+              v-model="form.policy"
+              :can-manage="canManage"
+            />
+
+            <div v-else-if="active === 'details' && hasDetailTab">
               <DeductionDetailTable
                 :deduction-id="form.id"
                 :detail-view-type="form.detailViewType"
@@ -200,24 +218,15 @@ function handleDelete() {
       </v-card-text>
 
       <v-card-actions>
-        <v-btn
-          v-if="canManage && !isCreateMode"
-          color="error"
-          variant="text"
-          @click="handleDelete"
-        >
+        <v-btn v-if="canManage && !isCreateMode" color="error" variant="text" @click="handleDelete">
           控除削除
         </v-btn>
 
         <v-spacer />
 
-        <v-btn variant="text" @click="handleClose">
-          キャンセル
-        </v-btn>
+        <v-btn variant="text" @click="handleClose"> キャンセル </v-btn>
 
-        <v-btn v-if="canManage" color="primary" @click="handleSave">
-          保存
-        </v-btn>
+        <v-btn v-if="canManage" color="primary" @click="handleSave"> 保存 </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
 import { z } from 'zod'
-import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
-import type { ToolbarItem } from '@/toolbox/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type {
   ExcelBookMasterForm,
   ExcelBookVariableMapping,
@@ -224,6 +224,7 @@ const leftFooterItems = computed<ToolbarItem[]>(() => [
     type: 'button',
     label: 'Spreadsheetテンプレート編集',
     color: 'primary',
+    intent: 'secondary',
     disabled: form._isNew || props.saving,
     onClick: () => emit('edit-template', { ...form }),
   },
@@ -231,6 +232,7 @@ const leftFooterItems = computed<ToolbarItem[]>(() => [
     type: 'button',
     label: '削除',
     color: 'error',
+    intent: 'danger',
     disabled: form._isNew || props.saving,
     onClick: () => emit('delete', { ...form }),
   },
@@ -241,6 +243,7 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
     type: 'button',
     label: 'キャンセル',
     color: 'secondary',
+    intent: 'utility',
     disabled: props.saving,
     onClick: () => {
       visible.value = false
@@ -250,6 +253,7 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
     type: 'button',
     label: '保存',
     color: 'primary',
+    intent: 'primary',
     disabled: props.saving,
     onClick: () => emit('save', { ...form }),
   },
@@ -276,10 +280,12 @@ watch(
 </script>
 
 <template>
-  <DetailDialogLayout
+  <AppDialog
     v-model="visible"
     :title="title"
-    max-width="1100"
+    size="lg"
+    :max-width="1100"
+    body-layout="stack"
     :left-footer-items="leftFooterItems"
     :right-footer-items="rightFooterItems"
   >
@@ -487,7 +493,7 @@ watch(
         </v-alert>
       </div>
     </FormLayout>
-  </DetailDialogLayout>
+  </AppDialog>
 </template>
 
 <style scoped>

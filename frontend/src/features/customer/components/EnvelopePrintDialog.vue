@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
+import { z } from 'zod'
 import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 import type { ToolbarItem } from '@/shared/ui/toolbar/types'
+import FormLayout from '@/shared/components/form/base/FormLayout.vue'
+import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
+import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
 import type {
   EnvelopePrintCustomerOption,
   EnvelopePrintPayload,
@@ -42,6 +46,45 @@ const stampOptions = ['請求書在中', '見積書在中', '納品書在中', '
 const honorificOptions = ['御中', '様', '先生', '各位', '行', '宛']
 
 const fontOptions = ['Yu Gothic', 'Yu Mincho', 'Meiryo', 'MS Gothic', 'MS Mincho']
+
+const schema = z.object({
+  customerIds: z.array(z.number()).min(1, '印刷する企業を1件以上選択してください'),
+  envelopeType: z.enum(['NAGA3', 'KAKU2']),
+  stamp: z.string().min(1, '必須です'),
+  honorific: z.string().min(1, '必須です'),
+  fontFamily: z.string().min(1, '必須です'),
+  fontSize: z.number().min(8).max(72),
+})
+
+const fields = computed<GridFormFieldDef<EnvelopePrintPayload>[]>(() => [
+  {
+    key: 'customerIds',
+    label: '印刷する企業',
+    type: 'selectboxWithChips',
+    options: props.customers.map(customer => ({ title: customer.name, value: customer.id })),
+    gridColumn: '1 / -1',
+  },
+  { key: 'envelopeType', label: '封筒タイプ', type: 'select', options: envelopeTypeOptions },
+  {
+    key: 'stamp',
+    label: '封筒スタンプ',
+    type: 'select',
+    options: stampOptions.map(value => ({ title: value, value })),
+  },
+  {
+    key: 'honorific',
+    label: '敬称',
+    type: 'select',
+    options: honorificOptions.map(value => ({ title: value, value })),
+  },
+  {
+    key: 'fontFamily',
+    label: 'フォント',
+    type: 'select',
+    options: fontOptions.map(value => ({ title: value, value })),
+  },
+  { key: 'fontSize', label: '文字サイズ', type: 'number' },
+])
 
 const selectedPreviewCustomer = computed(() => {
   const id = form.customerIds[0]
@@ -131,64 +174,9 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
     :right-footer-items="rightFooterItems"
   >
     <div class="d-flex flex-column ga-4">
-      <v-select
-        v-model="form.customerIds"
-        :items="customers"
-        item-title="name"
-        item-value="id"
-        label="印刷する企業"
-        multiple
-        chips
-        closable-chips
-        density="compact"
-        hide-details="auto"
-      />
-
-      <div class="d-flex ga-3">
-        <v-select
-          v-model="form.envelopeType"
-          :items="envelopeTypeOptions"
-          item-title="title"
-          item-value="value"
-          label="封筒タイプ"
-          density="compact"
-          hide-details="auto"
-        />
-
-        <v-select
-          v-model="form.stamp"
-          :items="stampOptions"
-          label="封筒スタンプ"
-          density="compact"
-          hide-details="auto"
-        />
-
-        <v-select
-          v-model="form.honorific"
-          :items="honorificOptions"
-          label="敬称"
-          density="compact"
-          hide-details="auto"
-        />
-      </div>
-
-      <div class="d-flex ga-3">
-        <v-select
-          v-model="form.fontFamily"
-          :items="fontOptions"
-          label="フォント"
-          density="compact"
-          hide-details="auto"
-        />
-
-        <v-text-field
-          v-model.number="form.fontSize"
-          label="文字サイズ"
-          type="number"
-          density="compact"
-          hide-details="auto"
-        />
-      </div>
+      <FormLayout v-model="form" :schema="schema">
+        <GridBasedForm v-model="form" :fields="fields" />
+      </FormLayout>
 
       <v-alert v-if="form.customerIds.length === 0" type="info" variant="tonal">
         印刷する企業を1件以上選択してください。プレビューはサンプル表示です。

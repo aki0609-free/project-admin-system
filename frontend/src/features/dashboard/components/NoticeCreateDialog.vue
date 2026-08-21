@@ -8,6 +8,9 @@ import type {
 } from '@/features/dashboard/types/dashboardTypes'
 import NoticeContentPreview from '@/shared/components/notice/NoticeContentPreview.vue'
 import NoticeRichEditor from '@/shared/components/notice/NoticeRichEditor.vue'
+import FormLayout from '@/shared/components/form/base/FormLayout.vue'
+import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -28,10 +31,9 @@ const {
   form,
   activeTab,
   isEdit,
-  typeItems,
-  colorItems,
-  contentFormatItems,
-  submit,
+  fields,
+  schema,
+  rightFooterItems,
 } = useNoticeEditDialog(
   dialog,
   toRef(props, 'notice'),
@@ -40,142 +42,64 @@ const {
 </script>
 
 <template>
-  <v-dialog v-model="dialog" width="820">
-    <v-card rounded="xl">
-      <v-card-title class="font-weight-bold">
-        {{ isEdit ? 'Notice編集' : 'Notice作成' }}
-      </v-card-title>
+  <AppDialog
+    v-model="dialog"
+    :title="isEdit ? 'お知らせ編集' : 'お知らせ作成'"
+    size="lg"
+    :max-width="920"
+    body-layout="stack"
+    :right-footer-items="rightFooterItems"
+  >
+    <FormLayout v-model="form" :schema="schema">
+      <GridBasedForm v-model="form" :fields="fields" />
+    </FormLayout>
 
-      <v-divider />
+    <div class="notice-content-editor">
+      <v-tabs v-model="activeTab" density="compact">
+        <v-tab value="edit">
+          編集
+        </v-tab>
 
-      <v-card-text>
-        <v-row>
-          <v-col cols="12">
-            <v-text-field
-              v-model="form.title"
-              label="タイトル"
+        <v-tab value="preview">
+          プレビュー
+        </v-tab>
+      </v-tabs>
+
+      <v-window v-model="activeTab">
+        <v-window-item value="edit">
+          <div class="mt-4">
+            <NoticeRichEditor
+              v-if="form.contentFormat === 'HTML'"
+              v-model="form.content"
+            />
+
+            <v-textarea
+              v-else
+              v-model="form.content"
+              label="内容"
               variant="outlined"
-              density="comfortable"
+              rows="8"
+              auto-grow
             />
-          </v-col>
+          </div>
+        </v-window-item>
 
-          <v-col cols="12" md="6">
-            <v-text-field
-              v-model="form.start"
-              label="開始日"
-              type="date"
-              variant="outlined"
-              density="comfortable"
-            />
-          </v-col>
-
-          <v-col cols="12" md="6">
-            <v-text-field
-              v-model="form.end"
-              label="終了日"
-              type="date"
-              variant="outlined"
-              density="comfortable"
-            />
-          </v-col>
-
-          <v-col cols="12" md="4">
-            <v-select
-              v-model="form.type"
-              label="種別"
-              :items="typeItems"
-              variant="outlined"
-              density="comfortable"
-            />
-          </v-col>
-
-          <v-col cols="12" md="4">
-            <v-select
-              v-model="form.color"
-              label="色"
-              :items="colorItems"
-              variant="outlined"
-              density="comfortable"
-            />
-          </v-col>
-
-          <v-col cols="12" md="4">
-            <v-select
-              v-model="form.contentFormat"
-              label="本文形式"
-              :items="contentFormatItems"
-              variant="outlined"
-              density="comfortable"
-            />
-          </v-col>
-
-          <v-col cols="12" md="6">
-            <v-checkbox
-              v-model="form.pinnedFlag"
-              label="固定表示する"
-              density="compact"
-              hide-details
-            />
-          </v-col>
-
-          <v-col cols="12" md="6">
-            <v-checkbox
-              v-model="form.activeFlag"
-              label="有効"
-              density="compact"
-              hide-details
-            />
-          </v-col>
-        </v-row>
-
-        <v-tabs v-model="activeTab" density="compact">
-          <v-tab value="edit">
-            編集
-          </v-tab>
-
-          <v-tab value="preview">
-            プレビュー
-          </v-tab>
-        </v-tabs>
-
-        <v-window v-model="activeTab">
-          <v-window-item value="edit">
-            <div class="mt-4">
-              <NoticeRichEditor
-                v-if="form.contentFormat === 'HTML'"
-                v-model="form.content"
-              />
-
-              <v-textarea
-                v-else
-                v-model="form.content"
-                label="内容"
-                variant="outlined"
-                rows="8"
-                auto-grow
-              />
-            </div>
-          </v-window-item>
-
-          <v-window-item value="preview">
-            <NoticeContentPreview
-              class="mt-4"
-              :content="form.content"
-              :content-format="form.contentFormat"
-            />
-          </v-window-item>
-        </v-window>
-      </v-card-text>
-
-      <v-card-actions class="justify-end">
-        <v-btn variant="text" @click="dialog = false">
-          キャンセル
-        </v-btn>
-
-        <v-btn color="primary" variant="flat" @click="submit">
-          {{ isEdit ? '更新' : '作成' }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+        <v-window-item value="preview">
+          <NoticeContentPreview
+            class="mt-4"
+            :content="form.content"
+            :content-format="form.contentFormat"
+          />
+        </v-window-item>
+      </v-window>
+    </div>
+  </AppDialog>
 </template>
+
+<style scoped>
+.notice-content-editor {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+</style>

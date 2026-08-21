@@ -1,8 +1,9 @@
 import { computed, reactive, watch, type Ref } from 'vue'
 import { z } from 'zod'
+import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { EmployeeResignRequest } from '../types/employeeApiTypes'
 import type { EmployeeForm } from '../types/employeeFormTypes'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
 
 export type EmployeeResignForm = {
   resignDate: string
@@ -50,6 +51,26 @@ export const useEmployeeResignDialog = (
     () => formModel.resignDate.trim().length > 0 && missingRequiredIds.value.length === 0,
   )
 
+  const dateFields: GridFormFieldDef<EmployeeResignForm>[] = [
+    {
+      key: 'resignDate',
+      label: '退職日',
+      type: 'date',
+      gridColumn: '1 / span 2',
+    },
+  ]
+
+  const noteFields: GridFormFieldDef<EmployeeResignForm>[] = [
+    {
+      key: 'note',
+      label: '備考',
+      type: 'textarea',
+      rows: 3,
+      autoGrow: true,
+      gridColumn: '1 / -1',
+    },
+  ]
+
   const close = () => {
     visible.value = false
   }
@@ -74,7 +95,7 @@ export const useEmployeeResignDialog = (
     {
       type: 'button',
       label: '退職処理を実行',
-      color: 'warning',
+      intent: 'warning',
       disabled: !canSubmit.value,
       onClick: submit,
     },
@@ -84,6 +105,8 @@ export const useEmployeeResignDialog = (
     formModel,
     missingRequiredIds,
     canSubmit,
+    dateFields,
+    noteFields,
     rightFooterItems,
     schema: employeeResignSchema,
   }

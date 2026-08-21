@@ -3,7 +3,7 @@ import { computed, ref, toRef } from 'vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
-import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 import type { MailRecipientGroupResponse } from '@/features/system/mail/types/mailApiTypes'
 import type {
   MailRecipientForm,
@@ -42,8 +42,10 @@ const {
   recipientFields,
   schema,
   recipientSchema,
-  footerItems,
-  recipientToolbarItems,
+  leftFooterItems,
+  rightFooterItems,
+  recipientLeftToolbarItems,
+  recipientRightToolbarItems,
   selectRecipient,
 } = useMailRecipientGroupEditDialog(
   visible,
@@ -58,11 +60,13 @@ const onRecipientRowClick = (row: MailRecipientForm) => {
 </script>
 
 <template>
-  <DetailDialogLayout
+  <AppDialog
     v-model="visible"
     :title="isEdit ? '宛先グループ編集' : '宛先グループ新規作成'"
-    max-width="1280"
-    :footer-items="footerItems"
+    size="xl"
+    :max-width="1280"
+    :left-footer-items="leftFooterItems"
+    :right-footer-items="rightFooterItems"
   >
     <TabLayout v-model="activeTab" :tabs="tabs">
       <template #default="{ active }">
@@ -79,7 +83,8 @@ const onRecipientRowClick = (row: MailRecipientForm) => {
           <MailRecipientEditor
             v-model:selected-recipient="selectedRecipient"
             :recipients="formModel.recipients"
-            :toolbar-items="recipientToolbarItems"
+            :left-toolbar-items="recipientLeftToolbarItems"
+            :right-toolbar-items="recipientRightToolbarItems"
             :schema="recipientSchema"
             :fields="recipientFields"
             @row-click="onRecipientRowClick"
@@ -87,7 +92,7 @@ const onRecipientRowClick = (row: MailRecipientForm) => {
         </div>
       </template>
     </TabLayout>
-  </DetailDialogLayout>
+  </AppDialog>
 </template>
 
 <style scoped>

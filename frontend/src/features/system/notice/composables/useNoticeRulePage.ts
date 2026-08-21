@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { useNoticeRulesQuery } from '@/features/system/notice/api/queries/useNoticeRulesQuery'
 import { useNoticeRuleDetailQuery } from '@/features/system/notice/api/queries/useNoticeRuleDetailQuery'
 import { useCreateNoticeRuleMutation } from '@/features/system/notice/api/mutations/useCreateNoticeRuleMutation'
@@ -96,18 +96,23 @@ export const useNoticeRulePage = () => {
     alert('NoticeRuleスケジュールを再読込しました。')
   }
 
-  const toolbarItems = computed<ToolbarItem[]>(() => [
+  const leftToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: '新規追加',
       color: 'primary',
+      intent: 'primary',
       disabled: busy.value,
       onClick: openCreate,
     },
+  ])
+
+  const rightToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: '手動生成',
       color: 'secondary',
+      intent: 'secondary',
       disabled: busy.value,
       onClick: generateAll,
     },
@@ -115,6 +120,7 @@ export const useNoticeRulePage = () => {
       type: 'button',
       label: 'スケジュール再読込',
       color: 'secondary',
+      intent: 'secondary',
       disabled: busy.value,
       onClick: reloadSchedules,
     },
@@ -124,7 +130,8 @@ export const useNoticeRulePage = () => {
     rulesQuery,
     dialogVisible,
     dialogRule,
-    toolbarItems,
+    leftToolbarItems,
+    rightToolbarItems,
     openEdit,
     save,
     remove,

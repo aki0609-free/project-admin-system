@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { useImportTargetsQuery } from '@/features/system/import/api/useImportTargetsQuery'
 import { useCreateImportTargetMutation } from '@/features/system/import/api/useCreateImportTargetMutation'
 import { useUpdateImportTargetMutation } from '@/features/system/import/api/useUpdateImportTargetMutation'
@@ -56,11 +56,11 @@ export const useImportTargetDefinitionTab = () => {
     dialog.closeDialog()
   }
 
-  const toolbarItems = computed<ToolbarItem[]>(() => [
+  const leftToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: '新規追加',
-      color: 'primary',
+      intent: 'primary',
       disabled: busy.value,
       onClick: dialog.openCreateDialog,
     },
@@ -70,7 +70,7 @@ export const useImportTargetDefinitionTab = () => {
     targetsQuery,
     dialog,
     busy,
-    toolbarItems,
+    leftToolbarItems,
     onSave,
     onDelete,
   }

@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { NoticeResponse } from '@/features/dashboard/types/dashboardTypes'
 import NoticeDetailDialog from '@/features/dashboard/components/NoticeDetailDialog.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 
-defineProps<{
+const props = defineProps<{
   modelValue: boolean
   deleteConfirm: boolean
   notice: NoticeResponse | null
@@ -19,6 +22,26 @@ const emit = defineEmits<{
   edit: []
   delete: []
 }>()
+
+const deleteConfirmVisible = computed({
+  get: () => props.deleteConfirm,
+  set: value => emit('update:deleteConfirm', value),
+})
+
+const deleteConfirmItems = computed<ToolbarItem[]>(() => [
+  {
+    type: 'button',
+    label: 'キャンセル',
+    intent: 'secondary',
+    onClick: () => emit('update:deleteConfirm', false),
+  },
+  {
+    type: 'button',
+    label: '削除',
+    intent: 'danger',
+    onClick: () => emit('delete'),
+  },
+])
 </script>
 
 <template>
@@ -36,36 +59,12 @@ const emit = defineEmits<{
     @delete="emit('update:deleteConfirm', true)"
   />
 
-  <v-dialog
-    :model-value="deleteConfirm"
-    width="420"
-    @update:model-value="emit('update:deleteConfirm', $event)"
+  <AppDialog
+    v-model="deleteConfirmVisible"
+    title="お知らせ削除"
+    size="sm"
+    :right-footer-items="deleteConfirmItems"
   >
-    <v-card rounded="xl">
-      <v-card-title class="font-weight-bold">
-        Notice削除
-      </v-card-title>
-
-      <v-card-text>
-        「{{ notice?.title }}」を削除しますか？
-      </v-card-text>
-
-      <v-card-actions class="justify-end">
-        <v-btn
-          variant="text"
-          @click="emit('update:deleteConfirm', false)"
-        >
-          キャンセル
-        </v-btn>
-
-        <v-btn
-          color="error"
-          variant="flat"
-          @click="emit('delete')"
-        >
-          削除
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+    「{{ notice?.title }}」を削除しますか？
+  </AppDialog>
 </template>

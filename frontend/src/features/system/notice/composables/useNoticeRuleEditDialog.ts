@@ -1,7 +1,7 @@
 import { computed, reactive, watch, type Ref } from 'vue'
 import { z } from 'zod'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { NoticeRuleResponse } from '@/features/system/notice/types/noticeRuleApiTypes'
 import type { NoticeRuleForm } from '@/features/system/notice/types/noticeRuleFormTypes'
 import {
@@ -155,41 +155,43 @@ export const useNoticeRuleEditDialog = (
     emitDelete({ ...formModel })
   }
 
-  const footerItems = computed<ToolbarItem[]>(() => {
-    const items: ToolbarItem[] = []
+  const leftFooterItems = computed<ToolbarItem[]>(() => {
+    if (!isEdit.value) return []
 
-    if (isEdit.value) {
-      items.push({
+    return [
+      {
         type: 'button',
         label: '削除',
         color: 'error',
+        intent: 'danger',
         onClick: remove,
-      })
-    }
+      },
+    ]
+  })
 
-    items.push(
+  const rightFooterItems = computed<ToolbarItem[]>(() => [
       {
         type: 'button',
         label: '閉じる',
         color: 'secondary',
+        intent: 'utility',
         onClick: close,
       },
       {
         type: 'button',
         label: '保存',
         color: 'primary',
+        intent: 'primary',
         onClick: save,
       },
-    )
-
-    return items
-  })
+  ])
 
   return {
     formModel,
     isEdit,
     fields,
     schema: noticeRuleSchema,
-    footerItems,
+    leftFooterItems,
+    rightFooterItems,
   }
 }

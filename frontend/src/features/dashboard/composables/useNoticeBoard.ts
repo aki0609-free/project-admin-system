@@ -2,7 +2,7 @@ import { computed, reactive, ref, watch } from 'vue'
 
 import type { NoticeResponse } from '@/features/dashboard/types/dashboardTypes'
 import type { SearchPanelFieldDef } from '@/shared/components/search/types/searchPanelTypes'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 
 export type NoticeBoardFilter = {
   keyword: string
@@ -89,7 +89,7 @@ export const useNoticeBoard = (
           {
             type: 'button',
             label: '作成',
-            color: 'primary',
+            intent: 'primary',
             onClick: emitCreate,
           },
         ]

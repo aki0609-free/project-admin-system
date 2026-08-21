@@ -16,6 +16,7 @@ import type {
 } from '@/features/master/allowance/types/allowanceApiTypes'
 
 import { allowanceDetailViewTypeLabelMap } from '@/features/master/allowance/constants/allowanceConstants'
+import { createDefaultPayrollItemPolicy } from '@/features/master/payrollitem/types/payrollItemPolicyTypes'
 
 function toStringValue(value: string | null | undefined): string {
   return value ?? ''
@@ -92,6 +93,9 @@ export function toAllowanceMaster(
       displayOrder: response.displayOrder,
       enabled: response.enabled,
       note: response.note,
+      policy: response.policy
+        ? structuredClone(response.policy)
+        : createDefaultPayrollItemPolicy(),
     }
   }
 
@@ -116,6 +120,9 @@ export function toAllowanceMaster(
     displayOrder: response.displayOrder,
     enabled: response.enabled ?? true,
     note: toStringValue(response.note),
+    policy: 'policy' in response && response.policy
+      ? structuredClone(response.policy)
+      : createDefaultPayrollItemPolicy(),
   }
 }
 
@@ -153,6 +160,7 @@ export function toAllowanceSaveRequest(
     displayOrder: payload.displayOrder,
     enabled: payload.enabled,
     note: toNullableString(payload.note),
+    policy: structuredClone(payload.policy),
   }
 }
 

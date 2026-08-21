@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type {
   SimpleTableColumnDef,
   SimpleTableEditableRow,
@@ -76,11 +76,12 @@ export const useMailQueueTab = () => {
     alert('再送対象に戻しました。')
   }
 
-  const toolbarItems = computed<ToolbarItem[]>(() => [
+  const leftToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: sendWaitingMutation.isPending.value ? '送信中...' : 'WAITING送信',
       color: 'primary',
+      intent: 'primary',
       disabled: sendWaitingMutation.isPending.value,
       onClick: sendWaiting,
     },
@@ -90,7 +91,7 @@ export const useMailQueueTab = () => {
     rows,
     columns,
     filterRules,
-    toolbarItems,
+    leftToolbarItems,
     retryMutation,
     retry,
   }

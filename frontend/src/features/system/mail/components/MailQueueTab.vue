@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
 import { useMailQueueTab } from '@/features/system/mail/composables/useMailQueueTab'
 
-const { rows, columns, filterRules, toolbarItems, retryMutation, retry } = useMailQueueTab()
+const { rows, columns, filterRules, leftToolbarItems, retryMutation, retry } = useMailQueueTab()
 </script>
 
 <template>
@@ -13,7 +13,7 @@ const { rows, columns, filterRules, toolbarItems, retryMutation, retry } = useMa
       <p class="tab-description">メール送信状態の確認、WAITING送信、FAILED再送を行います。</p>
     </div>
 
-    <GenericToolbar :items="toolbarItems" />
+    <AppToolbar :left-items="leftToolbarItems" surface="plain" />
 
     <SimpleTable
       table-key="mail-send-queue-list"

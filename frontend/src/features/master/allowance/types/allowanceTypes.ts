@@ -1,4 +1,5 @@
 import type { SimpleTableEditableRow } from '@/shared/components/table/simple_table/types/item/types'
+import type { PayrollItemPolicy } from '@/features/master/payrollitem/types/payrollItemPolicyTypes'
 
 export type AllowanceType =
   | 'LEGAL'
@@ -42,6 +43,7 @@ export type AllowanceMaster = {
   displayOrder: number | null
   enabled: boolean
   note: string
+  policy: PayrollItemPolicy
 }
 
 export type AllowanceListItem = AllowanceMaster & {

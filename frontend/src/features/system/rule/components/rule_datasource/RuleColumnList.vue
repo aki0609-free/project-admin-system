@@ -2,8 +2,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type {
   RuleColumnMappingForm,
   RuleDataSourceForm,
@@ -40,21 +40,23 @@ const removeColumn = () => {
   emit('select', null)
 }
 
-const toolbarItems = computed<ToolbarItem[]>(() => [
+const leftToolbarItems = computed<ToolbarItem[]>(() => [
   {
     type: 'button',
     label: '追加',
     color: 'primary',
-    icon: 'mdi-plus',
+    intent: 'primary',
     disabled: !props.dataSource,
     onClick: addColumn,
   },
+])
+
+const rightToolbarItems = computed<ToolbarItem[]>(() => [
   {
     type: 'button',
     label: '削除',
     color: 'error',
-    variant: 'text',
-    icon: 'mdi-delete-outline',
+    intent: 'danger',
     disabled: !props.selectedColumn,
     onClick: removeColumn,
   },
@@ -75,7 +77,11 @@ const toolbarItems = computed<ToolbarItem[]>(() => [
       </div>
     </div>
 
-    <GenericToolbar :items="toolbarItems" />
+    <AppToolbar
+      :left-items="leftToolbarItems"
+      :right-items="rightToolbarItems"
+      surface="plain"
+    />
 
     <div
       v-if="dataSource"

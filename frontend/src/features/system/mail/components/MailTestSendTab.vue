@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
 import { useMailTestSendTab } from '@/features/system/mail/composables/useMailTestSendTab'
 
 const {
   formModel,
   fields,
   schema,
-  sendMutation,
   lastMessage,
-  send,
+  leftToolbarItems,
 } = useMailTestSendTab()
 </script>
 
@@ -31,17 +31,7 @@ const {
           />
         </FormLayout>
 
-        <div class="actions">
-          <v-btn
-            color="primary"
-            variant="elevated"
-            :loading="sendMutation.isPending.value"
-            :disabled="sendMutation.isPending.value"
-            @click="send"
-          >
-            テスト送信
-          </v-btn>
-        </div>
+        <AppToolbar :left-items="leftToolbarItems" surface="plain" />
       </v-card-text>
     </v-card>
 
@@ -76,8 +66,4 @@ const {
   gap: 16px;
 }
 
-.actions {
-  display: flex;
-  justify-content: flex-end;
-}
 </style>

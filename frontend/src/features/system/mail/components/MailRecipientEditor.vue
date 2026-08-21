@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
 import type { MailRecipientForm } from '@/features/system/mail/types/mailFormTypes'
 import MailRecipientTable from '@/features/system/mail/components/MailRecipientTable.vue'
@@ -10,7 +10,8 @@ import type { ZodObject } from 'zod'
 defineProps<{
   recipients: MailRecipientForm[]
   selectedRecipient: MailRecipientForm | null
-  toolbarItems: ToolbarItem[]
+  leftToolbarItems: ToolbarItem[]
+  rightToolbarItems: ToolbarItem[]
   schema: ZodObject
   fields: GridFormFieldDef<MailRecipientForm>[]
 }>()
@@ -23,7 +24,11 @@ const emit = defineEmits<{
 
 <template>
   <div class="mail-recipient-editor">
-    <GenericToolbar :items="toolbarItems" />
+    <AppToolbar
+      :left-items="leftToolbarItems"
+      :right-items="rightToolbarItems"
+      surface="plain"
+    />
 
     <div class="recipient-pane">
       <div class="recipient-pane-left">

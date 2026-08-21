@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { useCreateEmployeeLoanMutation } from '../api/useCreateEmployeeLoanMutation'
 import { useCreateEmployeeSavingMutation } from '../api/useCreateEmployeeSavingMutation'
 import { useDeleteEmployeeLoanMutation } from '../api/useDeleteEmployeeLoanMutation'
@@ -9,8 +9,11 @@ import { useEmployeeSavingsQuery } from '../api/useEmployeeSavingsQuery'
 import { useEmployeesQuery } from '../api/useEmployeesQuery'
 import { useUpdateEmployeeLoanMutation } from '../api/useUpdateEmployeeLoanMutation'
 import { useUpdateEmployeeSavingMutation } from '../api/useUpdateEmployeeSavingMutation'
-import { EmployeeLoanForm, EmployeeSavingForm } from '../types/employeeLoanSavingFormTypes'
-import { toEmployeeLoanSaveRequest, toEmployeeSavingSaveRequest } from '../utils/employeeLoanSavingConverters'
+import type { EmployeeLoanForm, EmployeeSavingForm } from '../types/employeeLoanSavingFormTypes'
+import {
+  toEmployeeLoanSaveRequest,
+  toEmployeeSavingSaveRequest,
+} from '../utils/employeeLoanSavingConverters'
 import { useEmployeeSavingDialog } from './useEmployeeSavingDialog'
 import { useEmployeeLoanDialog } from './useEmployeeLoadDialog'
 
@@ -48,7 +51,7 @@ export const useEmployeeLoanSavingsPage = () => {
     {
       type: 'button',
       label: '貸付 新規作成',
-      color: 'primary',
+      intent: 'primary',
       disabled: busy.value,
       onClick: loanDialog.openCreate,
     },
@@ -58,7 +61,7 @@ export const useEmployeeLoanSavingsPage = () => {
     {
       type: 'button',
       label: '貯蓄 新規作成',
-      color: 'primary',
+      intent: 'primary',
       disabled: busy.value,
       onClick: savingDialog.openCreate,
     },

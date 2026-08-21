@@ -1,4 +1,4 @@
-import type { ToolbarItem } from "@/toolbox/toolbar/types/types"
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { computed, ref } from "vue"
 import { useCreateMailRecipientGroupMutation } from "../api/mutations/useCreateMailRecipientGroupMutation"
 import { useDeleteMailRecipientGroupMutation } from "../api/mutations/useDeleteMailRecipientGroupMutation"
@@ -78,11 +78,12 @@ export const useMailRecipientGroupTab = () => {
     close()
   }
 
-  const toolbarItems = computed<ToolbarItem[]>(() => [
+  const leftToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: '新規追加',
       color: 'primary',
+      intent: 'primary',
       disabled: busy.value,
       onClick: openCreate,
     },
@@ -92,7 +93,7 @@ export const useMailRecipientGroupTab = () => {
     groupsQuery,
     visible,
     dialogGroup,
-    toolbarItems,
+    leftToolbarItems,
     openEdit,
     save,
     remove,

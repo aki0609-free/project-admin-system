@@ -464,8 +464,6 @@ export const useDailyReportEditDialog = (
         isWeekendDate(formModel.workDate)
     }
 
-    activeTab.value = 'basic'
-
     applyingDetail.value = false
 
     calculateWorkTimes()
@@ -479,6 +477,11 @@ export const useDailyReportEditDialog = (
       if (!opened) {
         return
       }
+
+      // ダイアログを開いた時点でだけ初期タブへ戻す。
+      // 非同期の詳細取得完了後に戻すと、利用者が選択したタブを
+      // 後から基本情報へ上書きしてしまうため、ここで先に確定する。
+      activeTab.value = 'basic'
 
       await customerStore.load()
 
@@ -522,7 +525,6 @@ export const useDailyReportEditDialog = (
         )
 
       applyCustomerSnapshot()
-      activeTab.value = 'basic'
 
       applyingDetail.value = false
 
@@ -586,25 +588,6 @@ export const useDailyReportEditDialog = (
     },
     {
       immediate: true,
-    },
-  )
-
-  watch(
-    () => formModel.employeeId,
-    employeeId => {
-      if (
-        applyingDetail.value
-        || formModel.id > 0
-      ) {
-        return
-      }
-
-      const employee = employees.value.find(
-        item => item.id === employeeId,
-      )
-
-      formModel.dormitoryChargeDays =
-        employee?.dormitoryFlag ? 1 : 0
     },
   )
 
@@ -716,13 +699,28 @@ export const useDailyReportEditDialog = (
       formModel.vehicleUsedFlag,
       formModel.mileage,
       formModel.paidLeaveDays,
-      formModel.dormitoryChargeDays,
     ],
     schedulePayrollItemPreview,
   )
 
   watch(
     () => formModel.deductions.map(
+      item => `${item.masterId}:${item.quantity}`,
+    ),
+    () => {
+      if (applyingPayrollPreview.value) {
+        return
+      }
+
+      schedulePayrollItemPreview()
+    },
+    {
+      flush: 'sync',
+    },
+  )
+
+  watch(
+    () => formModel.allowances.map(
       item => `${item.masterId}:${item.quantity}`,
     ),
     () => {

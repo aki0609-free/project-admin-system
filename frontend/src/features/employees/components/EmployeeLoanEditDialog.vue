@@ -46,14 +46,5 @@ const { formModel, fields, schema, leftFooterItems, rightFooterItems, isEdit } =
     <FormLayout v-model="formModel" :schema="schema">
       <GridBasedForm v-model="formModel" :fields="fields" />
     </FormLayout>
-
-    <v-textarea
-      v-model="formModel.approvalComment"
-      label="承認コメント"
-      variant="outlined"
-      rows="4"
-      auto-grow
-      hide-details
-    />
   </AppDialog>
 </template>

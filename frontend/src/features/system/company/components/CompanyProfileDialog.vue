@@ -3,7 +3,10 @@ import { computed, reactive, ref, watch } from 'vue'
 import { z } from 'zod'
 
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
-import FormGridTab from '@/toolbox/tab/FormGridTab.vue'
+import FormLayout from '@/shared/components/form/base/FormLayout.vue'
+import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 
 import { useCompanyProfileQuery } from '../api/useCompanyProfileQuery'
 import { useSaveCompanyProfileMutation } from '../api/useSaveCompanyProfileMutation'
@@ -164,309 +167,264 @@ async function save() {
 function close() {
   dialogModel.value = false
 }
+
+const rightFooterItems = computed<ToolbarItem[]>(() => {
+  if (editMode.value) {
+    return [
+      {
+        type: 'button',
+        label: 'キャンセル',
+        intent: 'utility',
+        disabled: loading.value,
+        onClick: cancelEdit,
+      },
+      {
+        type: 'button',
+        label: '保存',
+        intent: 'primary',
+        loading: saveMutation.isPending.value,
+        onClick: () => void save(),
+      },
+    ]
+  }
+
+  return [
+    {
+      type: 'button',
+      label: '閉じる',
+      intent: 'primary',
+      onClick: close,
+    },
+  ]
+})
 </script>
 
 <template>
-  <v-dialog v-model="dialogModel" max-width="1200" scrollable>
-    <v-card rounded="xl" class="company-dialog">
-      <v-card-title class="company-dialog-title">
-        <div class="title-content">
-          <v-icon> mdi-domain </v-icon>
-
-          <div>
-            <div class="title-main">会社情報</div>
-
-            <div class="title-sub">
-              {{ displayCompanyName }}
-            </div>
-          </div>
+  <AppDialog
+    v-model="dialogModel"
+    title="会社情報"
+    size="xl"
+    :max-width="1200"
+    :right-footer-items="rightFooterItems"
+    body-class="company-dialog-body"
+  >
+    <template #title>
+      <div class="title-content">
+        <v-icon color="primary">mdi-domain</v-icon>
+        <div>
+          <h2 class="title-main">会社情報</h2>
+          <div class="title-sub">{{ displayCompanyName }}</div>
         </div>
+      </div>
+    </template>
 
-        <v-spacer />
-
+    <template #header-actions>
+      <div class="header-actions">
         <v-btn
           v-if="!editMode && canManageCompanyProfile"
-          color="white"
+          color="primary"
           variant="tonal"
           prepend-icon="mdi-pencil"
           @click="startEdit"
         >
           編集
         </v-btn>
+      </div>
+    </template>
 
-        <v-btn icon="mdi-close" variant="text" color="white" @click="close" />
-      </v-card-title>
+    <v-progress-linear v-if="loading" indeterminate class="mb-3" />
 
-      <v-progress-linear v-if="loading" indeterminate />
-
-      <v-card-text class="dialog-content">
-        <TabLayout v-model="activeTab" :tabs="tabs">
-          <template #default="{ active }">
-            <template v-if="editMode">
-              <FormGridTab
-                v-if="active === 'basic'"
-                v-model="form"
-                :schema="schema"
-                :fields="basicFields"
-              />
-
-              <div v-else-if="active === 'invoice'" class="form-section">
-                <FormGridTab v-model="form" :schema="schema" :fields="invoiceFields" />
-
-                <v-textarea
-                  v-model="form.invoiceNote"
-                  label="請求書備考"
-                  variant="outlined"
-                  rows="5"
-                  auto-grow
-                  hide-details
-                />
-              </div>
-
-              <div v-else-if="active === 'certification'" class="form-section">
-                <FormGridTab v-model="form" :schema="schema" :fields="certificationFields" />
-
-                <v-textarea
-                  v-model="form.businessContentsText"
-                  label="事業内容"
-                  hint="1行につき1項目入力してください。"
-                  persistent-hint
-                  variant="outlined"
-                  rows="8"
-                  auto-grow
-                />
-
-                <v-textarea
-                  v-model="form.certificationInformationText"
-                  label="許認可・資格情報"
-                  hint="1行につき1項目入力してください。"
-                  persistent-hint
-                  variant="outlined"
-                  rows="8"
-                  auto-grow
-                />
-              </div>
-            </template>
-
-            <template v-else>
-              <div v-if="active === 'basic'" class="profile-grid">
-                <v-card variant="outlined" class="profile-card">
-                  <v-card-title> 会社概要 </v-card-title>
-
-                  <v-divider />
-
-                  <v-card-text>
-                    <div class="info-row">
-                      <div class="info-label">商号</div>
-
-                      <div class="info-value">
-                        {{ form.companyName || '-' }}
-                      </div>
-                    </div>
-
-                    <div class="info-row">
-                      <div class="info-label">代表者</div>
-
-                      <div class="info-value">
-                        {{
-                          [form.representativeTitle, form.representativeName]
-                            .filter(Boolean)
-                            .join(' ') || '-'
-                        }}
-                      </div>
-                    </div>
-
-                    <div class="info-row">
-                      <div class="info-label">所在地</div>
-
-                      <div class="info-value address">
-                        {{ displayAddress || '-' }}
-                      </div>
-                    </div>
-
-                    <div class="info-row">
-                      <div class="info-label">電話</div>
-
-                      <div class="info-value">
-                        {{ form.phone || '-' }}
-                      </div>
-                    </div>
-
-                    <div class="info-row">
-                      <div class="info-label">FAX</div>
-
-                      <div class="info-value">
-                        {{ form.fax || '-' }}
-                      </div>
-                    </div>
-
-                    <div class="info-row">
-                      <div class="info-label">対応エリア</div>
-
-                      <div class="info-value">
-                        {{ form.serviceArea || '-' }}
-                      </div>
-                    </div>
-
-                    <div class="info-row">
-                      <div class="info-label">資本金</div>
-
-                      <div class="info-value">
-                        {{
-                          form.capitalAmount == null
-                            ? '-'
-                            : `${form.capitalAmount.toLocaleString()}円`
-                        }}
-                      </div>
-                    </div>
-                  </v-card-text>
-                </v-card>
-              </div>
-
-              <div v-else-if="active === 'invoice'" class="profile-grid">
-                <v-card variant="outlined" class="profile-card">
-                  <v-card-title> 請求書設定 </v-card-title>
-
-                  <v-divider />
-
-                  <v-card-text>
-                    <div class="info-row">
-                      <div class="info-label">登録番号</div>
-
-                      <div class="info-value">
-                        {{ form.qualifiedInvoiceIssuerNumber || '-' }}
-                      </div>
-                    </div>
-
-                    <div class="info-row">
-                      <div class="info-label">振込先</div>
-
-                      <div class="info-value address">
-                        {{
-                          [
-                            [form.invoiceBankName, form.invoiceBankBranchName]
-                              .filter(Boolean)
-                              .join(' '),
-
-                            [form.invoiceBankAccountType, form.invoiceBankAccountNumber]
-                              .filter(Boolean)
-                              .join(' '),
-
-                            form.invoiceBankAccountHolder,
-                          ]
-                            .filter(Boolean)
-                            .join('\n') || '-'
-                        }}
-                      </div>
-                    </div>
-
-                    <div class="info-row">
-                      <div class="info-label">備考</div>
-
-                      <div class="info-value address">
-                        {{ form.invoiceNote || '-' }}
-                      </div>
-                    </div>
-                  </v-card-text>
-                </v-card>
-              </div>
-
-              <div v-else-if="active === 'certification'" class="profile-grid">
-                <v-card variant="outlined" class="profile-card">
-                  <v-card-title> 事業内容 </v-card-title>
-
-                  <v-divider />
-
-                  <v-card-text>
-                    <div class="chip-wrap">
-                      <v-chip
-                        v-for="item in businessContents"
-                        :key="item"
-                        color="primary"
-                        variant="outlined"
-                      >
-                        {{ item }}
-                      </v-chip>
-
-                      <span v-if="businessContents.length === 0" class="empty-text">
-                        登録されていません。
-                      </span>
-                    </div>
-                  </v-card-text>
-                </v-card>
-
-                <v-card variant="outlined" class="profile-card">
-                  <v-card-title> 許認可・資格情報 </v-card-title>
-
-                  <v-divider />
-
-                  <v-card-text>
-                    <div class="chip-wrap">
-                      <v-chip
-                        v-for="item in certificationItems"
-                        :key="item"
-                        color="secondary"
-                        variant="outlined"
-                      >
-                        {{ item }}
-                      </v-chip>
-
-                      <span v-if="certificationItems.length === 0" class="empty-text">
-                        登録されていません。
-                      </span>
-                    </div>
-                  </v-card-text>
-                </v-card>
-              </div>
-            </template>
-          </template>
-        </TabLayout>
-      </v-card-text>
-
-      <v-divider />
-
-      <v-card-actions class="dialog-actions">
+    <TabLayout v-model="activeTab" :tabs="tabs">
+      <template #default="{ active }">
         <template v-if="editMode">
-          <v-btn variant="text" :disabled="loading" @click="cancelEdit"> キャンセル </v-btn>
+          <FormLayout v-if="active === 'basic'" v-model="form" :schema="schema">
+            <GridBasedForm v-model="form" :fields="basicFields" />
+          </FormLayout>
 
-          <v-spacer />
+          <FormLayout v-else-if="active === 'invoice'" v-model="form" :schema="schema">
+            <GridBasedForm v-model="form" :fields="invoiceFields" />
+          </FormLayout>
 
-          <v-btn
-            color="primary"
-            prepend-icon="mdi-content-save"
-            :loading="saveMutation.isPending.value"
-            @click="save"
-          >
-            保存
-          </v-btn>
+          <FormLayout v-else-if="active === 'certification'" v-model="form" :schema="schema">
+            <GridBasedForm v-model="form" :fields="certificationFields" />
+          </FormLayout>
         </template>
 
         <template v-else>
-          <v-spacer />
+          <div v-if="active === 'basic'" class="profile-grid">
+            <v-card variant="outlined" class="profile-card">
+              <v-card-title> 会社概要 </v-card-title>
 
-          <v-btn color="primary" variant="flat" @click="close"> 閉じる </v-btn>
+              <v-divider />
+
+              <v-card-text>
+                <div class="info-row">
+                  <div class="info-label">商号</div>
+
+                  <div class="info-value">
+                    {{ form.companyName || '-' }}
+                  </div>
+                </div>
+
+                <div class="info-row">
+                  <div class="info-label">代表者</div>
+
+                  <div class="info-value">
+                    {{
+                      [form.representativeTitle, form.representativeName]
+                        .filter(Boolean)
+                        .join(' ') || '-'
+                    }}
+                  </div>
+                </div>
+
+                <div class="info-row">
+                  <div class="info-label">所在地</div>
+
+                  <div class="info-value address">
+                    {{ displayAddress || '-' }}
+                  </div>
+                </div>
+
+                <div class="info-row">
+                  <div class="info-label">電話</div>
+
+                  <div class="info-value">
+                    {{ form.phone || '-' }}
+                  </div>
+                </div>
+
+                <div class="info-row">
+                  <div class="info-label">FAX</div>
+
+                  <div class="info-value">
+                    {{ form.fax || '-' }}
+                  </div>
+                </div>
+
+                <div class="info-row">
+                  <div class="info-label">対応エリア</div>
+
+                  <div class="info-value">
+                    {{ form.serviceArea || '-' }}
+                  </div>
+                </div>
+
+                <div class="info-row">
+                  <div class="info-label">資本金</div>
+
+                  <div class="info-value">
+                    {{
+                      form.capitalAmount == null ? '-' : `${form.capitalAmount.toLocaleString()}円`
+                    }}
+                  </div>
+                </div>
+              </v-card-text>
+            </v-card>
+          </div>
+
+          <div v-else-if="active === 'invoice'" class="profile-grid">
+            <v-card variant="outlined" class="profile-card">
+              <v-card-title> 請求書設定 </v-card-title>
+
+              <v-divider />
+
+              <v-card-text>
+                <div class="info-row">
+                  <div class="info-label">登録番号</div>
+
+                  <div class="info-value">
+                    {{ form.qualifiedInvoiceIssuerNumber || '-' }}
+                  </div>
+                </div>
+
+                <div class="info-row">
+                  <div class="info-label">振込先</div>
+
+                  <div class="info-value address">
+                    {{
+                      [
+                        [form.invoiceBankName, form.invoiceBankBranchName]
+                          .filter(Boolean)
+                          .join(' '),
+
+                        [form.invoiceBankAccountType, form.invoiceBankAccountNumber]
+                          .filter(Boolean)
+                          .join(' '),
+
+                        form.invoiceBankAccountHolder,
+                      ]
+                        .filter(Boolean)
+                        .join('\n') || '-'
+                    }}
+                  </div>
+                </div>
+
+                <div class="info-row">
+                  <div class="info-label">備考</div>
+
+                  <div class="info-value address">
+                    {{ form.invoiceNote || '-' }}
+                  </div>
+                </div>
+              </v-card-text>
+            </v-card>
+          </div>
+
+          <div v-else-if="active === 'certification'" class="profile-grid">
+            <v-card variant="outlined" class="profile-card">
+              <v-card-title> 事業内容 </v-card-title>
+
+              <v-divider />
+
+              <v-card-text>
+                <div class="chip-wrap">
+                  <v-chip
+                    v-for="item in businessContents"
+                    :key="item"
+                    color="primary"
+                    variant="outlined"
+                  >
+                    {{ item }}
+                  </v-chip>
+
+                  <span v-if="businessContents.length === 0" class="empty-text">
+                    登録されていません。
+                  </span>
+                </div>
+              </v-card-text>
+            </v-card>
+
+            <v-card variant="outlined" class="profile-card">
+              <v-card-title> 許認可・資格情報 </v-card-title>
+
+              <v-divider />
+
+              <v-card-text>
+                <div class="chip-wrap">
+                  <v-chip
+                    v-for="item in certificationItems"
+                    :key="item"
+                    color="secondary"
+                    variant="outlined"
+                  >
+                    {{ item }}
+                  </v-chip>
+
+                  <span v-if="certificationItems.length === 0" class="empty-text">
+                    登録されていません。
+                  </span>
+                </div>
+              </v-card-text>
+            </v-card>
+          </div>
         </template>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+      </template>
+    </TabLayout>
+  </AppDialog>
 </template>
 
 <style scoped>
-.company-dialog {
-  height: 90vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.company-dialog-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 24px;
-  background: rgb(var(--v-theme-primary));
-  color: white;
-}
-
 .title-content {
   display: flex;
   align-items: center;
@@ -474,6 +432,7 @@ function close() {
 }
 
 .title-main {
+  margin: 0;
   font-size: 18px;
   font-weight: 800;
 }
@@ -481,21 +440,9 @@ function close() {
 .title-sub {
   margin-top: 2px;
   font-size: 12px;
-  opacity: 0.8;
+  color: #64748b;
 }
 
-.dialog-content {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  background: #f8fafc;
-}
-
-.dialog-actions {
-  padding: 16px 24px;
-}
-
-.form-section,
 .profile-grid {
   display: grid;
   gap: 16px;

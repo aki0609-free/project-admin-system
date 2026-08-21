@@ -1,5 +1,5 @@
 import { computed, reactive, ref, watch, type Ref } from 'vue'
-import type { ToolbarItem } from '@/toolbox/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type {
   MailTemplatePreviewResponse,
   MailTemplateResponse,
@@ -77,23 +77,26 @@ export const useMailTemplateEditDialog = (
 
   const snapshot = (): MailTemplateForm => ({ ...formModel })
 
-  const footerItems = computed<ToolbarItem[]>(() => {
-    const items: ToolbarItem[] = []
+  const leftFooterItems = computed<ToolbarItem[]>(() => {
+    if (!isEdit.value) return []
 
-    if (isEdit.value) {
-      items.push({
+    return [
+      {
         type: 'button',
         label: '削除',
         color: 'error',
+        intent: 'danger',
         onClick: () => emitDelete(snapshot()),
-      })
-    }
+      },
+    ]
+  })
 
-    items.push(
+  const rightFooterItems = computed<ToolbarItem[]>(() => [
       {
         type: 'button',
         label: 'プレビュー',
         color: 'secondary',
+        intent: 'secondary',
         disabled: !canSave.value || previewMutation.isPending.value,
         onClick: preview,
       },
@@ -101,25 +104,25 @@ export const useMailTemplateEditDialog = (
         type: 'button',
         label: '閉じる',
         color: 'secondary',
+        intent: 'utility',
         onClick: () => { visible.value = false },
       },
       {
         type: 'button',
         label: '保存',
         color: 'primary',
+        intent: 'primary',
         disabled: !canSave.value,
         onClick: () => emitSave(snapshot()),
       },
-    )
-
-    return items
-  })
+  ])
 
   return {
     formModel,
     previewResult,
     editorRevision,
     isEdit,
-    footerItems,
+    leftFooterItems,
+    rightFooterItems,
   }
 }

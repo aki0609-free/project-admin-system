@@ -1,5 +1,5 @@
 import { computed, type ComputedRef } from 'vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { FilterState } from '@/features/application/types/applicationMediaTypes'
 
 type Params = {
@@ -25,7 +25,7 @@ export const useApplicationMediaTableToolbar = ({
   saving,
   onSave,
 }: Params) => {
-  const toolbarItems = computed<ToolbarItem[]>(() => [
+  const leftToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'dropdown',
       label: '掲載年月',
@@ -45,34 +45,37 @@ export const useApplicationMediaTableToolbar = ({
         filter.mediaName = value
       },
     },
+  ])
+
+  const rightToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: '媒体追加',
-      color: 'primary',
+      intent: 'primary',
       onClick: openMediaDialog,
     },
     {
       type: 'button',
       label: '年月追加',
-      color: 'secondary',
+      intent: 'secondary',
       onClick: openYearMonthDialog,
     },
     {
       type: 'button',
       label: 'メディア削除',
-      color: 'error',
+      intent: 'danger',
       onClick: openDeleteMediaDialog,
     },
     {
       type: 'button',
       label: '年月削除',
-      color: 'error',
+      intent: 'danger',
       onClick: openDeleteYearMonthDialog,
     },
     {
       type: 'button',
       label: saving.value ? '保存中...' : '保存',
-      color: 'success',
+      intent: 'primary',
       disabled: !isDirty.value || saving.value,
       onClick: () => {
         void onSave()
@@ -81,6 +84,7 @@ export const useApplicationMediaTableToolbar = ({
   ])
 
   return {
-    toolbarItems,
+    leftToolbarItems,
+    rightToolbarItems,
   }
 }

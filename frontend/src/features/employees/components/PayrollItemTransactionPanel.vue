@@ -8,16 +8,18 @@ import type {
 
 const props = defineProps<{
   employeeId: number
+  targetType: 'ALLOWANCE' | 'DEDUCTION'
   targetCode: string
   targetName: string
   quantityUnit?: string | null
 }>()
 
-const formatLocalDate = (date: Date) => [
-  date.getFullYear(),
-  String(date.getMonth() + 1).padStart(2, '0'),
-  String(date.getDate()).padStart(2, '0'),
-].join('-')
+const formatLocalDate = (date: Date) =>
+  [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-')
 const today = formatLocalDate(new Date())
 const selectedMonth = ref(today.slice(0, 7))
 const transactions = ref<EmployeePayrollItemTransaction[]>([])
@@ -27,29 +29,51 @@ const errorMessage = ref('')
 const editingId = ref<number | null>(null)
 
 const form = reactive<EmployeePayrollItemTransactionRequest>({
+  targetType: props.targetType,
   targetCode: props.targetCode,
   targetMonth: selectedMonth.value,
   transactionDate: today,
   amount: 0,
   quantity: null,
+  balanceEffect: props.quantityUnit == null ? 'NONE' : 'DEBIT',
   status: 'CONFIRMED',
   sourceReference: null,
   note: null,
 })
 
-const showQuantity = computed(() => props.quantityUnit === 'DAYS')
-const defaultTransactionDate = () => selectedMonth.value === today.slice(0, 7)
-  ? today
-  : `${selectedMonth.value}-01`
+const showQuantity = computed(() => props.quantityUnit != null)
+const itemLabel = computed(() => (props.targetType === 'ALLOWANCE' ? '手当' : '控除'))
+const quantityLabel = computed(
+  () =>
+    ({
+      DAYS: '対象日数',
+      HOURS: '対象時間',
+      COUNT: '対象回数',
+      AMOUNT: '対象数量',
+    })[props.quantityUnit ?? ''] ?? '対象数量',
+)
+const quantitySuffix = computed(
+  () =>
+    ({
+      DAYS: '日',
+      HOURS: '時間',
+      COUNT: '回',
+      AMOUNT: '',
+    })[props.quantityUnit ?? ''] ?? '',
+)
+const defaultTransactionDate = () =>
+  selectedMonth.value === today.slice(0, 7) ? today : `${selectedMonth.value}-01`
 
 const reset = () => {
   editingId.value = null
   Object.assign(form, {
+    targetType: props.targetType,
     targetCode: props.targetCode,
     targetMonth: selectedMonth.value,
     transactionDate: defaultTransactionDate(),
     amount: 0,
     quantity: null,
+    balanceEffect: props.quantityUnit == null ? 'NONE' : 'DEBIT',
     status: 'CONFIRMED',
     sourceReference: null,
     note: null,
@@ -63,11 +87,12 @@ const load = async () => {
   try {
     transactions.value = await payrollItemTransactionApi.findAll(
       props.employeeId,
+      props.targetType,
       props.targetCode,
       selectedMonth.value,
     )
   } catch {
-    errorMessage.value = '控除明細を取得できませんでした。'
+    errorMessage.value = `${itemLabel.value}明細を取得できませんでした。`
   } finally {
     loading.value = false
   }
@@ -82,24 +107,24 @@ const save = async () => {
   errorMessage.value = ''
   const request: EmployeePayrollItemTransactionRequest = {
     ...form,
+    targetType: props.targetType,
     targetCode: props.targetCode,
     targetMonth: selectedMonth.value,
     quantity: showQuantity.value ? form.quantity : null,
+    balanceEffect: showQuantity.value ? form.balanceEffect : 'NONE',
     sourceReference: form.sourceReference?.trim() || null,
     note: form.note?.trim() || null,
   }
   try {
     if (editingId.value) {
-      await payrollItemTransactionApi.update(
-        props.employeeId, editingId.value, request,
-      )
+      await payrollItemTransactionApi.update(props.employeeId, editingId.value, request)
     } else {
       await payrollItemTransactionApi.create(props.employeeId, request)
     }
     reset()
     await load()
   } catch {
-    errorMessage.value = '控除明細を保存できませんでした。入力内容と重複を確認してください。'
+    errorMessage.value = `${itemLabel.value}明細を保存できませんでした。入力内容と重複を確認してください。`
   } finally {
     saving.value = false
   }
@@ -108,11 +133,13 @@ const save = async () => {
 const edit = (item: EmployeePayrollItemTransaction) => {
   editingId.value = item.id
   Object.assign(form, {
+    targetType: item.targetType,
     targetCode: item.targetCode,
     targetMonth: item.targetMonth,
     transactionDate: item.transactionDate,
     amount: item.amount,
     quantity: item.quantity,
+    balanceEffect: item.balanceEffect,
     status: item.status,
     sourceReference: item.sourceReference,
     note: item.note,
@@ -120,18 +147,19 @@ const edit = (item: EmployeePayrollItemTransaction) => {
 }
 
 const remove = async (item: EmployeePayrollItemTransaction) => {
-  if (!window.confirm(`${item.targetName} ${item.amount.toLocaleString()}円を削除しますか？`)) return
+  if (!window.confirm(`${item.targetName} ${item.amount.toLocaleString()}円を削除しますか？`))
+    return
   try {
     await payrollItemTransactionApi.remove(props.employeeId, item.id)
     if (editingId.value === item.id) reset()
     await load()
   } catch {
-    errorMessage.value = '控除明細を削除できませんでした。'
+    errorMessage.value = `${itemLabel.value}明細を削除できませんでした。`
   }
 }
 
 watch(
-  [() => props.employeeId, () => props.targetCode, selectedMonth],
+  [() => props.employeeId, () => props.targetType, () => props.targetCode, selectedMonth],
   () => {
     reset()
     void load()
@@ -144,30 +172,61 @@ watch(
   <section class="transaction-panel">
     <div class="transaction-heading">
       <div>
-        <h3>明細・月次控除</h3>
-        <p>明細到着時、または月次一括徴収時に登録します。確定した明細だけが月次締めへ反映されます。</p>
+        <h3>明細・月次{{ itemLabel }}</h3>
+        <p>
+          明細到着時、または月次一括徴収時に登録します。確定した明細だけが月次締めへ反映されます。
+        </p>
       </div>
-      <v-text-field v-model="selectedMonth" label="対象月" type="month" variant="outlined" hide-details />
+      <v-text-field
+        v-model="selectedMonth"
+        label="対象月"
+        type="month"
+        variant="outlined"
+        hide-details
+      />
     </div>
 
-    <v-alert v-if="errorMessage" type="error" variant="tonal" class="mb-4">{{ errorMessage }}</v-alert>
+    <v-alert v-if="errorMessage" type="error" variant="tonal" class="mb-4">{{
+      errorMessage
+    }}</v-alert>
 
     <div class="transaction-form">
       <v-text-field v-model="form.transactionDate" label="明細日" type="date" variant="outlined" />
-      <v-text-field v-model.number="form.amount" label="控除金額" type="number" min="1" suffix="円" variant="outlined" />
+      <v-text-field
+        v-model.number="form.amount"
+        :label="`${itemLabel}金額`"
+        type="number"
+        min="1"
+        suffix="円"
+        variant="outlined"
+      />
       <v-text-field
         v-if="showQuantity"
         v-model.number="form.quantity"
-        label="対象日数"
+        :label="quantityLabel"
         type="number"
         min="0"
-        suffix="日"
+        :suffix="quantitySuffix"
+        variant="outlined"
+      />
+      <v-select
+        v-if="showQuantity"
+        v-model="form.balanceEffect"
+        label="残高への反映"
+        :items="[
+          { title: '残高を減らす', value: 'DEBIT' },
+          { title: '残高を増やす', value: 'CREDIT' },
+          { title: '残高へ反映しない', value: 'NONE' },
+        ]"
         variant="outlined"
       />
       <v-select
         v-model="form.status"
         label="状態"
-        :items="[{ title: '確定', value: 'CONFIRMED' }, { title: '下書き', value: 'DRAFT' }]"
+        :items="[
+          { title: '確定', value: 'CONFIRMED' },
+          { title: '下書き', value: 'DRAFT' },
+        ]"
         variant="outlined"
       />
       <v-text-field v-model="form.sourceReference" label="明細番号（任意）" variant="outlined" />
@@ -182,11 +241,22 @@ watch(
 
     <v-table density="compact" class="mt-4">
       <thead>
-        <tr><th>明細日</th><th>金額</th><th>状態</th><th>明細番号</th><th>備考</th><th></th></tr>
+        <tr>
+          <th>明細日</th>
+          <th>金額</th>
+          <th>状態</th>
+          <th>明細番号</th>
+          <th>備考</th>
+          <th></th>
+        </tr>
       </thead>
       <tbody>
-        <tr v-if="loading"><td colspan="6">読み込み中...</td></tr>
-        <tr v-else-if="transactions.length === 0"><td colspan="6">登録された明細はありません。</td></tr>
+        <tr v-if="loading">
+          <td colspan="6">読み込み中...</td>
+        </tr>
+        <tr v-else-if="transactions.length === 0">
+          <td colspan="6">登録された明細はありません。</td>
+        </tr>
         <tr v-for="item in transactions" :key="item.id">
           <td>{{ item.transactionDate }}</td>
           <td>{{ item.amount.toLocaleString() }}円</td>
@@ -204,13 +274,40 @@ watch(
 </template>
 
 <style scoped>
-.transaction-panel { margin-top: 20px; border-top: 1px solid rgba(0, 0, 0, 0.12); padding-top: 20px; }
-.transaction-heading { display: grid; grid-template-columns: 1fr 180px; gap: 16px; align-items: start; }
-.transaction-heading h3 { margin: 0 0 4px; }
-.transaction-heading p { margin: 0; color: rgba(0, 0, 0, 0.65); }
-.transaction-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
-.transaction-actions, .row-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.transaction-panel {
+  margin-top: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  padding-top: 20px;
+}
+.transaction-heading {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 16px;
+  align-items: start;
+}
+.transaction-heading h3 {
+  margin: 0 0 4px;
+}
+.transaction-heading p {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.65);
+}
+.transaction-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.transaction-actions,
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
 @media (max-width: 900px) {
-  .transaction-heading, .transaction-form { grid-template-columns: 1fr; }
+  .transaction-heading,
+  .transaction-form {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

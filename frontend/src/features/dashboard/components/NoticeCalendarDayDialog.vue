@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { NoticeResponse } from '@/features/dashboard/types/dashboardTypes'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 
 defineProps<{
   modelValue: boolean
@@ -17,149 +18,84 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <v-dialog
+  <AppDialog
     :model-value="modelValue"
-    width="560"
-    max-width="calc(100vw - 48px)"
-    scrollable
+    :title="selectedDate || '日別お知らせ'"
+    size="md"
+    :max-width="560"
+    closable
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <v-card
-      rounded="xl"
-      class="day-dialog-card"
-    >
-      <div class="day-dialog-header">
+    <template #title>
+      <div class="title-content">
         <div class="header-icon">
-          <v-icon size="24">
-            mdi-calendar-text-outline
-          </v-icon>
+          <v-icon size="24">mdi-calendar-text-outline</v-icon>
         </div>
 
         <div class="header-title">
-          <div class="text-h6 font-weight-bold">
-            {{ selectedDate || '-' }}
-          </div>
-
-          <div class="text-caption text-grey">
-            この日のNotice一覧
-          </div>
+          <h2 class="title-main">{{ selectedDate || '-' }}</h2>
+          <div class="title-sub">この日のお知らせ一覧</div>
         </div>
+      </div>
+    </template>
 
-        <v-spacer />
+    <template #header-actions>
+      <v-chip size="small" color="primary" variant="tonal">{{ notices.length }}件</v-chip>
+    </template>
 
-        <v-chip
-          size="small"
-          color="primary"
-          variant="tonal"
+    <div class="day-dialog-body">
+      <div v-if="notices.length > 0" class="notice-list">
+        <button
+          v-for="notice in notices"
+          :key="notice.id"
+          type="button"
+          class="notice-row"
+          @click="emit('open', notice)"
         >
-          {{ notices.length }}件
-        </v-chip>
+          <span class="notice-color" :style="{ backgroundColor: getColor(notice) }" />
 
-        <v-btn
-          icon="mdi-close"
-          variant="text"
-          size="small"
-          @click="emit('update:modelValue', false)"
-        />
+          <span class="notice-main">
+            <span class="notice-title">
+              <v-icon v-if="notice.pinnedFlag" size="15" color="purple" class="mr-1">
+                mdi-pin
+              </v-icon>
+
+              {{ notice.title }}
+            </span>
+
+            <span class="notice-period">
+              {{ formatPeriod(notice) }}
+            </span>
+          </span>
+
+          <span class="notice-meta">
+            <v-chip size="x-small" variant="tonal" :color="getColor(notice)">
+              {{ getLabel(notice) }}
+            </v-chip>
+
+            <v-chip v-if="notice.sourceType === 'AUTO'" size="x-small" variant="tonal" color="grey">
+              自動
+            </v-chip>
+
+            <v-icon size="18" color="grey"> mdi-chevron-right </v-icon>
+          </span>
+        </button>
       </div>
 
-      <v-divider />
+      <div v-else class="empty-area">
+        <v-icon size="42" color="grey"> mdi-calendar-blank-outline </v-icon>
 
-      <v-card-text class="day-dialog-body">
-        <div
-          v-if="notices.length > 0"
-          class="notice-list"
-        >
-          <button
-            v-for="notice in notices"
-            :key="notice.id"
-            type="button"
-            class="notice-row"
-            @click="emit('open', notice)"
-          >
-            <span
-              class="notice-color"
-              :style="{ backgroundColor: getColor(notice) }"
-            />
-
-            <span class="notice-main">
-              <span class="notice-title">
-                <v-icon
-                  v-if="notice.pinnedFlag"
-                  size="15"
-                  color="purple"
-                  class="mr-1"
-                >
-                  mdi-pin
-                </v-icon>
-
-                {{ notice.title }}
-              </span>
-
-              <span class="notice-period">
-                {{ formatPeriod(notice) }}
-              </span>
-            </span>
-
-            <span class="notice-meta">
-              <v-chip
-                size="x-small"
-                variant="tonal"
-                :color="getColor(notice)"
-              >
-                {{ getLabel(notice) }}
-              </v-chip>
-
-              <v-chip
-                v-if="notice.sourceType === 'AUTO'"
-                size="x-small"
-                variant="tonal"
-                color="grey"
-              >
-                自動
-              </v-chip>
-
-              <v-icon
-                size="18"
-                color="grey"
-              >
-                mdi-chevron-right
-              </v-icon>
-            </span>
-          </button>
-        </div>
-
-        <div
-          v-else
-          class="empty-area"
-        >
-          <v-icon
-            size="42"
-            color="grey"
-          >
-            mdi-calendar-blank-outline
-          </v-icon>
-
-          <div class="mt-2">
-            この日のNoticeはありません。
-          </div>
-        </div>
-      </v-card-text>
-    </v-card>
-  </v-dialog>
+        <div class="mt-2">この日のNoticeはありません。</div>
+      </div>
+    </div>
+  </AppDialog>
 </template>
 
 <style scoped>
-.day-dialog-card {
-  overflow: hidden;
-}
-
-.day-dialog-header {
+.title-content {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 18px 20px;
-  background: linear-gradient(135deg, #ffffff, #f8fafc);
 }
 
 .header-icon {
@@ -177,8 +113,20 @@ const emit = defineEmits<{
   min-width: 0;
 }
 
+.title-main {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.title-sub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #64748b;
+}
+
 .day-dialog-body {
-  padding: 14px;
   background: #ffffff;
 }
 

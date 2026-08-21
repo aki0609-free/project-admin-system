@@ -1,6 +1,20 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { z } from 'zod'
 import DayRuleField from '@/shared/components/form/base/components/form/DayRuleField.vue'
+import FormLayout from '@/shared/components/form/base/FormLayout.vue'
+import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
+import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { useBusinessSettingsPage } from '../composables/useBusinessSettingsPage'
+import type {
+  AnnualReportBackupSetting,
+  ExternalSupportLinkSetting,
+  ResignationChecklistItem,
+  ResignationMessage,
+} from '../types/businessSettingTypes'
 
 const {
   activeTab,
@@ -31,15 +45,129 @@ const {
 
 const dormitoryTypeLabel = (type: 'SINGLE_ROOM' | 'SHARED_ROOM') =>
   type === 'SINGLE_ROOM' ? '一人部屋' : '複数人部屋'
+
+const resignationMessageSchema = z.object({
+  dialogTitle: z.string().min(1, '必須です'),
+  guidanceMessage: z.string().min(1, '必須です'),
+  confirmationMessage: z.string().min(1, '必須です'),
+})
+
+const resignationMessageFields: GridFormFieldDef<ResignationMessage>[] = [
+  { key: 'dialogTitle', label: 'ダイアログタイトル', type: 'text', gridColumn: '1 / -1' },
+  {
+    key: 'guidanceMessage',
+    label: '案内文',
+    type: 'textarea',
+    rows: 4,
+    autoGrow: true,
+    gridColumn: '1 / -1',
+  },
+  {
+    key: 'confirmationMessage',
+    label: '警告見出し',
+    type: 'textarea',
+    rows: 2,
+    autoGrow: true,
+    gridColumn: '1 / -1',
+  },
+]
+
+const backupSettingSchema = z.object({
+  fiscalYearStartMonth: z.number().min(1).max(12),
+  graceDays: z.number().min(0).max(90),
+  startupEnabled: z.boolean(),
+  activeFlag: z.boolean(),
+})
+
+const backupSettingFields: GridFormFieldDef<AnnualReportBackupSetting>[] = [
+  {
+    key: 'fiscalYearStartMonth',
+    label: '会計年度の開始月',
+    type: 'select',
+    options: Array.from({ length: 12 }, (_, index) => ({
+      title: `${index + 1}月`,
+      value: index + 1,
+    })),
+  },
+  { key: 'graceDays', label: '年度終了後の猶予日数', type: 'number' },
+  { key: 'startupEnabled', label: '起動時に未処理年度を自動確認', type: 'checkbox' },
+  { key: 'activeFlag', label: '設定を有効にする', type: 'checkbox' },
+]
+
+const supportLinkSchema = z.object({
+  incidentReportUrl: z.string().url('URL形式で入力してください').or(z.literal('')),
+  manualUrl: z.string().url('URL形式で入力してください').or(z.literal('')),
+})
+
+const supportLinkFields: GridFormFieldDef<ExternalSupportLinkSetting>[] = [
+  {
+    key: 'incidentReportUrl',
+    label: 'インシデント報告のURL',
+    type: 'text',
+    gridColumn: '1 / -1',
+  },
+  {
+    key: 'manualUrl',
+    label: 'マニュアルのURL',
+    type: 'text',
+    gridColumn: '1 / -1',
+  },
+]
+
+const checklistSchema = z.object({
+  id: z.number(),
+  code: z.string().min(1, '必須です'),
+  name: z.string().min(1, '必須です'),
+  description: z.string().nullable(),
+  requiredFlag: z.boolean(),
+  displayOrder: z.number().min(0),
+  activeFlag: z.boolean(),
+})
+
+const checklistFields = computed<GridFormFieldDef<ResignationChecklistItem>[]>(() => [
+  {
+    key: 'code',
+    label: 'TODOコード',
+    type: 'text',
+    editable: editingChecklist.id <= 0,
+    gridColumn: '1 / span 2',
+  },
+  { key: 'name', label: '項目名', type: 'text', gridColumn: '3 / span 2' },
+  {
+    key: 'description',
+    label: '説明',
+    type: 'textarea',
+    rows: 3,
+    autoGrow: true,
+    gridColumn: '1 / -1',
+  },
+  { key: 'displayOrder', label: '表示順', type: 'number' },
+  { key: 'requiredFlag', label: '必須項目', type: 'checkbox' },
+  { key: 'activeFlag', label: '有効', type: 'checkbox' },
+])
+
+const checklistFooterItems = computed<ToolbarItem[]>(() => [
+  {
+    type: 'button',
+    label: '閉じる',
+    intent: 'secondary',
+    onClick: () => { checklistDialog.value = false },
+  },
+  {
+    type: 'button',
+    label: '保存',
+    intent: 'primary',
+    loading: loading.value,
+    onClick: saveChecklist,
+  },
+])
 </script>
 
 <template>
-  <div class="business-settings-page">
-    <header>
-      <h1>業務管理</h1>
-      <p>退職処理、給与締日、月次締め帳票、年度バックアップ、寮費、外部リンクを管理します。</p>
-    </header>
-
+  <ListDetailPageLayout
+    title="業務管理"
+    description="退職処理、給与締日、月次締め帳票、年度バックアップ、寮費、外部リンクを管理します。"
+  >
     <v-card :loading="loading" variant="outlined">
       <v-tabs v-model="activeTab" color="primary">
         <v-tab value="resignation">退職時設定</v-tab>
@@ -56,25 +184,9 @@ const dormitoryTypeLabel = (type: 'SINGLE_ROOM' | 'SHARED_ROOM') =>
         <v-window-item value="resignation">
           <section class="settings-section">
             <h2>退職ダイアログの文言</h2>
-            <v-text-field
-              v-model="message.dialogTitle"
-              label="ダイアログタイトル"
-              variant="outlined"
-            />
-            <v-textarea
-              v-model="message.guidanceMessage"
-              label="案内文"
-              variant="outlined"
-              rows="4"
-              auto-grow
-            />
-            <v-textarea
-              v-model="message.confirmationMessage"
-              label="警告見出し"
-              variant="outlined"
-              rows="2"
-              auto-grow
-            />
+            <FormLayout v-model="message" :schema="resignationMessageSchema">
+              <GridBasedForm v-model="message" :fields="resignationMessageFields" />
+            </FormLayout>
             <div class="actions">
               <v-btn color="primary" :loading="loading" @click="saveMessage">
                 文言を保存
@@ -193,25 +305,9 @@ const dormitoryTypeLabel = (type: 'SINGLE_ROOM' | 'SHARED_ROOM') =>
             <v-alert type="info" variant="tonal">
               指定日時に24時間稼働させる必要はありません。停止中だった場合は、次回起動時に未処理年度を確認します。
             </v-alert>
-            <v-select
-              v-model.number="annualReportBackup.fiscalYearStartMonth"
-              :items="Array.from({ length: 12 }, (_, index) => ({ title: `${index + 1}月`, value: index + 1 }))"
-              label="会計年度の開始月"
-              variant="outlined"
-            />
-            <v-text-field
-              v-model.number="annualReportBackup.graceDays"
-              label="年度終了後の猶予日数"
-              type="number"
-              min="0"
-              max="90"
-              suffix="日"
-              variant="outlined"
-            />
-            <div class="check-row">
-              <v-checkbox v-model="annualReportBackup.startupEnabled" label="起動時に未処理年度を自動確認" hide-details />
-              <v-checkbox v-model="annualReportBackup.activeFlag" label="設定を有効にする" hide-details />
-            </div>
+            <FormLayout v-model="annualReportBackup" :schema="backupSettingSchema">
+              <GridBasedForm v-model="annualReportBackup" :fields="backupSettingFields" />
+            </FormLayout>
             <div class="actions">
               <v-btn color="primary" :loading="loading" @click="saveBackupSetting">
                 バックアップ設定を保存
@@ -308,22 +404,9 @@ const dormitoryTypeLabel = (type: 'SINGLE_ROOM' | 'SHARED_ROOM') =>
             <v-alert type="info" variant="tonal">
               安全のためHTTPSのURLだけを登録できます。リンク先は新しいタブで開きます。
             </v-alert>
-            <v-text-field
-              v-model="externalSupportLinks.incidentReportUrl"
-              label="インシデント報告のURL"
-              placeholder="https://..."
-              type="url"
-              variant="outlined"
-              autocomplete="off"
-            />
-            <v-text-field
-              v-model="externalSupportLinks.manualUrl"
-              label="マニュアルのURL"
-              placeholder="https://..."
-              type="url"
-              variant="outlined"
-              autocomplete="off"
-            />
+            <FormLayout v-model="externalSupportLinks" :schema="supportLinkSchema">
+              <GridBasedForm v-model="externalSupportLinks" :fields="supportLinkFields" />
+            </FormLayout>
             <div class="actions">
               <v-btn color="primary" :loading="loading" @click="saveExternalSupportLinks">
                 その他設定を保存
@@ -334,38 +417,25 @@ const dormitoryTypeLabel = (type: 'SINGLE_ROOM' | 'SHARED_ROOM') =>
       </v-window>
     </v-card>
 
-    <v-dialog v-model="checklistDialog" max-width="680">
-      <v-card>
-        <v-card-title>{{ editingChecklist.id > 0 ? '退職TODO編集' : '退職TODO追加' }}</v-card-title>
-        <v-card-text class="dialog-form">
-          <v-text-field
-            v-model="editingChecklist.code"
-            label="TODOコード"
-            :readonly="editingChecklist.id > 0"
-            variant="outlined"
-          />
-          <v-text-field v-model="editingChecklist.name" label="項目名" variant="outlined" />
-          <v-textarea v-model="editingChecklist.description" label="説明" variant="outlined" rows="3" />
-          <v-text-field v-model.number="editingChecklist.displayOrder" label="表示順" type="number" min="0" variant="outlined" />
-          <div class="check-row">
-            <v-checkbox v-model="editingChecklist.requiredFlag" label="必須項目" hide-details />
-            <v-checkbox v-model="editingChecklist.activeFlag" label="有効" hide-details />
-          </div>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn @click="checklistDialog = false">閉じる</v-btn>
-          <v-btn color="primary" :loading="loading" @click="saveChecklist">保存</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </div>
+    <template #dialogs>
+      <AppDialog
+        v-model="checklistDialog"
+        :title="editingChecklist.id > 0 ? '退職TODO編集' : '退職TODO追加'"
+        size="md"
+        body-layout="stack"
+        :right-footer-items="checklistFooterItems"
+      >
+        <FormLayout v-model="editingChecklist" :schema="checklistSchema">
+          <GridBasedForm v-model="editingChecklist" :fields="checklistFields" />
+        </FormLayout>
+      </AppDialog>
+    </template>
+  </ListDetailPageLayout>
 </template>
 
 <style scoped>
-.business-settings-page { display: grid; gap: 18px; padding: 20px; }
-header h1, .settings-section h2 { margin: 0; }
-header p, .settings-section p { margin: 6px 0 0; color: #64748b; }
+.settings-section h2 { margin: 0; }
+.settings-section p { margin: 6px 0 0; color: #64748b; }
 .settings-section { display: grid; gap: 16px; padding: 24px; }
 .settings-section.narrow { max-width: 760px; }
 .section-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
@@ -373,7 +443,6 @@ header p, .settings-section p { margin: 6px 0 0; color: #64748b; }
 .row-actions { white-space: nowrap; text-align: right; }
 .item-name { font-weight: 700; }
 .item-description { margin-top: 2px; color: #64748b; font-size: 12px; }
-.dialog-form { display: grid; gap: 12px; padding-top: 18px !important; }
 .check-row { display: flex; gap: 24px; }
 .manual-backup-row { display: grid; grid-template-columns: minmax(220px, 1fr) auto; align-items: center; gap: 12px; }
 </style>

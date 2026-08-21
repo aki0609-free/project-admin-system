@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { NoticeResponse } from '@/features/dashboard/types/dashboardTypes'
 import NoticeContentViewer from '@/shared/components/notice/NoticeContentViewer.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 
-defineProps<{
+const props = defineProps<{
   modelValue: boolean
   notice: NoticeResponse | null
   showActions?: boolean
@@ -18,162 +21,120 @@ const emit = defineEmits<{
   edit: []
   delete: []
 }>()
+
+const close = () => emit('update:modelValue', false)
+
+const leftFooterItems = computed<ToolbarItem[]>(() =>
+  props.showActions && props.canDelete
+    ? [
+        {
+          type: 'button',
+          label: '削除',
+          intent: 'danger',
+          onClick: () => emit('delete'),
+        },
+      ]
+    : [],
+)
+
+const rightFooterItems = computed<ToolbarItem[]>(() => {
+  if (!props.showActions || (!props.canEdit && !props.canDelete)) return []
+
+  const items: ToolbarItem[] = [
+    {
+      type: 'button',
+      label: '閉じる',
+      intent: 'utility',
+      onClick: close,
+    },
+  ]
+
+  if (props.canEdit) {
+    items.push({
+      type: 'button',
+      label: '編集',
+      intent: 'primary',
+      onClick: () => emit('edit'),
+    })
+  }
+
+  return items
+})
 </script>
 
 <template>
-  <v-dialog
+  <AppDialog
     :model-value="modelValue"
-    width="680"
-    max-width="calc(100vw - 48px)"
-    scrollable
+    :title="notice?.title || 'お知らせ詳細'"
+    size="md"
+    :max-width="680"
+    closable
+    :left-footer-items="leftFooterItems"
+    :right-footer-items="rightFooterItems"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <v-card
-      v-if="notice"
-      rounded="xl"
-      class="notice-detail-card"
-    >
-      <div class="detail-header">
+    <template v-if="notice" #title>
+      <div class="title-content">
         <div
           class="detail-icon"
           :style="{ backgroundColor: `${getColor(notice)}22`, color: getColor(notice) }"
         >
-          <v-icon size="24">
-            mdi-bell-outline
-          </v-icon>
+          <v-icon size="24"> mdi-bell-outline </v-icon>
         </div>
 
         <div class="detail-title-area">
           <div class="detail-title-row">
-            <v-icon
-              v-if="notice.pinnedFlag"
-              size="18"
-              color="purple"
-            >
-              mdi-pin
-            </v-icon>
+            <v-icon v-if="notice.pinnedFlag" size="18" color="purple"> mdi-pin </v-icon>
 
-            <h3 class="detail-title">
-              {{ notice.title }}
-            </h3>
+            <h2 class="detail-title">{{ notice.title }}</h2>
           </div>
 
           <div class="detail-period">
             {{ formatPeriod(notice) }}
           </div>
         </div>
+      </div>
+    </template>
 
-        <v-spacer />
+    <template v-if="notice" #header-actions>
+      <v-chip :color="getColor(notice)" variant="tonal" size="small">
+        {{ getLabel(notice) }}
+      </v-chip>
+    </template>
 
-        <v-chip
-          :color="getColor(notice)"
-          variant="tonal"
-          size="small"
-        >
-          {{ getLabel(notice) }}
+    <div v-if="notice" class="detail-body">
+      <div class="meta-row">
+        <v-chip size="x-small" variant="tonal" color="blue-grey">
+          {{ notice.contentFormat }}
         </v-chip>
 
-        <v-btn
-          icon="mdi-close"
-          variant="text"
-          size="small"
-          @click="emit('update:modelValue', false)"
-        />
+        <v-chip size="x-small" variant="tonal" color="grey">
+          {{ notice.sourceType === 'AUTO' ? '自動生成' : '手動作成' }}
+        </v-chip>
+
+        <v-chip v-if="notice.sourceRuleCode" size="x-small" variant="tonal" color="indigo">
+          {{ notice.sourceRuleCode }}
+        </v-chip>
       </div>
 
-      <v-divider />
+      <div class="content-panel">
+        <div class="content-label">内容</div>
 
-      <v-card-text class="detail-body">
-        <div class="meta-row">
-          <v-chip
-            size="x-small"
-            variant="tonal"
-            color="blue-grey"
-          >
-            {{ notice.contentFormat }}
-          </v-chip>
-
-          <v-chip
-            size="x-small"
-            variant="tonal"
-            color="grey"
-          >
-            {{ notice.sourceType === 'AUTO' ? '自動生成' : '手動作成' }}
-          </v-chip>
-
-          <v-chip
-            v-if="notice.sourceRuleCode"
-            size="x-small"
-            variant="tonal"
-            color="indigo"
-          >
-            {{ notice.sourceRuleCode }}
-          </v-chip>
-        </div>
-
-        <div class="content-panel">
-          <div class="content-label">
-            内容
-          </div>
-
-          <NoticeContentViewer
-            :content="notice.content"
-            :content-format="notice.contentFormat"
-            empty-text="内容は登録されていません。"
-          />
-        </div>
-      </v-card-text>
-
-      <v-divider v-if="showActions && (canEdit || canDelete)" />
-
-      <v-card-actions
-        v-if="showActions && (canEdit || canDelete)"
-        class="detail-actions"
-      >
-        <v-btn
-          v-if="canDelete"
-          color="error"
-          variant="text"
-          prepend-icon="mdi-delete-outline"
-          @click="emit('delete')"
-        >
-          削除
-        </v-btn>
-
-        <v-spacer />
-
-        <v-btn
-          variant="text"
-          @click="emit('update:modelValue', false)"
-        >
-          閉じる
-        </v-btn>
-
-        <v-btn
-          v-if="canEdit"
-          color="primary"
-          variant="flat"
-          prepend-icon="mdi-pencil-outline"
-          @click="emit('edit')"
-        >
-          編集
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+        <NoticeContentViewer
+          :content="notice.content"
+          :content-format="notice.contentFormat"
+          empty-text="内容は登録されていません。"
+        />
+      </div>
+    </div>
+  </AppDialog>
 </template>
 
 <style scoped>
-.notice-detail-card {
-  overflow: hidden;
-}
-
-.detail-header {
+.title-content {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 18px 22px;
-  background: linear-gradient(135deg, #ffffff, #f8fafc);
 }
 
 .detail-icon {
@@ -216,7 +177,6 @@ const emit = defineEmits<{
 .detail-body {
   display: grid;
   gap: 14px;
-  padding: 18px 22px;
   background: #ffffff;
 }
 
@@ -239,10 +199,5 @@ const emit = defineEmits<{
   font-size: 12px;
   color: #2563eb;
   font-weight: 700;
-}
-
-.detail-actions {
-  padding: 12px 18px;
-  background: #ffffff;
 }
 </style>

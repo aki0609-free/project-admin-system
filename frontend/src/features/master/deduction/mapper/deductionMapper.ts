@@ -16,6 +16,7 @@ import type {
 } from '@/features/master/deduction/types/deductionApiTypes'
 
 import { deductionDetailViewTypeLabelMap } from '@/features/master/deduction/constants/deductionConstants'
+import { createDefaultPayrollItemPolicy } from '@/features/master/payrollitem/types/payrollItemPolicyTypes'
 
 function toStringValue(value: string | null | undefined): string {
   return value ?? ''
@@ -102,6 +103,9 @@ export function toDeductionMaster(
       displayOrder: response.displayOrder,
       enabled: response.enabled,
       note: response.note,
+      policy: response.policy
+        ? structuredClone(response.policy)
+        : createDefaultPayrollItemPolicy(),
     }
   }
 
@@ -126,6 +130,9 @@ export function toDeductionMaster(
     displayOrder: response.displayOrder,
     enabled: response.enabled ?? true,
     note: toStringValue(response.note),
+    policy: 'policy' in response && response.policy
+      ? structuredClone(response.policy)
+      : createDefaultPayrollItemPolicy(),
   }
 }
 
@@ -163,6 +170,7 @@ export function toDeductionSaveRequest(
     displayOrder: payload.displayOrder,
     enabled: payload.enabled,
     note: toNullableString(payload.note),
+    policy: structuredClone(payload.policy),
   }
 }
 

@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, reactive, ref, toRef, watch } from 'vue'
 import { z } from 'zod'
+import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import TabbedForm from '@/shared/components/form/tabbed_form/TabbedForm.vue'
 import type { AllowanceMaster } from '@/features/master/allowance/types/allowanceTypes'
 import { useAllowanceFormFields } from '@/features/master/allowance/composables/useAllowanceFormFields'
 import { usePayrollRuleOptionsQuery } from '@/features/master/payrollitem/api/usePayrollRuleOptionsQuery'
+import PayrollItemPolicyEditor from '@/features/master/payrollitem/components/PayrollItemPolicyEditor.vue'
+import { createDefaultPayrollItemPolicy } from '@/features/master/payrollitem/types/payrollItemPolicyTypes'
 
 const props = defineProps<{
   modelValue: boolean
@@ -22,8 +25,14 @@ const emit = defineEmits<{
 
 const dialogModel = computed({
   get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
+  set: (value) => emit('update:modelValue', value),
 })
+
+const activeTab = ref<'basic' | 'application'>('basic')
+const pageTabs = [
+  { label: '基本情報', value: 'basic' },
+  { label: '適用・連携設定', value: 'application' },
+]
 
 const form = reactive<AllowanceMaster>({
   id: -1,
@@ -44,12 +53,15 @@ const form = reactive<AllowanceMaster>({
   displayOrder: null,
   enabled: true,
   note: '',
+  policy: createDefaultPayrollItemPolicy(),
 })
 
 watch(
   () => props.modelValue,
-  opened => {
+  (opened) => {
     if (!opened) return
+
+    activeTab.value = 'basic'
 
     if (!props.allowance) {
       Object.assign(form, {
@@ -71,11 +83,20 @@ watch(
         displayOrder: null,
         enabled: true,
         note: '',
+        policy: createDefaultPayrollItemPolicy(),
       })
       return
     }
 
     Object.assign(form, props.allowance)
+  },
+)
+
+watch(
+  () => props.allowance,
+  (allowance) => {
+    if (!props.modelValue || !allowance || props.isCreateMode) return
+    Object.assign(form, allowance)
   },
 )
 
@@ -88,10 +109,12 @@ const { tabs: formTabs, fields } = useAllowanceFormFields({
   ruleOptions: ruleOptionsQuery.options,
 })
 
-const schema = z.object({
-  code: z.string().trim().min(1, '手当コードは必須です'),
-  name: z.string().trim().min(1, '手当名は必須です'),
-}).passthrough()
+const schema = z
+  .object({
+    code: z.string().trim().min(1, '手当コードは必須です'),
+    name: z.string().trim().min(1, '手当名は必須です'),
+  })
+  .passthrough()
 
 function handleClose() {
   dialogModel.value = false
@@ -143,34 +166,31 @@ function handleDelete() {
         <v-alert v-if="saveError" type="error" variant="tonal" class="mb-4">
           {{ saveError }}
         </v-alert>
-        <FormLayout v-model="form" :schema="schema">
-          <TabbedForm
-            v-model="form"
-            :tabs="[...formTabs]"
-            :fields="fields"
-          />
-        </FormLayout>
+        <TabLayout v-model="activeTab" :tabs="pageTabs">
+          <template #default="{ active }">
+            <FormLayout v-if="active === 'basic'" v-model="form" :schema="schema">
+              <TabbedForm v-model="form" :tabs="[...formTabs]" :fields="fields" />
+            </FormLayout>
+
+            <PayrollItemPolicyEditor
+              v-else-if="active === 'application'"
+              v-model="form.policy"
+              :can-manage="canManage"
+            />
+          </template>
+        </TabLayout>
       </v-card-text>
 
       <v-card-actions>
-        <v-btn
-          v-if="canManage && !isCreateMode"
-          color="error"
-          variant="text"
-          @click="handleDelete"
-        >
+        <v-btn v-if="canManage && !isCreateMode" color="error" variant="text" @click="handleDelete">
           手当削除
         </v-btn>
 
         <v-spacer />
 
-        <v-btn variant="text" @click="handleClose">
-          キャンセル
-        </v-btn>
+        <v-btn variant="text" @click="handleClose"> キャンセル </v-btn>
 
-        <v-btn v-if="canManage" color="primary" @click="handleSave">
-          保存
-        </v-btn>
+        <v-btn v-if="canManage" color="primary" @click="handleSave"> 保存 </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

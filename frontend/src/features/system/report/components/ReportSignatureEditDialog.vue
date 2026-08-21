@@ -5,7 +5,7 @@ import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedFor
 import { useReportSignatureDetailQuery } from '@/features/system/report/api/queries/useReportSignatureDetailQuery'
 import { useReportSignatureEditDialog } from '@/features/system/report/composables/useReportSignatureEditDialog'
 import ReportSignatureImageField from '@/features/system/report/components/ReportSignatureImageField.vue'
-import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -35,8 +35,8 @@ const {
   isEdit,
   fields,
   schema,
-  leftItems,
-  rightItems,
+  leftFooterItems,
+  rightFooterItems,
   onFileChange,
 } = useReportSignatureEditDialog(
   visible,
@@ -47,12 +47,14 @@ const {
 </script>
 
 <template>
-  <DetailDialogLayout
+  <AppDialog
     v-model="visible"
     :title="isEdit ? 'Signature編集' : 'Signature新規作成'"
+    size="lg"
     :max-width="960"
-    :left-footer-items="leftItems"
-    :right-footer-items="rightItems"
+    body-layout="stack"
+    :left-footer-items="leftFooterItems"
+    :right-footer-items="rightFooterItems"
   >
     <FormLayout
       v-model="formModel"
@@ -68,5 +70,5 @@ const {
       :preview-src="previewSrc"
       @file-change="onFileChange"
     />
-  </DetailDialogLayout>
+  </AppDialog>
 </template>

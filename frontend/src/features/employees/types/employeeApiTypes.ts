@@ -97,6 +97,7 @@ export type EmployeeDetailResponse = EmployeeListItemResponse & {
 }
 
 export type EmployeePayrollItemSetting = {
+  targetType: 'ALLOWANCE' | 'DEDUCTION'
   targetCode: string
   displayName: string
   enabled: boolean
@@ -110,6 +111,21 @@ export type EmployeePayrollItemSetting = {
   consumedQuantity: number
   remainingQuantity: number
   parameters: Record<string, string>
+  parameterDefinitions: EmployeePayrollItemParameterDefinition[]
+}
+
+export type EmployeePayrollItemParameterDefinition = {
+  key: string
+  displayName: string
+  inputType: 'TEXT' | 'NUMBER' | 'SELECT' | 'BOOLEAN' | 'DATE'
+  required: boolean
+  defaultValue: string | null
+  options: Array<{ label: string; value: string }>
+  ruleParameter: boolean
+  dailyDisplay: boolean
+  inputSourceOverride: boolean
+  ruleValueResolverKey?: string | null
+  displayOrder: number
 }
 
 export type EmployeePayrollProfileSaveRequest = {
@@ -166,6 +182,7 @@ export type EmployeeSaveRequest = {
   payrollProfile: EmployeePayrollProfileSaveRequest
   contract: EmployeeContractSaveRequest
   payrollItemSettings: Array<{
+    targetType: 'ALLOWANCE' | 'DEDUCTION'
     targetCode: string
     enabled: boolean
     parameters: Record<string, string>

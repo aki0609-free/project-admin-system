@@ -5,7 +5,7 @@ import NoticeBoardDetailDialog from '@/features/dashboard/components/NoticeBoard
 import NoticeBoardList from '@/features/dashboard/components/NoticeBoardList.vue'
 import NoticeBoardSummary from '@/features/dashboard/components/NoticeBoardSummary.vue'
 import SearchPanel from '@/shared/components/search/SearchPanel.vue'
-import MultiPositionGenericToolbar from '@/shared/components/toolbar/MultiPositionGenericToolbar.vue'
+import BatchPageToolbar from '@/shared/ui/toolbar/BatchPageToolbar.vue'
 
 const props = defineProps<{
   notices: NoticeResponse[]
@@ -56,7 +56,7 @@ const handleDelete = () => {
       </div>
     </div>
 
-    <MultiPositionGenericToolbar
+    <BatchPageToolbar
       :left-items="board.leftToolbarItems.value"
       :right-items="board.rightToolbarItems.value"
     />

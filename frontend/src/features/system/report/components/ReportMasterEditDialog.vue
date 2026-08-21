@@ -6,7 +6,7 @@ import ReportMasterBasicTab from '@/features/system/report/components/ReportMast
 import ReportMasterExecutionTab from '@/features/system/report/components/ReportMasterExecutionTab.vue'
 import ReportMasterParamsTab from '@/features/system/report/components/ReportMasterParamsTab.vue'
 import { useReportMasterEditDialog } from '@/features/system/report/composables/useReportMasterEditDialog'
-import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -33,8 +33,8 @@ const {
   schema,
   templateOptions,
   isEdit,
-  leftItems,
-  rightItems,
+  leftFooterItems,
+  rightFooterItems,
 } = useReportMasterEditDialog(
   visible,
   toRef(props, 'reportMasterId'),
@@ -43,12 +43,13 @@ const {
 </script>
 
 <template>
-  <DetailDialogLayout
+  <AppDialog
     v-model="visible"
     :title="isEdit ? '帳票定義編集' : '帳票定義新規作成'"
+    size="xl"
     :max-width="1280"
-    :left-footer-items="leftItems"
-    :right-footer-items="rightItems"
+    :left-footer-items="leftFooterItems"
+    :right-footer-items="rightFooterItems"
   >
     <FormLayout
       v-model="form"
@@ -77,5 +78,5 @@ const {
         </template>
       </TabLayout>
     </FormLayout>
-  </DetailDialogLayout>
+  </AppDialog>
 </template>

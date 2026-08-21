@@ -3,8 +3,8 @@ import { computed, ref, toRef, watch } from 'vue'
 
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 import DslEditor from '@/shared/components/editor/DslEditor.vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
-import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 
 import type { RuleMasterResponse } from '@/features/system/rule/types/ruleApiTypes'
 import type { RuleMasterForm } from '@/features/system/rule/types/ruleFormTypes'
@@ -87,11 +87,25 @@ watch(
   },
 )
 
-const footerItems = computed<ToolbarItem[]>(() => {
-  const items: ToolbarItem[] = [
+const leftFooterItems = computed<ToolbarItem[]>(() => {
+  if (!isEdit.value) return []
+
+  return [
+    {
+      type: 'button',
+      label: '削除',
+      color: 'error',
+      intent: 'danger',
+      onClick: () => emit('delete', form.value),
+    },
+  ]
+})
+
+const rightFooterItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: 'キャンセル',
+      intent: 'utility',
       onClick: () => {
         visible.value = false
       },
@@ -100,29 +114,20 @@ const footerItems = computed<ToolbarItem[]>(() => {
       type: 'button',
       label: isEdit.value ? '更新' : '作成',
       color: 'primary',
+      intent: 'primary',
       onClick: () => emit('save', form.value),
     },
-  ]
-
-  if (isEdit.value) {
-    items.unshift({
-      type: 'button',
-      label: '削除',
-      color: 'error',
-      onClick: () => emit('delete', form.value),
-    })
-  }
-
-  return items
-})
+])
 </script>
 
 <template>
-  <DetailDialogLayout
+  <AppDialog
     v-model="visible"
     :title="isEdit ? 'Rule編集' : 'Rule新規作成'"
-    max-width="1800"
-    :footer-items="footerItems"
+    size="xl"
+    :max-width="1800"
+    :left-footer-items="leftFooterItems"
+    :right-footer-items="rightFooterItems"
   >
     <div class="rule-editor-layout">
       <aside class="rule-side">
@@ -254,7 +259,7 @@ const footerItems = computed<ToolbarItem[]>(() => {
         </TabLayout>
       </main>
     </div>
-  </DetailDialogLayout>
+  </AppDialog>
 </template>
 
 <style scoped>

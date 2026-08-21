@@ -1,5 +1,5 @@
 import { computed, reactive, watch, type Ref } from 'vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { MailRecipientGroupResponse } from '@/features/system/mail/types/mailApiTypes'
 import type { MailRecipientGroupForm } from '@/features/system/mail/types/mailFormTypes'
 import {
@@ -107,42 +107,47 @@ export const useMailRecipientGroupEditDialog = (
     visible.value = false
   }
 
-  const footerItems = computed<ToolbarItem[]>(() => {
-    const items: ToolbarItem[] = []
+  const leftFooterItems = computed<ToolbarItem[]>(() => {
+    if (!isEdit.value) return []
 
-    if (isEdit.value) {
-      items.push({
+    return [
+      {
         type: 'button',
         label: '削除',
         color: 'error',
+        intent: 'danger',
         onClick: remove,
-      })
-    }
+      },
+    ]
+  })
 
-    items.push(
+  const rightFooterItems = computed<ToolbarItem[]>(() => [
       {
         type: 'button',
         label: '閉じる',
         color: 'secondary',
+        intent: 'utility',
         onClick: close,
       },
       {
         type: 'button',
         label: '保存',
         color: 'primary',
+        intent: 'primary',
         onClick: save,
       },
-    )
+  ])
 
-    return items
-  })
+  const recipientLeftToolbarItems = computed<ToolbarItem[]>(() => [
+    { type: 'button', label: '追加', color: 'primary', intent: 'primary', onClick: addRecipient },
+  ])
 
-  const recipientToolbarItems = computed<ToolbarItem[]>(() => [
-    { type: 'button', label: '追加', color: 'primary', onClick: addRecipient },
+  const recipientRightToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: '削除',
       color: 'error',
+      intent: 'danger',
       disabled: selectedRecipient.value == null,
       onClick: removeRecipient,
     },
@@ -156,8 +161,10 @@ export const useMailRecipientGroupEditDialog = (
     recipientFields: mailRecipientFields,
     schema: mailRecipientGroupSchema,
     recipientSchema: mailRecipientSchema,
-    footerItems,
-    recipientToolbarItems,
+    leftFooterItems,
+    rightFooterItems,
+    recipientLeftToolbarItems,
+    recipientRightToolbarItems,
     selectRecipient,
   }
 }

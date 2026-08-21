@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import CardLayout from '@/shared/components/layout/card_layout/CardLayout.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
-import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import PaymentConfirmDialog from '../components/PaymentConfirmDialog.vue'
 import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { useCustomersQuery } from '../api/useCustomersQuery'
 import { useCustomerTransactionsQuery } from '../api/useCustomerTransactionQuery'
 import { useConfirmCustomerPaymentMutation } from '../api/useConfirmCustomerPaymentMutation'
@@ -54,7 +53,7 @@ const toolbarItems = computed<ToolbarItem[]>(() => [
   {
     type: 'button',
     label: '再読込',
-    color: 'primary',
+    intent: 'utility',
     onClick: () => transactionsQuery.refetch(),
   },
 ])
@@ -78,7 +77,11 @@ async function handleConfirmPayment(payload: CustomerPaymentConfirmPayload) {
 </script>
 
 <template>
-  <CardLayout title="取引管理" subtitle="顧客別の請求・入金状況">
+  <ListDetailPageLayout
+    title="取引管理"
+    description="顧客別の請求・入金状況を確認し、入金を確定します。"
+    :right-toolbar-items="toolbarItems"
+  >
     <div class="d-flex flex-column ga-4">
       <div class="customer-transaction-controls">
         <v-select
@@ -92,8 +95,6 @@ async function handleConfirmPayment(payload: CustomerPaymentConfirmPayload) {
           clearable
           style="max-width: 360px"
         />
-
-        <AppToolbar :right-items="toolbarItems" class="control-toolbar" />
       </div>
 
       <v-alert v-if="transactionsQuery.isError.value" type="error" variant="tonal">
@@ -110,13 +111,16 @@ async function handleConfirmPayment(payload: CustomerPaymentConfirmPayload) {
         @row-click="handleRowClick"
       />
 
-      <PaymentConfirmDialog
-        v-model="paymentDialog"
-        :transaction="selectedTransaction"
-        @confirm="handleConfirmPayment"
-      />
     </div>
-  </CardLayout>
+
+    <template #dialogs>
+      <PaymentConfirmDialog
+          v-model="paymentDialog"
+          :transaction="selectedTransaction"
+          @confirm="handleConfirmPayment"
+        />
+    </template>
+  </ListDetailPageLayout>
 </template>
 
 <style scoped>
@@ -125,10 +129,6 @@ async function handleConfirmPayment(payload: CustomerPaymentConfirmPayload) {
   grid-template-columns: minmax(240px, 360px) minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-}
-
-.control-toolbar {
-  min-width: 0;
 }
 
 @media (max-width: 720px) {

@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import type { ToolbarItem } from '@/toolbox/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { useMailTemplatesQuery } from '@/features/system/mail/api/queries/useMailTemplatesQuery'
 import { useMailTemplateDetailQuery } from '@/features/system/mail/api/queries/useMailTemplateDetailQuery'
 import { useCreateMailTemplateMutation } from '@/features/system/mail/api/mutations/useCreateMailTemplateMutation'
@@ -72,11 +72,12 @@ export const useMailTemplateTab = () => {
     close()
   }
 
-  const toolbarItems = computed<ToolbarItem[]>(() => [
+  const leftToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: '新規追加',
       color: 'primary',
+      intent: 'primary',
       disabled: busy.value,
       onClick: openCreate,
     },
@@ -86,7 +87,7 @@ export const useMailTemplateTab = () => {
     templatesQuery,
     visible,
     dialogTemplate,
-    toolbarItems,
+    leftToolbarItems,
     openEdit,
     save,
     remove,

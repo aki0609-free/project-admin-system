@@ -4,7 +4,8 @@ import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
 import type { ImportTargetResponse } from '@/features/system/import/types/importApiTypes'
 import type { ImportTargetDialogForm } from '@/features/system/import/types/importFormTypes'
 import { useImportTargetEditDialog } from '@/features/system/import/composables/useImportTargetEditDialog'
@@ -35,7 +36,8 @@ const {
   tabs,
   basicFields,
   schema,
-  footerItems,
+  leftFooterItems,
+  rightFooterItems,
   catalogs,
   catalogLoading,
   catalogError,
@@ -53,7 +55,8 @@ const {
   selectedColumn,
   fields: columnFields,
   schema: columnSchema,
-  toolbarItems: columnToolbarItems,
+  leftToolbarItems: columnLeftToolbarItems,
+  rightToolbarItems: columnRightToolbarItems,
   selectRow: selectColumnRow,
 } = useImportColumnEditor(
   formModel,
@@ -62,140 +65,108 @@ const {
 </script>
 
 <template>
-  <v-dialog
+  <AppDialog
     v-model="visible"
-    max-width="1280"
-    scrollable
-    persistent
+    :title="isEdit ? 'インポート定義編集' : 'インポート定義新規作成'"
+    size="xl"
+    :max-width="1280"
+    :left-footer-items="leftFooterItems"
+    :right-footer-items="rightFooterItems"
   >
-    <v-card class="dialog-card">
-      <v-card-title class="dialog-title">
-        {{ isEdit ? 'インポート定義編集' : 'インポート定義新規作成' }}
-      </v-card-title>
+    <TabLayout v-model="activeTab" :tabs="tabs">
+      <template #default="{ active }">
+        <div v-if="active === 'basic'" class="tab-page">
+          <v-progress-linear
+            v-if="catalogLoading"
+            indeterminate
+          />
 
-      <v-divider />
+          <v-alert
+            v-if="catalogError"
+            type="error"
+            variant="tonal"
+          >
+            取込先カタログを取得できませんでした。
+          </v-alert>
 
-      <v-card-text class="dialog-body">
-        <TabLayout v-model="activeTab" :tabs="tabs">
-          <template #default="{ active }">
-            <div v-if="active === 'basic'" class="tab-page">
-              <v-progress-linear
-                v-if="catalogLoading"
-                indeterminate
-              />
+          <v-alert
+            v-else-if="
+              !catalogLoading
+              && catalogs.length === 0
+            "
+            type="warning"
+            variant="tonal"
+          >
+            利用可能な取込先カタログがありません。
+          </v-alert>
 
-              <v-alert
-                v-if="catalogError"
-                type="error"
-                variant="tonal"
-              >
-                取込先カタログを取得できませんでした。
-              </v-alert>
+          <FormLayout v-model="formModel" :schema="schema">
+            <GridBasedForm
+              v-model="formModel"
+              :fields="basicFields"
+            />
+          </FormLayout>
+        </div>
 
-              <v-alert
-                v-else-if="
-                  !catalogLoading
-                  && catalogs.length === 0
-                "
-                type="warning"
-                variant="tonal"
-              >
-                利用可能な取込先カタログがありません。
-              </v-alert>
+        <div v-else-if="active === 'columns'" class="column-tab-page">
+          <AppToolbar
+            :left-items="columnLeftToolbarItems"
+            :right-items="columnRightToolbarItems"
+            surface="plain"
+          />
 
-              <FormLayout v-model="formModel" :schema="schema">
-                <GridBasedForm
-                  v-model="formModel"
-                  :fields="basicFields"
-                />
-              </FormLayout>
-
-              <v-textarea
-                v-model="formModel.description"
-                label="description"
-                variant="outlined"
-                rows="4"
-                auto-grow
-                hide-details
+          <div class="column-pane">
+            <div class="column-pane-left">
+              <SimpleTable
+                table-key="import-target-column-editor"
+                item-key="id"
+                :items="columnRows"
+                :columns="columnTableColumns"
+                :filter-rules="columnFilterRules"
+                enable-row-click
+                @row-click="selectColumnRow"
               />
             </div>
 
-            <div v-else-if="active === 'columns'" class="column-tab-page">
-              <GenericToolbar :items="columnToolbarItems" />
+            <div class="column-pane-right">
+              <template v-if="selectedColumn">
+                <div class="detail-header">
+                  <div>
+                    <p class="detail-eyebrow">COLUMN DETAIL</p>
+                    <h5 class="detail-title">選択中Column</h5>
+                  </div>
 
-              <div class="column-pane">
-                <div class="column-pane-left">
-                  <SimpleTable
-                    table-key="import-target-column-editor"
-                    item-key="id"
-                    :items="columnRows"
-                    :columns="columnTableColumns"
-                    :filter-rules="columnFilterRules"
-                    enable-row-click
-                    @row-click="selectColumnRow"
-                  />
-                </div>
-
-                <div class="column-pane-right">
-                  <template v-if="selectedColumn">
-                    <div class="detail-header">
-                      <div>
-                        <p class="detail-eyebrow">COLUMN DETAIL</p>
-                        <h5 class="detail-title">選択中Column</h5>
-                      </div>
-
-                      <div class="detail-chip">
-                        {{ selectedColumn.columnName || '未設定' }}
-                      </div>
-                    </div>
-
-                    <div class="detail-body">
-                      <FormLayout
-                        v-model="selectedColumn"
-                        :schema="columnSchema"
-                      >
-                        <GridBasedForm
-                          v-model="selectedColumn"
-                          :fields="columnFields"
-                        />
-                      </FormLayout>
-                    </div>
-                  </template>
-
-                  <div v-else class="column-empty">
-                    左の一覧から Column を選択してください。<br>
-                    新規追加する場合は「追加」を押してください。
+                  <div class="detail-chip">
+                    {{ selectedColumn.columnName || '未設定' }}
                   </div>
                 </div>
+
+                <div class="detail-body">
+                  <FormLayout
+                    v-model="selectedColumn"
+                    :schema="columnSchema"
+                  >
+                    <GridBasedForm
+                      v-model="selectedColumn"
+                      :fields="columnFields"
+                    />
+                  </FormLayout>
+                </div>
+              </template>
+
+              <div v-else class="column-empty">
+                左の一覧から Column を選択してください。<br>
+                新規追加する場合は「追加」を押してください。
               </div>
             </div>
-          </template>
-        </TabLayout>
-      </v-card-text>
-
-      <v-divider />
-
-      <div class="dialog-footer">
-        <GenericToolbar :items="footerItems" />
-      </div>
-    </v-card>
-  </v-dialog>
+          </div>
+        </div>
+      </template>
+    </TabLayout>
+  </AppDialog>
 </template>
 
 <style scoped>
-.dialog-card {
-  max-height: calc(100vh - 48px);
-}
-
-.dialog-title {
-  padding: 16px 20px;
-  font-weight: 700;
-}
-
-.dialog-body {
-  padding: 16px 20px;
-}
-
 .tab-page {
   display: grid;
   gap: 16px;
@@ -278,10 +249,6 @@ const {
   text-align: center;
   line-height: 1.8;
   padding: 24px;
-}
-
-.dialog-footer {
-  border-top: 1px solid #e5e7eb;
 }
 
 @media (max-width: 1100px) {

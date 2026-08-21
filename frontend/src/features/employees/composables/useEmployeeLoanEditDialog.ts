@@ -1,7 +1,7 @@
 import { computed, reactive, watch, type Ref } from 'vue'
 import { z } from 'zod'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { EmployeeListItemResponse } from '../types/employeeApiTypes'
 import type { EmployeeLoanForm } from '../types/employeeLoanSavingFormTypes'
 import type { EmployeeLoanResponse } from '../types/employeeWorkApiTypes'
@@ -115,6 +115,14 @@ export const useEmployeeLoanEditDialog = (
       type: 'checkbox',
       gridColumn: '4 / span 1',
       width: 120,
+    },
+    {
+      key: 'approvalComment',
+      label: '承認コメント',
+      type: 'textarea',
+      rows: 4,
+      autoGrow: true,
+      gridColumn: '1 / -1',
     },
   ])
 

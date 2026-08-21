@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
 import ImportTargetTable from '@/features/system/import/components/ImportTargetTable.vue'
 import ImportTargetEditDialog from '@/features/system/import/components/ImportTargetEditDialog.vue'
 import { useImportTargetDefinitionTab } from '@/features/system/import/composables/useImportTargetDefinitionTab'
@@ -7,7 +7,7 @@ import { useImportTargetDefinitionTab } from '@/features/system/import/composabl
 const {
   targetsQuery,
   dialog,
-  toolbarItems,
+  leftToolbarItems,
   onSave,
   onDelete,
 } = useImportTargetDefinitionTab()
@@ -24,7 +24,7 @@ const {
       </div>
     </div>
 
-    <GenericToolbar :items="toolbarItems" />
+    <AppToolbar :left-items="leftToolbarItems" />
 
     <ImportTargetTable
       :items="targetsQuery.targets.value"

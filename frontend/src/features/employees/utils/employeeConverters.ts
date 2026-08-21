@@ -7,7 +7,6 @@ const blankToNull = (value: string): string | null =>
 export const toEmployeeSaveRequest = (
   form: EmployeeForm,
 ): EmployeeSaveRequest => {
- const dormitory = form.payrollItemSettings.find(item => item.targetCode === 'DORMITORY_FEE')
  return ({
   employeeCode: form.employeeCode,
   employeeName: form.employeeName,
@@ -22,12 +21,12 @@ export const toEmployeeSaveRequest = (
   email: blankToNull(form.email),
   postalCode: blankToNull(form.postalCode),
   address: blankToNull(form.address),
-  dormitoryFlag: dormitory?.enabled ?? false,
-  dormitoryType: dormitory?.enabled
-    ? (dormitory.parameters.dormitoryType as EmployeeSaveRequest['dormitoryType']) || null
-    : null,
+  // 旧従業員列はバックエンドの移行互換層だけが更新する。
+  dormitoryFlag: form.dormitoryFlag,
+  dormitoryType: form.dormitoryType,
   activeFlag: form.activeFlag,
   payrollItemSettings: form.payrollItemSettings.map(item => ({
+    targetType: item.targetType,
     targetCode: item.targetCode,
     enabled: item.enabled,
     parameters: { ...item.parameters },

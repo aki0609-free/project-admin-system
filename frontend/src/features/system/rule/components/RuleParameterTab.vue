@@ -3,8 +3,8 @@
 import { computed, ref } from 'vue'
 
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type {
   SimpleTableColumnDef,
   SimpleTableEditableRow,
@@ -73,21 +73,23 @@ const selectRow = (row: RuleParameterRow) => {
     props.form.parameters.find(item => item.id === row.id) ?? null
 }
 
-const toolbarItems = computed<ToolbarItem[]>(() => [
+const leftToolbarItems = computed<ToolbarItem[]>(() => [
   {
     type: 'button',
     label: '追加',
     color: 'primary',
-    icon: 'mdi-plus',
+    intent: 'primary',
     onClick: addParameter,
   },
+])
+
+const rightToolbarItems = computed<ToolbarItem[]>(() => [
   {
     type: 'button',
     label: '削除',
     color: 'error',
-    variant: 'text',
+    intent: 'danger',
     disabled: !selectedParameter.value,
-    icon: 'mdi-delete-outline',
     onClick: removeParameter,
   },
 ])
@@ -95,7 +97,11 @@ const toolbarItems = computed<ToolbarItem[]>(() => [
 
 <template>
   <div class="parameter-tab">
-    <GenericToolbar :items="toolbarItems" />
+    <AppToolbar
+      :left-items="leftToolbarItems"
+      :right-items="rightToolbarItems"
+      surface="plain"
+    />
 
     <div class="parameter-layout">
       <SimpleTable

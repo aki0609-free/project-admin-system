@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import type { ZodObject } from 'zod'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
-import DetailPanelLayout from '@/toolbox/panel/DetailPanelLayout.vue'
+import DetailPanelLayout from '@/shared/components/layout/detail_panel/DetailPanelLayout.vue'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
 import type { MailRecipientForm } from '@/features/system/mail/types/mailFormTypes'
 
@@ -19,7 +19,7 @@ const emit = defineEmits<{
 
 const recipient = computed({
   get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
+  set: (value) => emit('update:modelValue', value),
 })
 </script>
 
@@ -31,15 +31,8 @@ const recipient = computed({
     :chip="recipient?.recipientType ?? null"
     empty-message="左の一覧から宛先を選択してください。新規追加する場合は「追加」を押してください。"
   >
-    <FormLayout
-      v-if="recipient"
-      v-model="recipient"
-      :schema="schema"
-    >
-      <GridBasedForm
-        v-model="recipient"
-        :fields="fields"
-      />
+    <FormLayout v-if="recipient" v-model="recipient" :schema="schema">
+      <GridBasedForm v-model="recipient" :fields="fields" />
     </FormLayout>
   </DetailPanelLayout>
 </template>

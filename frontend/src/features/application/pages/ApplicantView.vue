@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import CardLayout from '@/shared/components/layout/card_layout/CardLayout.vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 
 import ApplicantTableTab from '@/features/application/components/applicant/ApplicantTableTab.vue'
 import ApplicantChartTab from '@/features/application/components/applicant/ApplicantChartTab.vue'
@@ -40,7 +40,10 @@ const handleDeleteApplicant = async (id: number) => {
 </script>
 
 <template>
-  <CardLayout title="応募者管理">
+  <ListDetailPageLayout
+    title="応募者管理"
+    description="応募者情報、応募経路、採用状況を管理します。"
+  >
     <TabLayout v-model="activeTab" :tabs="tabs">
       <template #default="{ active }">
         <ApplicantTableTab
@@ -63,5 +66,5 @@ const handleDeleteApplicant = async (id: number) => {
         />
       </template>
     </TabLayout>
-  </CardLayout>
+  </ListDetailPageLayout>
 </template>

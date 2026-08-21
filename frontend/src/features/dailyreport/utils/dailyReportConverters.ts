@@ -165,10 +165,29 @@ export const toDailyReportSaveRequest = (
           allowanceName:
             item.name,
 
+          calculatedAmount:
+            Number(item.calculatedAmount ?? item.amount ?? 0),
+
           amount:
             Number(
               item.amount ?? 0,
             ),
+
+          manualOverride:
+            Boolean(item.manualOverride),
+
+          overrideReason:
+            item.manualOverride
+              ? blankToNull(item.overrideReason)
+              : null,
+
+          quantity:
+            item.balanceTracked
+              ? Number(item.quantity ?? 0)
+              : null,
+
+          balanceUnit:
+            item.balanceUnit,
         }),
       ),
 

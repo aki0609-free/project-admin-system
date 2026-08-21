@@ -130,4 +130,27 @@ const hasToolbar = computed(
   border-radius: 12px;
   background: #ffffff;
 }
+
+@media (max-width: 720px) {
+  .list-detail-page-template {
+    gap: 12px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .page-description {
+    font-size: 13px;
+  }
+
+  .page-content.with-padding {
+    padding: 12px;
+  }
+}
 </style>

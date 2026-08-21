@@ -6,6 +6,8 @@ import type {
   SimpleTableColumnDef,
 } from '@/shared/components/table/simple_table/types/item/types'
 import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 
 import { useImportErrorRowsQuery } from '@/features/system/import/api/useImportErrorRowsQuery'
 import type { ImportErrorRowResponse } from '@/features/system/import/types/importApiTypes'
@@ -27,6 +29,18 @@ const visible = computed({
 const historyId = computed(() => props.historyId)
 
 const query = useImportErrorRowsQuery(historyId)
+
+const rightFooterItems = computed<ToolbarItem[]>(() => [
+  {
+    id: 'close',
+    type: 'button',
+    label: '閉じる',
+    intent: 'secondary',
+    onClick: () => {
+      visible.value = false
+    },
+  },
+])
 
 const columns = computed(() => {
   const defs: SimpleTableColumnDef<ImportErrorRowResponse>[] = [
@@ -76,49 +90,19 @@ const filterRules = computed(() =>
 </script>
 
 <template>
-  <v-dialog
+  <AppDialog
     v-model="visible"
-    max-width="1200"
-    scrollable
+    title="インポートエラー行"
+    size="xl"
+    :max-width="1200"
+    :right-footer-items="rightFooterItems"
   >
-    <v-card rounded="xl">
-      <v-card-title class="dialog-title">
-        Import Error Rows
-      </v-card-title>
-
-      <v-divider />
-
-      <v-card-text class="dialog-body">
-        <SimpleTable
-          table-key="import-error-rows"
-          item-key="id"
-          :items="query.errors.value"
-          :columns="columns"
-          :filter-rules="filterRules"
-        />
-      </v-card-text>
-
-      <v-divider />
-
-      <v-card-actions class="justify-end">
-        <v-btn
-          variant="text"
-          @click="visible = false"
-        >
-          閉じる
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+    <SimpleTable
+      table-key="import-error-rows"
+      item-key="id"
+      :items="query.errors.value"
+      :columns="columns"
+      :filter-rules="filterRules"
+    />
+  </AppDialog>
 </template>
-
-<style scoped>
-.dialog-title {
-  font-weight: 700;
-  padding: 16px 20px;
-}
-
-.dialog-body {
-  padding: 16px 20px;
-}
-</style>

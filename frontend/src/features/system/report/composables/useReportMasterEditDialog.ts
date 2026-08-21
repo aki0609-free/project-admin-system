@@ -1,6 +1,6 @@
 import { computed, ref, watch, type Ref } from 'vue'
 import { z } from 'zod'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { useReportMasterDetailQuery } from '@/features/system/report/api/queries/useReportMasterDetailQuery'
 import { useCreateReportMasterMutation } from '@/features/system/report/api/mutations/useCreateReportMasterMutation'
 import { useUpdateReportMasterMutation } from '@/features/system/report/api/mutations/useUpdateReportMasterMutation'
@@ -135,37 +135,33 @@ export const useReportMasterEditDialog = (
     close()
   }
 
-  const leftItems = computed<ToolbarItem[]>(() => {
-    const items: ToolbarItem[] = []
-
-    if (isEdit.value) {
-      items.push({
+  const leftFooterItems = computed<ToolbarItem[]>(() =>
+    isEdit.value
+      ? [{
         type: 'button',
         label: '削除',
-        color: 'error',
+        intent: 'danger',
         disabled: busy.value,
         onClick: remove,
-      })
-    }
+      }]
+      : [],
+  )
 
-    items.push({
-      type: 'button',
-      label: busy.value ? '保存中...' : '保存',
-      color: 'primary',
-      disabled: busy.value,
-      onClick: save,
-    })
-
-    return items
-  })
-
-  const rightItems = computed<ToolbarItem[]>(() => [
+  const rightFooterItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
       label: '閉じる',
-      color: 'secondary',
+      intent: 'secondary',
       disabled: busy.value,
       onClick: close,
+    },
+    {
+      type: 'button',
+      label: '保存',
+      intent: 'primary',
+      loading: busy.value,
+      disabled: busy.value,
+      onClick: save,
     },
   ])
 
@@ -177,8 +173,8 @@ export const useReportMasterEditDialog = (
     templateOptions,
     isEdit,
     busy,
-    leftItems,
-    rightItems,
+    leftFooterItems,
+    rightFooterItems,
     save,
     remove,
   }

@@ -1,4 +1,5 @@
 import type { SimpleTableEditableRow } from '@/shared/components/table/simple_table/types/item/types'
+import type { PayrollItemPolicy } from '@/features/master/payrollitem/types/payrollItemPolicyTypes'
 
 export type DeductionType =
   | 'LEGAL'
@@ -48,6 +49,7 @@ export type DeductionMaster = {
   displayOrder: number | null
   enabled: boolean
   note: string
+  policy: PayrollItemPolicy
 }
 
 export type DeductionListItem = DeductionMaster & {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
 
-import DetailDialogLayout from '@/toolbox/dialog/DetailDialogLayout.vue'
+import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
 
@@ -32,7 +32,8 @@ const {
   isEdit,
   fields,
   schema,
-  footerItems,
+  leftFooterItems,
+  rightFooterItems,
 } = useNoticeRuleEditDialog(
   visible,
   toRef(props, 'rule'),
@@ -55,11 +56,14 @@ const previewContent = computed(() =>
 </script>
 
 <template>
-  <DetailDialogLayout
+  <AppDialog
     v-model="visible"
-    :title="isEdit ? 'NoticeRule編集' : 'NoticeRule新規作成'"
-    max-width="1180"
-    :footer-items="footerItems"
+    :title="isEdit ? 'お知らせルール編集' : 'お知らせルール新規作成'"
+    size="lg"
+    :max-width="1180"
+    body-layout="stack"
+    :left-footer-items="leftFooterItems"
+    :right-footer-items="rightFooterItems"
   >
     <FormLayout
       v-model="formModel"
@@ -109,13 +113,12 @@ const previewContent = computed(() =>
         :content-format="formModel.noticeContentFormat"
       />
     </div>
-  </DetailDialogLayout>
+  </AppDialog>
 </template>
 
 <style scoped>
 .template-block {
   display: grid;
   gap: 12px;
-  margin-top: 20px;
 }
 </style>

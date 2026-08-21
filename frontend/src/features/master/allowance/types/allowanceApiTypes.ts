@@ -30,6 +30,7 @@ export type AllowanceListItemResponse = {
 
 export type AllowanceDetailResponse = AllowanceListItemResponse & {
   details: Record<string, BaseAllowanceDetailResponse[]>
+  policy: PayrollItemPolicy
 }
 
 export type AllowanceSaveRequest = {
@@ -52,4 +53,6 @@ export type AllowanceSaveRequest = {
   displayOrder: number | null
   enabled: boolean
   note: string | null
+  policy: PayrollItemPolicy
 }
+import type { PayrollItemPolicy } from '@/features/master/payrollitem/types/payrollItemPolicyTypes'

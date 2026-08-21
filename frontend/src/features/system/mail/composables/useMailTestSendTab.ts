@@ -1,4 +1,5 @@
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { useSendTestMailMutation } from '@/features/system/mail/api/mutations/useSendTestMailMutation'
 import { toMailTestSendRequest } from '@/features/system/mail/utils/mailTestSendConverters'
 import type { MailSendResult } from '@/features/system/mail/types/mailApiTypes'
@@ -26,6 +27,18 @@ export const useMailTestSendTab = () => {
     alert(result.message)
   }
 
+  const leftToolbarItems = computed<ToolbarItem[]>(() => [
+    {
+      type: 'button',
+      label: sendMutation.isPending.value ? '送信中...' : 'テスト送信',
+      color: 'primary',
+      intent: 'primary',
+      loading: sendMutation.isPending.value,
+      disabled: sendMutation.isPending.value,
+      onClick: send,
+    },
+  ])
+
   return {
     formModel,
     fields: mailTestSendFields,
@@ -33,5 +46,6 @@ export const useMailTestSendTab = () => {
     sendMutation,
     lastMessage,
     send,
+    leftToolbarItems,
   }
 }

@@ -1,7 +1,7 @@
 import { computed, reactive, ref, watch, type Ref } from 'vue'
 import { z } from 'zod'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { EmployeeDetailResponse } from '../types/employeeApiTypes'
 import type {
   EmployeeContractForm,
@@ -11,37 +11,28 @@ import type {
 import { createEmptyEmployeeForm, toEmployeeForm } from '../utils/employeeFormFactory'
 import { formatZipCode } from '@/shared/utils/BusinessUtils'
 
-export const employeeBasicSchema = z
-  .object({
-    id: z.number(),
-    employeeCode: z.string().min(1, '必須です'),
-    employeeName: z.string().min(1, '必須です'),
-    employeeNameKana: z.string(),
-    gender: z.enum(['MALE', 'FEMALE', 'OTHER']).nullable(),
-    birthDate: z.string(),
-    hireDate: z.string(),
-    resignDate: z.string(),
-    employmentType: z.enum(['FULL_TIME', 'CONTRACT', 'PART_TIME', 'TEMPORARY', 'DAILY_WORKER']),
-    employmentStatus: z.enum(['ACTIVE', 'LEAVE', 'RESIGNED']),
-    phone: z.string(),
-    email: z.string().email('メールアドレスの形式が不正です。').or(z.literal('')),
-    postalCode: z.string(),
-    address: z.string(),
-    dormitoryFlag: z.boolean(),
-    dormitoryType: z.enum(['SINGLE_ROOM', 'SHARED_ROOM']).nullable(),
-    activeFlag: z.boolean(),
-    payrollProfile: z.any(),
-    contract: z.any(),
-  })
-  .superRefine((value, context) => {
-    if (value.dormitoryFlag && value.dormitoryType == null) {
-      context.addIssue({
-        code: 'custom',
-        path: ['dormitoryType'],
-        message: '入寮ありの場合は寮タイプを選択してください。',
-      })
-    }
-  })
+export const employeeBasicSchema = z.object({
+  id: z.number(),
+  employeeCode: z.string().min(1, '必須です'),
+  employeeName: z.string().min(1, '必須です'),
+  employeeNameKana: z.string(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).nullable(),
+  birthDate: z.string(),
+  hireDate: z.string(),
+  resignDate: z.string(),
+  employmentType: z.enum(['FULL_TIME', 'CONTRACT', 'PART_TIME', 'TEMPORARY', 'DAILY_WORKER']),
+  employmentStatus: z.enum(['ACTIVE', 'LEAVE', 'RESIGNED']),
+  phone: z.string(),
+  email: z.string().email('メールアドレスの形式が不正です。').or(z.literal('')),
+  postalCode: z.string(),
+  address: z.string(),
+  // 旧API互換項目。画面の適用設定・検証は payrollItemSettings 側で行う。
+  dormitoryFlag: z.boolean(),
+  dormitoryType: z.enum(['SINGLE_ROOM', 'SHARED_ROOM']).nullable(),
+  activeFlag: z.boolean(),
+  payrollProfile: z.any(),
+  contract: z.any(),
+})
 
 export const employeePayrollSchema = z.object({
   taxCategory: z.enum(['KOU', 'OTSU', 'HEI']),
@@ -250,6 +241,14 @@ export const useEmployeeEditDialog = (
     { key: 'dailyWage', label: '日給', type: 'number' },
     { key: 'hourlyWage', label: '時給', type: 'number' },
     { key: 'standardWorkingHours', label: '標準労働時間', type: 'number' },
+    {
+      key: 'note',
+      label: '契約メモ',
+      type: 'textarea',
+      rows: 5,
+      autoGrow: true,
+      gridColumn: '1 / -1',
+    },
   ]
 
   const tabs = [
@@ -291,7 +290,7 @@ export const useEmployeeEditDialog = (
         {
           type: 'button',
           label: '退職取消',
-          color: 'warning',
+          intent: 'warning',
           onClick: () => emitCancelResignation(formModel.id),
         },
       ]
@@ -301,7 +300,7 @@ export const useEmployeeEditDialog = (
       items.push({
         type: 'button',
         label: '削除',
-        color: 'error',
+        intent: 'danger',
         onClick: remove,
       })
     }
@@ -310,7 +309,7 @@ export const useEmployeeEditDialog = (
       items.push({
         type: 'button',
         label: '退職',
-        color: 'warning',
+        intent: 'warning',
         onClick: openResignDialog,
       })
     }

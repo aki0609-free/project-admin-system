@@ -1,7 +1,7 @@
 import { computed, reactive, ref, watch, type Ref } from 'vue'
 import { z } from 'zod'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { ImportTargetResponse } from '@/features/system/import/types/importApiTypes'
 import type { ImportTargetDialogForm } from '@/features/system/import/types/importFormTypes'
 import {
@@ -136,6 +136,14 @@ export const useImportTargetEditDialog = (
     { key: 'dataStartRowNumber', label: 'dataStartRow', type: 'number' },
     { key: 'charset', label: 'charset', type: 'text' },
     { key: 'delimiter', label: 'delimiter', type: 'text' },
+    {
+      key: 'description',
+      label: 'description',
+      type: 'textarea',
+      rows: 4,
+      autoGrow: true,
+      gridColumn: '1 / span 4',
+    },
   ])
 
   const save = () => {
@@ -159,35 +167,31 @@ export const useImportTargetEditDialog = (
     visible.value = false
   }
 
-  const footerItems = computed<ToolbarItem[]>(() => {
-    const items: ToolbarItem[] = []
-
-    if (isEdit.value) {
-      items.push({
+  const leftFooterItems = computed<ToolbarItem[]>(() =>
+    isEdit.value
+      ? [{
         type: 'button',
         label: '削除',
-        color: 'error',
+        intent: 'danger',
         onClick: remove,
-      })
-    }
+      }]
+      : [],
+  )
 
-    items.push(
-      {
-        type: 'button',
-        label: '閉じる',
-        color: 'secondary',
-        onClick: close,
-      },
-      {
-        type: 'button',
-        label: '保存',
-        color: 'primary',
-        onClick: save,
-      },
-    )
-
-    return items
-  })
+  const rightFooterItems = computed<ToolbarItem[]>(() => [
+    {
+      type: 'button',
+      label: '閉じる',
+      intent: 'secondary',
+      onClick: close,
+    },
+    {
+      type: 'button',
+      label: '保存',
+      intent: 'primary',
+      onClick: save,
+    },
+  ])
 
   return {
     activeTab,
@@ -196,7 +200,8 @@ export const useImportTargetEditDialog = (
     tabs,
     basicFields,
     schema: importTargetSchema,
-    footerItems,
+    leftFooterItems,
+    rightFooterItems,
     catalogs: catalogQuery.catalogs,
     catalogLoading: catalogQuery.isLoading,
     catalogError: catalogQuery.error,

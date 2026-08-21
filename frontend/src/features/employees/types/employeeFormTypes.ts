@@ -67,6 +67,7 @@ export type EmployeeForm = {
   payrollProfile: EmployeePayrollProfileForm
   contract: EmployeeContractForm
   payrollItemSettings: Array<{
+    targetType: 'ALLOWANCE' | 'DEDUCTION'
     targetCode: string
     displayName: string
     enabled: boolean
@@ -80,5 +81,18 @@ export type EmployeeForm = {
     consumedQuantity: number
     remainingQuantity: number
     parameters: Record<string, string>
+    parameterDefinitions: Array<{
+      key: string
+      displayName: string
+      inputType: 'TEXT' | 'NUMBER' | 'SELECT' | 'BOOLEAN' | 'DATE'
+      required: boolean
+      defaultValue: string | null
+      options: Array<{ label: string; value: string }>
+      ruleParameter: boolean
+      dailyDisplay: boolean
+      inputSourceOverride: boolean
+      ruleValueResolverKey?: string | null
+      displayOrder: number
+    }>
   }>
 }

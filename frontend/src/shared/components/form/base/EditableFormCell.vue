@@ -78,6 +78,7 @@ const inputType = computed(() => {
 
   if (props.field.type === 'password') return 'password'
   if (props.field.type === 'number') return 'number'
+  if (props.field.type === 'month') return 'month'
   return undefined
 })
 

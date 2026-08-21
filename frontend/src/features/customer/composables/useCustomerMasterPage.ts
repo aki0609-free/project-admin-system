@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { useCustomersQuery } from '../api/useCustomersQuery'
 import { toCustomerListItem } from '../mapper/customerMapper'
 import type { CustomerListItem } from '../types/customerTypes'
@@ -27,13 +27,13 @@ export const useCustomerMasterPage = () => {
     {
       type: 'button',
       label: '新規登録',
-      color: 'primary',
+      intent: 'primary',
       onClick: editDialog.openCreate,
     },
     {
       type: 'button',
       label: '封筒宛名印刷',
-      color: 'secondary',
+      intent: 'utility',
       onClick: envelopePrint.openEnvelopePrint,
     },
   ])

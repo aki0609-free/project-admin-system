@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
 import MailRecipientGroupTable from '@/features/system/mail/components/MailRecipientGroupTable.vue'
 import MailRecipientGroupEditDialog from '@/features/system/mail/components/MailRecipientGroupEditDialog.vue'
 import { useMailRecipientGroupTab } from '@/features/system/mail/composables/useMailRecipientGroupTab'
@@ -8,7 +8,7 @@ const {
   groupsQuery,
   visible,
   dialogGroup,
-  toolbarItems,
+  leftToolbarItems,
   openEdit,
   save,
   remove,
@@ -24,7 +24,7 @@ const {
       </p>
     </div>
 
-    <GenericToolbar :items="toolbarItems" />
+    <AppToolbar :left-items="leftToolbarItems" surface="plain" />
 
     <MailRecipientGroupTable
       :items="groupsQuery.groups.value"

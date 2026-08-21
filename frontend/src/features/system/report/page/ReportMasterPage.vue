@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import ReportAdminListTab from '@/features/system/report/components/ReportAdminListTab.vue'
 import ReportTestPrintTab from '@/features/system/report/components/ReportTestPrintTab.vue'
 
@@ -13,36 +14,15 @@ const activeTab = ref('list')
 </script>
 
 <template>
-  <div class="report-admin-page">
-    <div class="page-header">
-      <h2>帳票管理</h2>
-      <p class="page-description">
-        帳票PDF・CSV・EXCELの生成する定義を管理します。
-      </p>
-    </div>
-
+  <ListDetailPageLayout
+    title="帳票管理"
+    description="PDF・CSV・EXCELを生成する帳票定義、署名、出力履歴を管理します。"
+  >
     <TabLayout v-model="activeTab" :tabs="tabs">
       <template #default="{ active }">
         <ReportAdminListTab v-if="active === 'list'" />
         <ReportTestPrintTab v-else-if="active === 'testPrint'" />
       </template>
     </TabLayout>
-  </div>
+  </ListDetailPageLayout>
 </template>
-
-<style scoped>
-.page-header {
-  display: grid;
-  gap: 6px;
-}
-
-.page-description {
-  margin: 0;
-  color: #64748b;
-}
-
-.report-admin-page {
-  display: grid;
-  gap: 12px;
-}
-</style>

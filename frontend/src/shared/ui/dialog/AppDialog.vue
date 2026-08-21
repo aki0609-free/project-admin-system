@@ -66,6 +66,7 @@ const close = () => {
 <template>
   <v-dialog
     v-model="visible"
+    :width="fullscreen ? undefined : 'calc(100vw - 32px)'"
     :max-width="resolvedMaxWidth"
     :fullscreen="fullscreen"
     :scrollable="scrollable"
@@ -117,7 +118,7 @@ const close = () => {
 <style scoped>
 .app-dialog-card {
   width: 100%;
-  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 32px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -159,12 +160,13 @@ const close = () => {
   overflow-x: hidden;
   flex: 1 1 auto;
   min-height: 0;
-  max-height: calc(100vh - 170px);
+  max-height: calc(100dvh - 154px);
 }
 
 .app-dialog-body.layout-stack {
   display: grid;
   align-content: start;
+  grid-auto-rows: max-content;
   gap: 16px;
 }
 
@@ -177,5 +179,30 @@ const close = () => {
 .v-dialog--fullscreen .app-dialog-card,
 .v-dialog--fullscreen .app-dialog-body {
   max-height: none;
+}
+
+@media (max-width: 720px) {
+  .app-dialog-card {
+    max-height: calc(100dvh - 16px);
+  }
+
+  .app-dialog-header {
+    min-height: 52px;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .app-dialog-title {
+    font-size: 18px;
+  }
+
+  .app-dialog-body {
+    padding: 12px;
+    max-height: calc(100dvh - 132px);
+  }
+
+  .app-dialog-footer {
+    padding-inline: 8px;
+  }
 }
 </style>

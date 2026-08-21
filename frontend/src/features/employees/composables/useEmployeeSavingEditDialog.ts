@@ -1,7 +1,7 @@
 import { computed, reactive, watch, type Ref } from 'vue'
 import { z } from 'zod'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { EmployeeListItemResponse } from '../types/employeeApiTypes'
 import type { EmployeeSavingForm } from '../types/employeeLoanSavingFormTypes'
 import type { EmployeeSavingResponse } from '../types/employeeWorkApiTypes'
@@ -33,6 +33,14 @@ export const useEmployeeSavingEditDialog = (
   const resetForm = () => {
     Object.assign(formModel, createEmptyEmployeeSavingForm())
   }
+
+  watch(
+    () => visible.value,
+    (opened) => {
+      if (!opened) return
+      if (!saving.value) resetForm()
+    },
+  )
 
   watch(
     () => saving.value,
@@ -76,6 +84,14 @@ export const useEmployeeSavingEditDialog = (
         editable: false,
       },
       { key: 'activeFlag', label: '有効', type: 'checkbox' },
+      {
+        key: 'approvalComment',
+        label: '承認コメント',
+        type: 'textarea',
+        rows: 4,
+        autoGrow: true,
+        gridColumn: '1 / -1',
+      },
     ]
 
     return defs

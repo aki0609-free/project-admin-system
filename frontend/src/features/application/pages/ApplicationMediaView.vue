@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import CardLayout from '@/shared/components/layout/card_layout/CardLayout.vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 
 import ApplicationMediaTableTab from '@/features/application/components/application_media/ApplicationMediaTableTab.vue'
 import ApplicationMediaChartTab from '@/features/application/components/application_media/ApplicationMediaChartTab.vue'
@@ -45,7 +45,10 @@ const {
 </script>
 
 <template>
-  <CardLayout title="応募媒体管理">
+  <ListDetailPageLayout
+    title="応募媒体管理"
+    description="応募媒体ごとの掲載実績、採用数、コストを年月単位で管理します。"
+  >
     <TabLayout v-model="activeTab" :tabs="tabs">
       <template #default="{ active }">
         <v-alert
@@ -80,5 +83,5 @@ const {
         <ApplicationMediaAnalysisTab v-else-if="active === 'analysis'" :medias="medias" />
       </template>
     </TabLayout>
-  </CardLayout>
+  </ListDetailPageLayout>
 </template>

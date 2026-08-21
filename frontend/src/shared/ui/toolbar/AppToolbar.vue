@@ -55,6 +55,11 @@ const visibleRightItems = computed(() => props.rightItems.filter((item) => item.
   background: #ffffff;
 }
 
+.app-toolbar :deep(.v-toolbar__content) {
+  height: auto !important;
+  min-height: inherit;
+}
+
 .surface-page {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -92,6 +97,10 @@ const visibleRightItems = computed(() => props.rightItems.filter((item) => item.
 }
 
 @media (max-width: 720px) {
+  .app-toolbar {
+    padding: 6px 8px;
+  }
+
   .toolbar-inner {
     align-items: stretch;
     flex-direction: column;
@@ -101,6 +110,10 @@ const visibleRightItems = computed(() => props.rightItems.filter((item) => item.
   .toolbar-end {
     justify-content: flex-start;
     margin-left: 0;
+  }
+
+  .toolbar-side {
+    width: 100%;
   }
 }
 </style>

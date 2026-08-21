@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
 import MailTemplateTable from '@/features/system/mail/components/MailTemplateTable.vue'
 import MailTemplateEditDialog from '@/features/system/mail/components/MailTemplateEditDialog.vue'
 import { useMailTemplateTab } from '@/features/system/mail/composables/useMailTemplateTab'
@@ -8,7 +8,7 @@ const {
   templatesQuery,
   visible,
   dialogTemplate,
-  toolbarItems,
+  leftToolbarItems,
   openEdit,
   save,
   remove,
@@ -24,7 +24,7 @@ const {
       </p>
     </div>
 
-    <GenericToolbar :items="toolbarItems" />
+    <AppToolbar :left-items="leftToolbarItems" surface="plain" />
 
     <MailTemplateTable
       :items="templatesQuery.templates.value"

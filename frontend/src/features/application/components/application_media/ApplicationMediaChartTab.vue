@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { toRef } from 'vue'
 import GenericChart from '@/shared/components/chart/GenericChart.vue'
-import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
+import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
 import type { ApplicationMediaLocalItem } from '@/features/application/types/applicationMediaTypes'
 import { useApplicationMediaChart } from '@/features/application/composables/application_media/useApplicationMediaChart'
 
@@ -14,7 +14,7 @@ const chart = useApplicationMediaChart(toRef(props, 'medias'))
 
 <template>
   <div class="d-flex flex-column ga-4">
-    <GenericToolbar :items="chart.toolbarItems.value" />
+    <AppToolbar :left-items="chart.toolbarItems.value" surface="plain" />
 
     <v-container fluid class="pa-0">
       <v-row>

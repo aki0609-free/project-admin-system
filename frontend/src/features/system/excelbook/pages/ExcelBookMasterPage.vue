@@ -3,7 +3,7 @@ import { computed, defineAsyncComponent, ref } from 'vue'
 import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
 import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
-import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import ExcelBookEditDialog from '../components/ExcelBookEditDialog.vue'
 import { useExcelBookMastersQuery } from '../api/useExcelBookMastersQuery'
 import { useCreateExcelBookMasterMutation } from '../api/useCreateExcelBookMasterMutation'
@@ -56,18 +56,21 @@ const leftToolbarItems = computed<ToolbarItem[]>(() => [
     type: 'button',
     label: '新規',
     color: 'primary',
+    intent: 'primary',
     onClick: openCreate,
   },
+])
+
+const rightToolbarItems = computed<ToolbarItem[]>(() => [
   {
     type: 'button',
     label: '再読込',
     color: 'secondary',
+    intent: 'secondary',
     disabled: loading.value,
     onClick: () => excelBookMastersQuery.refetch(),
   },
 ])
-
-const rightToolbarItems = computed<ToolbarItem[]>(() => [])
 
 function openCreate() {
   selectedItem.value = createEmptyExcelBookForm()

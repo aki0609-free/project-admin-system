@@ -9,7 +9,8 @@ const {
   rulesQuery,
   dialogVisible,
   dialogRule,
-  toolbarItems,
+  leftToolbarItems,
+  rightToolbarItems,
   openEdit,
   save,
   remove,
@@ -18,9 +19,10 @@ const {
 
 <template>
   <ListDetailPageLayout
-    title="NoticeRule管理"
+    title="お知らせルール管理"
     description="指定テーブルの日付カラムを定期チェックし、自動でお知らせを生成するルールを管理します。"
-    :right-toolbar-items="toolbarItems"
+    :left-toolbar-items="leftToolbarItems"
+    :right-toolbar-items="rightToolbarItems"
   >
     <NoticeRuleTable
       :items="rulesQuery.rules.value"
