@@ -1,5 +1,6 @@
 package com.project.backend.features.master.deduction.service.resolver;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +20,7 @@ public class DeductionDetailResolver {
     private final Map<DeductionDetailViewType, DeductionDetailProvider> providerMap;
 
     @SuppressWarnings("null")
-public DeductionDetailResolver(
+    public DeductionDetailResolver(
             List<DeductionDetailProvider> providers
     ) {
         this.providerMap = providers.stream()
@@ -30,7 +31,8 @@ public DeductionDetailResolver(
     }
 
     public Map<String, List<BaseDeductionDetailResponse>> resolve(
-            DeductionMaster deduction
+            DeductionMaster deduction,
+            LocalDate targetDate
     ) {
 
         DeductionDetailViewType viewType =
@@ -49,7 +51,7 @@ public DeductionDetailResolver(
 
         return Map.of(
                 viewType.name(),
-                provider.getDetails(deduction)
+                provider.getDetails(deduction, targetDate)
         );
     }
 }

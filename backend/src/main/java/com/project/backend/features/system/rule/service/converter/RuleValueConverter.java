@@ -41,8 +41,7 @@ public class RuleValueConverter {
                     valueName
                             + "を"
                             + dataType
-                            + "へ変換できません。 value="
-                            + value,
+                            + "へ変換できません。入力形式を確認してください。",
                     exception
             );
         }

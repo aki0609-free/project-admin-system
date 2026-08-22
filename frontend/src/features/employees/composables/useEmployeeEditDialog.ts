@@ -147,7 +147,6 @@ export const useEmployeeEditDialog = (
     { key: 'healthInsuranceFlag', label: '健康保険', type: 'checkbox', width: 120 },
     { key: 'pensionInsuranceFlag', label: '厚生年金', type: 'checkbox', width: 120 },
     { key: 'careInsuranceFlag', label: '介護保険', type: 'checkbox', width: 120 },
-    { key: 'dailyPayFlag', label: '日払い対象', type: 'checkbox', width: 120 },
   ]
 
   const contractFields: GridFormFieldDef<EmployeeContractForm>[] = [

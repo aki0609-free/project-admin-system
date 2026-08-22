@@ -1,6 +1,5 @@
 package com.project.backend.features.master.deduction.provider;
 
-import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -20,7 +19,6 @@ public class IncomeTaxDeductionDetailProvider implements DeductionDetailProvider
 
     private final IncomeTaxBracketRepository incomeTaxBracketRepository;
     private final DeductionTaxDetailMapper mapper;
-    private final Clock clock;
 
     @Override
     public DeductionDetailViewType supports() {
@@ -28,11 +26,14 @@ public class IncomeTaxDeductionDetailProvider implements DeductionDetailProvider
     }
 
     @Override
-    public List<BaseDeductionDetailResponse> getDetails(DeductionMaster deduction) {
-        int currentYear = LocalDate.now(clock).getYear();
-
+    public List<BaseDeductionDetailResponse> getDetails(
+            DeductionMaster deduction,
+            LocalDate targetDate
+    ) {
         return incomeTaxBracketRepository
-                .findByYearOrderByMinSalaryAscDependentsAsc(currentYear)
+                .findByYearOrderByMinSalaryAscDependentsAsc(
+                        targetDate.getYear()
+                )
                 .stream()
                 .map(mapper::toIncomeTaxDetailResponse)
                 .toList();

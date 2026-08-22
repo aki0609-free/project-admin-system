@@ -42,7 +42,6 @@ export const createEmptyEmployeeForm = (): EmployeeForm => ({
     healthInsuranceFlag: true,
     pensionInsuranceFlag: true,
     careInsuranceFlag: false,
-    dailyPayFlag: false,
     commuteAllowanceMonthly: 0,
   },
 
@@ -108,7 +107,6 @@ export const toEmployeeForm = (detail: EmployeeDetailResponse): EmployeeForm => 
     healthInsuranceFlag: detail.payrollProfile.healthInsuranceFlag,
     pensionInsuranceFlag: detail.payrollProfile.pensionInsuranceFlag,
     careInsuranceFlag: detail.payrollProfile.careInsuranceFlag,
-    dailyPayFlag: detail.payrollProfile.dailyPayFlag,
     commuteAllowanceMonthly: detail.payrollProfile.commuteAllowanceMonthly ?? 0,
   },
 

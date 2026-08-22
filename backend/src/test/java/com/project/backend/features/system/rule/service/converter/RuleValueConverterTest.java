@@ -65,6 +65,22 @@ class RuleValueConverterTest {
                         "enabled"
                 ))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("BOOLEAN");
+                .hasMessageContaining("BOOLEAN")
+                .hasMessageNotContaining("yes");
+    }
+
+    @Test
+    void convert_shouldNotIncludeRejectedValueInMessage() {
+        String secret = "1234567890123456";
+
+        assertThatThrownBy(() ->
+                converter.convert(
+                        secret,
+                        RuleDataType.DATE,
+                        "targetDate"
+                ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("targetDate")
+                .hasMessageNotContaining(secret);
     }
 }

@@ -33,19 +33,6 @@ public class PayrollItemQueryService {
         );
     }
 
-    public List<PayrollItemMasterSnapshot> findMonthlyItems() {
-        return findItems(PayrollItemQueryType.MONTHLY);
-    }
-
-    public List<PayrollItemMasterSnapshot> findMonthlyItems(
-            PayrollItemTargetType targetType
-    ) {
-        return findItems(
-                PayrollItemQueryType.MONTHLY,
-                targetType
-        );
-    }
-
     public List<PayrollItemMasterSnapshot> findPayrollItems() {
         return findItems(PayrollItemQueryType.PAYROLL);
     }

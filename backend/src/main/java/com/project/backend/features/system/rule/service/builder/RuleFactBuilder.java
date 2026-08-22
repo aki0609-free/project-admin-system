@@ -105,8 +105,10 @@ public class RuleFactBuilder {
         Map<String, Object> mapped = new LinkedHashMap<>();
 
         if (source.getColumns() == null || source.getColumns().isEmpty()) {
-            mapped.putAll(row);
-            return mapped;
+            throw new IllegalStateException(
+                    "Ruleデータソースには1件以上の列Mappingが必要です。 sourceName="
+                            + source.getSourceName()
+            );
         }
 
         source.getColumns().stream()

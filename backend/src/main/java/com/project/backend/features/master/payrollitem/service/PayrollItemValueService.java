@@ -26,11 +26,13 @@ public class PayrollItemValueService {
 
     private final Map<PayrollItemTargetType, PayrollItemValueProvider> providerMap;
     private final RuleExecutionService ruleExecutionService;
+    private final PayrollMoneyPolicy moneyPolicy;
 
     @SuppressWarnings("null")
     public PayrollItemValueService(
             List<PayrollItemValueProvider> providers,
-            RuleExecutionService ruleExecutionService
+            RuleExecutionService ruleExecutionService,
+            PayrollMoneyPolicy moneyPolicy
     ) {
         this.providerMap = providers.stream()
                 .collect(Collectors.toMap(
@@ -39,6 +41,7 @@ public class PayrollItemValueService {
                 ));
 
         this.ruleExecutionService = ruleExecutionService;
+        this.moneyPolicy = moneyPolicy;
     }
 
     public PayrollItemValueResult calculate(
@@ -53,7 +56,10 @@ public class PayrollItemValueService {
             case "FIXED" -> fixedAmount(master);
             case "AUTO" -> {
                 ruleResult = executeRule(master, request);
-                yield toBigDecimal(ruleResult.result());
+                yield moneyPolicy.toDecimal(
+                        ruleResult.result(),
+                        "給与項目Rule計算結果"
+                );
             }
             default -> throw new IllegalArgumentException(
                     "未対応の calculationType です。 calculationType=" + master.calculationType()
@@ -201,10 +207,10 @@ public class PayrollItemValueService {
             Integer minAmount,
             Integer maxAmount
     ) {
-        BigDecimal result = amount != null ? amount : BigDecimal.ZERO;
-        if (result.signum() < 0) {
-            throw new IllegalArgumentException("給与項目の計算結果は0以上である必要があります。");
-        }
+        BigDecimal result = moneyPolicy.requireNonNegative(
+                amount,
+                "給与項目の計算結果"
+        );
 
         if (minAmount != null) {
             BigDecimal min = BigDecimal.valueOf(minAmount);
@@ -223,25 +229,4 @@ public class PayrollItemValueService {
         return result;
     }
 
-    private BigDecimal toBigDecimal(
-            Object value
-    ) {
-        if (value == null) {
-            return BigDecimal.ZERO;
-        }
-
-        if (value instanceof BigDecimal decimal) {
-            return decimal;
-        }
-
-        if (value instanceof Number number) {
-            double doubleValue = number.doubleValue();
-            if (!Double.isFinite(doubleValue)) {
-                throw new IllegalArgumentException("Rule計算結果が有限の数値ではありません。");
-            }
-            return BigDecimal.valueOf(doubleValue);
-        }
-
-        return new BigDecimal(String.valueOf(value));
-    }
 }

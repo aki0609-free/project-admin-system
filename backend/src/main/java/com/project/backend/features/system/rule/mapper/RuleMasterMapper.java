@@ -90,19 +90,14 @@ public class RuleMasterMapper {
         entity.setSourceName(request.sourceName());
         entity.setCatalogCode(request.catalogCode());
 
-        if (StringUtils.hasText(request.catalogCode())) {
-            RuleDataSourceCatalog catalog =
-                    catalogService.findRequired(
-                            request.catalogCode()
-                    );
-            entity.setTableName(catalog.getPhysicalName());
-            entity.setWhereClause(
-                    catalog.getWhereClauseTemplate()
-            );
-        } else {
-            entity.setTableName(request.tableName());
-            entity.setWhereClause(request.whereClause());
-        }
+        RuleDataSourceCatalog catalog =
+                catalogService.findRequired(
+                        request.catalogCode()
+                );
+        entity.setTableName(catalog.getPhysicalName());
+        entity.setWhereClause(
+                catalog.getWhereClauseTemplate()
+        );
         entity.setSingleRowFlag(request.singleRowFlag());
         entity.setActiveFlag(request.activeFlag());
         entity.setOrderNo(request.orderNo() > 0 ? request.orderNo() : 1);

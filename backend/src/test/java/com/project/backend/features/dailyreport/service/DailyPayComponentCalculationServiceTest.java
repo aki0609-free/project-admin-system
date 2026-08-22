@@ -5,11 +5,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +25,7 @@ import com.project.backend.features.dailyreport.repository.DailyPayRuleSettingRe
 import com.project.backend.features.dailyreport.repository.DailyReportRepository;
 import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.enums.SalaryType;
+import com.project.backend.features.master.payrollitem.service.PayrollMoneyPolicy;
 import com.project.backend.features.system.rule.dto.RuleContextRequest;
 import com.project.backend.features.system.rule.dto.RuleExecutionResult;
 import com.project.backend.features.system.rule.service.RuleExecutionService;
@@ -39,7 +42,8 @@ class DailyPayComponentCalculationServiceTest {
             new DailyPayComponentCalculationService(
                     repository,
                     ruleExecutionService,
-                    dailyReportRepository
+                    dailyReportRepository,
+                    new PayrollMoneyPolicy()
             );
 
     @BeforeEach
@@ -98,7 +102,52 @@ class DailyPayComponentCalculationServiceTest {
     }
 
     @Test
-    void noRuleSetting_shouldKeepLegacyHourlyTotalButSeparateComponents() {
+    void configuredRule_shouldRoundEachComponentHalfUpToYen() {
+        when(repository
+                .findByTenantIdAndActiveFlagTrueAndDeletedAtIsNull(
+                        "tenant-a"
+                ))
+                .thenReturn(List.of(
+                        setting(DailyPayComponentType.NORMAL_PAY, "NORMAL"),
+                        setting(DailyPayComponentType.OVERTIME_PAY, "OVERTIME"),
+                        setting(DailyPayComponentType.NIGHT_PAY, "NIGHT"),
+                        setting(DailyPayComponentType.HOLIDAY_PAY, "HOLIDAY")
+                ));
+        when(ruleExecutionService.execute(
+                eq("NORMAL"),
+                any(RuleContextRequest.class)
+        )).thenReturn(RuleExecutionResult.builder()
+                .executed(true)
+                .result("1000.50")
+                .build());
+        when(ruleExecutionService.execute(
+                eq("OVERTIME"),
+                any(RuleContextRequest.class)
+        )).thenReturn(result(BigDecimal.ZERO));
+        when(ruleExecutionService.execute(
+                eq("NIGHT"),
+                any(RuleContextRequest.class)
+        )).thenReturn(result(BigDecimal.ZERO));
+        when(ruleExecutionService.execute(
+                eq("HOLIDAY"),
+                any(RuleContextRequest.class)
+        )).thenReturn(result(BigDecimal.ZERO));
+
+        DailyReport report = report();
+        report.setOvertimeHours(BigDecimal.ZERO);
+        report.setNightWorkHours(BigDecimal.ZERO);
+        var amounts = service.calculate(
+                report,
+                hourlyContract("1000"),
+                10L
+        );
+
+        assertThat(amounts.normalPayAmount())
+                .isEqualByComparingTo("1001");
+    }
+
+    @Test
+    void noRuleSetting_shouldFailBeforeCalculation() {
         when(repository
                 .findByTenantIdAndActiveFlagTrueAndDeletedAtIsNull(
                         "tenant-a"
@@ -109,51 +158,42 @@ class DailyPayComponentCalculationServiceTest {
         contract.setSalaryType(SalaryType.HOURLY);
         contract.setHourlyWage(new BigDecimal("1000"));
 
-        var amounts = service.calculate(report, contract, 10L);
-
-        assertThat(amounts.normalPayAmount())
-                .isEqualByComparingTo("8000");
-        assertThat(amounts.overtimePayAmount())
-                .isEqualByComparingTo("2500");
-        assertThat(amounts.nightPayAmount())
-                .isEqualByComparingTo("250");
-        assertThat(amounts.holidayPayAmount())
-                .isEqualByComparingTo("0");
-        assertThat(amounts.total()).isEqualByComparingTo("10750");
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> service.calculate(report, contract, 10L)
+        ).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("必須の日報給与Rule設定")
+                .hasMessageContaining("NORMAL_PAY");
+        verifyNoInteractions(ruleExecutionService);
     }
 
     @Test
-    void monthlyEmployeeWithoutRule_shouldAllocateMonthlySalaryToNormalPay() {
+    void missingOneRequiredRuleSetting_shouldFailBeforeCalculation() {
         when(repository
                 .findByTenantIdAndActiveFlagTrueAndDeletedAtIsNull(
                         "tenant-a"
                 ))
-                .thenReturn(List.of());
+                .thenReturn(List.of(
+                        setting(DailyPayComponentType.NORMAL_PAY, "NORMAL"),
+                        setting(DailyPayComponentType.OVERTIME_PAY, "OVERTIME"),
+                        setting(DailyPayComponentType.NIGHT_PAY, "NIGHT")
+                ));
         DailyReport report = report();
         EmployeeContract contract = new EmployeeContract();
         contract.setSalaryType(SalaryType.MONTHLY);
         contract.setMonthlySalary(new BigDecimal("300000"));
         contract.setStandardWorkingHours(new BigDecimal("40"));
 
-        var amounts = service.calculate(report, contract, 10L);
-
-        assertThat(amounts.normalPayAmount())
-                .isEqualByComparingTo("13846");
-        assertThat(amounts.overtimePayAmount())
-                .isEqualByComparingTo("4327");
-        assertThat(amounts.nightPayAmount())
-                .isEqualByComparingTo("433");
-        assertThat(amounts.holidayPayAmount())
-                .isEqualByComparingTo("0");
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> service.calculate(report, contract, 10L)
+        ).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("必須の日報給与Rule設定")
+                .hasMessageContaining("HOLIDAY_PAY");
+        verifyNoInteractions(ruleExecutionService);
     }
 
     @Test
     void weeklyHoursOverForty_shouldBecomeOvertimeFromMondayBasedWeek() {
-        when(repository
-                .findByTenantIdAndActiveFlagTrueAndDeletedAtIsNull(
-                        "tenant-a"
-                ))
-                .thenReturn(List.of());
+        configureFoundationRules();
         when(dailyReportRepository
                 .findByEmployeeIdAndWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateAscIdAsc(
                         any(), any(), any()
@@ -182,11 +222,7 @@ class DailyPayComponentCalculationServiceTest {
 
     @Test
     void monthlyOvertimeOverSixty_shouldUseFiftyPercentPremium() {
-        when(repository
-                .findByTenantIdAndActiveFlagTrueAndDeletedAtIsNull(
-                        "tenant-a"
-                ))
-                .thenReturn(List.of());
+        configureFoundationRules();
         when(dailyReportRepository
                 .findByEmployeeIdAndWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateAscIdAsc(
                         any(), any(), any()
@@ -210,6 +246,73 @@ class DailyPayComponentCalculationServiceTest {
 
         assertThat(amounts.overtimePayAmount())
                 .isEqualByComparingTo("3000");
+    }
+
+    private void configureFoundationRules() {
+        when(repository
+                .findByTenantIdAndActiveFlagTrueAndDeletedAtIsNull(
+                        "tenant-a"
+                ))
+                .thenReturn(List.of(
+                        setting(DailyPayComponentType.NORMAL_PAY,
+                                "DAILY_NORMAL_PAY"),
+                        setting(DailyPayComponentType.OVERTIME_PAY,
+                                "DAILY_OVERTIME_PAY"),
+                        setting(DailyPayComponentType.NIGHT_PAY,
+                                "DAILY_NIGHT_PAY"),
+                        setting(DailyPayComponentType.HOLIDAY_PAY,
+                                "DAILY_HOLIDAY_PAY")
+                ));
+        when(ruleExecutionService.execute(
+                any(),
+                any(RuleContextRequest.class)
+        )).thenAnswer(invocation -> {
+            String ruleName = invocation.getArgument(0);
+            RuleContextRequest request = invocation.getArgument(1);
+            Map<String, Object> parameters = request.parameters();
+            BigDecimal value = switch (ruleName) {
+                case "DAILY_NORMAL_PAY" -> decimal(
+                        parameters,
+                        "regularPayAmount"
+                );
+                case "DAILY_OVERTIME_PAY" -> decimal(
+                        parameters,
+                        "calculationHourlyRate"
+                ).multiply(
+                        decimal(parameters, "overtimeWithin60Hours")
+                                .multiply(decimal(parameters, "overtimeRate"))
+                                .add(decimal(parameters, "overtimeOver60Hours")
+                                        .multiply(decimal(
+                                                parameters,
+                                                "overtimeOver60Rate"
+                                        )))
+                );
+                case "DAILY_NIGHT_PAY" -> decimal(
+                        parameters,
+                        "calculationHourlyRate"
+                ).multiply(decimal(parameters, "nightWorkHours"))
+                        .multiply(decimal(parameters, "nightPremiumRate"));
+                case "DAILY_HOLIDAY_PAY" -> decimal(
+                        parameters,
+                        "calculationHourlyRate"
+                ).multiply(decimal(parameters, "holidayWorkHours"))
+                        .multiply(decimal(parameters, "holidayRate"));
+                default -> throw new IllegalArgumentException(
+                        "Unexpected rule: " + ruleName
+                );
+            };
+            return result(value);
+        });
+    }
+
+    private BigDecimal decimal(
+            Map<String, Object> parameters,
+            String key
+    ) {
+        Object value = parameters.get(key);
+        return value instanceof BigDecimal decimal
+                ? decimal
+                : new BigDecimal(String.valueOf(value));
     }
 
     private DailyPayRuleSetting setting(

@@ -1,5 +1,6 @@
 package com.project.backend.features.master.deduction.provider;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
@@ -25,7 +26,10 @@ public class StandardSalaryDeductionDetailProvider implements DeductionDetailPro
     }
 
     @Override
-    public List<BaseDeductionDetailResponse> getDetails(DeductionMaster deduction) {
+    public List<BaseDeductionDetailResponse> getDetails(
+            DeductionMaster deduction,
+            LocalDate targetDate
+    ) {
         return standardSalaryRepository
                 .findAllByOrderByMinSalaryAsc()
                 .stream()

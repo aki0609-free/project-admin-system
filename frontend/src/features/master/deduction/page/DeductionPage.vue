@@ -35,9 +35,19 @@ const isCreateMode = ref(false)
 const selectedDeductionId = ref<number | null>(null)
 const editingDeduction = ref<DeductionMaster | null>(null)
 const detailLoadError = ref(false)
+const formatLocalDate = (date: Date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+const detailTargetDate = ref(formatLocalDate(new Date()))
 
 const deductionsQuery = useDeductionsQuery()
-const deductionDetailQuery = useDeductionDetailQuery(selectedDeductionId)
+const deductionDetailQuery = useDeductionDetailQuery(
+  selectedDeductionId,
+  detailTargetDate,
+)
 
 const createMutation = useCreateDeductionMutation()
 const updateMutation = useUpdateDeductionMutation()
@@ -98,6 +108,7 @@ function handleCreate() {
 async function handleEdit(row: DeductionListItem) {
   isCreateMode.value = false
   detailLoadError.value = false
+  detailTargetDate.value = formatLocalDate(new Date())
   selectedDeductionId.value = row.id
   await nextTick()
   const result = await deductionDetailQuery.refetch()
@@ -166,8 +177,10 @@ async function handleDelete(id: number) {
         v-model="dialog"
         :deduction="editingDeduction"
         :detail-response="detail"
+        :detail-target-date="detailTargetDate"
         :is-create-mode="isCreateMode"
         :can-manage="canManage"
+        @update:detail-target-date="detailTargetDate = $event"
         @save="handleSave"
         @delete="handleDelete"
       />

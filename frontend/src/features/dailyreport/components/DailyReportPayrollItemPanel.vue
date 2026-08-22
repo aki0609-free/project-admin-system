@@ -35,7 +35,8 @@ const balanceUnitLabel = (item: DailyReportAmountItemForm) => {
 }
 
 const updateAmount = (item: DailyReportAmountItemForm, value: unknown) => {
-  item.amount = Number(value ?? 0)
+  const parsed = Number(value ?? 0)
+  item.amount = Number.isFinite(parsed) ? Math.max(0, parsed) : 0
   item.manualOverride =
     (item.inputMode === 'AUTO_WITH_OVERRIDE' || item.inputMode === 'FIXED_WITH_OVERRIDE') &&
     item.amount !== item.calculatedAmount
@@ -85,6 +86,8 @@ const updateBalanceQuantity = (item: DailyReportAmountItemForm, value: unknown) 
           density="compact"
           variant="outlined"
           hide-details
+          min="0"
+          step="1"
           class="amount-input"
           :readonly="!item.editable"
           @update:model-value="updateAmount(item, $event)"

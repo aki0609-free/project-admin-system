@@ -44,7 +44,6 @@ export const employeePayrollSchema = z.object({
   healthInsuranceFlag: z.boolean(),
   pensionInsuranceFlag: z.boolean(),
   careInsuranceFlag: z.boolean(),
-  dailyPayFlag: z.boolean(),
   commuteAllowanceMonthly: z.number().min(0, '通勤手当月額は0以上で指定してください。'),
 })
 

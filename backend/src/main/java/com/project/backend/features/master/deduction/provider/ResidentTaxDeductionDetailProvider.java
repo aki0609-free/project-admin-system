@@ -1,6 +1,5 @@
 package com.project.backend.features.master.deduction.provider;
 
-import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -20,7 +19,6 @@ public class ResidentTaxDeductionDetailProvider implements DeductionDetailProvid
 
     private final ResidentTaxMonthlyRepository residentTaxMonthlyRepository;
     private final DeductionTaxDetailMapper mapper;
-    private final Clock clock;
 
     @Override
     public DeductionDetailViewType supports() {
@@ -28,9 +26,12 @@ public class ResidentTaxDeductionDetailProvider implements DeductionDetailProvid
     }
 
     @Override
-    public List<BaseDeductionDetailResponse> getDetails(DeductionMaster deduction) {
-        LocalDate today = LocalDate.now(clock);
-        int fiscalYear = today.getYear() - (today.getMonthValue() < 6 ? 1 : 0);
+    public List<BaseDeductionDetailResponse> getDetails(
+            DeductionMaster deduction,
+            LocalDate targetDate
+    ) {
+        int fiscalYear = targetDate.getYear()
+                - (targetDate.getMonthValue() < 6 ? 1 : 0);
 
         return residentTaxMonthlyRepository
                 .findByFiscalYearOrderByEmployeeIdAscMonthAsc(fiscalYear)

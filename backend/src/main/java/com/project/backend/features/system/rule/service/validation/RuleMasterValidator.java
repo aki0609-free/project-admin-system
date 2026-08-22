@@ -25,11 +25,6 @@ public class RuleMasterValidator {
 
     private static final Pattern SAFE_IDENTIFIER =
             Pattern.compile("^[a-zA-Z0-9_]+$");
-    private static final Pattern UNSAFE_WHERE_CLAUSE =
-            Pattern.compile(
-                    "(?i)(;|--|/\\*|\\*/|\\b(insert|update|delete|drop|alter|create|grant|revoke|truncate|call|execute|union)\\b)"
-            );
-
     private final RuleMasterRepository repository;
     private final RuleDataSourceCatalogService catalogService;
     private final RuleBeanCatalogService beanCatalogService;
@@ -169,27 +164,23 @@ public class RuleMasterValidator {
                 throw new RuntimeException("sourceName が重複しています。 sourceName=" + dataSource.sourceName());
             }
 
-            if (StringUtils.hasText(dataSource.catalogCode())) {
-                validateCatalogDataSource(dataSource);
-            } else {
-                requireText(dataSource.tableName(), "tableName");
-                validateIdentifier(
-                        dataSource.tableName(),
-                        "tableName"
-                );
-                validateWhereClause(dataSource.whereClause());
-            }
+            requireText(dataSource.catalogCode(), "catalogCode");
+            validateColumns(dataSource.columns());
+            validateCatalogDataSource(dataSource);
 
             if (dataSource.orderNo() <= 0) {
                 throw new RuntimeException("dataSource.orderNo は1以上で指定してください。");
             }
 
-            validateColumns(dataSource.columns());
         }
     }
 
     private void validateColumns(List<RuleColumnMappingSaveRequest> columns) {
-        if (columns == null) return;
+        if (columns == null || columns.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Ruleデータソースには1件以上の列Mappingが必要です。"
+            );
+        }
 
         Set<String> factKeys = new HashSet<>();
 
@@ -221,7 +212,7 @@ public class RuleMasterValidator {
 
     private void validateIdentifier(String value, String label) {
         if (!SAFE_IDENTIFIER.matcher(value).matches()) {
-            throw new RuntimeException(label + " に使用できない文字が含まれています。 value=" + value);
+            throw new RuntimeException(label + " に使用できない文字が含まれています。");
         }
     }
 
@@ -236,18 +227,6 @@ public class RuleMasterValidator {
                             + "は"
                             + maxLength
                             + "文字以内で指定してください。"
-            );
-        }
-    }
-
-    private void validateWhereClause(String whereClause) {
-        if (!StringUtils.hasText(whereClause)) {
-            return;
-        }
-
-        if (UNSAFE_WHERE_CLAUSE.matcher(whereClause).find()) {
-            throw new IllegalArgumentException(
-                    "whereClauseに使用できないSQL構文が含まれています。"
             );
         }
     }
@@ -273,10 +252,6 @@ public class RuleMasterValidator {
                         column -> column.getColumnName(),
                         column -> column
                 ));
-
-        if (dataSource.columns() == null) {
-            return;
-        }
 
         for (RuleColumnMappingSaveRequest column :
                 dataSource.columns()) {

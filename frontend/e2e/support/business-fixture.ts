@@ -151,7 +151,6 @@ const employeeRequest = {
     healthInsuranceFlag: true,
     pensionInsuranceFlag: true,
     careInsuranceFlag: false,
-    dailyPayFlag: false,
     commuteAllowanceMonthly: 0,
   },
   contract: {

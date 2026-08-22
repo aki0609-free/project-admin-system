@@ -1,6 +1,7 @@
 package com.project.backend.features.operation.daily.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -16,6 +17,9 @@ import org.junit.jupiter.api.Test;
 import com.project.backend.features.dailyreport.entity.DailyReport;
 import com.project.backend.features.dailyreport.repository.DailyReportRepository;
 import com.project.backend.features.employee.entity.Employee;
+import com.project.backend.features.employee.entity.EmployeeContract;
+import com.project.backend.features.employee.enums.PaymentCycle;
+import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.operation.daily.dto.DailyPaymentResponse;
 import com.project.backend.features.operation.daily.mapper.DailyPaymentMapper;
 import com.project.backend.features.operation.daily.repository.DailyPaymentRepository;
@@ -26,9 +30,12 @@ class DailyPaymentServiceTest {
             mock(DailyPaymentRepository.class);
     private final DailyReportRepository reportRepository =
             mock(DailyReportRepository.class);
+    private final EmployeeContractRepository contractRepository =
+            mock(EmployeeContractRepository.class);
     private final DailyPaymentService service = new DailyPaymentService(
             paymentRepository,
             reportRepository,
+            contractRepository,
             new DailyPaymentMapper(),
             Clock.fixed(
                     Instant.parse("2026-08-09T00:00:00Z"),
@@ -50,6 +57,8 @@ class DailyPaymentServiceTest {
                         report(10L, "E001", "富陽 太郎", "8000"),
                         report(10L, "E001", "富陽 太郎", "6500")
                 ));
+        when(contractRepository.findByEmployeeIdInAndDeletedAtIsNull(anyCollection()))
+                .thenReturn(List.of(contract(10L, PaymentCycle.DAILY)));
 
         List<DailyPaymentResponse> result = service.findByPaymentDate(paymentDate);
 
@@ -59,6 +68,25 @@ class DailyPaymentServiceTest {
                 .isEqualByComparingTo("14500");
         assertThat(result.getFirst().actualAmount())
                 .isEqualByComparingTo("14500");
+    }
+
+    @Test
+    void findByPaymentDate_shouldNotGeneratePaymentForMonthlyCycle() {
+        LocalDate paymentDate = LocalDate.of(2026, 8, 10);
+        when(paymentRepository
+                .findByPaymentDateAndDeletedAtIsNullOrderByEmployeeCodeAscIdAsc(
+                        paymentDate
+                )).thenReturn(List.of());
+        when(reportRepository
+                .findByPaymentDateAndDeletedAtIsNullOrderByWorkDateDescIdDesc(
+                        paymentDate
+                )).thenReturn(List.of(
+                        report(10L, "E001", "富陽 太郎", "8000")
+                ));
+        when(contractRepository.findByEmployeeIdInAndDeletedAtIsNull(anyCollection()))
+                .thenReturn(List.of(contract(10L, PaymentCycle.MONTHLY)));
+
+        assertThat(service.findByPaymentDate(paymentDate)).isEmpty();
     }
 
     private DailyReport report(
@@ -76,5 +104,15 @@ class DailyPaymentServiceTest {
         report.setEmployee(employee);
         report.setEstimatedNetPayAmount(new BigDecimal(estimatedNetPayAmount));
         return report;
+    }
+
+    private EmployeeContract contract(Long employeeId, PaymentCycle paymentCycle) {
+        Employee employee = new Employee();
+        employee.setId(employeeId);
+
+        EmployeeContract contract = new EmployeeContract();
+        contract.setEmployee(employee);
+        contract.setPaymentCycle(paymentCycle);
+        return contract;
     }
 }

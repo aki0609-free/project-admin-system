@@ -12,6 +12,7 @@ import org.springframework.util.StringUtils;
 
 import com.project.backend.features.system.rule.entity.RuleDataSource;
 import com.project.backend.features.system.rule.entity.RuleDataSourceCatalog;
+import com.project.backend.features.system.rule.enums.RuleDataType;
 import com.project.backend.features.system.rule.service.RuleDataSourceCatalogService;
 import com.project.backend.app.tenant.context.TenantContext;
 
@@ -33,19 +34,15 @@ public class GeneralDataFetcher {
             Map<String, Object> params
     ) {
         RuleDataSourceCatalog catalog = loadCatalog(source);
-        String tableName = catalog != null
-                ? catalog.getPhysicalName()
-                : source.getTableName();
-        String whereClause = catalog != null
-                ? catalog.getWhereClauseTemplate()
-                : source.getWhereClause();
+        String tableName = catalog.getPhysicalName();
+        String whereClause = catalog.getWhereClauseTemplate();
         int maxRows = resolveMaxRows(source, catalog);
 
         validateIdentifier(tableName, "tableName");
 
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT ")
-                .append(selectColumns(source))
+                .append(selectColumns(source, catalog))
                 .append(" FROM ")
                 .append(tableName);
 
@@ -62,7 +59,7 @@ public class GeneralDataFetcher {
             queryParameters.putAll(params);
         }
 
-        if (catalog != null && catalog.isTenantScopedFlag()) {
+        if (catalog.isTenantScopedFlag()) {
             String tenantId = TenantContext.getTenantId();
 
             if (!StringUtils.hasText(tenantId)) {
@@ -106,11 +103,27 @@ public class GeneralDataFetcher {
         return rows;
     }
 
-    private String selectColumns(RuleDataSource source) {
+    private String selectColumns(
+            RuleDataSource source,
+            RuleDataSourceCatalog catalog
+    ) {
         if (source.getColumns() == null
                 || source.getColumns().isEmpty()) {
-            return "*";
+            throw new IllegalStateException(
+                    "Ruleデータソースには1件以上の列Mappingが必要です。 sourceName="
+                            + source.getSourceName()
+            );
         }
+
+        Map<String, RuleDataType> allowedColumns =
+                catalog.getColumns().stream()
+                .filter(column ->
+                        column.getDeletedAt() == null
+                                && column.isActiveFlag())
+                .collect(Collectors.toMap(
+                        column -> column.getColumnName(),
+                        column -> column.getDataType()
+                ));
 
         String columns = source.getColumns().stream()
                 .filter(column -> column.getDeletedAt() == null)
@@ -119,19 +132,52 @@ public class GeneralDataFetcher {
                             column.getColumnName(),
                             "columnName"
                     );
+
+                    var catalogDataType = allowedColumns.get(
+                            column.getColumnName()
+                    );
+
+                    if (catalogDataType == null) {
+                        throw new IllegalStateException(
+                                "カタログで許可されていないカラムです。 catalogCode="
+                                        + catalog.getSourceCode()
+                                        + ", columnName="
+                                        + column.getColumnName()
+                        );
+                    }
+
+                    if (catalogDataType != column.getDataType()) {
+                        throw new IllegalStateException(
+                                "カタログと列MappingのdataTypeが一致しません。 catalogCode="
+                                        + catalog.getSourceCode()
+                                        + ", columnName="
+                                        + column.getColumnName()
+                        );
+                    }
+
                     return column.getColumnName();
                 })
                 .distinct()
                 .collect(Collectors.joining(", "));
 
-        return StringUtils.hasText(columns) ? columns : "*";
+        if (!StringUtils.hasText(columns)) {
+            throw new IllegalStateException(
+                    "Ruleデータソースには1件以上の列Mappingが必要です。 sourceName="
+                            + source.getSourceName()
+            );
+        }
+
+        return columns;
     }
 
     private RuleDataSourceCatalog loadCatalog(
             RuleDataSource source
     ) {
         if (!StringUtils.hasText(source.getCatalogCode())) {
-            return null;
+            throw new IllegalStateException(
+                    "RuleデータソースにはcatalogCodeが必要です。 sourceName="
+                            + source.getSourceName()
+            );
         }
 
         return catalogService.findRequired(
@@ -145,10 +191,6 @@ public class GeneralDataFetcher {
     ) {
         if (source.isSingleRowFlag()) {
             return 1;
-        }
-
-        if (catalog == null) {
-            return 1000;
         }
 
         if (catalog.getMaxRows() < 1
@@ -172,7 +214,7 @@ public class GeneralDataFetcher {
 
         if (!SAFE_IDENTIFIER.matcher(value).matches()) {
             throw new RuntimeException(
-                    label + " に使用できない文字が含まれています。 value=" + value
+                    label + " に使用できない文字が含まれています。"
             );
         }
     }

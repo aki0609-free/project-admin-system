@@ -22,7 +22,6 @@ public record EmployeePayrollProfileResponse(
         boolean healthInsuranceFlag,
         boolean pensionInsuranceFlag,
         boolean careInsuranceFlag,
-        boolean dailyPayFlag,
         BigDecimal commuteAllowanceMonthly
 ) {
 }

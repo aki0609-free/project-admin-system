@@ -1,7 +1,6 @@
 package com.project.backend.features.master.payrollitem.service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,6 +24,7 @@ public class PayrollItemCalculationService {
 
     private final PayrollItemQueryService payrollItemQueryService;
     private final PayrollItemValueService payrollItemValueService;
+    private final PayrollMoneyPolicy moneyPolicy;
 
     @SuppressWarnings("null")
     public List<PayrollItemCalculationResult> calculate(
@@ -102,7 +102,9 @@ public class PayrollItemCalculationService {
         BigDecimal calculatedAmount =
                 valueResult.amount() == null
                         ? BigDecimal.ZERO
-                        : valueResult.amount().setScale(0, RoundingMode.HALF_UP);
+                        : moneyPolicy.roundToYen(
+                                valueResult.amount()
+                        );
 
         boolean manualOverride = isBaselineCalculation(valueResult.calculationType())
                 && Boolean.TRUE.equals(snapshot.allowManualInput())
@@ -160,7 +162,10 @@ public class PayrollItemCalculationService {
             Integer minAmount,
             Integer maxAmount
     ) {
-        BigDecimal result = amount;
+        BigDecimal result = moneyPolicy.requireNonNegative(
+                amount,
+                "給与項目の手動変更額"
+        );
         if (minAmount != null) {
             result = result.max(BigDecimal.valueOf(minAmount));
         }

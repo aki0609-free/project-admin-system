@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.project.backend.features.dailyreport.dto.DailyReportDeductionSaveRequest;
 import com.project.backend.features.dailyreport.entity.DailyReportDeduction;
 import com.project.backend.features.dailyreport.repository.DailyReportDeductionRepository;
+import com.project.backend.features.master.payrollitem.service.PayrollMoneyPolicy;
 
 import lombok.RequiredArgsConstructor;
 
@@ -17,15 +18,15 @@ import lombok.RequiredArgsConstructor;
 public class DailyReportDeductionCommandService {
 
     private final DailyReportDeductionRepository repository;
+    private final PayrollMoneyPolicy moneyPolicy;
 
     @SuppressWarnings("null")
     public void replaceAll(
             Long dailyReportId,
             List<DailyReportDeductionSaveRequest> requests
     ) {
-        repository.deleteByDailyReportId(dailyReportId);
-
         if (requests == null || requests.isEmpty()) {
+            repository.deleteByDailyReportId(dailyReportId);
             return;
         }
 
@@ -33,6 +34,7 @@ public class DailyReportDeductionCommandService {
                 .map(request -> toEntity(dailyReportId, request))
                 .toList();
 
+        repository.deleteByDailyReportId(dailyReportId);
         repository.saveAll(entities);
     }
 
@@ -46,9 +48,15 @@ public class DailyReportDeductionCommandService {
         entity.setDeductionMasterId(request.deductionMasterId());
         entity.setDeductionCode(request.deductionCode());
         entity.setDeductionName(request.deductionName());
-        entity.setAmount(request.amount() != null ? request.amount() : 0);
-        entity.setCalculatedAmount(request.calculatedAmount() != null
-                ? request.calculatedAmount() : entity.getAmount());
+        entity.setAmount(nonNegative(
+                request.amount(),
+                "控除金額"
+        ));
+        entity.setCalculatedAmount(nonNegative(
+                request.calculatedAmount(),
+                "控除の計算額",
+                entity.getAmount()
+        ));
         entity.setManualOverrideFlag(Boolean.TRUE.equals(request.manualOverride()));
         entity.setOverrideReason(entity.isManualOverrideFlag()
                 ? normalizeReason(request.overrideReason()) : null);
@@ -56,6 +64,23 @@ public class DailyReportDeductionCommandService {
         entity.setBalanceUnit(request.balanceUnit());
 
         return entity;
+    }
+
+    private int nonNegative(Integer value, String valueName) {
+        return nonNegative(value, valueName, 0);
+    }
+
+    private int nonNegative(
+            Integer value,
+            String valueName,
+            int defaultValue
+    ) {
+        return moneyPolicy.requireNonNegative(
+                java.math.BigDecimal.valueOf(
+                        value == null ? defaultValue : value
+                ),
+                valueName
+        ).intValueExact();
     }
 
     private String normalizeReason(String reason) {

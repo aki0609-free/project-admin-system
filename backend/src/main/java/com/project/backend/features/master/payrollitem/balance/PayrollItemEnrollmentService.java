@@ -1,9 +1,10 @@
 package com.project.backend.features.master.payrollitem.balance;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -76,27 +77,97 @@ public class PayrollItemEnrollmentService {
                 ? validateParameters(policy, parameters)
                 : Map.of();
 
-        LocalDate today = LocalDate.now(clock);
-        LocalDate enrollmentStart = effectiveFrom == null ? today : effectiveFrom;
+        LocalDate operationDate = effectiveFrom == null
+                ? LocalDate.now(clock)
+                : effectiveFrom;
         var current = enrollmentRepository
                 .findFirstByEmployeeIdAndBalancePolicyIdAndEffectiveToIsNullAndDeletedAtIsNullOrderByEffectiveFromDesc(
                         employeeId, policy.getId()
                 );
 
         if (enabled && current.isEmpty()) {
-            EmployeePayrollItemEnrollment enrollment = new EmployeePayrollItemEnrollment();
-            enrollment.setEmployeeId(employeeId);
-            enrollment.setBalancePolicyId(policy.getId());
-            enrollment.setEffectiveFrom(enrollmentStart);
-            enrollment.setSettingsJson(write(validatedParameters));
-            enrollmentRepository.save(enrollment);
+            saveEnrollment(
+                    employeeId,
+                    policy.getId(),
+                    operationDate,
+                    validatedParameters
+            );
         } else if (enabled) {
-            current.get().setSettingsJson(write(validatedParameters));
+            updateEnabledEnrollment(
+                    current.get(),
+                    employeeId,
+                    policy.getId(),
+                    operationDate,
+                    validatedParameters
+            );
         } else if (!enabled && current.isPresent()) {
-            // effectiveTo は適用最終日（包含）として扱う。
-            // 無効化操作後に作成する当日の日報へ残さないため、前日で終了する。
-            current.get().setEffectiveTo(today.minusDays(1));
+            closeEnrollment(current.get(), operationDate);
         }
+    }
+
+    private void updateEnabledEnrollment(
+            EmployeePayrollItemEnrollment current,
+            Long employeeId,
+            Long policyId,
+            LocalDate operationDate,
+            Map<String, String> parameters
+    ) {
+        if (operationDate.isBefore(current.getEffectiveFrom())) {
+            throw new IllegalArgumentException(
+                    "適用開始日は現在の設定開始日以降で指定してください。"
+            );
+        }
+
+        if (read(current.getSettingsJson()).equals(parameters)) {
+            return;
+        }
+
+        if (operationDate.equals(current.getEffectiveFrom())) {
+            current.setSettingsJson(write(parameters));
+            return;
+        }
+
+        current.setEffectiveTo(operationDate.minusDays(1));
+        saveEnrollment(
+                employeeId,
+                policyId,
+                operationDate,
+                parameters
+        );
+    }
+
+    private void closeEnrollment(
+            EmployeePayrollItemEnrollment current,
+            LocalDate operationDate
+    ) {
+        if (operationDate.isBefore(current.getEffectiveFrom())) {
+            throw new IllegalArgumentException(
+                    "適用終了日は現在の設定開始日以降で指定してください。"
+            );
+        }
+
+        if (operationDate.equals(current.getEffectiveFrom())) {
+            current.setDeletedAt(Instant.now(clock));
+            return;
+        }
+
+        // effectiveToは適用最終日（包含）。操作日から無効にする。
+        current.setEffectiveTo(operationDate.minusDays(1));
+    }
+
+    private void saveEnrollment(
+            Long employeeId,
+            Long policyId,
+            LocalDate effectiveFrom,
+            Map<String, String> parameters
+    ) {
+        EmployeePayrollItemEnrollment enrollment =
+                new EmployeePayrollItemEnrollment();
+        enrollment.setEmployeeId(employeeId);
+        enrollment.setBalancePolicyId(policyId);
+        enrollment.setEffectiveFrom(effectiveFrom);
+        enrollment.setSettingsJson(write(parameters));
+        enrollmentRepository.save(enrollment);
     }
 
     private Map<String, String> validateParameters(
@@ -185,6 +256,24 @@ public class PayrollItemEnrollmentService {
             return objectMapper.writeValueAsString(parameters == null ? Map.of() : parameters);
         } catch (JsonProcessingException exception) {
             throw new IllegalArgumentException("手当・控除設定を保存できません。", exception);
+        }
+    }
+
+    private Map<String, String> read(String json) {
+        if (json == null || json.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return objectMapper.readValue(
+                    json,
+                    new com.fasterxml.jackson.core.type.TypeReference<
+                            Map<String, String>>() { }
+            );
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException(
+                    "手当・控除設定を読み込めません。",
+                    exception
+            );
         }
     }
 }

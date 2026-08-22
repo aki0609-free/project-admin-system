@@ -102,7 +102,6 @@ public interface EmployeeMapper {
                         profile.setHealthInsuranceFlag(true);
                         profile.setPensionInsuranceFlag(true);
                         profile.setCareInsuranceFlag(false);
-                        profile.setDailyPayFlag(false);
                         profile.setCommuteAllowanceMonthly(BigDecimal.ZERO);
                         return;
                 }
@@ -142,7 +141,6 @@ public interface EmployeeMapper {
                                 request.pensionInsuranceFlag() == null || request.pensionInsuranceFlag());
 
                 profile.setCareInsuranceFlag(Boolean.TRUE.equals(request.careInsuranceFlag()));
-                profile.setDailyPayFlag(Boolean.TRUE.equals(request.dailyPayFlag()));
                 profile.setCommuteAllowanceMonthly(nvl(request.commuteAllowanceMonthly()));
         }
 

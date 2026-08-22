@@ -94,7 +94,7 @@ const rightToolbarItems = computed<ToolbarItem[]>(() => [
         </div>
 
         <div class="source-meta">
-          {{ source.tableName || 'table未設定' }}
+          {{ source.catalogCode || 'カタログ未設定' }}
         </div>
 
         <div class="source-flags">

@@ -155,7 +155,10 @@ class ResidentTaxImportContainerIntegrationTest
                 .isEqualTo(11000);
 
         testClock.setDate(LocalDate.of(2026, 7, 1));
-        assertThat(detailProvider.getDetails(new DeductionMaster()))
+        assertThat(detailProvider.getDetails(
+                new DeductionMaster(),
+                LocalDate.of(2026, 7, 1)
+        ))
                 .hasSize(12)
                 .anySatisfy(detail -> {
                     assertThat(detail.detailType()).isEqualTo("RESIDENT_TAX");

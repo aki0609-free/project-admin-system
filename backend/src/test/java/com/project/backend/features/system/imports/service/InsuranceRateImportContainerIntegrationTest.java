@@ -128,12 +128,18 @@ class InsuranceRateImportContainerIntegrationTest
         assertRate(InsuranceType.CHILD_CARE_SUPPORT, "0.00115");
 
         testClock.setDate(LocalDate.of(2026, 8, 1));
-        assertThat(healthDetailProvider.getDetails(new DeductionMaster()))
+        assertThat(healthDetailProvider.getDetails(
+                new DeductionMaster(),
+                LocalDate.of(2026, 8, 1)
+        ))
                 .singleElement()
                 .satisfies(detail -> assertThat(
                         detail.values().get("employeeRate")
                 ).isEqualTo(new BigDecimal("0.04805")));
-        assertThat(employmentDetailProvider.getDetails(new DeductionMaster()))
+        assertThat(employmentDetailProvider.getDetails(
+                new DeductionMaster(),
+                LocalDate.of(2026, 8, 1)
+        ))
                 .singleElement()
                 .satisfies(detail -> assertThat(
                         detail.values().get("employeeRate")

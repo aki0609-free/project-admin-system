@@ -18,6 +18,7 @@ import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.entity.EmployeePayrollProfile;
 import com.project.backend.features.employee.entity.EmployeeResignationChecklistMaster;
 import com.project.backend.features.employee.enums.EmploymentStatus;
+import com.project.backend.features.employee.enums.PaymentCycle;
 import com.project.backend.features.employee.mapper.EmployeeMapper;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.employee.repository.EmployeePayrollProfileRepository;
@@ -83,11 +84,12 @@ public class EmployeeAdminService {
         EmployeePayrollProfile profile = new EmployeePayrollProfile();
         profile.setEmployee(savedEmployee);
         mapper.updatePayrollProfileFromRequest(request.payrollProfile(), profile);
-        payrollProfileRepository.save(profile);
 
         EmployeeContract contract = new EmployeeContract();
         contract.setEmployee(savedEmployee);
         mapper.updateContractFromRequest(request.contract(), contract);
+        synchronizeLegacyDailyPayFlag(profile, contract);
+        payrollProfileRepository.save(profile);
         contractRepository.save(contract);
 
         return toDetailResponse(savedEmployee, profile, contract);
@@ -110,10 +112,9 @@ public class EmployeeAdminService {
                     EmployeePayrollProfile created = new EmployeePayrollProfile();
                     created.setEmployee(employee);
                     return created;
-                });
+        });
 
         mapper.updatePayrollProfileFromRequest(request.payrollProfile(), profile);
-        payrollProfileRepository.save(profile);
 
         EmployeeContract contract = contractRepository.findByEmployeeIdAndDeletedAtIsNull(id)
                 .orElseGet(() -> {
@@ -123,6 +124,8 @@ public class EmployeeAdminService {
                 });
 
         mapper.updateContractFromRequest(request.contract(), contract);
+        synchronizeLegacyDailyPayFlag(profile, contract);
+        payrollProfileRepository.save(profile);
         contractRepository.save(contract);
 
         Employee savedEmployee = employeeRepository.save(employee);
@@ -214,6 +217,17 @@ public class EmployeeAdminService {
                 PayrollItemBalanceSnapshot.untracked(),
                 payrollItemSettingService.findAll(employee.getId())
         );
+    }
+
+    /**
+     * 既存DB列を残したまま、日払い判定の入力元を支払サイクルへ一本化する。
+     */
+    @SuppressWarnings("deprecation")
+    private void synchronizeLegacyDailyPayFlag(
+            EmployeePayrollProfile profile,
+            EmployeeContract contract
+    ) {
+        profile.setDailyPayFlag(contract.getPaymentCycle() == PaymentCycle.DAILY);
     }
 
     private void validateRequest(

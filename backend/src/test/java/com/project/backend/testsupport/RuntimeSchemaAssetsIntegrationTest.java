@@ -22,6 +22,10 @@ import com.project.backend.features.tax.dto.ResidentTaxEmployeeInput;
 import com.project.backend.features.tax.dto.ResidentTaxMonthInput;
 import com.project.backend.features.tax.service.ResidentTaxEditorService;
 import com.project.backend.app.tenant.context.TenantContext;
+import com.project.backend.features.dailyreport.entity.DailyReport;
+import com.project.backend.features.dailyreport.service.DailyPayComponentCalculationService;
+import com.project.backend.features.employee.entity.EmployeeContract;
+import com.project.backend.features.employee.enums.SalaryType;
 import com.project.backend.features.system.backup.dto.BackupExecutionResult;
 import com.project.backend.features.system.backup.service.BackupExecutionService;
 import com.project.backend.features.system.notice.dto.NoticeGenerateResult;
@@ -44,6 +48,9 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
 
     @Autowired
     private NoticeAutoGenerateService noticeAutoGenerateService;
+
+    @Autowired
+    private DailyPayComponentCalculationService dailyPayComponentCalculationService;
 
     @Test
     void productionSchemaAssetsApplyToFreshMySql() throws Exception {
@@ -114,6 +121,7 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND active_flag = TRUE
                   AND deleted_at IS NULL
                 """, Integer.class)).isEqualTo(4);
+        assertFoundationDailyPayRulesCalculateAmounts();
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM allowance_masters
@@ -280,6 +288,38 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         assertClosingDayNoticesAreGeneratedOnlyOnce();
         assertBusinessDataBackupDownloadsAsZip();
         assertCareInsuranceAndOfficialRatesReachMonthlyPayrollView();
+    }
+
+    private void assertFoundationDailyPayRulesCalculateAmounts() {
+        TenantContext.setTenantId("default");
+        try {
+            DailyReport report = new DailyReport();
+            report.setWorkHours(new BigDecimal("8"));
+            report.setOvertimeHours(new BigDecimal("2"));
+            report.setNightWorkHours(BigDecimal.ONE);
+            report.setHolidayWorkHours(BigDecimal.ZERO);
+
+            EmployeeContract contract = new EmployeeContract();
+            contract.setSalaryType(SalaryType.HOURLY);
+            contract.setHourlyWage(new BigDecimal("1000"));
+
+            var amounts = dailyPayComponentCalculationService.calculate(
+                    report,
+                    contract,
+                    null
+            );
+
+            assertThat(amounts.normalPayAmount())
+                    .isEqualByComparingTo("8000");
+            assertThat(amounts.overtimePayAmount())
+                    .isEqualByComparingTo("2500");
+            assertThat(amounts.nightPayAmount())
+                    .isEqualByComparingTo("250");
+            assertThat(amounts.holidayPayAmount()).isZero();
+            assertThat(amounts.total()).isEqualByComparingTo("10750");
+        } finally {
+            TenantContext.clear();
+        }
     }
 
     private void assertClosingDayNoticesAreGeneratedOnlyOnce() {
@@ -586,6 +626,92 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND item.deleted_at IS NULL
                 """, BigDecimal.class, TEST_TENANT_ID, employeeId);
         assertThat(fixedMobileDeduction).isEqualByComparingTo("3500");
+
+        assertRetryUsesHistoryAndRecloseCreatesNewVersion(
+                employeeId,
+                executionId
+        );
+    }
+
+    private void assertRetryUsesHistoryAndRecloseCreatesNewVersion(
+            Long employeeId,
+            String initialExecutionId
+    ) {
+        jdbcTemplate.update("""
+                UPDATE resident_tax_monthly
+                SET tax_amount = 13000,
+                    updated_at = CURRENT_TIMESTAMP(6)
+                WHERE tenant_id = ?
+                  AND employee_id = ?
+                  AND fiscal_year = 2026
+                  AND month = 8
+                  AND deleted_at IS NULL
+                """, TEST_TENANT_ID, employeeId);
+
+        BigDecimal latestViewAmount = jdbcTemplate.queryForObject("""
+                SELECT resident_tax
+                FROM vw_monthly_pay_slip_latest
+                WHERE tenant_id = ?
+                  AND target_month = '2026-08-01'
+                  AND employee_id = ?
+                """, BigDecimal.class, TEST_TENANT_ID, employeeId);
+        assertThat(latestViewAmount).isEqualByComparingTo("13000");
+
+        jdbcTemplate.update("""
+                UPDATE monthly_pay_slip_input
+                SET execution_mode = 'RETRY',
+                    updated_at = CURRENT_TIMESTAMP(6)
+                WHERE execution_id = ?
+                  AND tenant_id = ?
+                  AND deleted_at IS NULL
+                """, initialExecutionId, TEST_TENANT_ID);
+        jdbcTemplate.execute(
+                "CALL sp_monthly_pay_slip_snapshot('"
+                        + initialExecutionId
+                        + "')"
+        );
+
+        BigDecimal retryOutputAmount = jdbcTemplate.queryForObject("""
+                SELECT resident_tax
+                FROM monthly_pay_slip_render_output
+                WHERE tenant_id = ?
+                  AND execution_id = ?
+                  AND employee_id = ?
+                  AND deleted_at IS NULL
+                """, BigDecimal.class,
+                TEST_TENANT_ID, initialExecutionId, employeeId);
+        assertThat(retryOutputAmount).isEqualByComparingTo("12000");
+
+        String recloseExecutionId = "RESIDENT-TAX-RECLOSE-INTEGRATION";
+        jdbcTemplate.update("""
+                INSERT INTO monthly_pay_slip_input (
+                    execution_id, target_month, employee_id,
+                    closing_version, execution_mode,
+                    tenant_id, created_at, updated_at
+                ) VALUES (
+                    ?, '2026-08', ?,
+                    2, 'RECLOSE',
+                    ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                )
+                """, recloseExecutionId, employeeId, TEST_TENANT_ID);
+        jdbcTemplate.execute(
+                "CALL sp_monthly_pay_slip_snapshot('"
+                        + recloseExecutionId
+                        + "')"
+        );
+
+        List<BigDecimal> historyAmounts = jdbcTemplate.queryForList("""
+                SELECT resident_tax
+                FROM monthly_pay_slip_history
+                WHERE tenant_id = ?
+                  AND target_month = '2026-08-01'
+                  AND employee_id = ?
+                  AND deleted_at IS NULL
+                ORDER BY closing_version
+                """, BigDecimal.class, TEST_TENANT_ID, employeeId);
+        assertThat(historyAmounts).hasSize(2);
+        assertAmount(historyAmounts.get(0), "12000");
+        assertAmount(historyAmounts.get(1), "13000");
     }
 
     private Long registerConfirmedAndDraftMobileTransactions(Long employeeId) {

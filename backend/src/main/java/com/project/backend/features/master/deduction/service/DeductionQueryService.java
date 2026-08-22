@@ -1,5 +1,7 @@
 package com.project.backend.features.master.deduction.service;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -27,6 +29,7 @@ public class DeductionQueryService {
     private final DeductionMapper deductionMapper;
     private final DeductionDetailResolver deductionDetailResolver;
     private final PayrollItemPolicyService policyService;
+    private final Clock clock;
 
     public List<DeductionListItemResponse> findAll() {
         return deductionMasterRepository
@@ -39,16 +42,26 @@ public class DeductionQueryService {
     }
 
     @SuppressWarnings("null")
-    public DeductionDetailResponse findDetail(Long id) {
+    public DeductionDetailResponse findDetail(
+            Long id,
+            LocalDate targetDate
+    ) {
         DeductionMaster deduction = deductionMasterRepository
                 .findByIdAndTenantIdAndDeletedAtIsNull(id, TenantContext.getTenantId())
                 .orElseThrow(() -> new EntityNotFoundException(
                         "控除マスターが見つかりません。id=" + id
                 ));
 
+        LocalDate resolvedTargetDate = targetDate != null
+                ? targetDate
+                : LocalDate.now(clock);
+
         return deductionMapper.toDetail(
                 deduction,
-                deductionDetailResolver.resolve(deduction),
+                deductionDetailResolver.resolve(
+                        deduction,
+                        resolvedTargetDate
+                ),
                 policyService.find(PayrollItemTargetType.DEDUCTION, deduction.getId())
         );
     }

@@ -16,12 +16,14 @@ const props = defineProps<{
   modelValue: boolean
   deduction: DeductionMaster | null
   detailResponse: DeductionDetailResponse | null
+  detailTargetDate: string
   isCreateMode: boolean
   canManage: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
+  (e: 'update:detailTargetDate', value: string): void
   (e: 'save', value: DeductionMaster): void
   (e: 'delete', id: number): void
 }>()
@@ -216,6 +218,8 @@ function handleDelete() {
                 :deduction-id="form.id"
                 :detail-view-type="form.detailViewType"
                 :detail-response="detailResponse"
+                :target-date="detailTargetDate"
+                @update:target-date="emit('update:detailTargetDate', $event)"
               />
             </div>
           </template>

@@ -8,12 +8,16 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.project.backend.features.dailyreport.entity.DailyReport;
 import com.project.backend.features.dailyreport.repository.DailyReportRepository;
+import com.project.backend.features.employee.enums.PaymentCycle;
+import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.operation.daily.dto.DailyPaymentBulkSaveItemRequest;
 import com.project.backend.features.operation.daily.dto.DailyPaymentBulkSaveRequest;
 import com.project.backend.features.operation.daily.dto.DailyPaymentDenominationResponse;
@@ -34,6 +38,7 @@ public class DailyPaymentService {
 
     private final DailyPaymentRepository dailyPaymentRepository;
     private final DailyReportRepository dailyReportRepository;
+    private final EmployeeContractRepository employeeContractRepository;
     private final DailyPaymentMapper mapper;
     private final Clock clock;
 
@@ -62,8 +67,16 @@ public class DailyPaymentService {
                     .add(report);
         }
 
+        Set<Long> dailyPaymentEmployeeIds = employeeContractRepository
+                .findByEmployeeIdInAndDeletedAtIsNull(reportsByEmployee.keySet())
+                .stream()
+                .filter(contract -> contract.getPaymentCycle() == PaymentCycle.DAILY)
+                .map(contract -> contract.getEmployee().getId())
+                .collect(Collectors.toSet());
+
         reportsByEmployee.forEach((employeeId, employeeReports) -> {
-            if (!paymentMap.containsKey(employeeId)) {
+            if (dailyPaymentEmployeeIds.contains(employeeId)
+                    && !paymentMap.containsKey(employeeId)) {
                 paymentMap.put(
                         employeeId,
                         createGeneratedPayment(paymentDate, employeeReports)
@@ -158,6 +171,8 @@ public class DailyPaymentService {
             LocalDate paymentDate,
             DailyPaymentBulkSaveItemRequest item
     ) {
+        requireDailyPaymentCycle(item.getEmployeeId());
+
         DailyPayment entity = dailyPaymentRepository
                 .findByPaymentDateAndEmployeeIdAndDeletedAtIsNull(
                         paymentDate,
@@ -171,6 +186,23 @@ public class DailyPaymentService {
         applyPaymentAmounts(entity, item);
 
         return dailyPaymentRepository.save(entity);
+    }
+
+    private void requireDailyPaymentCycle(Long employeeId) {
+        if (employeeId == null) {
+            throw new IllegalArgumentException("employeeId は必須です。");
+        }
+
+        boolean dailyPaymentTarget = employeeContractRepository
+                .findByEmployeeIdAndDeletedAtIsNull(employeeId)
+                .map(contract -> contract.getPaymentCycle() == PaymentCycle.DAILY)
+                .orElse(false);
+
+        if (!dailyPaymentTarget) {
+            throw new IllegalArgumentException(
+                    "日次支払を登録できるのは、支払サイクルが日払いの従業員だけです。"
+            );
+        }
     }
 
     @SuppressWarnings("null")

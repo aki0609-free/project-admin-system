@@ -63,6 +63,14 @@ public class EmployeePayrollProfile extends BaseEntity {
     @Column(name = "care_insurance_flag", nullable = false)
     private boolean careInsuranceFlag = false;
 
+    /**
+     * AWS既存DBとの移行互換列。
+     *
+     * <p>日払い対象の正式な判定元は employee_contract.payment_cycle であり、
+     * この値を画面/APIから直接更新してはならない。V1では列を残し、契約保存時に
+     * payment_cycle=DAILY と同期する。</p>
+     */
+    @Deprecated(forRemoval = true)
     @Column(name = "daily_pay_flag", nullable = false)
     private boolean dailyPayFlag = false;
 

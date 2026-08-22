@@ -16,7 +16,17 @@ const props = defineProps<{
   deductionId: number
   detailViewType: DeductionDetailViewType
   detailResponse: DeductionDetailResponse | null
+  targetDate: string
 }>()
+
+const emit = defineEmits<{
+  (e: 'update:targetDate', value: string): void
+}>()
+
+const targetDateModel = computed({
+  get: () => props.targetDate,
+  set: (value: string) => emit('update:targetDate', value),
+})
 
 const detail = useDeductionDetailConfig(computed(() => props.detailViewType))
 const { hasRole } = useAuth()
@@ -32,6 +42,16 @@ const rows = computed<DeductionDetailTableRow[]>(() =>
 
 <template>
   <div class="d-flex flex-column ga-3">
+    <v-text-field
+      v-model="targetDateModel"
+      type="date"
+      label="参照基準日"
+      variant="outlined"
+      density="compact"
+      hide-details
+      max-width="280"
+    />
+
     <div v-if="canEditResidentTax" class="d-flex justify-end">
       <v-btn color="primary" prepend-icon="mdi-table-edit" @click="residentTaxEditorOpen = true">
         年度別住民税を編集
@@ -46,7 +66,7 @@ const rows = computed<DeductionDetailTableRow[]>(() =>
     </v-alert>
 
     <v-alert v-if="rows.length === 0" type="warning" variant="tonal">
-      現在年度に対応する詳細データが登録されていません。
+      選択した基準日に対応する詳細データが登録されていません。
     </v-alert>
 
     <SimpleTable

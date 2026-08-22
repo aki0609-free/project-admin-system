@@ -12,6 +12,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.project.backend.app.tenant.context.TenantContext;
 import com.project.backend.features.dailyreport.dto.DailyPayComponentAmounts;
@@ -22,6 +23,7 @@ import com.project.backend.features.dailyreport.repository.DailyPayRuleSettingRe
 import com.project.backend.features.dailyreport.repository.DailyReportRepository;
 import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.enums.SalaryType;
+import com.project.backend.features.master.payrollitem.service.PayrollMoneyPolicy;
 import com.project.backend.features.system.rule.dto.RuleContextRequest;
 import com.project.backend.features.system.rule.dto.RuleExecutionResult;
 import com.project.backend.features.system.rule.service.RuleExecutionService;
@@ -52,6 +54,7 @@ public class DailyPayComponentCalculationService {
     private final DailyPayRuleSettingRepository settingRepository;
     private final RuleExecutionService ruleExecutionService;
     private final DailyReportRepository dailyReportRepository;
+    private final PayrollMoneyPolicy moneyPolicy;
 
     public DailyPayComponentAmounts calculate(
             DailyReport report,
@@ -80,30 +83,22 @@ public class DailyPayComponentCalculationService {
         BigDecimal normal = calculateOne(
                 DailyPayComponentType.NORMAL_PAY,
                 ruleNames,
-                parameters,
-                fallbackNormal(contract, payTimes.regularPayHours())
+                parameters
         );
         BigDecimal overtime = calculateOne(
                 DailyPayComponentType.OVERTIME_PAY,
                 ruleNames,
-                parameters,
-                fallbackOvertime(contract, payTimes)
+                parameters
         );
         BigDecimal night = calculateOne(
                 DailyPayComponentType.NIGHT_PAY,
                 ruleNames,
-                parameters,
-                calculationHourlyRate(contract)
-                        .multiply(nvl(report.getNightWorkHours()))
-                        .multiply(NIGHT_PREMIUM_RATE)
+                parameters
         );
         BigDecimal holiday = calculateOne(
                 DailyPayComponentType.HOLIDAY_PAY,
                 ruleNames,
-                parameters,
-                calculationHourlyRate(contract)
-                        .multiply(nvl(report.getHolidayWorkHours()))
-                        .multiply(HOLIDAY_RATE)
+                parameters
         );
         return new DailyPayComponentAmounts(
                 normal,
@@ -116,13 +111,9 @@ public class DailyPayComponentCalculationService {
     private BigDecimal calculateOne(
             DailyPayComponentType componentType,
             Map<DailyPayComponentType, String> ruleNames,
-            Map<String, Object> baseParameters,
-            BigDecimal fallback
+            Map<String, Object> baseParameters
     ) {
         String ruleName = ruleNames.get(componentType);
-        if (ruleName == null || ruleName.isBlank()) {
-            return money(fallback);
-        }
 
         Map<String, Object> parameters = new LinkedHashMap<>(baseParameters);
         parameters.put("componentType", componentType.name());
@@ -132,7 +123,10 @@ public class DailyPayComponentCalculationService {
                         .parameters(parameters)
                         .build()
         );
-        BigDecimal amount = toBigDecimal(result.result());
+        BigDecimal amount = moneyPolicy.toDecimal(
+                result.result(),
+                "日報給与Rule計算結果"
+        );
         if (amount.signum() < 0) {
             throw new IllegalStateException(
                     "日報給与Ruleの計算結果は0以上である必要があります。componentType="
@@ -149,6 +143,11 @@ public class DailyPayComponentCalculationService {
                 .findByTenantIdAndActiveFlagTrueAndDeletedAtIsNull(
                         TenantContext.getTenantId()
                 )) {
+            if (setting.getComponentType() == null) {
+                throw new IllegalStateException(
+                        "日報給与Rule設定のcomponentTypeが未設定です。"
+                );
+            }
             if (result.putIfAbsent(
                     setting.getComponentType(),
                     setting.getRuleName()
@@ -156,6 +155,15 @@ public class DailyPayComponentCalculationService {
                 throw new IllegalStateException(
                         "日報給与Rule設定が重複しています。componentType="
                                 + setting.getComponentType()
+                );
+            }
+        }
+
+        for (DailyPayComponentType componentType : DailyPayComponentType.values()) {
+            if (!StringUtils.hasText(result.get(componentType))) {
+                throw new IllegalStateException(
+                        "必須の日報給与Rule設定がありません。componentType="
+                                + componentType
                 );
             }
         }
@@ -210,33 +218,6 @@ public class DailyPayComponentCalculationService {
                             .multiply(payTimes.regularPayHours()));
         }
         return parameters;
-    }
-
-    private BigDecimal fallbackNormal(
-            EmployeeContract contract,
-            BigDecimal regularPayHours
-    ) {
-        if (contract == null || contract.getSalaryType() == null) {
-            return BigDecimal.ZERO;
-        }
-        return calculationHourlyRate(contract)
-                .multiply(nvl(regularPayHours));
-    }
-
-    private BigDecimal fallbackOvertime(
-            EmployeeContract contract,
-            PayTimeBreakdown payTimes
-    ) {
-        if (contract == null || contract.getSalaryType() == null) {
-            return BigDecimal.ZERO;
-        }
-        BigDecimal hourlyRate = calculationHourlyRate(contract);
-        return hourlyRate
-                .multiply(payTimes.overtimeWithin60Hours())
-                .multiply(OVERTIME_RATE)
-                .add(hourlyRate
-                        .multiply(payTimes.overtimeOver60Hours())
-                        .multiply(OVERTIME_OVER_60_RATE));
     }
 
     /**
@@ -383,28 +364,8 @@ public class DailyPayComponentCalculationService {
         return date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     }
 
-    private BigDecimal toBigDecimal(Object value) {
-        if (value == null) {
-            return BigDecimal.ZERO;
-        }
-        if (value instanceof BigDecimal decimal) {
-            return decimal;
-        }
-        if (value instanceof Number number) {
-            return BigDecimal.valueOf(number.doubleValue());
-        }
-        try {
-            return new BigDecimal(value.toString().trim());
-        } catch (NumberFormatException exception) {
-            throw new IllegalStateException(
-                    "日報給与Ruleの計算結果が数値ではありません。value=" + value,
-                    exception
-            );
-        }
-    }
-
     private BigDecimal money(BigDecimal value) {
-        return nvl(value).setScale(0, RoundingMode.HALF_UP);
+        return moneyPolicy.roundToYen(value);
     }
 
     private BigDecimal nvl(BigDecimal value) {

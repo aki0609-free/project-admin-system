@@ -20,6 +20,7 @@ import com.project.backend.app.tenant.context.TenantContext;
 import com.project.backend.features.system.rule.entity.RuleColumnMapping;
 import com.project.backend.features.system.rule.entity.RuleDataSource;
 import com.project.backend.features.system.rule.entity.RuleDataSourceCatalog;
+import com.project.backend.features.system.rule.entity.RuleDataSourceCatalogColumn;
 import com.project.backend.features.system.rule.enums.RuleDataType;
 import com.project.backend.features.system.rule.service.RuleDataSourceCatalogService;
 
@@ -59,6 +60,14 @@ class GeneralDataFetcherTest {
         );
         catalog.setTenantScopedFlag(true);
         catalog.setMaxRows(100);
+
+        RuleDataSourceCatalogColumn catalogColumn =
+                new RuleDataSourceCatalogColumn();
+        catalogColumn.setColumnName("hourly_wage");
+        catalogColumn.setDisplayName("時給");
+        catalogColumn.setDataType(RuleDataType.DECIMAL);
+        catalogColumn.setActiveFlag(true);
+        catalog.addColumn(catalogColumn);
 
         RuleColumnMapping column = new RuleColumnMapping();
         column.setColumnName("hourly_wage");
@@ -109,5 +118,78 @@ class GeneralDataFetcherTest {
                 .containsEntry("tenantId", "tenant-a")
                 .containsEntry("employeeId", 10L)
                 .containsEntry("__ruleLimit", 2);
+    }
+
+    @Test
+    void fetch_shouldRejectSourceWithoutCatalog() {
+        RuleDataSource source = new RuleDataSource();
+        source.setSourceName("legacySource");
+        source.setTableName("employees");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> fetcher.fetch(source, Map.of())
+        )
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("catalogCode");
+    }
+
+    @Test
+    void fetch_shouldRejectSourceWithoutColumnMappings() {
+        RuleDataSourceCatalog catalog = catalogWithColumn();
+        RuleDataSource source = new RuleDataSource();
+        source.setSourceName("employee");
+        source.setCatalogCode("EMPLOYEE_BASIC");
+        source.setColumns(List.of());
+
+        when(catalogService.findRequired("EMPLOYEE_BASIC"))
+                .thenReturn(catalog);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> fetcher.fetch(source, Map.of())
+        )
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("列Mapping");
+    }
+
+    @Test
+    void fetch_shouldRejectColumnNotAllowedByCatalog() {
+        RuleDataSourceCatalog catalog = catalogWithColumn();
+        RuleColumnMapping column = new RuleColumnMapping();
+        column.setColumnName("password_hash");
+        column.setFactKey("passwordHash");
+        column.setDataType(RuleDataType.STRING);
+
+        RuleDataSource source = new RuleDataSource();
+        source.setSourceName("employee");
+        source.setCatalogCode("EMPLOYEE_BASIC");
+        source.setColumns(List.of(column));
+
+        when(catalogService.findRequired("EMPLOYEE_BASIC"))
+                .thenReturn(catalog);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> fetcher.fetch(source, Map.of())
+        )
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("許可されていないカラム");
+    }
+
+    private RuleDataSourceCatalog catalogWithColumn() {
+        RuleDataSourceCatalog catalog =
+                new RuleDataSourceCatalog();
+        catalog.setSourceCode("EMPLOYEE_BASIC");
+        catalog.setPhysicalName("vw_rule_employee_basic");
+        catalog.setTenantScopedFlag(false);
+        catalog.setMaxRows(100);
+
+        RuleDataSourceCatalogColumn column =
+                new RuleDataSourceCatalogColumn();
+        column.setColumnName("hourly_wage");
+        column.setDisplayName("時給");
+        column.setDataType(RuleDataType.DECIMAL);
+        column.setActiveFlag(true);
+        catalog.addColumn(column);
+
+        return catalog;
     }
 }

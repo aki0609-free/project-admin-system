@@ -22,7 +22,6 @@ public record EmployeePayrollProfileSaveRequest(
         Boolean healthInsuranceFlag,
         Boolean pensionInsuranceFlag,
         Boolean careInsuranceFlag,
-        Boolean dailyPayFlag,
         @DecimalMin("0.0") BigDecimal commuteAllowanceMonthly
 ) {
 }

@@ -24,7 +24,6 @@ export type EmployeePayrollProfileForm = {
   healthInsuranceFlag: boolean
   pensionInsuranceFlag: boolean
   careInsuranceFlag: boolean
-  dailyPayFlag: boolean
   commuteAllowanceMonthly: number
 }
 

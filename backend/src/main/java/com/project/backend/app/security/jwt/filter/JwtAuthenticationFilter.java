@@ -13,7 +13,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.project.backend.app.security.auth.dto.SecurityUser;
 import com.project.backend.app.security.jwt.services.CustomUserDetailsService;
 import com.project.backend.app.security.jwt.services.JwtService;
-import com.project.backend.app.tenant.context.TenantContext;
 
 import io.jsonwebtoken.JwtException;
 
@@ -42,55 +41,52 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         FilterChain filterChain
     ) throws ServletException, IOException {
 
-        try {
-            final String authHeader = request.getHeader("Authorization");
+        final String authHeader = request.getHeader("Authorization");
 
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                filterChain.doFilter(request, response);
-                return;
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        try {
+            String jwt = authHeader.substring(7);
+            String username = jwtService.extractUsername(jwt);
+            String tenantId = jwtService.extractTenantId(jwt);
+
+            if (tenantId == null || tenantId.isBlank()) {
+                throw new IllegalArgumentException("JWTにTenant IDがありません。");
             }
 
-            try {
-                String jwt = authHeader.substring(7);
-                String username = jwtService.extractUsername(jwt);
-                String tenantId = jwtService.extractTenantId(jwt);
+            if (username != null
+                    && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                if (tenantId != null && !tenantId.isBlank()) {
-                    TenantContext.setTenantId(tenantId);
-                }
+                SecurityUser userDetails =
+                    (SecurityUser) userDetailsService.loadUserByUsernameAndTenantId(username, tenantId);
 
-                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                if (jwtService.isTokenValid(jwt, userDetails)) {
 
-                    SecurityUser userDetails =
-                        (SecurityUser) userDetailsService.loadUserByUsernameAndTenantId(username, tenantId);
-
-                    if (jwtService.isTokenValid(jwt, userDetails)) {
-
-                        UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                            );
-
-                        authToken.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
                         );
 
-                        SecurityContextHolder
-                            .getContext()
-                            .setAuthentication(authToken);
-                    }
-                }
-            } catch (JwtException | IllegalArgumentException exception) {
-                rejectAuthentication(response, exception);
-                return;
-            }
+                    authToken.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
 
-            filterChain.doFilter(request, response);
-        } finally {
-            TenantContext.clear();
+                    SecurityContextHolder
+                        .getContext()
+                        .setAuthentication(authToken);
+                }
+            }
+        } catch (JwtException | IllegalArgumentException exception) {
+            rejectAuthentication(response, exception);
+            return;
         }
+
+        filterChain.doFilter(request, response);
     }
 
     private void rejectAuthentication(

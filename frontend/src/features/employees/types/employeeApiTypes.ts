@@ -65,7 +65,6 @@ export type EmployeePayrollProfileResponse = {
   healthInsuranceFlag: boolean
   pensionInsuranceFlag: boolean
   careInsuranceFlag: boolean
-  dailyPayFlag: boolean
   commuteAllowanceMonthly: number
 }
 
@@ -144,7 +143,6 @@ export type EmployeePayrollProfileSaveRequest = {
   healthInsuranceFlag: boolean
   pensionInsuranceFlag: boolean
   careInsuranceFlag: boolean
-  dailyPayFlag: boolean
   commuteAllowanceMonthly: number
 }
 

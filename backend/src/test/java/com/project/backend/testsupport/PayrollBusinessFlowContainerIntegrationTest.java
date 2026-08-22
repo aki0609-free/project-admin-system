@@ -10,6 +10,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
+import org.testcontainers.containers.MySQLContainer;
 
 import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
 import com.project.backend.features.dailyreport.service.DailyReportCommandService;
@@ -20,6 +21,10 @@ import com.project.backend.features.employee.enums.PaymentCycle;
 import com.project.backend.features.employee.enums.SalaryType;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.employee.repository.EmployeeRepository;
+import com.project.backend.features.operation.daily.dto.DailyPaymentBulkSaveItemRequest;
+import com.project.backend.features.operation.daily.dto.DailyPaymentBulkSaveRequest;
+import com.project.backend.features.operation.daily.enums.DailyPaymentStatus;
+import com.project.backend.features.operation.daily.service.DailyPaymentService;
 import com.project.backend.features.operation.monthly.service.MonthlySummaryService;
 import com.project.backend.features.tax.dto.ResidentTaxConfirmRequest;
 import com.project.backend.features.tax.dto.ResidentTaxDraftSaveRequest;
@@ -36,10 +41,16 @@ class PayrollBusinessFlowContainerIntegrationTest
     private EmployeeRepository employeeRepository;
 
     @Autowired
+    private MySQLContainer<?> mysqlContainer;
+
+    @Autowired
     private EmployeeContractRepository contractRepository;
 
     @Autowired
     private DailyReportCommandService dailyReportCommandService;
+
+    @Autowired
+    private DailyPaymentService dailyPaymentService;
 
     @Autowired
     private ResidentTaxEditorService residentTaxEditorService;
@@ -51,8 +62,12 @@ class PayrollBusinessFlowContainerIntegrationTest
     private MonthlySummaryService monthlySummaryService;
 
     @Test
-    void employeeDailyPayResidentTaxAndMonthlySummaryRemainConsistent() {
+    void employeeDailyPayResidentTaxAndMonthlySummaryRemainConsistent() throws Exception {
         Employee employee = saveEmployeeAndContract();
+        RuntimeSchemaAssetInstaller.apply(
+                mysqlContainer,
+                List.of("sql/daily_report/pay_component_rule_foundation_v1.sql")
+        );
         confirmResidentTax(employee.getId());
 
         var report = dailyReportCommandService.create(dailyReportRequest(employee.getId()));
@@ -62,6 +77,16 @@ class PayrollBusinessFlowContainerIntegrationTest
         assertThat(report.estimatedGrossPayAmount()).isEqualByComparingTo("15750");
         assertThat(report.estimatedNetPayAmount()).isEqualByComparingTo("15750");
         assertThat(report.approvalStatus()).isEqualTo(ApprovalStatus.APPROVED);
+
+        var generatedPayments = dailyPaymentService.findByPaymentDate(
+                LocalDate.of(2026, 8, 10)
+        );
+        assertThat(generatedPayments).singleElement().satisfies(payment -> {
+            assertThat(payment.employeeId()).isEqualTo(employee.getId());
+            assertThat(payment.plannedAmount()).isEqualByComparingTo("15750");
+        });
+
+        savePaidDailyPayment(employee.getId());
 
         assertThat(residentTaxMonthlyRepository
                 .findByEmployeeIdAndFiscalYearAndMonth(employee.getId(), 2026, 8))
@@ -74,8 +99,8 @@ class PayrollBusinessFlowContainerIntegrationTest
         assertThat(summary.workReportCount()).isEqualTo(1);
         assertThat(summary.totalGrossAmount()).isEqualByComparingTo("15750");
         assertThat(summary.totalDeductionAmount()).isEqualByComparingTo("0");
-        assertThat(summary.totalDailyPaymentAmount()).isEqualByComparingTo("0");
-        assertThat(summary.totalNetPaymentAmount()).isEqualByComparingTo("15750");
+        assertThat(summary.totalDailyPaymentAmount()).isEqualByComparingTo("15000");
+        assertThat(summary.totalNetPaymentAmount()).isEqualByComparingTo("750");
     }
 
     private Employee saveEmployeeAndContract() {
@@ -87,11 +112,30 @@ class PayrollBusinessFlowContainerIntegrationTest
         EmployeeContract contract = new EmployeeContract();
         contract.setEmployee(employee);
         contract.setSalaryType(SalaryType.HOURLY);
-        contract.setPaymentCycle(PaymentCycle.MONTHLY);
+        contract.setPaymentCycle(PaymentCycle.DAILY);
         contract.setHourlyWage(new BigDecimal("1500"));
         contract.setStandardWorkingHours(new BigDecimal("40"));
         contractRepository.saveAndFlush(contract);
         return employee;
+    }
+
+    private void savePaidDailyPayment(Long employeeId) {
+        DailyPaymentBulkSaveItemRequest item = new DailyPaymentBulkSaveItemRequest();
+        item.setEmployeeId(employeeId);
+        item.setPlannedAmount(new BigDecimal("15750"));
+        item.setActualAmount(new BigDecimal("15000"));
+        item.setStatus(DailyPaymentStatus.PAID);
+        item.setNewFlag(true);
+
+        DailyPaymentBulkSaveRequest request = new DailyPaymentBulkSaveRequest();
+        request.setPaymentDate(LocalDate.of(2026, 8, 10));
+        request.setItems(List.of(item));
+
+        var saved = dailyPaymentService.bulkSave(request);
+        assertThat(saved).singleElement().satisfies(payment -> {
+            assertThat(payment.status()).isEqualTo(DailyPaymentStatus.PAID);
+            assertThat(payment.actualAmount()).isEqualByComparingTo("15000");
+        });
     }
 
     private void confirmResidentTax(Long employeeId) {

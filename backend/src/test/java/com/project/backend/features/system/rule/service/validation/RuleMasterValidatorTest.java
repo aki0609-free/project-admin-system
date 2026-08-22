@@ -11,6 +11,9 @@ import org.junit.jupiter.api.Test;
 
 import com.project.backend.features.system.rule.dto.RuleMasterSaveRequest;
 import com.project.backend.features.system.rule.entity.RuleMaster;
+import com.project.backend.features.system.rule.entity.RuleDataSourceCatalog;
+import com.project.backend.features.system.rule.entity.RuleDataSourceCatalogColumn;
+import com.project.backend.features.system.rule.enums.RuleDataType;
 import com.project.backend.features.system.rule.enums.RuleDslType;
 import com.project.backend.features.system.rule.enums.RuleType;
 import com.project.backend.features.system.rule.exception.RuleConflictException;
@@ -21,14 +24,18 @@ import com.project.backend.features.system.rule.service.RuleBeanCatalogService;
 class RuleMasterValidatorTest {
 
     private RuleMasterRepository repository;
+    private RuleDataSourceCatalogService catalogService;
     private RuleMasterValidator validator;
 
     @BeforeEach
     void setUp() {
         repository = mock(RuleMasterRepository.class);
+        catalogService = mock(
+                RuleDataSourceCatalogService.class
+        );
         validator = new RuleMasterValidator(
                 repository,
-                mock(RuleDataSourceCatalogService.class),
+                catalogService,
                 mock(RuleBeanCatalogService.class)
         );
     }
@@ -59,7 +66,7 @@ class RuleMasterValidatorTest {
     }
 
     @Test
-    void validateForCreate_shouldRejectUnsafeSqlClause() {
+    void validateForCreate_shouldRejectRawTableSource() {
         var source = new com.project.backend.features.system.rule.dto.RuleDataSourceSaveRequest(
                 null,
                 "employee",
@@ -88,8 +95,46 @@ class RuleMasterValidatorTest {
 
         assertThatThrownBy(() ->
                 validator.validateForCreate(request))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("catalogCode");
+    }
+
+    @Test
+    void validateForCreate_shouldRejectCatalogWithoutColumnMappings() {
+        RuleDataSourceCatalog catalog = catalogWithColumn();
+        when(catalogService.findRequired("EMPLOYEE_BASIC"))
+                .thenReturn(catalog);
+
+        var source = new com.project.backend.features.system.rule.dto.RuleDataSourceSaveRequest(
+                null,
+                "employee",
+                "EMPLOYEE_BASIC",
+                null,
+                null,
+                true,
+                true,
+                1,
+                List.of()
+        );
+        RuleMasterSaveRequest request = new RuleMasterSaveRequest(
+                "SAFE_RULE",
+                "安全なRule",
+                RuleType.ALLOWANCE,
+                RuleDslType.JEXL,
+                "params.amount",
+                null,
+                "result",
+                null,
+                100,
+                true,
+                List.of(),
+                List.of(source)
+        );
+
+        assertThatThrownBy(() ->
+                validator.validateForCreate(request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("whereClause");
+                .hasMessageContaining("列Mapping");
     }
 
     @Test
@@ -121,5 +166,21 @@ class RuleMasterValidatorTest {
                 List.of(),
                 List.of()
         );
+    }
+
+    private RuleDataSourceCatalog catalogWithColumn() {
+        RuleDataSourceCatalog catalog =
+                new RuleDataSourceCatalog();
+        catalog.setSourceCode("EMPLOYEE_BASIC");
+
+        RuleDataSourceCatalogColumn column =
+                new RuleDataSourceCatalogColumn();
+        column.setColumnName("hourly_wage");
+        column.setDisplayName("時給");
+        column.setDataType(RuleDataType.DECIMAL);
+        column.setActiveFlag(true);
+        catalog.addColumn(column);
+
+        return catalog;
     }
 }

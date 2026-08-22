@@ -1,9 +1,11 @@
 package com.project.backend.features.master.deduction.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.project.backend.features.master.deduction.dto.DeductionDetailResponse;
@@ -31,9 +33,12 @@ public class DeductionController {
 
     @GetMapping("/{id}")
     public DeductionDetailResponse findDetail(
-            @PathVariable Long id
+            @PathVariable Long id,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate targetDate
     ) {
-        return deductionQueryService.findDetail(id);
+        return deductionQueryService.findDetail(id, targetDate);
     }
 
     @PostMapping

@@ -3,6 +3,7 @@ package com.project.backend.features.system.imports.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -126,7 +127,10 @@ class IncomeTaxImportContainerIntegrationTest
                     assertThat(row.getDependents()).isZero();
                     assertThat(row.getTaxAmount()).isEqualTo(180);
                 });
-        assertThat(detailProvider.getDetails(new DeductionMaster()))
+        assertThat(detailProvider.getDetails(
+                new DeductionMaster(),
+                LocalDate.of(2026, 7, 1)
+        ))
                 .hasSize(2)
                 .anySatisfy(detail -> {
                     assertThat(detail.detailType()).isEqualTo("INCOME_TAX");
