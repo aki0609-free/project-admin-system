@@ -11,6 +11,4 @@ export type EnvelopePrintPayload = {
   envelopeType: EnvelopeType
   stamp: string
   honorific: string
-  fontFamily: string
-  fontSize: number
 }

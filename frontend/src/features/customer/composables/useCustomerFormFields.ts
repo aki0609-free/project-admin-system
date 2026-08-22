@@ -21,6 +21,7 @@ export const useCustomerFormFields = () => {
       label: '請求書パターン',
       type: 'select',
       tab: '契約・請求',
+      fullWidth: true,
       required: true,
       options: [
         { title: 'パターン1：職種のみ・現場名なし', value: 'PATTERN_1' },

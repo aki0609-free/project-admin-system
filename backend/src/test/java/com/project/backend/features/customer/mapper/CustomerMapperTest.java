@@ -45,6 +45,24 @@ class CustomerMapperTest {
         assertThat(response.paymentDayRule().monthOffset()).isEqualTo(2);
     }
 
+    @Test
+    void apply_shouldTrimTextAndClearDayForEndOfMonth() {
+        Customer entity = new Customer();
+        CustomerSaveRequest request = new CustomerSaveRequest(
+                "  テスト顧客  ", "  テスト  ", "   ", null, null,
+                null, null, null, null, CustomerInvoiceType.PATTERN_1,
+                new DayRule(DayRuleType.END_OF_MONTH, 20, 0),
+                null, null, null
+        );
+
+        mapper.apply(entity, request);
+
+        assertThat(entity.getName()).isEqualTo("テスト顧客");
+        assertThat(entity.getFuriganaName()).isEqualTo("テスト");
+        assertThat(entity.getShortName()).isNull();
+        assertThat(entity.getClosingDayValue()).isNull();
+    }
+
     private CustomerSaveRequest request(
             CustomerInvoiceType invoiceType,
             DayRule closingRule,

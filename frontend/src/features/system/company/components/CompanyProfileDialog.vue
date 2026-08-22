@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-import { z } from 'zod'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
@@ -22,6 +21,7 @@ import {
 } from '../utils/companyProfileFactory'
 import { useAuth } from '@/shared/auth/composables/useAuth'
 import { Role } from '@/shared/auth/types/types'
+import { companyProfileSchema } from '../validation/companyProfileSchema'
 
 const props = defineProps<{
   modelValue: boolean
@@ -42,30 +42,25 @@ const dialogModel = computed({
 
 const activeTab = ref('basic')
 const editMode = ref(false)
+const operationMessage = ref('')
+const operationMessageType = ref<'success' | 'error'>('success')
+let operationMessageTimer: ReturnType<typeof window.setTimeout> | undefined
 
 const form = reactive<CompanyProfileForm>(createEmptyCompanyProfileForm())
 
-const { companyProfile, isFetching, refetch } = useCompanyProfileQuery()
+const companyProfileQuery = useCompanyProfileQuery()
+const { companyProfile, isFetching, refetch } = companyProfileQuery
 
 const saveMutation = useSaveCompanyProfileMutation()
 
 const { tabs, basicFields, invoiceFields, certificationFields } = useCompanyProfileFormFields()
 
-const schema = z
-  .object({
-    companyCode: z.string().trim().min(1, '会社コードは必須です'),
-
-    companyName: z.string().trim().min(1, '会社名は必須です'),
-
-    capitalAmount: z.number().min(0).nullable(),
-
-    activeFlag: z.boolean(),
-  })
-  .passthrough()
+const schema = companyProfileSchema
 
 const loading = computed(() => isFetching.value || saveMutation.isPending.value)
 
 const displayCompanyName = computed(() => form.companyName || '会社情報未登録')
+const loadError = computed(() => companyProfileQuery.isError.value)
 
 const displayAddress = computed(() => {
   const address = [form.prefecture, form.city, form.addressLine1, form.addressLine2]
@@ -136,6 +131,7 @@ function startEdit() {
   }
 
   editMode.value = true
+  operationMessage.value = ''
 }
 
 function cancelEdit() {
@@ -145,27 +141,68 @@ function cancelEdit() {
 
 async function save() {
   if (!canManageCompanyProfile.value) {
-    window.alert('会社情報を編集する権限がありません。')
+    showMessage('会社情報を編集する権限がありません。', 'error')
     return
   }
 
   const parsed = schema.safeParse(form)
 
   if (!parsed.success) {
-    window.alert(parsed.error.issues.map((issue) => issue.message).join('\n'))
+    showMessage('入力内容を確認してください。', 'error')
     return
   }
 
-  await saveMutation.mutateAsync(toCompanyProfileSaveRequest(form))
+  try {
+    await saveMutation.mutateAsync(toCompanyProfileSaveRequest(form))
 
-  await refetch()
-  applyProfile()
+    await refetch()
+    applyProfile()
 
-  editMode.value = false
+    editMode.value = false
+    showMessage('会社情報を保存しました。', 'success')
+  } catch (error) {
+    showMessage(toErrorMessage(error, '会社情報の保存に失敗しました。'), 'error')
+  }
 }
 
 function close() {
+  if (loading.value) return
   dialogModel.value = false
+}
+
+function showMessage(message: string, type: 'success' | 'error') {
+  clearOperationMessageTimer()
+  operationMessage.value = message
+  operationMessageType.value = type
+  operationMessageTimer = window.setTimeout(
+    () => {
+      operationMessage.value = ''
+      operationMessageTimer = undefined
+    },
+    type === 'success' ? 4000 : 8000,
+  )
+}
+
+function clearOperationMessageTimer() {
+  if (operationMessageTimer === undefined) return
+  window.clearTimeout(operationMessageTimer)
+  operationMessageTimer = undefined
+}
+
+function dismissOperationMessage() {
+  clearOperationMessageTimer()
+  operationMessage.value = ''
+}
+
+onBeforeUnmount(clearOperationMessageTimer)
+
+function toErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message
+  if (typeof error === 'object' && error !== null) {
+    const candidate = error as Record<string, unknown>
+    if (typeof candidate.message === 'string') return candidate.message
+  }
+  return fallback
 }
 
 const rightFooterItems = computed<ToolbarItem[]>(() => {
@@ -183,6 +220,7 @@ const rightFooterItems = computed<ToolbarItem[]>(() => {
         label: '保存',
         intent: 'primary',
         loading: saveMutation.isPending.value,
+        disabled: loading.value,
         onClick: () => void save(),
       },
     ]
@@ -234,6 +272,29 @@ const rightFooterItems = computed<ToolbarItem[]>(() => {
 
     <v-progress-linear v-if="loading" indeterminate class="mb-3" />
 
+    <v-alert
+      v-if="loadError"
+      type="error"
+      variant="tonal"
+      class="mb-3"
+      title="会社情報を取得できませんでした"
+    >
+      <template #append>
+        <v-btn variant="text" @click="refetch">再試行</v-btn>
+      </template>
+    </v-alert>
+
+    <v-alert
+      v-if="operationMessage"
+      :type="operationMessageType"
+      variant="tonal"
+      closable
+      class="mb-3"
+      @click:close="dismissOperationMessage"
+    >
+      {{ operationMessage }}
+    </v-alert>
+
     <TabLayout v-model="activeTab" :tabs="tabs">
       <template #default="{ active }">
         <template v-if="editMode">
@@ -259,10 +320,26 @@ const rightFooterItems = computed<ToolbarItem[]>(() => {
 
               <v-card-text>
                 <div class="info-row">
+                  <div class="info-label">会社コード</div>
+
+                  <div class="info-value">
+                    {{ form.companyCode || '-' }}
+                  </div>
+                </div>
+
+                <div class="info-row">
                   <div class="info-label">商号</div>
 
                   <div class="info-value">
                     {{ form.companyName || '-' }}
+                  </div>
+                </div>
+
+                <div class="info-row">
+                  <div class="info-label">商号カナ・略称</div>
+
+                  <div class="info-value">
+                    {{ [form.companyNameKana, form.shortName].filter(Boolean).join(' / ') || '-' }}
                   </div>
                 </div>
 
@@ -303,6 +380,30 @@ const rightFooterItems = computed<ToolbarItem[]>(() => {
                 </div>
 
                 <div class="info-row">
+                  <div class="info-label">メール</div>
+
+                  <div class="info-value">
+                    {{ form.email || '-' }}
+                  </div>
+                </div>
+
+                <div class="info-row">
+                  <div class="info-label">Webサイト</div>
+
+                  <div class="info-value">
+                    <a
+                      v-if="form.websiteUrl"
+                      :href="form.websiteUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {{ form.websiteUrl }}
+                    </a>
+                    <template v-else>-</template>
+                  </div>
+                </div>
+
+                <div class="info-row">
                   <div class="info-label">対応エリア</div>
 
                   <div class="info-value">
@@ -314,9 +415,7 @@ const rightFooterItems = computed<ToolbarItem[]>(() => {
                   <div class="info-label">資本金</div>
 
                   <div class="info-value">
-                    {{
-                      form.capitalAmount == null ? '-' : `${form.capitalAmount.toLocaleString()}円`
-                    }}
+                    {{ form.capitalAmount ? `${form.capitalAmount}円` : '-' }}
                   </div>
                 </div>
               </v-card-text>
@@ -378,6 +477,14 @@ const rightFooterItems = computed<ToolbarItem[]>(() => {
               <v-divider />
 
               <v-card-text>
+                <div class="info-row">
+                  <div class="info-label">代表許可番号</div>
+
+                  <div class="info-value">
+                    {{ form.permitNumber || '-' }}
+                  </div>
+                </div>
+
                 <div class="chip-wrap">
                   <v-chip
                     v-for="item in businessContents"

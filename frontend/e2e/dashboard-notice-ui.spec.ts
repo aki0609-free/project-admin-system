@@ -37,6 +37,9 @@ test('dashboard notice board uses the shared toolbar, form and dialog', async ({
   await dialog.getByRole('tab', { name: 'プレビュー', exact: true }).click()
   await expect(dialog.getByText('プレビューする内容がありません。')).toBeVisible()
 
+  await submitButton.click()
+  await expect(dialog.getByText('必須です', { exact: true })).toBeVisible()
+
   await cancelButton.click()
   await expect(dialog).toBeHidden()
 })

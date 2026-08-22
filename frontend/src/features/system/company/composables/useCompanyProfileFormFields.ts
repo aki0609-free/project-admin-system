@@ -26,12 +26,14 @@ export const useCompanyProfileFormFields = () => {
       label: '会社コード',
       type: 'text',
       gridColumn: '1 / span 1',
+      required: true,
     },
     {
       key: 'companyName',
       label: '会社名',
       type: 'text',
       gridColumn: '2 / span 2',
+      required: true,
     },
     {
       key: 'shortName',
@@ -47,8 +49,8 @@ export const useCompanyProfileFormFields = () => {
     },
     {
       key: 'capitalAmount',
-      label: '資本金',
-      type: 'number',
+      label: '資本金（円）',
+      type: 'text',
       gridColumn: '3 / span 2',
     },
     {
@@ -122,12 +124,6 @@ export const useCompanyProfileFormFields = () => {
       label: '対応エリア',
       type: 'text',
       gridColumn: '3 / span 2',
-    },
-    {
-      key: 'activeFlag',
-      label: '有効',
-      type: 'checkbox',
-      gridColumn: '1 / span 1',
     },
   ])
 

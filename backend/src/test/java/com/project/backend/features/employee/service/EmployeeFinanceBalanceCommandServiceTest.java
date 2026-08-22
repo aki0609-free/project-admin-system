@@ -36,7 +36,7 @@ class EmployeeFinanceBalanceCommandServiceTest {
     @Test
     void repayment_shouldImmediatelyReduceBalanceAndCompleteLoan() {
         EmployeeLoan loan = loan("100000");
-        when(loanRepository.findFirstByEmployeeIdAndActiveFlagTrueOrderByIdDesc(1L))
+        when(loanRepository.findFirstByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(1L))
                 .thenReturn(Optional.of(loan));
 
         service.applyDailyReportAmountDiff(
@@ -52,7 +52,7 @@ class EmployeeFinanceBalanceCommandServiceTest {
     @Test
     void repayment_shouldRejectAmountOverCurrentBalance() {
         EmployeeLoan loan = loan("30000");
-        when(loanRepository.findFirstByEmployeeIdAndActiveFlagTrueOrderByIdDesc(1L))
+        when(loanRepository.findFirstByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(1L))
                 .thenReturn(Optional.of(loan));
 
         assertThatThrownBy(() -> service.applyDailyReportAmountDiff(
@@ -90,7 +90,7 @@ class EmployeeFinanceBalanceCommandServiceTest {
         EmployeeSaving saving = new EmployeeSaving();
         saving.setCurrentBalance(new BigDecimal("12000"));
         saving.setActiveFlag(true);
-        when(savingRepository.findFirstByEmployeeIdAndActiveFlagTrueOrderByIdDesc(1L))
+        when(savingRepository.findFirstByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(1L))
                 .thenReturn(Optional.of(saving));
 
         service.applyDailyReportAmountDiff(

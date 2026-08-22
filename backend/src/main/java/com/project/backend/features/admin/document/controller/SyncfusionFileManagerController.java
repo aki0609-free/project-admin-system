@@ -53,6 +53,11 @@ public class SyncfusionFileManagerController {
             @RequestParam(defaultValue = "/") String path,
             @RequestPart("uploadFiles") List<MultipartFile> files
     ) {
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "アップロードファイルは必須です。"
+            );
+        }
         String relativePath = toRelativePath(path);
         files.forEach(file ->
                 documentService.upload(area, relativePath, file));

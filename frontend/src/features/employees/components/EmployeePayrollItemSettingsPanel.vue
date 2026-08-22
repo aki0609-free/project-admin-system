@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import type { EmployeeForm } from '../types/employeeFormTypes'
 import PayrollItemTransactionPanel from './PayrollItemTransactionPanel.vue'
+import EmployeePayrollItemParameterField from './EmployeePayrollItemParameterField.vue'
 
 type Setting = EmployeeForm['payrollItemSettings'][number]
 
@@ -48,11 +49,6 @@ const unitLabel = (unit: string) =>
     AMOUNT: '金額',
   })[unit] ?? '数量'
 
-const updateBoolean = (key: string, value: boolean | null) => {
-  if (activeItem.value) {
-    activeItem.value.parameters[key] = String(Boolean(value))
-  }
-}
 </script>
 
 <template>
@@ -94,46 +90,11 @@ const updateBoolean = (key: string, value: boolean | null) => {
 
         <template v-if="activeItem.enabled">
           <div class="parameter-grid mt-5">
-            <v-select
-              v-for="definition in visibleDefinitions.filter((item) => item.inputType === 'SELECT')"
+            <EmployeePayrollItemParameterField
+              v-for="definition in visibleDefinitions"
               :key="definition.key"
               v-model="activeItem.parameters[definition.key]"
-              :label="definition.displayName"
-              :items="
-                definition.options.map((option) => ({ title: option.label, value: option.value }))
-              "
-              :required="definition.required"
-              density="compact"
-              variant="outlined"
-            />
-            <v-text-field
-              v-for="definition in visibleDefinitions.filter((item) =>
-                ['TEXT', 'NUMBER', 'DATE'].includes(item.inputType),
-              )"
-              :key="definition.key"
-              v-model="activeItem.parameters[definition.key]"
-              :label="definition.displayName"
-              :type="
-                definition.inputType === 'NUMBER'
-                  ? 'number'
-                  : definition.inputType === 'DATE'
-                    ? 'date'
-                    : 'text'
-              "
-              :required="definition.required"
-              density="compact"
-              variant="outlined"
-            />
-            <v-switch
-              v-for="definition in visibleDefinitions.filter(
-                (item) => item.inputType === 'BOOLEAN',
-              )"
-              :key="definition.key"
-              :model-value="activeItem.parameters[definition.key] === 'true'"
-              :label="definition.displayName"
-              color="primary"
-              hide-details
-              @update:model-value="updateBoolean(definition.key, $event)"
+              :definition="definition"
             />
           </div>
 

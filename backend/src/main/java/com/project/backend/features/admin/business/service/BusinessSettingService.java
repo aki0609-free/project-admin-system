@@ -1,6 +1,7 @@
 package com.project.backend.features.admin.business.service;
 
 import java.time.Instant;
+import java.time.Clock;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -56,6 +57,7 @@ public class BusinessSettingService {
     private final MonthlyClosingOutputDefinitionRepository outputDefinitionRepository;
     private final OperationReportPreviewRepository reportPreviewRepository;
     private final DormitoryFeeSettingRepository dormitoryFeeSettingRepository;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public List<DormitoryFeeSettingResponse> findDormitoryFees() {
@@ -172,7 +174,7 @@ public class BusinessSettingService {
         EmployeeResignationChecklistMaster entity = checklistRepository
                 .findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new IllegalArgumentException("退職TODOが見つかりません。"));
-        entity.setDeletedAt(Instant.now());
+        entity.setDeletedAt(Instant.now(clock));
     }
 
     @Transactional(readOnly = true)

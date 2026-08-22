@@ -12,15 +12,16 @@ import {
 
 export const employeeLoanSchema = z.object({
   id: z.number(),
-  employeeId: z.number().nullable(),
-  principal: z.number().min(0),
+  employeeId: z
+    .number()
+    .nullable()
+    .refine((value): boolean => value != null, '従業員は必須です。'),
+  principal: z.number().positive('借入元本は0円より大きい金額を指定してください。'),
   currentBalance: z.number().min(0),
-  monthlyRepayment: z.number().min(0),
+  monthlyRepayment: z.number().min(0, '月返済額は0円以上で指定してください。'),
   loanDate: z.string(),
   repaymentStartDate: z.string(),
   activeFlag: z.boolean(),
-  approvalStatus: z.enum(['PENDING', 'APPROVED', 'REJECTED']),
-  approvalComment: z.string(),
 })
 
 export const useEmployeeLoanEditDialog = (
@@ -115,14 +116,6 @@ export const useEmployeeLoanEditDialog = (
       type: 'checkbox',
       gridColumn: '4 / span 1',
       width: 120,
-    },
-    {
-      key: 'approvalComment',
-      label: '承認コメント',
-      type: 'textarea',
-      rows: 4,
-      autoGrow: true,
-      gridColumn: '1 / -1',
     },
   ])
 

@@ -67,6 +67,39 @@ class CustomerSiteBillingRateCommandServiceTest {
         verify(rateRepository, never()).save(any());
     }
 
+    @Test
+    void create_shouldRejectNegativeNonBaseUnitPrice() {
+        CustomerSiteBillingRateRequest request = new CustomerSiteBillingRateRequest(
+                null,
+                20L,
+                "WORKER",
+                "作業員",
+                "GENERAL",
+                "一般",
+                CustomerBillingUnit.DAILY,
+                BigDecimal.valueOf(10_000),
+                BigDecimal.valueOf(-1),
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                LocalDate.of(2026, 8, 1),
+                null,
+                1,
+                true,
+                null,
+                true,
+                false,
+                false
+        );
+
+        assertThatThrownBy(() -> service.create(10L, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("残業単価は0以上で入力してください。");
+
+        verify(siteRepository, never()).findByIdAndDeletedAtIsNull(any());
+        verify(rateRepository, never()).save(any());
+    }
+
     private CustomerSite site(Long siteId, Long customerId) {
         CustomerSite site = new CustomerSite();
         site.setId(siteId);

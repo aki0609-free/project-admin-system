@@ -13,7 +13,7 @@ public interface EmployeeLoanRepository extends JpaRepository<EmployeeLoan, Long
 
     Optional<EmployeeLoan> findByIdAndDeletedAtIsNull(Long id);
 
-    Optional<EmployeeLoan> findFirstByEmployeeIdAndActiveFlagTrueOrderByIdDesc(
+    Optional<EmployeeLoan> findFirstByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(
         Long employeeId
     );
 

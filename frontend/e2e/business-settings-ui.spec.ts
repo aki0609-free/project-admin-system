@@ -19,11 +19,26 @@ test('business settings uses shared forms and checklist dialog', async ({ page }
   await expect(dialog.getByRole('button', { name: '保存', exact: true })).toBeVisible()
   await dialog.getByRole('button', { name: '閉じる', exact: true }).click()
 
+  await page.getByRole('tab', { name: '締日設定', exact: true }).click()
+  await expect(page.getByText('給与の締日・支払日', { exact: true })).toBeVisible()
+
+  await page.getByRole('tab', { name: '締め帳票', exact: true }).click()
+  await expect(page.getByText('月次締め帳票', { exact: true })).toBeVisible()
+
   await page.getByRole('tab', { name: '帳票バックアップ', exact: true }).click()
   await expect(page.getByLabel('会計年度の開始月', { exact: true })).toBeVisible()
   await expect(page.getByLabel('年度終了後の猶予日数', { exact: true })).toBeVisible()
 
+  await page.getByRole('tab', { name: '寮費設定', exact: true }).click()
+  await expect(page.getByText('一人部屋', { exact: true })).toBeVisible()
+  await expect(page.getByText('複数人部屋', { exact: true })).toBeVisible()
+
   await page.getByRole('tab', { name: 'その他設定', exact: true }).click()
   await expect(page.getByLabel('インシデント報告のURL', { exact: true })).toBeVisible()
   await expect(page.getByLabel('マニュアルのURL', { exact: true })).toBeVisible()
+
+  const incidentUrl = page.getByLabel('インシデント報告のURL', { exact: true })
+  await incidentUrl.fill('http://example.invalid/incident')
+  await incidentUrl.blur()
+  await expect(page.getByText('HTTPSのURLを入力してください', { exact: true })).toBeVisible()
 })

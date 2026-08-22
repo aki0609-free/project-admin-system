@@ -7,6 +7,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +25,11 @@ import com.project.backend.features.employee.repository.EmployeeRepository;
 
 class EmployeeLoanServiceTest {
 
+    private static final Clock CLOCK = Clock.fixed(
+            Instant.parse("2026-08-22T00:00:00Z"),
+            ZoneOffset.UTC
+    );
+
     private EmployeeLoanRepository repository;
     private EmployeeRepository employeeRepository;
     private EmployeeLoanService service;
@@ -33,7 +41,8 @@ class EmployeeLoanServiceTest {
         service = new EmployeeLoanService(
                 repository,
                 employeeRepository,
-                new EmployeeLoanMapper()
+                new EmployeeLoanMapper(),
+                CLOCK
         );
     }
 
@@ -80,6 +89,19 @@ class EmployeeLoanServiceTest {
         assertThatThrownBy(() -> service.update(10L, request("120000", true)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("返済開始後");
+    }
+
+    @Test
+    void delete_shouldUseBusinessClockForUntouchedLoan() {
+        EmployeeLoan loan = new EmployeeLoan();
+        loan.setPrincipal(new BigDecimal("100000"));
+        loan.setCurrentBalance(new BigDecimal("100000"));
+        when(repository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(loan));
+
+        service.delete(10L);
+
+        assertThat(loan.getDeletedAt()).isEqualTo(CLOCK.instant());
     }
 
     private Employee employee() {

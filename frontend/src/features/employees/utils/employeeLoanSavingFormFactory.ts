@@ -1,11 +1,5 @@
-import type {
-  EmployeeLoanForm,
-  EmployeeSavingForm,
-} from '../types/employeeLoanSavingFormTypes'
-import type {
-  EmployeeLoanResponse,
-  EmployeeSavingResponse,
-} from '../types/employeeWorkApiTypes'
+import type { EmployeeLoanForm, EmployeeSavingForm } from '../types/employeeLoanSavingFormTypes'
+import type { EmployeeLoanResponse, EmployeeSavingResponse } from '../types/employeeWorkApiTypes'
 
 export const createEmptyEmployeeLoanForm = (): EmployeeLoanForm => ({
   id: 0,
@@ -16,13 +10,9 @@ export const createEmptyEmployeeLoanForm = (): EmployeeLoanForm => ({
   loanDate: '',
   repaymentStartDate: '',
   activeFlag: true,
-  approvalStatus: 'APPROVED',
-  approvalComment: '',
 })
 
-export const toEmployeeLoanForm = (
-  item: EmployeeLoanResponse,
-): EmployeeLoanForm => ({
+export const toEmployeeLoanForm = (item: EmployeeLoanResponse): EmployeeLoanForm => ({
   id: item.id,
   employeeId: item.employeeId,
   principal: item.principal ?? 0,
@@ -31,8 +21,6 @@ export const toEmployeeLoanForm = (
   loanDate: item.loanDate ?? '',
   repaymentStartDate: item.repaymentStartDate ?? '',
   activeFlag: item.activeFlag,
-  approvalStatus: item.approvalStatus,
-  approvalComment: item.approvalComment ?? '',
 })
 
 export const createEmptyEmployeeSavingForm = (): EmployeeSavingForm => ({
@@ -42,19 +30,13 @@ export const createEmptyEmployeeSavingForm = (): EmployeeSavingForm => ({
   minSalaryThreshold: 0,
   currentBalance: 0,
   activeFlag: true,
-  approvalStatus: 'APPROVED',
-  approvalComment: '',
 })
 
-export const toEmployeeSavingForm = (
-  item: EmployeeSavingResponse,
-): EmployeeSavingForm => ({
+export const toEmployeeSavingForm = (item: EmployeeSavingResponse): EmployeeSavingForm => ({
   id: item.id,
   employeeId: item.employeeId,
   percentage: item.percentage ?? 0,
   minSalaryThreshold: item.minSalaryThreshold ?? 0,
   currentBalance: item.currentBalance ?? 0,
   activeFlag: item.activeFlag,
-  approvalStatus: item.approvalStatus,
-  approvalComment: item.approvalComment ?? '',
 })

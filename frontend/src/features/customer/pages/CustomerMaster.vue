@@ -38,8 +38,11 @@ const { columns, customersQuery, items, filterRules, toolbarItems, editDialog, e
           :sites="editDialog.editingSites.value"
           :employees="editDialog.editingEmployees.value"
           :is-create-mode="editDialog.isCreateMode.value"
+          :loading="editDialog.loading.value"
+          :error-message="editDialog.errorMessage.value"
           @save="editDialog.save"
           @delete="editDialog.remove"
+          @dismiss-error="editDialog.clearError"
         />
 
         <EnvelopePrintDialog

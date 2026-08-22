@@ -36,10 +36,11 @@ public class ReceiptConfirmationSpreadsheetRenderer
     static final int BILLING_AMOUNT_COLUMN = 8;
     static final int FEE_COLUMN = 11;
     static final int OFFSET_COLUMN = 12;
-    static final int TOTAL_COLUMN = 13;
-    static final int NOTE_COLUMN = 14;
-    static final int TRANSACTION_ID_COLUMN = 15;
-    static final int CUSTOMER_ID_COLUMN = 16;
+    static final int ADJUSTMENT_COLUMN = 13;
+    static final int TOTAL_COLUMN = 14;
+    static final int NOTE_COLUMN = 15;
+    static final int TRANSACTION_ID_COLUMN = 16;
+    static final int CUSTOMER_ID_COLUMN = 17;
 
     private final ObjectMapper objectMapper;
 
@@ -226,9 +227,10 @@ public class ReceiptConfirmationSpreadsheetRenderer
         cell(cells, 10, "入金額", templateStyle(templateRows, 2, 10), 1);
         cell(cells, 11, "手数料", templateStyle(templateRows, 2, 11), 1);
         cell(cells, 12, "相殺", templateStyle(templateRows, 2, 12), 1);
-        cell(cells, 13, "合計金額", templateStyle(templateRows, 2, 13), 1);
-        cell(cells, 14, "備考（相殺内容等）",
-                templateStyle(templateRows, 2, 14), 1);
+        cell(cells, 13, "その他調整", templateStyle(templateRows, 2, 13), 1);
+        cell(cells, 14, "合計金額", templateStyle(templateRows, 2, 14), 1);
+        cell(cells, 15, "備考（調整理由等）",
+                templateStyle(templateRows, 2, 15), 1);
     }
 
     private void detailRow(
@@ -263,15 +265,17 @@ public class ReceiptConfirmationSpreadsheetRenderer
                 detailStyle(templateRows, 3, 11, background));
         editableMoney(cells, OFFSET_COLUMN, receipt.offsetAmount(),
                 detailStyle(templateRows, 3, 12, background));
+        editableMoney(cells, ADJUSTMENT_COLUMN, receipt.adjustmentAmount(),
+                detailStyle(templateRows, 3, 13, background));
 
         ObjectNode total = lockedMoney(
                 cells,
                 TOTAL_COLUMN,
                 receipt.settledAmount(),
-                detailStyle(templateRows, 3, 13, background)
+                detailStyle(templateRows, 3, 14, background)
         );
         int excelRow = rows.size();
-        total.put("formula", "=SUM(K%d:M%d)".formatted(
+        total.put("formula", "=SUM(K%d:N%d)".formatted(
                 excelRow,
                 excelRow
         ));
@@ -280,7 +284,7 @@ public class ReceiptConfirmationSpreadsheetRenderer
                 cells,
                 NOTE_COLUMN,
                 receipt.note(),
-                detailStyle(templateRows, 3, 14, background),
+                detailStyle(templateRows, 3, 15, background),
                 1
         );
         note.put("isLocked", false);
@@ -308,7 +312,7 @@ public class ReceiptConfirmationSpreadsheetRenderer
                 detailStyle(templateRows, 9, 0, background),
                 8
         );
-        for (int column : List.of(8, 10, 11, 12, 13)) {
+        for (int column : List.of(8, 10, 11, 12, 13, 14)) {
             ObjectNode total = lockedMoney(
                     cells,
                     column,
@@ -343,7 +347,7 @@ public class ReceiptConfirmationSpreadsheetRenderer
                 detailStyle(templateRows, 13, 0, background),
                 8
         );
-        for (int column : List.of(8, 10, 11, 12, 13)) {
+        for (int column : List.of(8, 10, 11, 12, 13, 14)) {
             ObjectNode total = lockedMoney(
                     cells,
                     column,
@@ -499,6 +503,7 @@ public class ReceiptConfirmationSpreadsheetRenderer
                 decimal(row.get("paid_amount")),
                 decimal(row.get("fee")),
                 decimal(row.get("offset_amount")),
+                decimal(row.get("adjustment_amount")),
                 decimal(row.get("settled_amount")),
                 text(row.get("payment_status")),
                 text(row.get("note"))
@@ -595,6 +600,7 @@ public class ReceiptConfirmationSpreadsheetRenderer
             BigDecimal paidAmount,
             BigDecimal fee,
             BigDecimal offsetAmount,
+            BigDecimal adjustmentAmount,
             BigDecimal settledAmount,
             String paymentStatus,
             String note

@@ -163,6 +163,39 @@ SET deduction_name = 'Wi-Fi使用料',
 WHERE tenant_id = 'default'
   AND deduction_code = 'WIFI_FEE';
 
+-- Wi-Fi使用料は従業員ごとに利用有無を設定し、明細到着時に共通取引画面から登録する。
+-- 従業員画面はこのポリシーをカタログとして読み込むため、コード固有の画面実装は不要。
+INSERT INTO payroll_item_balance_policy (
+    target_type, target_master_id, target_code, display_name,
+    application_scope, balance_unit, balance_tracking_flag, input_source,
+    accrual_frequency, accrual_rule_name,
+    carry_forward_flag, advance_consumption_flag, active_flag,
+    tenant_id, created_at, updated_at, deleted_at
+)
+SELECT 'DEDUCTION', deduction.id, deduction.deduction_code, deduction.deduction_name,
+       'EMPLOYEE_ENROLLMENT', 'AMOUNT', FALSE, 'TRANSACTION',
+       'MANUAL', 'MANUAL_TRANSACTION',
+       FALSE, FALSE, TRUE,
+       deduction.tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
+FROM deduction_masters deduction
+WHERE deduction.tenant_id = 'default'
+  AND deduction.deduction_code = 'WIFI_FEE'
+  AND deduction.deleted_at IS NULL
+ON DUPLICATE KEY UPDATE
+    target_master_id = VALUES(target_master_id),
+    display_name = VALUES(display_name),
+    application_scope = VALUES(application_scope),
+    balance_unit = VALUES(balance_unit),
+    balance_tracking_flag = VALUES(balance_tracking_flag),
+    input_source = VALUES(input_source),
+    accrual_frequency = VALUES(accrual_frequency),
+    accrual_rule_name = VALUES(accrual_rule_name),
+    carry_forward_flag = VALUES(carry_forward_flag),
+    advance_consumption_flag = VALUES(advance_consumption_flag),
+    active_flag = TRUE,
+    updated_at = CURRENT_TIMESTAMP(6),
+    deleted_at = NULL;
+
 -- 旧データの法定控除にだけ存在する非互換値をAUTOへ移行する。
 UPDATE deduction_masters
 SET calculation_type = 'AUTO',

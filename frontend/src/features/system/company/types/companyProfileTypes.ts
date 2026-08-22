@@ -20,7 +20,7 @@ export type CompanyProfileForm = {
   email: string
   websiteUrl: string
 
-  capitalAmount: number | null
+  capitalAmount: string
 
   permitNumber: string
   qualifiedInvoiceIssuerNumber: string

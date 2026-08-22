@@ -9,6 +9,7 @@ const props = defineProps<{
   modelValue: boolean
   deleteConfirm: boolean
   notice: NoticeResponse | null
+  deleting?: boolean
   canEdit: boolean
   canDelete: boolean
   getColor: (notice: NoticeResponse) => string
@@ -33,12 +34,15 @@ const deleteConfirmItems = computed<ToolbarItem[]>(() => [
     type: 'button',
     label: 'キャンセル',
     intent: 'secondary',
+    disabled: props.deleting,
     onClick: () => emit('update:deleteConfirm', false),
   },
   {
     type: 'button',
     label: '削除',
     intent: 'danger',
+    loading: props.deleting,
+    disabled: props.deleting,
     onClick: () => emit('delete'),
   },
 ])

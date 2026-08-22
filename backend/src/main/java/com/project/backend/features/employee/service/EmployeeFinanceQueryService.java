@@ -26,11 +26,11 @@ public class EmployeeFinanceQueryService {
 
     public EmployeeFinanceSummaryResponse findSummary(Long employeeId) {
         EmployeeLoan loan = loanRepository
-                .findFirstByEmployeeIdAndActiveFlagTrueOrderByIdDesc(employeeId)
+                .findFirstByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(employeeId)
                 .orElse(null);
 
         EmployeeSaving saving = savingRepository
-                .findFirstByEmployeeIdAndActiveFlagTrueOrderByIdDesc(employeeId)
+                .findFirstByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(employeeId)
                 .orElse(null);
 
         return new EmployeeFinanceSummaryResponse(

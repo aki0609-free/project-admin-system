@@ -96,6 +96,7 @@ type DeductionMaster = {
   displayOrder: number | null
   enabled: boolean | null
   note: string | null
+  policy: Record<string, unknown>
 }
 
 type DormitoryFee = {
@@ -168,11 +169,13 @@ const employeeRequest = {
   },
   payrollItemSettings: [
     {
+      targetType: 'DEDUCTION',
       targetCode: 'DORMITORY_FEE',
       enabled: true,
       parameters: { dormitoryType: 'SHARED_ROOM' },
     },
     {
+      targetType: 'DEDUCTION',
       targetCode: 'MOBILE_RENTAL',
       enabled: true,
       parameters: {},
@@ -365,6 +368,17 @@ export const ensureBusinessFixture = async (page: Page) => {
     throw new Error('E2E用の寮費・携帯電話貸出料マスターがありません。')
   }
 
+  const dormitoryDetail = await json<DeductionMaster>(
+    await page.request.get(`/api/master/deductions/${dormitoryMaster.id}`, {
+      headers: requestHeaders,
+    }),
+  )
+  const mobileDetail = await json<DeductionMaster>(
+    await page.request.get(`/api/master/deductions/${mobileMaster.id}`, {
+      headers: requestHeaders,
+    }),
+  )
+
   await json(
     await page.request.put(`/api/master/deductions/${dormitoryMaster.id}`, {
       headers: requestHeaders,
@@ -386,6 +400,10 @@ export const ensureBusinessFixture = async (page: Page) => {
         displayOrder: dormitoryMaster.displayOrder ?? 110,
         enabled: true,
         note: 'Playwright固定業務データ（日次寮費）',
+        policy: {
+          ...dormitoryDetail.policy,
+          applicationScope: 'EMPLOYEE_ENROLLMENT',
+        },
       },
     }),
   )
@@ -411,6 +429,10 @@ export const ensureBusinessFixture = async (page: Page) => {
         displayOrder: mobileMaster.displayOrder ?? 120,
         enabled: true,
         note: 'Playwright固定業務データ（明細到着時の控除取引）',
+        policy: {
+          ...mobileDetail.policy,
+          applicationScope: 'EMPLOYEE_ENROLLMENT',
+        },
       },
     }),
   )

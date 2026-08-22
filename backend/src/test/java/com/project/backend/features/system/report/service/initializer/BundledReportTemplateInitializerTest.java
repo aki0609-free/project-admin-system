@@ -26,6 +26,8 @@ class BundledReportTemplateInitializerTest {
             "monthly_invoice_pattern_3.jrxml",
             "monthly_order_form.jrxml",
             "daily_work_order.jrxml",
+            "envelope_naga3.jrxml",
+            "envelope_kaku2.jrxml",
             "monthly_labor_cost_list.xlsx"
     );
 

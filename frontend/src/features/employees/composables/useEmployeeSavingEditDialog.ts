@@ -12,13 +12,17 @@ import {
 
 export const employeeSavingSchema = z.object({
   id: z.number(),
-  employeeId: z.number().nullable(),
-  percentage: z.number(),
-  minSalaryThreshold: z.number(),
+  employeeId: z
+    .number()
+    .nullable()
+    .refine((value): boolean => value != null, '従業員は必須です。'),
+  percentage: z
+    .number()
+    .min(0, '貯蓄率は0%以上で指定してください。')
+    .max(100, '貯蓄率は100%以下で指定してください。'),
+  minSalaryThreshold: z.number().min(0, '最低給与額は0円以上で指定してください。'),
   currentBalance: z.number().min(0),
   activeFlag: z.boolean(),
-  approvalStatus: z.enum(['PENDING', 'APPROVED', 'REJECTED']),
-  approvalComment: z.string(),
 })
 
 export const useEmployeeSavingEditDialog = (
@@ -66,14 +70,13 @@ export const useEmployeeSavingEditDialog = (
 
   const fields = computed(() => {
     const defs: GridFormFieldDef<EmployeeSavingForm>[] = [
-      { key: 'id', label: 'ID', type: 'number', width: 90 },
       {
         key: 'employeeId',
         label: '従業員',
         type: 'select',
         options: employeeOptions.value,
         editable: formModel.id === 0,
-        gridColumn: '2 / span 3',
+        gridColumn: '1 / span 4',
       },
       { key: 'percentage', label: '貯蓄率%', type: 'number' },
       { key: 'minSalaryThreshold', label: '最低給与額', type: 'number' },
@@ -84,14 +87,6 @@ export const useEmployeeSavingEditDialog = (
         editable: false,
       },
       { key: 'activeFlag', label: '有効', type: 'checkbox' },
-      {
-        key: 'approvalComment',
-        label: '承認コメント',
-        type: 'textarea',
-        rows: 4,
-        autoGrow: true,
-        gridColumn: '1 / -1',
-      },
     ]
 
     return defs

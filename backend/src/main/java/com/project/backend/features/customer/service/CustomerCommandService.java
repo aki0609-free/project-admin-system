@@ -3,6 +3,7 @@ package com.project.backend.features.customer.service;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.project.backend.features.customer.dto.CustomerEmployeeRequest;
 import com.project.backend.features.customer.dto.CustomerSaveRequest;
 import com.project.backend.features.customer.dto.CustomerSiteRequest;
+import com.project.backend.common.dayrule.dto.DayRule;
+import com.project.backend.common.dayrule.enums.DayRuleType;
 import com.project.backend.features.customer.entity.Customer;
 import com.project.backend.features.customer.entity.CustomerEmployee;
 import com.project.backend.features.customer.entity.CustomerSite;
@@ -25,6 +28,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class CustomerCommandService {
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+    );
 
     private final CustomerRepository customerRepository;
     private final CustomerSiteRepository customerSiteRepository;
@@ -98,6 +105,19 @@ public class CustomerCommandService {
         if (request.name() == null || request.name().isBlank()) {
             throw new IllegalArgumentException("顧客名は必須です。");
         }
+
+        validateLength(request.name(), 255, "顧客名");
+        validateLength(request.furiganaName(), 255, "ふりがな");
+        validateLength(request.shortName(), 255, "短縮社名");
+        validateLength(request.postNo(), 255, "郵便番号");
+        validateLength(request.address(), 255, "住所");
+        validateLength(request.representativeName(), 255, "代表者名");
+        validateLength(request.phone(), 255, "電話番号");
+        validateLength(request.jobType(), 255, "職種");
+        validateLength(request.contractFlag(), 255, "契約有無");
+
+        validateDayRule(request.closingDayRule(), "締日");
+        validateDayRule(request.paymentDayRule(), "支払日");
 
         validateSites(request.sites());
         validateEmployees(request.employees());
@@ -206,13 +226,22 @@ public class CustomerCommandService {
         if (requests == null) {
             return;
         }
-        requests.stream()
-                .filter(request -> !Boolean.TRUE.equals(request.isDeleted()))
-                .filter(request -> request.name() == null || request.name().isBlank())
-                .findFirst()
-                .ifPresent(request -> {
-                    throw new IllegalArgumentException("現場名は必須です。");
-                });
+        for (CustomerSiteRequest request : requests) {
+            if (Boolean.TRUE.equals(request.isDeleted())) {
+                continue;
+            }
+            if (request.name() == null || request.name().isBlank()) {
+                throw new IllegalArgumentException("現場名は必須です。");
+            }
+            validateLength(request.name(), 255, "現場名");
+            validateLength(request.contactPersonName(), 255, "現場担当者名");
+            validateLength(request.contactPersonPhone(), 255, "現場担当者電話番号");
+            validateEmail(request.contactPersonEmail(), "現場担当者メールアドレス");
+            if (request.distanceFromCompanyKm() != null
+                    && request.distanceFromCompanyKm() < 0) {
+                throw new IllegalArgumentException("会社からの距離は0以上で入力してください。");
+            }
+        }
     }
 
     private void validateEmployees(List<CustomerEmployeeRequest> requests) {
@@ -233,6 +262,44 @@ public class CustomerCommandService {
                         "請求書のToまたはCCに指定する担当者はメールアドレスが必須です。"
                 );
             }
+            validateLength(request.name(), 255, "顧客担当者名");
+            validateLength(request.furiganaName(), 255, "顧客担当者ふりがな");
+            validateLength(request.position(), 255, "顧客担当者役職");
+            validateLength(request.phone(), 255, "顧客担当者電話番号");
+            validateEmail(request.email(), "顧客担当者メールアドレス");
+        }
+    }
+
+    private void validateDayRule(DayRule rule, String label) {
+        if (rule == null) {
+            return;
+        }
+        if (rule.type() == null) {
+            throw new IllegalArgumentException(label + "の種別は必須です。");
+        }
+        int monthOffset = rule.monthOffset() == null ? 0 : rule.monthOffset();
+        if (monthOffset < 0 || monthOffset > 12) {
+            throw new IllegalArgumentException(label + "の月オフセットは0から12で入力してください。");
+        }
+        if (rule.type() == DayRuleType.DAY_OF_MONTH
+                && (rule.value() == null || rule.value() < 1 || rule.value() > 31)) {
+            throw new IllegalArgumentException(label + "は1日から31日の範囲で入力してください。");
+        }
+    }
+
+    private void validateEmail(String value, String label) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        validateLength(value, 255, label);
+        if (!EMAIL_PATTERN.matcher(value.trim()).matches()) {
+            throw new IllegalArgumentException(label + "の形式が正しくありません。");
+        }
+    }
+
+    private void validateLength(String value, int maxLength, String label) {
+        if (value != null && value.trim().length() > maxLength) {
+            throw new IllegalArgumentException(label + "は" + maxLength + "文字以内で入力してください。");
         }
     }
 }

@@ -2,6 +2,7 @@
 import { computed, ref, type Ref } from 'vue'
 
 import type { NoticeResponse } from '../types/dashboardTypes'
+import { formatLocalDate, moveCalendarMonth } from '../utils/dashboardDate'
 
 type CalendarTimestamp = {
   date: string
@@ -44,18 +45,11 @@ export const useNoticeCalendar = (
   })
 
   const titleText = computed(() => {
-    const date = new Date(calendarDate.value)
-
-    return `${date.getFullYear()}年 ${date.getMonth() + 1}月`
+    const [year, month] = calendarDate.value.split('-').map(Number)
+    return `${year}年 ${month}月`
   })
 
-  const formatDate = (date: Date) => {
-    const yyyy = date.getFullYear()
-    const mm = String(date.getMonth() + 1).padStart(2, '0')
-    const dd = String(date.getDate()).padStart(2, '0')
-
-    return `${yyyy}-${mm}-${dd}`
-  }
+  const formatDate = formatLocalDate
 
   const formatPeriod = (notice: NoticeResponse) => {
     if (notice.start === notice.end) {
@@ -68,11 +62,7 @@ export const useNoticeCalendar = (
   const sourceLabel = (notice: NoticeResponse) => (notice.sourceType === 'AUTO' ? '自動' : '手動')
 
   const moveMonth = (amount: number) => {
-    const date = new Date(calendarDate.value)
-
-    date.setMonth(date.getMonth() + amount)
-
-    calendarDate.value = formatDate(date)
+    calendarDate.value = moveCalendarMonth(calendarDate.value, amount)
   }
 
   const movePrevious = () => moveMonth(-1)

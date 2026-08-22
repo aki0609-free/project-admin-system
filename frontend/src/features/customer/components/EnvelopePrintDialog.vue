@@ -32,8 +32,6 @@ const form = reactive<EnvelopePrintPayload>({
   envelopeType: 'NAGA3',
   stamp: '請求書在中',
   honorific: '御中',
-  fontFamily: 'Yu Gothic',
-  fontSize: 16,
 })
 
 const envelopeTypeOptions: { title: string; value: EnvelopeType }[] = [
@@ -45,15 +43,11 @@ const stampOptions = ['請求書在中', '見積書在中', '納品書在中', '
 
 const honorificOptions = ['御中', '様', '先生', '各位', '行', '宛']
 
-const fontOptions = ['Yu Gothic', 'Yu Mincho', 'Meiryo', 'MS Gothic', 'MS Mincho']
-
 const schema = z.object({
   customerIds: z.array(z.number()).min(1, '印刷する企業を1件以上選択してください'),
   envelopeType: z.enum(['NAGA3', 'KAKU2']),
   stamp: z.string().min(1, '必須です'),
   honorific: z.string().min(1, '必須です'),
-  fontFamily: z.string().min(1, '必須です'),
-  fontSize: z.number().min(8).max(72),
 })
 
 const fields = computed<GridFormFieldDef<EnvelopePrintPayload>[]>(() => [
@@ -77,13 +71,6 @@ const fields = computed<GridFormFieldDef<EnvelopePrintPayload>[]>(() => [
     type: 'select',
     options: honorificOptions.map(value => ({ title: value, value })),
   },
-  {
-    key: 'fontFamily',
-    label: 'フォント',
-    type: 'select',
-    options: fontOptions.map(value => ({ title: value, value })),
-  },
-  { key: 'fontSize', label: '文字サイズ', type: 'number' },
 ])
 
 const selectedPreviewCustomer = computed(() => {
@@ -125,8 +112,6 @@ watch(
     form.envelopeType = 'NAGA3'
     form.stamp = '請求書在中'
     form.honorific = '御中'
-    form.fontFamily = 'Yu Gothic'
-    form.fontSize = 16
   },
 )
 
@@ -140,8 +125,6 @@ function handlePrint() {
     envelopeType: form.envelopeType,
     stamp: form.stamp,
     honorific: form.honorific,
-    fontFamily: form.fontFamily,
-    fontSize: form.fontSize,
   })
 
   dialogModel.value = false
@@ -189,10 +172,6 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
 
         <div
           :class="previewClass"
-          :style="{
-            fontFamily: form.fontFamily,
-            fontSize: `${form.fontSize}px`,
-          }"
         >
           <div class="preview-address">
             {{ previewAddress }}
@@ -222,6 +201,8 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
   background: #dfeff1;
   overflow: hidden;
   box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.35);
+  font-family: 'IPAexGothic', 'Yu Gothic', sans-serif;
+  font-size: 16px;
 }
 
 /* 長3封筒：横長 */

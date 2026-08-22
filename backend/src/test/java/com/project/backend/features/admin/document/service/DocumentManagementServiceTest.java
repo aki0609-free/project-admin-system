@@ -17,6 +17,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.project.backend.app.storage.model.StorageEntry;
 import com.project.backend.app.storage.model.StorageListPage;
@@ -84,6 +85,19 @@ class DocumentManagementServiceTest {
     }
 
     @Test
+    void list_shouldRejectPageSizeOutsideStorageBoundary() {
+        assertThatThrownBy(() -> service.list(
+                DocumentArea.GENERAL,
+                "",
+                null,
+                1001
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("1000以下");
+
+        verifyNoInteractions(storageService);
+    }
+
+    @Test
     void listRecursively_shouldHidePhysicalRootFromResponse() {
         when(storageService.listRecursively(
                 "documents/backups/reports/2025"
@@ -144,6 +158,20 @@ class DocumentManagementServiceTest {
                 service.upload(DocumentArea.GENERAL, "", file))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("ファイル名が不正");
+
+        verifyNoInteractions(storageService);
+    }
+
+    @Test
+    void upload_shouldRejectFileLargerThanFiftyMegabytes() {
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getSize()).thenReturn(50L * 1024 * 1024 + 1);
+
+        assertThatThrownBy(() ->
+                service.upload(DocumentArea.GENERAL, "", file))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("50MB以下");
 
         verifyNoInteractions(storageService);
     }

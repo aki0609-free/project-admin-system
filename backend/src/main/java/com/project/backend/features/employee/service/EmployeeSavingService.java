@@ -1,6 +1,7 @@
 package com.project.backend.features.employee.service;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 
@@ -25,6 +26,7 @@ public class EmployeeSavingService {
     private final EmployeeSavingRepository repository;
     private final EmployeeRepository employeeRepository;
     private final EmployeeSavingMapper mapper;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public List<EmployeeSavingResponse> findAll() {
@@ -93,7 +95,7 @@ public class EmployeeSavingService {
             );
         }
 
-        entity.setDeletedAt(Instant.now());
+        entity.setDeletedAt(Instant.now(clock));
     }
 
     private Employee findEmployee(Long employeeId) {

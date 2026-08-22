@@ -140,6 +140,27 @@ V1では締め帳票はすべて必須として扱う。任意帳票の失敗継
 | GET/PUT | `/closing-setting` | 給与締日・支払日取得・保存 |
 | GET/PUT | `/closing-outputs` | 月次締め帳票取得・一括保存 |
 | GET/PUT | `/dormitory-fees` | 寮タイプ別日額取得・一括保存 |
+| GET/PUT | `/annual-report-backup` | 年度帳票バックアップ設定 |
+| POST | `/annual-report-backup/{fiscalYear}/execute` | 年度帳票バックアップ手動実行 |
+| GET/PUT | `/external-support-links` | Jira・Confluenceリンク設定 |
+
+### 7.1 画面とエラー処理
+
+- 各設定は独立して取得し、1項目の取得失敗で他タブの設定を破棄しない。
+- 取得に失敗した設定名を画面上のエラーへ表示する。
+- 保存成功メッセージは4秒で自動的に閉じ、手動でも閉じられる。
+- 保存失敗はブラウザ標準ダイアログではなく、業務管理画面内へ表示する。
+- 外部サポートリンクは画面とAPIの両方で有効なHTTPS URLだけを許可する。
+- 退職時TODOの論理削除日時は共通の業務時刻 `Clock` を使用する。
+
+関連テスト：
+
+```text
+BusinessSettingServiceTest
+DormitoryDailyAmountRuleParameterResolverTest
+ExternalSupportLinkSettingServiceTest
+business-settings-ui.spec.ts
+```
 
 ## 8. DB適用
 

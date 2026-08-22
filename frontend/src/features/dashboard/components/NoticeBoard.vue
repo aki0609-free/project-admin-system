@@ -9,6 +9,9 @@ import BatchPageToolbar from '@/shared/ui/toolbar/BatchPageToolbar.vue'
 
 const props = defineProps<{
   notices: NoticeResponse[]
+  loading: boolean
+  error: boolean
+  deleting: boolean
   canCreate: boolean
   canEdit: (notice: NoticeResponse) => boolean
   canDelete: (notice: NoticeResponse) => boolean
@@ -18,6 +21,7 @@ const emit = defineEmits<{
   create: []
   edit: [notice: NoticeResponse]
   delete: [notice: NoticeResponse]
+  retry: []
 }>()
 
 const board = useNoticeBoard(
@@ -61,50 +65,62 @@ const handleDelete = () => {
       :right-items="board.rightToolbarItems.value"
     />
 
-    <NoticeBoardSummary
-      :total-count="props.notices.length"
-      :important-count="board.importantCount.value"
-      :warning-count="board.warningCount.value"
-      :pinned-count="board.pinnedCount.value"
-    />
+    <v-progress-linear v-if="props.loading" indeterminate color="primary" />
 
-    <div class="search-area">
-      <SearchPanel
-        v-model="board.filter"
-        :fields="board.searchFields"
-        @clear="board.clearFilter"
+    <v-alert v-if="props.error" type="error" variant="tonal" class="ma-5">
+      <div class="status-alert">
+        <span>お知らせの取得に失敗しました。</span>
+        <v-btn variant="text" color="error" @click="emit('retry')">再試行</v-btn>
+      </div>
+    </v-alert>
+
+    <template v-else-if="!props.loading">
+      <NoticeBoardSummary
+        :total-count="props.notices.length"
+        :important-count="board.importantCount.value"
+        :warning-count="board.warningCount.value"
+        :pinned-count="board.pinnedCount.value"
       />
-    </div>
 
-    <v-divider />
+      <div class="search-area">
+        <SearchPanel
+          v-model="board.filter"
+          :fields="board.searchFields"
+          @clear="board.clearFilter"
+        />
+      </div>
 
-    <NoticeBoardList
-      :notices="board.pagedNotices.value"
-      :page="board.page.value"
-      :page-count="board.pageCount.value"
-      :get-color="board.getColor"
-      :get-label="board.getLabel"
-      :format-period="board.formatPeriod"
-      @open="board.openDetail"
-      @update:page="board.page.value = $event"
-    />
+      <v-divider />
 
-    <NoticeBoardDetailDialog
-      v-model="board.detailDialog.value"
-      v-model:delete-confirm="board.deleteConfirmDialog.value"
-      :notice="board.selectedNotice.value"
-      :can-edit="
-        !!board.selectedNotice.value && props.canEdit(board.selectedNotice.value)
-      "
-      :can-delete="
-        !!board.selectedNotice.value && props.canDelete(board.selectedNotice.value)
-      "
-      :get-color="board.getColor"
-      :get-label="board.getLabel"
-      :format-period="board.formatPeriod"
-      @edit="handleEdit"
-      @delete="handleDelete"
-    />
+      <NoticeBoardList
+        :notices="board.pagedNotices.value"
+        :page="board.page.value"
+        :page-count="board.pageCount.value"
+        :get-color="board.getColor"
+        :get-label="board.getLabel"
+        :format-period="board.formatPeriod"
+        @open="board.openDetail"
+        @update:page="board.page.value = $event"
+      />
+
+      <NoticeBoardDetailDialog
+        v-model="board.detailDialog.value"
+        v-model:delete-confirm="board.deleteConfirmDialog.value"
+        :notice="board.selectedNotice.value"
+        :deleting="props.deleting"
+        :can-edit="
+          !!board.selectedNotice.value && props.canEdit(board.selectedNotice.value)
+        "
+        :can-delete="
+          !!board.selectedNotice.value && props.canDelete(board.selectedNotice.value)
+        "
+        :get-color="board.getColor"
+        :get-label="board.getLabel"
+        :format-period="board.formatPeriod"
+        @edit="handleEdit"
+        @delete="handleDelete"
+      />
+    </template>
   </v-card>
 </template>
 
@@ -119,5 +135,12 @@ const handleDelete = () => {
 
 .search-area {
   padding: 0 20px;
+}
+
+.status-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 </style>

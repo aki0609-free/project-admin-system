@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import CardLayout from '@/shared/components/layout/card_layout/CardLayout.vue'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
 import GenericToolbar from '@/shared/components/toolbar/GenericToolbar.vue'
@@ -34,6 +34,7 @@ const dialog = ref(false)
 const isCreateMode = ref(false)
 const selectedDeductionId = ref<number | null>(null)
 const editingDeduction = ref<DeductionMaster | null>(null)
+const detailLoadError = ref(false)
 
 const deductionsQuery = useDeductionsQuery()
 const deductionDetailQuery = useDeductionDetailQuery(selectedDeductionId)
@@ -94,10 +95,17 @@ function handleCreate() {
   dialog.value = true
 }
 
-function handleEdit(row: DeductionListItem) {
+async function handleEdit(row: DeductionListItem) {
   isCreateMode.value = false
+  detailLoadError.value = false
   selectedDeductionId.value = row.id
-  editingDeduction.value = toDeductionMaster(row)
+  await nextTick()
+  const result = await deductionDetailQuery.refetch()
+  if (!result.data || result.data.id !== row.id) {
+    detailLoadError.value = true
+    return
+  }
+  editingDeduction.value = toDeductionMaster(result.data)
   dialog.value = true
 }
 
@@ -138,6 +146,10 @@ async function handleDelete(id: number) {
         variant="tonal"
       >
         控除マスターの取得に失敗しました。
+      </v-alert>
+
+      <v-alert v-if="detailLoadError" type="error" variant="tonal">
+        控除の適用・連携設定を取得できませんでした。
       </v-alert>
 
       <SimpleTable

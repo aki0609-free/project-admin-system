@@ -1,5 +1,3 @@
-import type { ApprovalStatus } from './employeeWorkApiTypes'
-
 export type EmployeeLoanForm = {
   id: number
   employeeId: number | null
@@ -9,8 +7,6 @@ export type EmployeeLoanForm = {
   loanDate: string
   repaymentStartDate: string
   activeFlag: boolean
-  approvalStatus: ApprovalStatus
-  approvalComment: string
 }
 
 export type EmployeeSavingForm = {
@@ -20,6 +16,4 @@ export type EmployeeSavingForm = {
   minSalaryThreshold: number
   currentBalance: number
   activeFlag: boolean
-  approvalStatus: ApprovalStatus
-  approvalComment: string
 }

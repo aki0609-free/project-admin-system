@@ -49,6 +49,7 @@ class CustomerTransactionCommandServiceTest {
                         1_133_464,
                         550,
                         0,
+                        0,
                         null
                 )
         );
@@ -72,6 +73,7 @@ class CustomerTransactionCommandServiceTest {
                         80_000,
                         500,
                         1_000,
+                        0,
                         null
                 )
         );
@@ -79,6 +81,80 @@ class CustomerTransactionCommandServiceTest {
         assertThat(entity.getTotalAmount()).isEqualTo(81_500);
         assertThat(entity.getPaymentStatus())
                 .isEqualTo(CustomerPaymentStatus.PARTIAL);
+    }
+
+    @Test
+    void confirmPayment_shouldApplySignedAdjustmentAmount() {
+        CustomerTransaction entity = transaction(100_000);
+        customerExists();
+        when(repository.findByIdAndDeletedAtIsNull(20L))
+                .thenReturn(Optional.of(entity));
+
+        service.confirmPayment(
+                10L,
+                20L,
+                new CustomerPaymentConfirmRequest(
+                        LocalDate.of(2026, 3, 31),
+                        98_000,
+                        500,
+                        1_000,
+                        500,
+                        "端数調整"
+                )
+        );
+
+        assertThat(entity.getAdjustmentAmount()).isEqualTo(500);
+        assertThat(entity.getTotalAmount()).isEqualTo(100_000);
+        assertThat(entity.getPaymentStatus())
+                .isEqualTo(CustomerPaymentStatus.PAID);
+    }
+
+    @Test
+    void confirmPayment_shouldRequireReasonWhenAdjustmentIsNotZero() {
+        CustomerTransaction entity = transaction(100_000);
+        customerExists();
+        when(repository.findByIdAndDeletedAtIsNull(20L))
+                .thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> service.confirmPayment(
+                10L,
+                20L,
+                new CustomerPaymentConfirmRequest(
+                        LocalDate.of(2026, 3, 31),
+                        99_500,
+                        0,
+                        0,
+                        500,
+                        null
+                )
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("調整理由");
+
+        verify(repository, never()).save(entity);
+    }
+
+    @Test
+    void confirmPayment_shouldRejectNegativePaidAmount() {
+        CustomerTransaction entity = transaction(100_000);
+        customerExists();
+        when(repository.findByIdAndDeletedAtIsNull(20L))
+                .thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> service.confirmPayment(
+                10L,
+                20L,
+                new CustomerPaymentConfirmRequest(
+                        LocalDate.of(2026, 3, 31),
+                        -1,
+                        0,
+                        0,
+                        0,
+                        null
+                )
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("入金額は0以上");
+
+        verify(repository, never()).save(entity);
     }
 
     @Test
@@ -199,6 +275,7 @@ class CustomerTransactionCommandServiceTest {
                 100_000,
                 null,
                 null,
+                0,
                 0,
                 0,
                 0,

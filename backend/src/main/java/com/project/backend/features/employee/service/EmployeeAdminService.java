@@ -1,7 +1,7 @@
 package com.project.backend.features.employee.service;
 
-import java.time.Instant;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -182,7 +182,7 @@ public class EmployeeAdminService {
 
         deletionPolicy.verifyDeletable(id);
 
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
         employee.setDeletedAt(now);
 
         payrollProfileRepository.findByEmployeeIdAndDeletedAtIsNull(id)
@@ -197,8 +197,20 @@ public class EmployeeAdminService {
             EmployeePayrollProfile payrollProfile,
             EmployeeContract contract
     ) {
+        EmployeePayrollProfile resolvedPayrollProfile = payrollProfile;
+        if (resolvedPayrollProfile == null) {
+            resolvedPayrollProfile = new EmployeePayrollProfile();
+            resolvedPayrollProfile.setEmployee(employee);
+        }
+
+        EmployeeContract resolvedContract = contract;
+        if (resolvedContract == null) {
+            resolvedContract = new EmployeeContract();
+            resolvedContract.setEmployee(employee);
+        }
+
         return mapper.toDetailResponse(
-                employee, payrollProfile, contract,
+                employee, resolvedPayrollProfile, resolvedContract,
                 PayrollItemBalanceSnapshot.untracked(),
                 payrollItemSettingService.findAll(employee.getId())
         );

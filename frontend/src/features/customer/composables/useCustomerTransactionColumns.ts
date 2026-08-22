@@ -30,6 +30,12 @@ const formatPaymentStatus = (value: unknown): string =>
 export const useCustomerTransactionColumns = () => {
   const columns = computed<SimpleTableColumnDef<CustomerTransaction>[]>(() => [
     {
+      title: '顧客名',
+      key: 'customerName',
+      width: '220px',
+      filter: { type: 'text' },
+    },
+    {
       title: '顧客ID',
       key: 'customerId',
       width: '100px',
@@ -70,13 +76,6 @@ export const useCustomerTransactionColumns = () => {
       formatter: formatCurrencyNullable,
     },
     {
-      title: '請求合計',
-      key: 'receivableAmount',
-      width: '140px',
-      filter: { type: 'text' },
-      formatter: formatCurrencyNullable,
-    },
-    {
       title: '入金予定日',
       key: 'expectedPaymentDate',
       width: '140px',
@@ -105,8 +104,22 @@ export const useCustomerTransactionColumns = () => {
       formatter: formatCurrencyNullable,
     },
     {
+      title: 'その他調整額',
+      key: 'adjustmentAmount',
+      width: '150px',
+      filter: { type: 'text' },
+      formatter: formatCurrencyNullable,
+    },
+    {
       title: '入金合計',
       key: 'totalAmount',
+      width: '140px',
+      filter: { type: 'text' },
+      formatter: formatCurrencyNullable,
+    },
+    {
+      title: '残額',
+      key: 'remainingAmount',
       width: '140px',
       filter: { type: 'text' },
       formatter: formatCurrencyNullable,

@@ -19,13 +19,10 @@ public interface NoticeRepository extends JpaRepository<Notice, Long> {
             WHERE notice.tenantId = :tenantId
               AND notice.activeFlag = true
               AND notice.deletedAt IS NULL
-              AND notice.startDate <= :today
-              AND notice.endDate >= :today
-            ORDER BY notice.pinnedFlag DESC, notice.startDate DESC, notice.id DESC
+            ORDER BY notice.id DESC
             """)
-    List<Notice> findCurrent(
+    List<Notice> findAllActive(
             @Param("tenantId") String tenantId,
-            @Param("today") LocalDate today,
             Pageable pageable
     );
 

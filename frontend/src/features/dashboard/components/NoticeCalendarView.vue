@@ -8,6 +8,9 @@ import NoticeBoardDetailDialog from '@/features/dashboard/components/NoticeBoard
 
 const props = defineProps<{
   notices: NoticeResponse[]
+  loading: boolean
+  error: boolean
+  deleting: boolean
   canEdit: (notice: NoticeResponse) => boolean
   canDelete: (notice: NoticeResponse) => boolean
 }>()
@@ -15,6 +18,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   edit: [notice: NoticeResponse]
   delete: [notice: NoticeResponse]
+  retry: []
 }>()
 
 const calendarDate = defineModel<string>('calendarDate', { required: true })
@@ -74,7 +78,17 @@ const handleDelete = () => {
     <v-divider />
 
     <v-card-text class="calendar-body">
+      <v-progress-linear v-if="props.loading" indeterminate color="primary" class="mb-3" />
+
+      <v-alert v-if="props.error" type="error" variant="tonal" class="mb-3">
+        <div class="status-alert">
+          <span>カレンダーのお知らせ取得に失敗しました。</span>
+          <v-btn variant="text" color="error" @click="emit('retry')">再試行</v-btn>
+        </div>
+      </v-alert>
+
       <v-calendar
+        v-if="!props.error"
         :key="calendar.calendarDate.value"
         v-model="calendar.calendarDate.value"
         class="calendar-full"
@@ -109,6 +123,7 @@ const handleDelete = () => {
       v-model="calendar.detailDialog.value"
       v-model:delete-confirm="calendar.deleteConfirmDialog.value"
       :notice="calendar.selectedNoticeDetail.value"
+      :deleting="props.deleting"
       :can-edit="
         !!calendar.selectedNoticeDetail.value &&
         props.canEdit(calendar.selectedNoticeDetail.value)
@@ -185,5 +200,34 @@ const handleDelete = () => {
   white-space: nowrap;
   text-overflow: ellipsis;
   cursor: pointer;
+}
+
+.status-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .calendar-card {
+    height: auto;
+    min-height: calc(100dvh - 120px);
+  }
+
+  .calendar-header {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .header-center,
+  .header-right {
+    justify-content: flex-start;
+  }
+
+  .month-title {
+    min-width: 120px;
+    font-size: 17px;
+  }
 }
 </style>

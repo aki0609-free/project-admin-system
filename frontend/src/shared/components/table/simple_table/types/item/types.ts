@@ -28,6 +28,12 @@ export type SimpleTableColumnDef<T> = {
 
     enumOptions?: SelectOption[]
 
+    /** Numeric editor constraints. They are also reflected in the browser input. */
+    min?: number
+    max?: number
+    step?: number | string
+    suffix?: string
+
     formatter?: (value: unknown, row: T) => string
 
     valueGetter?: (row: T) => unknown

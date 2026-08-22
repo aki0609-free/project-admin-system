@@ -133,10 +133,18 @@ public class CustomerTransactionCommandService {
             );
         }
 
+        int adjustmentAmount = toZero(request.adjustmentAmount());
+        validateNonNegative("入金額", request.paidAmount());
+        validateNonNegative("手数料", request.fee());
+        validateNonNegative("相殺額", request.offsetAmount());
+        validateNote(request.note());
+        validateAdjustmentReason(adjustmentAmount, request.note());
+
         entity.setConfirmedPaymentDate(request.confirmedPaymentDate());
         entity.setPaidAmount(toZero(request.paidAmount()));
         entity.setFee(toZero(request.fee()));
         entity.setOffsetAmount(toZero(request.offsetAmount()));
+        entity.setAdjustmentAmount(adjustmentAmount);
 
         refreshPaymentStatus(entity);
 
@@ -172,6 +180,7 @@ public class CustomerTransactionCommandService {
         int fee = toZero(entity.getFee());
         int paidAmount = toZero(entity.getPaidAmount());
         int offsetAmount = toZero(entity.getOffsetAmount());
+        int adjustmentAmount = toZero(entity.getAdjustmentAmount());
 
         /*
          * 振込手数料と相殺は、銀行への実入金額と合わせて
@@ -179,13 +188,13 @@ public class CustomerTransactionCommandService {
          */
         int collectedAmount;
         try {
-            collectedAmount = Math.addExact(
+            collectedAmount = Math.addExact(Math.addExact(
                     Math.addExact(paidAmount, fee),
                     offsetAmount
-            );
+            ), adjustmentAmount);
         } catch (ArithmeticException exception) {
             throw new IllegalArgumentException(
-                    "入金額・手数料・相殺の合計が上限を超えています。",
+                    "入金額・手数料・相殺額・その他調整額の合計が上限を超えています。",
                     exception
             );
         }
@@ -236,6 +245,9 @@ public class CustomerTransactionCommandService {
         validateNonNegative("入金額", request.paidAmount());
         validateNonNegative("手数料", request.fee());
         validateNonNegative("相殺額", request.offsetAmount());
+        validateAdjustmentAmount(request.adjustmentAmount());
+        validateAdjustmentReason(request.adjustmentAmount(), request.note());
+        validateNote(request.note());
     }
 
     private void validateClosingRequest(CustomerTransactionClosingRequest request) {
@@ -298,6 +310,27 @@ public class CustomerTransactionCommandService {
     private void validateNonNegative(String label, Integer value) {
         if (value != null && value < 0) {
             throw new IllegalArgumentException(label + "は0以上で入力してください。");
+        }
+    }
+
+    private void validateAdjustmentAmount(Integer value) {
+        if (value != null && value == Integer.MIN_VALUE) {
+            throw new IllegalArgumentException("その他調整額が入力可能範囲を超えています。");
+        }
+    }
+
+    private void validateAdjustmentReason(Integer adjustmentAmount, String note) {
+        if (toZero(adjustmentAmount) != 0
+                && (note == null || note.isBlank())) {
+            throw new IllegalArgumentException(
+                    "その他調整額を入力する場合は、備考へ調整理由を入力してください。"
+            );
+        }
+    }
+
+    private void validateNote(String note) {
+        if (note != null && note.length() > 255) {
+            throw new IllegalArgumentException("備考は255文字以内で入力してください。");
         }
     }
 }

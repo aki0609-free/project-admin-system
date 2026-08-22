@@ -58,7 +58,8 @@ function updateValue(value: number | string) {
         :items="monthOffsetItems"
         item-title="title"
         item-value="value"
-        density="compact"
+        density="comfortable"
+        variant="outlined"
         hide-details
         style="max-width: 120px"
         @update:model-value="updateMonthOffset"
@@ -69,7 +70,8 @@ function updateValue(value: number | string) {
         :items="typeItems"
         item-title="title"
         item-value="value"
-        density="compact"
+        density="comfortable"
+        variant="outlined"
         hide-details
         style="max-width: 180px"
         @update:model-value="updateType"
@@ -79,7 +81,10 @@ function updateValue(value: number | string) {
         v-if="modelValue?.type === 'DAY_OF_MONTH'"
         :model-value="modelValue?.value"
         type="number"
-        density="compact"
+        min="1"
+        max="31"
+        density="comfortable"
+        variant="outlined"
         hide-details
         suffix="日"
         style="max-width: 120px"
@@ -100,6 +105,7 @@ function updateValue(value: number | string) {
 .day-rule-field {
   display: grid;
   gap: 4px;
+  min-height: 56px;
 }
 
 .field-label {

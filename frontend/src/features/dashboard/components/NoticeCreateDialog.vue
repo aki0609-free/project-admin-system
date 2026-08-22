@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
+import { computed, ref, toRef } from 'vue'
 
 import { useNoticeEditDialog } from '@/features/dashboard/composables/useNoticeEditDialog'
 import type {
@@ -15,6 +15,7 @@ import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 const props = defineProps<{
   modelValue: boolean
   notice?: NoticeResponse | null
+  saving?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -27,6 +28,8 @@ const dialog = computed({
   set: value => emit('update:modelValue', value),
 })
 
+const formLayout = ref<{ validateAll: () => boolean } | null>(null)
+
 const {
   form,
   activeTab,
@@ -37,7 +40,11 @@ const {
 } = useNoticeEditDialog(
   dialog,
   toRef(props, 'notice'),
-  value => emit('submit', value),
+  value => {
+    if (!formLayout.value?.validateAll()) return
+    emit('submit', value)
+  },
+  computed(() => props.saving ?? false),
 )
 </script>
 
@@ -50,7 +57,7 @@ const {
     body-layout="stack"
     :right-footer-items="rightFooterItems"
   >
-    <FormLayout v-model="form" :schema="schema">
+    <FormLayout ref="formLayout" v-model="form" :schema="schema">
       <GridBasedForm v-model="form" :fields="fields" />
     </FormLayout>
 

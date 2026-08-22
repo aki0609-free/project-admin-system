@@ -19,6 +19,11 @@ test('user management uses the shared page, table, form and dialog', async ({ pa
   await expect(dialog.getByLabel('パスワード', { exact: true })).toBeVisible()
   await expect(dialog.getByText('ロール', { exact: true }).last()).toBeVisible()
 
+  await dialog.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(dialog.getByText('ユーザー名は必須です')).toBeVisible()
+  await expect(dialog.getByText('パスワードは必須です')).toBeVisible()
+  await expect(dialog).toBeVisible()
+
   const cancelButton = dialog.getByRole('button', { name: 'キャンセル', exact: true })
   const saveButton = dialog.getByRole('button', { name: '保存', exact: true })
   const cancelBox = requireBox(await cancelButton.boundingBox(), 'キャンセルボタン')
@@ -39,6 +44,11 @@ test('role management uses the shared page, table, form and dialog', async ({ pa
   await expect(dialog.getByRole('heading', { name: 'ロール新規作成' })).toBeVisible()
   await expect(dialog.getByLabel('ロール名', { exact: true })).toBeVisible()
   await expect(dialog.getByText('選択中の権限', { exact: true })).toBeVisible()
+
+  await dialog.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(dialog.getByText('ロール名は必須です')).toBeVisible()
+  await expect(dialog.getByText('権限を1つ以上選択してください')).toBeVisible()
+  await expect(dialog).toBeVisible()
 
   const cancelButton = dialog.getByRole('button', { name: 'キャンセル', exact: true })
   const saveButton = dialog.getByRole('button', { name: '保存', exact: true })

@@ -2,8 +2,6 @@ package com.project.backend.features.employee.dto;
 
 import java.math.BigDecimal;
 
-import com.project.backend.features.employee.enums.ApprovalStatus;
-
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
@@ -24,11 +22,6 @@ public class EmployeeSavingSaveRequest {
     @DecimalMin(value = "0.00", message = "最低給与額は0円以上で指定してください。")
     private BigDecimal minSalaryThreshold = BigDecimal.ZERO;
 
-    private BigDecimal currentBalance = BigDecimal.ZERO;
-
     private boolean activeFlag = true;
 
-    private ApprovalStatus approvalStatus = ApprovalStatus.PENDING;
-
-    private String approvalComment;
 }

@@ -71,6 +71,10 @@ public class CustomerTransaction extends BaseEntity {
     @Column(name = "offset_amount")
     private Integer offsetAmount;
 
+    @Column(name = "adjustment_amount", nullable = false)
+    @Builder.Default
+    private Integer adjustmentAmount = 0;
+
     @Column(name = "fee")
     private Integer fee;
 

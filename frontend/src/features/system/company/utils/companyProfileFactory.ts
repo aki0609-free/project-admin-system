@@ -3,272 +3,185 @@ import type {
   CompanyProfileSaveRequest,
 } from '../types/companyProfileApiTypes'
 
-import type {
-  CompanyProfileForm,
-} from '../types/companyProfileTypes'
+import type { CompanyProfileForm } from '../types/companyProfileTypes'
 
-const toStringValue = (
-  value: string | null | undefined,
-): string => value ?? ''
+const toStringValue = (value: string | null | undefined): string => value ?? ''
 
-const toNullableString = (
-  value: string | null | undefined,
-): string | null => {
+const toNullableString = (value: string | null | undefined): string | null => {
   const normalized = value?.trim()
 
-  return normalized
-    ? normalized
-    : null
+  return normalized ? normalized : null
 }
 
-const splitLines = (
-  value: string,
-): string[] =>
+const toCapitalAmountText = (value: number | null | undefined): string =>
+  value == null ? '' : value.toLocaleString('ja-JP', { maximumFractionDigits: 2 })
+
+export const toCapitalAmount = (value: string): number | null => {
+  const normalized = value.replaceAll(',', '').trim()
+
+  return normalized ? Number(normalized) : null
+}
+
+const splitLines = (value: string): string[] =>
   value
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
     .split('\n')
-    .map(item => item.trim())
+    .map((item) => item.trim())
     .filter(Boolean)
 
-const joinLines = (
-  values: string[] | null | undefined,
-): string =>
+const joinLines = (values: string[] | null | undefined): string =>
   values?.filter(Boolean).join('\n') ?? ''
 
-export const createEmptyCompanyProfileForm =
-  (): CompanyProfileForm => ({
-    id: null,
+export const createEmptyCompanyProfileForm = (): CompanyProfileForm => ({
+  id: null,
 
-    companyCode: 'DEFAULT',
-    companyName: '',
-    companyNameKana: '',
-    shortName: '',
+  companyCode: 'DEFAULT',
+  companyName: '',
+  companyNameKana: '',
+  shortName: '',
 
-    representativeTitle: '',
-    representativeName: '',
+  representativeTitle: '',
+  representativeName: '',
 
-    postalCode: '',
-    prefecture: '',
-    city: '',
-    addressLine1: '',
-    addressLine2: '',
+  postalCode: '',
+  prefecture: '',
+  city: '',
+  addressLine1: '',
+  addressLine2: '',
 
-    phone: '',
-    fax: '',
-    email: '',
-    websiteUrl: '',
+  phone: '',
+  fax: '',
+  email: '',
+  websiteUrl: '',
 
-    capitalAmount: null,
+  capitalAmount: '',
 
-    permitNumber: '',
-    qualifiedInvoiceIssuerNumber: '',
+  permitNumber: '',
+  qualifiedInvoiceIssuerNumber: '',
 
-    serviceArea: '',
+  serviceArea: '',
 
-    businessContentsText: '',
-    certificationInformationText: '',
+  businessContentsText: '',
+  certificationInformationText: '',
 
-    invoiceBankName: '',
-    invoiceBankBranchName: '',
-    invoiceBankAccountType: '',
-    invoiceBankAccountNumber: '',
-    invoiceBankAccountHolder: '',
+  invoiceBankName: '',
+  invoiceBankBranchName: '',
+  invoiceBankAccountType: '',
+  invoiceBankAccountNumber: '',
+  invoiceBankAccountHolder: '',
 
-    invoiceNote: '',
+  invoiceNote: '',
 
-    activeFlag: true,
-  })
+  activeFlag: true,
+})
 
-export const toCompanyProfileForm = (
-  response: CompanyProfileResponse,
-): CompanyProfileForm => ({
+export const toCompanyProfileForm = (response: CompanyProfileResponse): CompanyProfileForm => ({
   id: response.id,
 
   companyCode: response.companyCode,
   companyName: response.companyName,
-  companyNameKana:
-    toStringValue(response.companyNameKana),
-  shortName:
-    toStringValue(response.shortName),
+  companyNameKana: toStringValue(response.companyNameKana),
+  shortName: toStringValue(response.shortName),
 
-  representativeTitle:
-    toStringValue(response.representativeTitle),
-  representativeName:
-    toStringValue(response.representativeName),
+  representativeTitle: toStringValue(response.representativeTitle),
+  representativeName: toStringValue(response.representativeName),
 
-  postalCode:
-    toStringValue(response.postalCode),
-  prefecture:
-    toStringValue(response.prefecture),
-  city:
-    toStringValue(response.city),
-  addressLine1:
-    toStringValue(response.addressLine1),
-  addressLine2:
-    toStringValue(response.addressLine2),
+  postalCode: toStringValue(response.postalCode),
+  prefecture: toStringValue(response.prefecture),
+  city: toStringValue(response.city),
+  addressLine1: toStringValue(response.addressLine1),
+  addressLine2: toStringValue(response.addressLine2),
 
-  phone:
-    toStringValue(response.phone),
-  fax:
-    toStringValue(response.fax),
-  email:
-    toStringValue(response.email),
-  websiteUrl:
-    toStringValue(response.websiteUrl),
+  phone: toStringValue(response.phone),
+  fax: toStringValue(response.fax),
+  email: toStringValue(response.email),
+  websiteUrl: toStringValue(response.websiteUrl),
 
-  capitalAmount:
-    response.capitalAmount,
+  capitalAmount: toCapitalAmountText(response.capitalAmount),
 
-  permitNumber:
-    toStringValue(response.permitNumber),
+  permitNumber: toStringValue(response.permitNumber),
 
-  qualifiedInvoiceIssuerNumber:
-    toStringValue(
-      response.qualifiedInvoiceIssuerNumber,
-    ),
+  qualifiedInvoiceIssuerNumber: toStringValue(response.qualifiedInvoiceIssuerNumber),
 
-  serviceArea:
-    toStringValue(response.serviceArea),
+  serviceArea: toStringValue(response.serviceArea),
 
-  businessContentsText:
-    joinLines(response.businessContents),
+  businessContentsText: joinLines(response.businessContents),
 
-  certificationInformationText:
-    joinLines(
-      response.certificationInformation,
-    ),
+  certificationInformationText: joinLines(response.certificationInformation),
 
-  invoiceBankName:
-    toStringValue(response.invoiceBankName),
+  invoiceBankName: toStringValue(response.invoiceBankName),
 
-  invoiceBankBranchName:
-    toStringValue(
-      response.invoiceBankBranchName,
-    ),
+  invoiceBankBranchName: toStringValue(response.invoiceBankBranchName),
 
-  invoiceBankAccountType:
-    toStringValue(
-      response.invoiceBankAccountType,
-    ),
+  invoiceBankAccountType: toStringValue(response.invoiceBankAccountType),
 
-  invoiceBankAccountNumber:
-    toStringValue(
-      response.invoiceBankAccountNumber,
-    ),
+  invoiceBankAccountNumber: toStringValue(response.invoiceBankAccountNumber),
 
-  invoiceBankAccountHolder:
-    toStringValue(
-      response.invoiceBankAccountHolder,
-    ),
+  invoiceBankAccountHolder: toStringValue(response.invoiceBankAccountHolder),
 
-  invoiceNote:
-    toStringValue(response.invoiceNote),
+  invoiceNote: toStringValue(response.invoiceNote),
 
-  activeFlag:
-    response.activeFlag ?? true,
+  activeFlag: response.activeFlag ?? true,
 })
 
 export const toCompanyProfileSaveRequest = (
   form: CompanyProfileForm,
 ): CompanyProfileSaveRequest => ({
-  companyCode:
-    form.companyCode.trim() || 'DEFAULT',
+  companyCode: form.companyCode.trim() || 'DEFAULT',
 
-  companyName:
-    form.companyName.trim(),
+  companyName: form.companyName.trim(),
 
-  companyNameKana:
-    toNullableString(form.companyNameKana),
+  companyNameKana: toNullableString(form.companyNameKana),
 
-  shortName:
-    toNullableString(form.shortName),
+  shortName: toNullableString(form.shortName),
 
-  representativeTitle:
-    toNullableString(
-      form.representativeTitle,
-    ),
+  representativeTitle: toNullableString(form.representativeTitle),
 
-  representativeName:
-    toNullableString(
-      form.representativeName,
-    ),
+  representativeName: toNullableString(form.representativeName),
 
-  postalCode:
-    toNullableString(form.postalCode),
+  postalCode: toNullableString(form.postalCode),
 
-  prefecture:
-    toNullableString(form.prefecture),
+  prefecture: toNullableString(form.prefecture),
 
-  city:
-    toNullableString(form.city),
+  city: toNullableString(form.city),
 
-  addressLine1:
-    toNullableString(form.addressLine1),
+  addressLine1: toNullableString(form.addressLine1),
 
-  addressLine2:
-    toNullableString(form.addressLine2),
+  addressLine2: toNullableString(form.addressLine2),
 
-  phone:
-    toNullableString(form.phone),
+  phone: toNullableString(form.phone),
 
-  fax:
-    toNullableString(form.fax),
+  fax: toNullableString(form.fax),
 
-  email:
-    toNullableString(form.email),
+  email: toNullableString(form.email),
 
-  websiteUrl:
-    toNullableString(form.websiteUrl),
+  websiteUrl: toNullableString(form.websiteUrl),
 
-  capitalAmount:
-    form.capitalAmount,
+  capitalAmount: toCapitalAmount(form.capitalAmount),
 
-  permitNumber:
-    toNullableString(form.permitNumber),
+  permitNumber: toNullableString(form.permitNumber),
 
   qualifiedInvoiceIssuerNumber:
-    toNullableString(
-      form.qualifiedInvoiceIssuerNumber,
-    ),
+    toNullableString(form.qualifiedInvoiceIssuerNumber)?.toUpperCase() ?? null,
 
-  serviceArea:
-    toNullableString(form.serviceArea),
+  serviceArea: toNullableString(form.serviceArea),
 
-  businessContents:
-    splitLines(form.businessContentsText),
+  businessContents: splitLines(form.businessContentsText),
 
-  certificationInformation:
-    splitLines(
-      form.certificationInformationText,
-    ),
+  certificationInformation: splitLines(form.certificationInformationText),
 
-  invoiceBankName:
-    toNullableString(form.invoiceBankName),
+  invoiceBankName: toNullableString(form.invoiceBankName),
 
-  invoiceBankBranchName:
-    toNullableString(
-      form.invoiceBankBranchName,
-    ),
+  invoiceBankBranchName: toNullableString(form.invoiceBankBranchName),
 
-  invoiceBankAccountType:
-    toNullableString(
-      form.invoiceBankAccountType,
-    ),
+  invoiceBankAccountType: toNullableString(form.invoiceBankAccountType),
 
-  invoiceBankAccountNumber:
-    toNullableString(
-      form.invoiceBankAccountNumber,
-    ),
+  invoiceBankAccountNumber: toNullableString(form.invoiceBankAccountNumber),
 
-  invoiceBankAccountHolder:
-    toNullableString(
-      form.invoiceBankAccountHolder,
-    ),
+  invoiceBankAccountHolder: toNullableString(form.invoiceBankAccountHolder),
 
-  invoiceNote:
-    toNullableString(form.invoiceNote),
+  invoiceNote: toNullableString(form.invoiceNote),
 
-  activeFlag:
-    form.activeFlag,
+  activeFlag: true,
 })

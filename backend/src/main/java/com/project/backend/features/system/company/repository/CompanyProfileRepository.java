@@ -10,18 +10,23 @@ public interface CompanyProfileRepository
         extends JpaRepository<CompanyProfile, Long> {
 
     Optional<CompanyProfile>
-            findFirstByActiveFlagTrueAndDeletedAtIsNullOrderByIdAsc();
+            findFirstByTenantIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdAsc(
+                    String tenantId
+            );
 
     Optional<CompanyProfile>
-            findByCompanyCodeAndDeletedAtIsNull(
+            findByTenantIdAndCompanyCodeAndDeletedAtIsNull(
+                    String tenantId,
                     String companyCode
             );
 
-    boolean existsByCompanyCodeAndDeletedAtIsNull(
+    boolean existsByTenantIdAndCompanyCodeAndDeletedAtIsNull(
+            String tenantId,
             String companyCode
     );
 
-    boolean existsByCompanyCodeAndIdNotAndDeletedAtIsNull(
+    boolean existsByTenantIdAndCompanyCodeAndIdNotAndDeletedAtIsNull(
+            String tenantId,
             String companyCode,
             Long id
     );

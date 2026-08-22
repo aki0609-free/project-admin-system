@@ -9,6 +9,9 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Optional;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +23,7 @@ import com.project.backend.features.admin.business.repository.DormitoryFeeSettin
 import com.project.backend.features.employee.repository.EmployeeResignationChecklistRepository;
 import com.project.backend.features.employee.repository.EmployeeResignationSettingRepository;
 import com.project.backend.features.employee.enums.DormitoryType;
+import com.project.backend.features.employee.entity.EmployeeResignationChecklistMaster;
 import com.project.backend.features.operation.monthly.entity.MonthlyClosingOutputDefinition;
 import com.project.backend.features.operation.monthly.enums.MonthlyClosingOutputType;
 import com.project.backend.features.operation.monthly.repository.MonthlyClosingOutputDefinitionRepository;
@@ -30,9 +34,15 @@ import com.project.backend.features.operation.reportpreview.repository.Operation
 
 class BusinessSettingServiceTest {
 
+    private static final Clock CLOCK = Clock.fixed(
+            Instant.parse("2026-08-22T00:00:00Z"),
+            ZoneOffset.UTC
+    );
+
     private MonthlyClosingOutputDefinitionRepository definitionRepository;
     private OperationReportPreviewRepository previewRepository;
     private DormitoryFeeSettingRepository dormitoryFeeSettingRepository;
+    private EmployeeResignationChecklistRepository checklistRepository;
     private BusinessSettingService service;
 
     @BeforeEach
@@ -40,14 +50,28 @@ class BusinessSettingServiceTest {
         definitionRepository = mock(MonthlyClosingOutputDefinitionRepository.class);
         previewRepository = mock(OperationReportPreviewRepository.class);
         dormitoryFeeSettingRepository = mock(DormitoryFeeSettingRepository.class);
+        checklistRepository = mock(EmployeeResignationChecklistRepository.class);
         service = new BusinessSettingService(
                 mock(EmployeeResignationSettingRepository.class),
-                mock(EmployeeResignationChecklistRepository.class),
+                checklistRepository,
                 mock(ClosingSettingRepository.class),
                 definitionRepository,
                 previewRepository,
-                dormitoryFeeSettingRepository
+                dormitoryFeeSettingRepository,
+                CLOCK
         );
+    }
+
+    @Test
+    void deleteChecklist_shouldUseBusinessClock() {
+        EmployeeResignationChecklistMaster checklist =
+                new EmployeeResignationChecklistMaster();
+        when(checklistRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(checklist));
+
+        service.deleteChecklist(10L);
+
+        assertThat(checklist.getDeletedAt()).isEqualTo(CLOCK.instant());
     }
 
     @Test

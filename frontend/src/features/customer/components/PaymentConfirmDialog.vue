@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { z } from 'zod'
 import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
 import type { ToolbarItem } from '@/shared/ui/toolbar/types'
@@ -27,15 +27,18 @@ const form = reactive<CustomerPaymentConfirmPayload>({
   paidAmount: null,
   fee: 0,
   offsetAmount: 0,
+  adjustmentAmount: 0,
   confirmedPaymentDate: new Date().toISOString().slice(0, 10),
   note: null,
 })
+const formLayoutRef = ref<{ validateAll: () => boolean } | null>(null)
 
 const schema = z.object({
-  paidAmount: z.number().nullable(),
-  fee: z.number().min(0),
-  offsetAmount: z.number().min(0),
-  confirmedPaymentDate: z.string().min(1, '必須です'),
+  paidAmount: z.number().nullable().refine(value => value == null || value >= 0, '入金額は0以上で入力してください'),
+  fee: z.number().nullable().refine(value => value == null || value >= 0, '手数料は0以上で入力してください'),
+  offsetAmount: z.number().nullable().refine(value => value == null || value >= 0, '相殺額は0以上で入力してください'),
+  adjustmentAmount: z.number().nullable(),
+  confirmedPaymentDate: z.string().nullable().refine(value => Boolean(value), '必須です'),
   note: z.string().nullable(),
 })
 
@@ -43,19 +46,23 @@ const fields: GridFormFieldDef<CustomerPaymentConfirmPayload>[] = [
   { key: 'fee', label: '手数料', type: 'number', gridColumn: '1 / span 2' },
   { key: 'paidAmount', label: '入金額', type: 'number', gridColumn: '3 / span 2' },
   { key: 'offsetAmount', label: '相殺額', type: 'number', gridColumn: '1 / span 2' },
+  { key: 'adjustmentAmount', label: 'その他調整額', type: 'number', gridColumn: '3 / span 2' },
   {
     key: 'confirmedPaymentDate',
     label: '入金確認日',
     type: 'date',
-    gridColumn: '3 / span 2',
+    gridColumn: '1 / span 2',
   },
-  { key: 'note', label: '備考', type: 'text', gridColumn: '1 / -1' },
+  { key: 'note', label: '備考・調整理由', type: 'text', gridColumn: '1 / -1' },
 ]
 
 const billingAmount = computed(() => props.transaction?.billingAmount ?? 0)
 
 const collectedAmount = computed(
-  () => (form.paidAmount ?? 0) + (form.fee ?? 0) + (form.offsetAmount ?? 0),
+  () => (form.paidAmount ?? 0)
+    + (form.fee ?? 0)
+    + (form.offsetAmount ?? 0)
+    + (form.adjustmentAmount ?? 0),
 )
 
 const remainingAmount = computed(() => billingAmount.value - collectedAmount.value)
@@ -67,6 +74,10 @@ const expectedStatus = computed(() => {
   return '過入金'
 })
 
+const adjustmentReasonError = computed(
+  () => (form.adjustmentAmount ?? 0) !== 0 && !form.note?.trim(),
+)
+
 watch(
   () => props.transaction,
   (value) => {
@@ -75,6 +86,7 @@ watch(
     form.paidAmount = value.paidAmount ?? null
     form.fee = value.fee ?? 0
     form.offsetAmount = value.offsetAmount ?? 0
+    form.adjustmentAmount = value.adjustmentAmount ?? 0
     form.confirmedPaymentDate = value.confirmedPaymentDate ?? new Date().toISOString().slice(0, 10)
     form.note = value.note ?? null
   },
@@ -86,6 +98,7 @@ function handleClose() {
 }
 
 function handleConfirm() {
+  if (!formLayoutRef.value?.validateAll() || adjustmentReasonError.value) return
   emit('confirm', { ...form })
   dialogModel.value = false
 }
@@ -128,7 +141,11 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
       <div>判定予定：{{ expectedStatus }}</div>
     </v-alert>
 
-    <FormLayout v-model="form" :schema="schema">
+    <v-alert v-if="adjustmentReasonError" type="error" variant="tonal">
+      その他調整額を入力する場合は、備考へ調整理由を入力してください。
+    </v-alert>
+
+    <FormLayout ref="formLayoutRef" v-model="form" :schema="schema">
       <GridBasedForm v-model="form" :fields="fields" />
     </FormLayout>
   </AppDialog>

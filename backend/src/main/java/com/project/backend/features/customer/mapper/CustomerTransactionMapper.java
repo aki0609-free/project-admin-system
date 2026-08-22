@@ -39,6 +39,7 @@ public class CustomerTransactionMapper {
         entity.setPaidAmount(request.paidAmount());
         entity.setFee(request.fee());
         entity.setOffsetAmount(request.offsetAmount());
+        entity.setAdjustmentAmount(toZero(request.adjustmentAmount()));
         entity.setTotalAmount(request.totalAmount());
 
         entity.setPaymentStatus(
@@ -82,6 +83,10 @@ public class CustomerTransactionMapper {
             entity.setOffsetAmount(0);
         }
 
+        if (entity.getAdjustmentAmount() == null) {
+            entity.setAdjustmentAmount(0);
+        }
+
         if (entity.getTotalAmount() == null) {
             entity.setTotalAmount(0);
         }
@@ -121,6 +126,7 @@ public class CustomerTransactionMapper {
                 entity.getPaidAmount(),
                 entity.getFee(),
                 entity.getOffsetAmount(),
+                entity.getAdjustmentAmount(),
                 entity.getTotalAmount(),
 
                 entity.getPaymentStatus() == null
@@ -141,5 +147,9 @@ public class CustomerTransactionMapper {
         entity.setPaymentDayType(rule == null ? null : rule.type());
         entity.setPaymentDayValue(rule == null ? null : rule.value());
         entity.setPaymentMonthOffset(rule == null ? 0 : rule.monthOffset());
+    }
+
+    private int toZero(Integer value) {
+        return value == null ? 0 : value;
     }
 }

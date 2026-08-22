@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/vue-query'
 import { useAppMutation } from '@/shared/api/useAppMutation'
 import { post } from '@/shared/api/http'
+import { queryKeys as dashboardQueryKeys } from '@/features/dashboard/api/queryKeys'
 import { queryKeys } from '@/features/system/notice/api/queryKeys'
 import type { NoticeGenerateResult } from '@/features/system/notice/types/noticeRuleApiTypes'
 
@@ -17,9 +18,14 @@ export const useGenerateNoticeRulesMutation = () => {
     },
 
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.noticeRules.all,
-      })
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.noticeRules.all,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: dashboardQueryKeys.notice.all,
+        }),
+      ])
     },
   })
 }

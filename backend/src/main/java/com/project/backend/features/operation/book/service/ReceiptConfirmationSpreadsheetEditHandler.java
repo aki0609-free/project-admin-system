@@ -131,6 +131,14 @@ public class ReceiptConfirmationSpreadsheetEditHandler
                     ),
                     "相殺"
             );
+            int adjustmentAmount = signedYen(
+                    cellValue(
+                            cells,
+                            ReceiptConfirmationSpreadsheetRenderer
+                                    .ADJUSTMENT_COLUMN
+                    ),
+                    "その他調整額"
+            );
             String note = text(
                     cellValue(
                             cells,
@@ -146,13 +154,13 @@ public class ReceiptConfirmationSpreadsheetEditHandler
 
             int settledAmount;
             try {
-                settledAmount = Math.addExact(
+                settledAmount = Math.addExact(Math.addExact(
                         Math.addExact(paidAmount, fee),
                         offsetAmount
-                );
+                ), adjustmentAmount);
             } catch (ArithmeticException exception) {
                 throw new IllegalArgumentException(
-                        "入金額・手数料・相殺の合計が上限を超えています。取引ID="
+                        "入金額・手数料・相殺額・その他調整額の合計が上限を超えています。取引ID="
                                 + transactionId,
                         exception
                 );
@@ -172,6 +180,7 @@ public class ReceiptConfirmationSpreadsheetEditHandler
                             paidAmount,
                             fee,
                             offsetAmount,
+                            adjustmentAmount,
                             note
                     )
             );
@@ -234,6 +243,32 @@ public class ReceiptConfirmationSpreadsheetEditHandler
         } catch (ArithmeticException | NumberFormatException exception) {
             throw new IllegalArgumentException(
                     fieldName + "は0以上の円単位整数で入力してください。value="
+                            + value.asText(),
+                    exception
+            );
+        }
+    }
+
+    private int signedYen(JsonNode value, String fieldName) {
+        if (value == null || value.isNull()
+                || value.asText().isBlank()) {
+            return 0;
+        }
+        String normalized = value.isNumber()
+                ? value.asText()
+                : value.asText()
+                        .replace(",", "")
+                        .replace("¥", "")
+                        .trim();
+        try {
+            BigDecimal decimal = new BigDecimal(normalized);
+            if (decimal.stripTrailingZeros().scale() > 0) {
+                throw new NumberFormatException();
+            }
+            return decimal.intValueExact();
+        } catch (ArithmeticException | NumberFormatException exception) {
+            throw new IllegalArgumentException(
+                    fieldName + "は円単位整数で入力してください。value="
                             + value.asText(),
                     exception
             );

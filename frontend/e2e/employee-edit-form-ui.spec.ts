@@ -26,6 +26,23 @@ test('employee basic, payroll and contract tabs use the shared form layout', asy
   await expect(dialog).not.toBeVisible()
 })
 
+test('employee save validates every tab and returns to the invalid tab', async ({ page }) => {
+  await page.goto('/employee/information')
+  await page.getByRole('button', { name: '新規作成', exact: true }).click()
+
+  const dialog = page.getByRole('dialog').filter({
+    has: page.getByRole('heading', { name: '従業員情報新規作成', exact: true }),
+  })
+  await dialog.getByRole('button', { name: '契約情報', exact: true }).click()
+  await expect(dialog.getByLabel('契約開始日', { exact: true })).toBeVisible()
+
+  await dialog.getByRole('button', { name: '保存', exact: true }).click()
+
+  await expect(dialog.getByText('社員コードは必須です。', { exact: true })).toBeVisible()
+  await expect(dialog.getByLabel('社員コード', { exact: true })).toBeVisible()
+  await dialog.getByRole('button', { name: '閉じる', exact: true }).click()
+})
+
 test('employee batch toolbar opens the shared parameter dialog on a narrow viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/employee/information')

@@ -115,9 +115,10 @@ export type CustomerTransaction = SimpleTableEditableRow & {
   confirmedPaymentDate: string | null
   paidAmount: number | null
   fee: number | null
-  receivableAmount: number | null
   offsetAmount: number | null
+  adjustmentAmount: number | null
   totalAmount: number | null
+  remainingAmount: number
   paymentStatus: CustomerPaymentStatus
   note: string
 }
@@ -127,22 +128,6 @@ export type CustomerPaymentConfirmPayload = {
   paidAmount: number | null
   fee: number | null
   offsetAmount: number | null
+  adjustmentAmount: number | null
   note: string | null
-}
-
-export type EnvelopeType = 'NAGA3' | 'KAKU2'
-
-export type EnvelopePrintCustomerOption = {
-  id: number
-  name: string
-  address: string
-}
-
-export type EnvelopePrintPayload = {
-  customerIds: number[]
-  envelopeType: EnvelopeType
-  stamp: string
-  honorific: string
-  fontFamily: string
-  fontSize: number
 }

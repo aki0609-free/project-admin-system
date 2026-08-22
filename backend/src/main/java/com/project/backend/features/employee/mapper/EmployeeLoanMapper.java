@@ -9,7 +9,6 @@ import com.project.backend.features.employee.dto.EmployeeLoanResponse;
 import com.project.backend.features.employee.dto.EmployeeLoanSaveRequest;
 import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.entity.EmployeeLoan;
-import com.project.backend.features.employee.enums.ApprovalStatus;
 
 @Component
 public class EmployeeLoanMapper {
@@ -46,17 +45,10 @@ public class EmployeeLoanMapper {
     ) {
         entity.setEmployee(employee);
         entity.setPrincipal(nvl(request.getPrincipal()));
-        entity.setCurrentBalance(nvl(request.getCurrentBalance()));
         entity.setMonthlyRepayment(nvl(request.getMonthlyRepayment()));
         entity.setLoanDate(request.getLoanDate());
         entity.setRepaymentStartDate(request.getRepaymentStartDate());
         entity.setActiveFlag(request.isActiveFlag());
-        entity.setApprovalStatus(
-                request.getApprovalStatus() != null
-                        ? request.getApprovalStatus()
-                        : ApprovalStatus.PENDING
-        );
-        entity.setApprovalComment(request.getApprovalComment());
     }
 
     private BigDecimal nvl(BigDecimal value) {

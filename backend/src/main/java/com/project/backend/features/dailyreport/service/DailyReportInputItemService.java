@@ -1,7 +1,9 @@
 package com.project.backend.features.dailyreport.service;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -224,9 +226,15 @@ public class DailyReportInputItemService {
 
     private Map<Long, Integer> allowanceManualAmounts(DailyReportSaveRequest request) {
         Map<Long, Integer> amounts = new LinkedHashMap<>();
+        Set<Long> masterIds = new HashSet<>();
         for (DailyReportAllowanceSaveRequest item : request.allowances()) {
-            if (item.allowanceMasterId() != null) {
-                putManualAmount(amounts, item.allowanceMasterId(), item.amount(), "手当");
+            Long masterId = item.allowanceMasterId();
+            if (masterId == null) {
+                continue;
+            }
+            validateUniqueMasterId(masterIds, masterId, "手当");
+            if (Boolean.TRUE.equals(item.manualOverride())) {
+                amounts.put(masterId, item.amount() == null ? 0 : item.amount());
             }
         }
         return amounts;
@@ -234,10 +242,15 @@ public class DailyReportInputItemService {
 
     private Map<Long, Integer> deductionManualAmounts(DailyReportSaveRequest request) {
         Map<Long, Integer> amounts = new LinkedHashMap<>();
+        Set<Long> masterIds = new HashSet<>();
         for (DailyReportDeductionSaveRequest item : request.deductions()) {
-            if (item.deductionMasterId() != null
-                    && Boolean.TRUE.equals(item.manualOverride())) {
-                putManualAmount(amounts, item.deductionMasterId(), item.amount(), "控除");
+            Long masterId = item.deductionMasterId();
+            if (masterId == null) {
+                continue;
+            }
+            validateUniqueMasterId(masterIds, masterId, "控除");
+            if (Boolean.TRUE.equals(item.manualOverride())) {
+                amounts.put(masterId, item.amount() == null ? 0 : item.amount());
             }
         }
         return amounts;
@@ -415,13 +428,12 @@ public class DailyReportInputItemService {
                 .build();
     }
 
-    private void putManualAmount(
-            Map<Long, Integer> amounts,
+    private void validateUniqueMasterId(
+            Set<Long> masterIds,
             Long masterId,
-            Integer amount,
             String label
     ) {
-        if (amounts.putIfAbsent(masterId, amount == null ? 0 : amount) != null) {
+        if (!masterIds.add(masterId)) {
             throw new IllegalArgumentException(
                     label + "マスターIDが重複しています。masterId=" + masterId
             );

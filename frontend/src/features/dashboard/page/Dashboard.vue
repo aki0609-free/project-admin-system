@@ -9,6 +9,10 @@ import { useDeleteNoticeMutation } from '../api/useDeleteNoticeMutation'
 import { useNoticeCalendarQuery } from '../api/useNoticeCalendarQuery'
 import { useNoticesQuery } from '../api/useNoticesQuery'
 import { useUpdateNoticeMutation } from '../api/useUpdateNoticeMutation'
+import {
+  formatLocalDate,
+  getCalendarMonthRange,
+} from '../utils/dashboardDate'
 
 import type {
   NoticeCreateRequest,
@@ -25,31 +29,19 @@ const tabs = [
 
 const activeTab = ref('summary')
 
-const formatLocalDate = (date: Date) => {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
 const calendarDate = ref(formatLocalDate(new Date()))
 
-const calendarFrom = computed(() => {
-  const date = new Date(`${calendarDate.value}T00:00:00`)
-  return formatLocalDate(new Date(date.getFullYear(), date.getMonth(), 1))
-})
-
-const calendarTo = computed(() => {
-  const date = new Date(`${calendarDate.value}T00:00:00`)
-  return formatLocalDate(new Date(date.getFullYear(), date.getMonth() + 1, 0))
-})
+const calendarFrom = computed(() => getCalendarMonthRange(calendarDate.value).from)
+const calendarTo = computed(() => getCalendarMonthRange(calendarDate.value).to)
 
 const noticeDialog = ref(false)
 const editingNotice = ref<NoticeResponse | null>(null)
 
-const { notices, refetch: refetchNotices } = useNoticesQuery()
-const { notices: calendarNotices, refetch: refetchCalendarNotices } =
-  useNoticeCalendarQuery(calendarFrom, calendarTo)
+const noticesQuery = useNoticesQuery()
+const calendarQuery = useNoticeCalendarQuery(calendarFrom, calendarTo)
+const notices = noticesQuery.notices
+const calendarNotices = calendarQuery.notices
+const operationError = ref('')
 
 const { hasRole } = useAuth()
 const isSysAdmin = computed(() => hasRole(Role.SYS_ADMIN))
@@ -67,10 +59,22 @@ const canDeleteNotice = (notice: NoticeResponse) =>
 const createNoticeMutation = useCreateNoticeMutation()
 const updateNoticeMutation = useUpdateNoticeMutation()
 const deleteNoticeMutation = useDeleteNoticeMutation()
+const saving = computed(
+  () => createNoticeMutation.isPending.value || updateNoticeMutation.isPending.value,
+)
+const deleting = computed(() => deleteNoticeMutation.isPending.value)
 
 const refetchAll = async () => {
-  await refetchNotices()
-  await refetchCalendarNotices()
+  await Promise.all([noticesQuery.refetch(), calendarQuery.refetch()])
+}
+
+const toErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message) return error.message
+  if (typeof error === 'object' && error !== null) {
+    const candidate = error as Record<string, unknown>
+    if (typeof candidate.message === 'string') return candidate.message
+  }
+  return fallback
 }
 
 const openCreateDialog = () => {
@@ -86,27 +90,39 @@ const openEditDialog = (notice: NoticeResponse) => {
 }
 
 const saveNotice = async (request: NoticeCreateRequest) => {
-  if (editingNotice.value?.id) {
-    await updateNoticeMutation.mutateAsync({
-      id: editingNotice.value.id,
-      body: request,
-    })
-  } else {
-    await createNoticeMutation.mutateAsync(request)
+  if (saving.value) return
+  operationError.value = ''
+
+  try {
+    if (editingNotice.value?.id) {
+      await updateNoticeMutation.mutateAsync({
+        id: editingNotice.value.id,
+        body: request,
+      })
+    } else {
+      await createNoticeMutation.mutateAsync(request)
+    }
+
+    await refetchAll()
+
+    noticeDialog.value = false
+    editingNotice.value = null
+  } catch (error) {
+    operationError.value = toErrorMessage(error, 'お知らせの保存に失敗しました。')
   }
-
-  await refetchAll()
-
-  noticeDialog.value = false
-  editingNotice.value = null
 }
 
 const deleteNotice = async (notice: NoticeResponse) => {
-  if (!canDeleteNotice(notice)) return
+  if (!canDeleteNotice(notice) || deleting.value) return
+  operationError.value = ''
 
-  await deleteNoticeMutation.mutateAsync(notice.id)
+  try {
+    await deleteNoticeMutation.mutateAsync(notice.id)
 
-  await refetchAll()
+    await refetchAll()
+  } catch (error) {
+    operationError.value = toErrorMessage(error, 'お知らせの削除に失敗しました。')
+  }
 }
 </script>
 
@@ -116,22 +132,30 @@ const deleteNotice = async (notice: NoticeResponse) => {
       <NoticeBoard
         v-if="active === 'summary'"
         :notices="notices"
+        :loading="noticesQuery.isPending.value"
+        :error="noticesQuery.isError.value"
+        :deleting="deleting"
         :can-create="canManageNotices"
         :can-edit="canEditNotice"
         :can-delete="canDeleteNotice"
         @create="openCreateDialog"
         @edit="openEditDialog"
         @delete="deleteNotice"
+        @retry="noticesQuery.refetch()"
       />
 
       <NoticeCalendarView
         v-else-if="active === 'calendar'"
         v-model:calendar-date="calendarDate"
         :notices="calendarNotices"
+        :loading="calendarQuery.isPending.value || calendarQuery.isFetching.value"
+        :error="calendarQuery.isError.value"
+        :deleting="deleting"
         :can-edit="canEditNotice"
         :can-delete="canDeleteNotice"
         @edit="openEditDialog"
         @delete="deleteNotice"
+        @retry="calendarQuery.refetch()"
       />
     </template>
   </TabLayout>
@@ -140,6 +164,16 @@ const deleteNotice = async (notice: NoticeResponse) => {
     v-if="canManageNotices"
     v-model="noticeDialog"
     :notice="editingNotice"
+    :saving="saving"
     @submit="saveNotice"
   />
+
+  <v-snackbar
+    :model-value="!!operationError"
+    color="error"
+    timeout="6000"
+    @update:model-value="value => { if (!value) operationError = '' }"
+  >
+    {{ operationError }}
+  </v-snackbar>
 </template>

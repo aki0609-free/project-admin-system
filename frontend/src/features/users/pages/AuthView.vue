@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { z } from 'zod'
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
@@ -32,6 +32,8 @@ const updateRoleMutation = useUpdateRoleMutation()
 const deleteRoleMutation = useDeleteRoleMutation()
 
 const { dialog, form, openCreate, openEdit, closeDialog } = useRoleForm()
+const formLayoutRef = ref<{ validateAll: () => boolean } | null>(null)
+const validationRequested = ref(false)
 
 const roles = computed(() => rolesQuery.data.value ?? [])
 const allPermissions = computed(() => permissionsQuery.permissions.value ?? [])
@@ -73,6 +75,9 @@ const schema = z.object({
 })
 
 const save = async () => {
+  validationRequested.value = true
+  if (!formLayoutRef.value?.validateAll()) return
+
   if (form.value.id == null) {
     await createRoleMutation.mutateAsync(
       toRoleCreatePayload(form.value),
@@ -131,6 +136,10 @@ const filterRules = computed(() =>
 )
 
 const formatPermission = (name: string) => name
+
+watch(dialog, (opened) => {
+  if (opened) validationRequested.value = false
+})
 </script>
 
 <template>
@@ -173,6 +182,7 @@ const formatPermission = (name: string) => name
         :right-footer-items="rightFooterItems"
       >
           <FormLayout
+            ref="formLayoutRef"
             v-model="form"
             :schema="schema"
           >
@@ -191,6 +201,12 @@ const formatPermission = (name: string) => name
               v-model="form.permissionIds"
               :items="allPermissions"
             />
+            <div
+              v-if="validationRequested && form.permissionIds.length === 0"
+              class="text-error text-caption mt-2"
+            >
+              権限を1つ以上選択してください
+            </div>
           </div>
       </AppDialog>
     </template>

@@ -60,9 +60,10 @@ class ReceiptConfirmationSpreadsheetEditHandlerTest {
                           {"index":10,"value":1133464},
                           {"index":11,"value":550},
                           {"index":12,"value":0},
-                          {"index":14,"value":"振込確認"},
-                          {"index":15,"value":1},
-                          {"index":16,"value":10}
+                          {"index":13,"value":0},
+                          {"index":15,"value":"振込確認"},
+                          {"index":16,"value":1},
+                          {"index":17,"value":10}
                         ]
                       }]
                     }]
@@ -86,6 +87,7 @@ class ReceiptConfirmationSpreadsheetEditHandlerTest {
         assertThat(request.getValue().paidAmount()).isEqualTo(1133464);
         assertThat(request.getValue().fee()).isEqualTo(550);
         assertThat(request.getValue().offsetAmount()).isZero();
+        assertThat(request.getValue().adjustmentAmount()).isZero();
         assertThat(request.getValue().note()).isEqualTo("振込確認");
     }
 
@@ -108,8 +110,8 @@ class ReceiptConfirmationSpreadsheetEditHandlerTest {
                         "cells": [
                           {"index":8,"value":999},
                           {"index":10,"value":1000},
-                          {"index":15,"value":1},
-                          {"index":16,"value":10}
+                          {"index":16,"value":1},
+                          {"index":17,"value":10}
                         ]
                       }]
                     }]

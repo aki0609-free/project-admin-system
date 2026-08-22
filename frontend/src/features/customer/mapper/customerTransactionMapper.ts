@@ -37,6 +37,8 @@ function toDayRuleRequest(value: DayRule | null | undefined): DayRule | null {
 }
 
 export function toCustomerTransaction(response: CustomerTransactionResponse): CustomerTransaction {
+  const billingAmount = response.billingAmount ?? 0
+  const totalAmount = response.totalAmount ?? 0
   return {
     id: response.id,
     customerId: response.customerId,
@@ -49,9 +51,10 @@ export function toCustomerTransaction(response: CustomerTransactionResponse): Cu
     confirmedPaymentDate: response.confirmedPaymentDate,
     paidAmount: response.paidAmount,
     fee: response.fee,
-    receivableAmount: (response.billingAmount ?? 0) + (response.fee ?? 0),
     offsetAmount: response.offsetAmount,
+    adjustmentAmount: response.adjustmentAmount,
     totalAmount: response.totalAmount,
+    remainingAmount: billingAmount - totalAmount,
     paymentStatus: response.paymentStatus ?? 'UNPAID',
     note: toStringValue(response.note),
     _isNew: false,
@@ -71,6 +74,7 @@ export function toCustomerTransactionRequest(row: CustomerTransaction): Customer
     paidAmount: row.paidAmount,
     fee: row.fee,
     offsetAmount: row.offsetAmount,
+    adjustmentAmount: row.adjustmentAmount,
     totalAmount: row.totalAmount,
     paymentStatus: row.paymentStatus,
     note: toNullableString(row.note),
@@ -85,6 +89,7 @@ export function toCustomerPaymentConfirmRequest(
     paidAmount: payload.paidAmount,
     fee: payload.fee,
     offsetAmount: payload.offsetAmount,
+    adjustmentAmount: payload.adjustmentAmount,
     note: toNullableString(payload.note ?? null),
   }
 }

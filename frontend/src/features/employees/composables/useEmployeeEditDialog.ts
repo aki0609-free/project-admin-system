@@ -1,5 +1,4 @@
 import { computed, reactive, ref, watch, type Ref } from 'vue'
-import { z } from 'zod'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
 import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { EmployeeDetailResponse } from '../types/employeeApiTypes'
@@ -10,75 +9,12 @@ import type {
 } from '../types/employeeFormTypes'
 import { createEmptyEmployeeForm, toEmployeeForm } from '../utils/employeeFormFactory'
 import { formatZipCode } from '@/shared/utils/BusinessUtils'
-
-export const employeeBasicSchema = z.object({
-  id: z.number(),
-  employeeCode: z.string().min(1, '必須です'),
-  employeeName: z.string().min(1, '必須です'),
-  employeeNameKana: z.string(),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).nullable(),
-  birthDate: z.string(),
-  hireDate: z.string(),
-  resignDate: z.string(),
-  employmentType: z.enum(['FULL_TIME', 'CONTRACT', 'PART_TIME', 'TEMPORARY', 'DAILY_WORKER']),
-  employmentStatus: z.enum(['ACTIVE', 'LEAVE', 'RESIGNED']),
-  phone: z.string(),
-  email: z.string().email('メールアドレスの形式が不正です。').or(z.literal('')),
-  postalCode: z.string(),
-  address: z.string(),
-  // 旧API互換項目。画面の適用設定・検証は payrollItemSettings 側で行う。
-  dormitoryFlag: z.boolean(),
-  dormitoryType: z.enum(['SINGLE_ROOM', 'SHARED_ROOM']).nullable(),
-  activeFlag: z.boolean(),
-  payrollProfile: z.any(),
-  contract: z.any(),
-})
-
-export const employeePayrollSchema = z.object({
-  taxCategory: z.enum(['KOU', 'OTSU', 'HEI']),
-  taxDependentCount: z.number().min(0),
-  dependentFlag: z.boolean(),
-  dependentOfOtherFlag: z.boolean(),
-  paidLeaveRemainingDays: z.number().min(0),
-  incomeTaxCalcFlag: z.boolean(),
-  residentTaxCalcFlag: z.boolean(),
-  residentTaxMonthly: z.number().min(0),
-  employmentInsuranceFlag: z.boolean(),
-  socialInsuranceFlag: z.boolean(),
-  healthInsuranceFlag: z.boolean(),
-  pensionInsuranceFlag: z.boolean(),
-  careInsuranceFlag: z.boolean(),
-  dailyPayFlag: z.boolean(),
-  commuteAllowanceMonthly: z.number().min(0),
-})
-
-export const employeeContractSchema = z
-  .object({
-    contractStartDate: z.string(),
-    contractEndDate: z.string(),
-    renewalFlag: z.boolean(),
-    salaryType: z.enum(['MONTHLY', 'WEEKLY', 'DAILY', 'HOURLY']),
-    paymentCycle: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']),
-    monthlySalary: z.number().min(0),
-    weeklyWage: z.number().min(0),
-    dailyWage: z.number().min(0),
-    hourlyWage: z.number().min(0),
-    standardWorkingHours: z.number().min(0),
-    note: z.string(),
-  })
-  .superRefine((value, context) => {
-    if (
-      value.contractStartDate &&
-      value.contractEndDate &&
-      value.contractEndDate < value.contractStartDate
-    ) {
-      context.addIssue({
-        code: 'custom',
-        path: ['contractEndDate'],
-        message: '契約終了日は契約開始日以降で指定してください。',
-      })
-    }
-  })
+import {
+  employeeBasicSchema,
+  employeeContractSchema,
+  employeePayrollSchema,
+  validateEmployeeForm,
+} from '../validation/employeeSchemas'
 
 export const useEmployeeEditDialog = (
   visible: Ref<boolean>,
@@ -90,11 +26,13 @@ export const useEmployeeEditDialog = (
   const activeTab = ref<'basic' | 'payrollItems' | 'payroll' | 'contract'>('basic')
   const formModel = reactive<EmployeeForm>(createEmptyEmployeeForm())
   const resignDialogVisible = ref(false)
+  const validationMessage = ref('')
 
   const resetForm = () => {
     Object.assign(formModel, createEmptyEmployeeForm())
     activeTab.value = 'basic'
     resignDialogVisible.value = false
+    validationMessage.value = ''
   }
 
   watch(
@@ -122,6 +60,7 @@ export const useEmployeeEditDialog = (
       Object.assign(formModel, toEmployeeForm(value))
       activeTab.value = 'basic'
       resignDialogVisible.value = false
+      validationMessage.value = ''
     },
     { immediate: true },
   )
@@ -263,6 +202,14 @@ export const useEmployeeEditDialog = (
   }
 
   const save = () => {
+    validationMessage.value = ''
+    const validationError = validateEmployeeForm(formModel)
+    if (validationError) {
+      activeTab.value = validationError.tab
+      validationMessage.value = validationError.message
+      return
+    }
+
     emitSave({
       ...formModel,
       payrollProfile: { ...formModel.payrollProfile },
@@ -353,5 +300,6 @@ export const useEmployeeEditDialog = (
     leftFooterItems,
     rightFooterItems,
     resignDialogVisible,
+    validationMessage,
   }
 }

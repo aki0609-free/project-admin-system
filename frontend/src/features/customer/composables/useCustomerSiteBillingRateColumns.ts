@@ -68,6 +68,7 @@ export const useCustomerBillingRateColumns = (
     unref(sites)
       .filter(site =>
         !site._isDeleted
+        && !site._isNew
         && site.id > 0,
       )
       .map(site => ({
@@ -104,6 +105,8 @@ export const useCustomerBillingRateColumns = (
       width: '80px',
       type: 'number',
       editable: true,
+      min: 1,
+      step: 1,
       filter: {
         type: 'text',
       },
@@ -114,10 +117,9 @@ export const useCustomerBillingRateColumns = (
       width: '200px',
       type: 'select',
       editable: true,
-      items: siteItems.value,
+      enumOptions: siteItems.value,
       filter: {
         type: 'select',
-        items: siteItems.value,
       },
       formatter: value =>
         siteNameMap.value.get(Number(value)) ?? '',
@@ -168,10 +170,9 @@ export const useCustomerBillingRateColumns = (
       width: '125px',
       type: 'select',
       editable: true,
-      items: billingUnitItems,
+      enumOptions: billingUnitItems,
       filter: {
         type: 'select',
-        items: billingUnitItems,
       },
       formatter: value =>
         billingUnitLabels[
@@ -184,6 +185,9 @@ export const useCustomerBillingRateColumns = (
       width: '130px',
       type: 'number',
       editable: true,
+      min: 0,
+      step: 1,
+      suffix: '円',
       filter: {
         type: 'text',
       },
@@ -195,6 +199,9 @@ export const useCustomerBillingRateColumns = (
       width: '130px',
       type: 'number',
       editable: true,
+      min: 0,
+      step: 1,
+      suffix: '円',
       filter: {
         type: 'text',
       },
@@ -206,6 +213,23 @@ export const useCustomerBillingRateColumns = (
       width: '130px',
       type: 'number',
       editable: true,
+      min: 0,
+      step: 1,
+      suffix: '円',
+      filter: {
+        type: 'text',
+      },
+      formatter: formatNullableCurrency,
+    },
+    {
+      title: '休日単価',
+      key: 'holidayUnitPrice',
+      width: '130px',
+      type: 'number',
+      editable: true,
+      min: 0,
+      step: 1,
+      suffix: '円',
       filter: {
         type: 'text',
       },
@@ -217,6 +241,9 @@ export const useCustomerBillingRateColumns = (
       width: '130px',
       type: 'number',
       editable: true,
+      min: 0,
+      step: 1,
+      suffix: '円',
       filter: {
         type: 'text',
       },

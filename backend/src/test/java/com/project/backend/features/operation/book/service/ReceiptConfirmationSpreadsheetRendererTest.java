@@ -40,11 +40,11 @@ class ReceiptConfirmationSpreadsheetRendererTest {
         var rows = (ArrayNode) sheet.path("rows");
 
         assertThat(rows).hasSize(8);
-        assertThat(cell(rows.get(3), 13).path("formula").asText())
-                .isEqualTo("=SUM(K4:M4)");
-        assertThat(cell(rows.get(3), 15).path("value").asDouble())
-                .isEqualTo(1d);
+        assertThat(cell(rows.get(3), 14).path("formula").asText())
+                .isEqualTo("=SUM(K4:N4)");
         assertThat(cell(rows.get(3), 16).path("value").asDouble())
+                .isEqualTo(1d);
+        assertThat(cell(rows.get(3), 17).path("value").asDouble())
                 .isEqualTo(10d);
         assertThat(cell(rows.get(4), 0).path("value").asText())
                 .isEqualTo("2026年3月 合計");
@@ -105,6 +105,7 @@ class ReceiptConfirmationSpreadsheetRendererTest {
                 Map.entry("paid_amount", paidAmount),
                 Map.entry("fee", feeAmount),
                 Map.entry("offset_amount", offsetAmount),
+                Map.entry("adjustment_amount", BigDecimal.ZERO),
                 Map.entry("settled_amount", paidAmount.add(feeAmount).add(offsetAmount)),
                 Map.entry("payment_status", status),
                 Map.entry("note", "")

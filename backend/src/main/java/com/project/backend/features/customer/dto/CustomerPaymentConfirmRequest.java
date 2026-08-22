@@ -7,6 +7,7 @@ public record CustomerPaymentConfirmRequest(
         Integer paidAmount,
         Integer fee,
         Integer offsetAmount,
+        Integer adjustmentAmount,
         String note
 ) {
 }

@@ -17,6 +17,24 @@
       @blur="stopEdit"
     />
 
+    <!-- number -->
+    <v-text-field
+      v-else-if="isEditing && props.column.type === 'number'"
+      :model-value="numberInputValue"
+      type="number"
+      inputmode="decimal"
+      :min="props.column.min"
+      :max="props.column.max"
+      :step="props.column.step ?? 'any'"
+      :suffix="props.column.suffix"
+      density="compact"
+      :id="`cell-${rowId}-${String(props.field)}`"
+      hide-details
+      autofocus
+      @update:model-value="updateNumberValue"
+      @blur="stopEdit"
+    />
+
     <!-- select -->
     <v-select
       v-else-if="isEditing && props.column.type === 'select'"
@@ -198,6 +216,23 @@ const checkboxValue = computed<boolean>({
     })
   },
 })
+
+const numberInputValue = computed(() => {
+  const value = rawValue.value
+  return value == null || value === '' ? '' : Number(value)
+})
+
+const updateNumberValue = (value: string | number | null) => {
+  const normalized = value == null || value === ''
+    ? null
+    : Number(value)
+
+  emit('update', {
+    id: props.item.id,
+    field: props.field,
+    value: Number.isNaN(normalized) ? null : normalized,
+  })
+}
 
 const startEdit = () => {
   if (!props.column.editable) return

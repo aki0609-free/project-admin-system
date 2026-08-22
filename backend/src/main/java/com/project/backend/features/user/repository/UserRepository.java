@@ -49,6 +49,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
     """)
     boolean existsActiveUserByRoleId(Long roleId);
 
+    @Query("""
+        select case when count(u) > 0 then true else false end
+        from User u
+        join u.roles r
+        where r.name = 'SYS_ADMIN'
+          and u.enabled = true
+          and u.deletedAt is null
+          and u.id <> :excludedUserId
+    """)
+    boolean existsAnotherEnabledSystemAdministrator(
+            @Param("excludedUserId") Long excludedUserId
+    );
+
     @Modifying
     @Query(value = "delete from user_role where role_id = :roleId", nativeQuery = true)
     void deleteUserRoleMappingsByRoleId(@Param("roleId") Long roleId);

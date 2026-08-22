@@ -85,8 +85,6 @@ export const useEnvelopePrintDialog = (
           envelopeType: payload.envelopeType,
           stamp: payload.stamp,
           honorific: payload.honorific,
-          fontFamily: payload.fontFamily,
-          fontSize: payload.fontSize,
         },
       }) as BatchExecuteResponse
 

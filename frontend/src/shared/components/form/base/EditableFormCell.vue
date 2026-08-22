@@ -86,6 +86,19 @@ const updateValue = (val: unknown) => {
   if (!isEditable.value) return
 
   // formatter表示中に入ってくるのは避けて、編集中の生値だけ保存
+  if (props.field.type === 'number') {
+    if (val == null || val === '') {
+      model.value[props.field.key] = null
+      return
+    }
+
+    const numericValue = typeof val === 'number' ? val : Number(val)
+    model.value[props.field.key] = Number.isFinite(numericValue)
+      ? numericValue
+      : val
+    return
+  }
+
   model.value[props.field.key] = val
 }
 

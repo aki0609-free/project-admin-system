@@ -100,6 +100,9 @@ test('employee can be registered with tracked deductions from the employee scree
     await createDialog.getByRole('tab', { name: '携帯電話貸出料', exact: true }).click()
     await createDialog.getByLabel('この項目を適用する').check()
 
+    await createDialog.getByRole('tab', { name: 'Wi-Fi使用料', exact: true }).click()
+    await createDialog.getByLabel('この項目を適用する').check()
+
     const createResponsePromise = page.waitForResponse(
       (response) =>
         response.url().endsWith('/api/employees') && response.request().method() === 'POST',
@@ -126,6 +129,23 @@ test('employee can be registered with tracked deductions from the employee scree
 
     await editDialog.getByRole('tab', { name: '携帯電話貸出料', exact: true }).click()
     await expect(editDialog.getByLabel('この項目を適用する')).toBeChecked()
+
+    await editDialog.getByRole('tab', { name: 'Wi-Fi使用料', exact: true }).click()
+    await expect(editDialog.getByLabel('この項目を適用する')).toBeChecked()
+    await expect(editDialog.getByRole('heading', { name: '明細・月次控除' })).toBeVisible()
+
+    await editDialog.getByLabel('控除金額', { exact: true }).fill('1980')
+    await editDialog.getByLabel('明細番号（任意）', { exact: true }).fill(`WIFI-${uniqueSuffix}`)
+    const transactionResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes('/payroll-item-transactions') &&
+        response.request().method() === 'POST',
+    )
+    await editDialog.getByRole('button', { name: '明細を追加', exact: true }).click()
+    const transactionResponse = await transactionResponsePromise
+    expect(transactionResponse.status(), await transactionResponse.text()).toBe(200)
+    await expect(editDialog.getByText('1,980円', { exact: true })).toBeVisible()
+    await expect(editDialog.getByText(`WIFI-${uniqueSuffix}`, { exact: true })).toBeVisible()
 
     await editDialog.getByRole('button', { name: '閉じる', exact: true }).click()
   })

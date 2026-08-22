@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { z } from 'zod'
 
 import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
@@ -49,6 +49,7 @@ const deleteUserMutation = useDeleteUserMutation()
 // Form state
 // ----------------------
 const { dialog, isEdit, form, openCreate, openEdit, closeDialog } = useUserForm()
+const formLayoutRef = ref<{ validateAll: () => boolean } | null>(null)
 
 // ----------------------
 // Derived UI state
@@ -96,6 +97,8 @@ const schema = computed(() =>
 // Actions
 // ----------------------
 const save = async () => {
+  if (!formLayoutRef.value?.validateAll()) return
+
   if (isEdit.value) {
     await updateUserMutation.mutateAsync(toUserUpdatePayload(form.value))
   } else {
@@ -181,7 +184,7 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
         :left-footer-items="leftFooterItems"
         :right-footer-items="rightFooterItems"
       >
-          <FormLayout v-model="form" :schema="schema">
+          <FormLayout ref="formLayoutRef" v-model="form" :schema="schema">
             <GridBasedForm v-model="form" :fields="fields" />
           </FormLayout>
           <RolePermissionPanel :roles="selectedRoleDetails" />

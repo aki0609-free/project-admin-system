@@ -3,6 +3,7 @@ package com.project.backend.features.system.company.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.project.backend.app.tenant.context.TenantContext;
 import com.project.backend.features.system.company.dto.CompanyProfileResponse;
 import com.project.backend.features.system.company.entity.CompanyProfile;
 import com.project.backend.features.system.company.mapper.CompanyProfileMapper;
@@ -26,7 +27,9 @@ public class CompanyProfileQueryService {
 
     public CompanyProfileResponse findCurrentOrNull() {
         return repository
-                .findFirstByActiveFlagTrueAndDeletedAtIsNullOrderByIdAsc()
+                .findFirstByTenantIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdAsc(
+                        requireTenantId()
+                )
                 .map(mapper::toResponse)
                 .orElse(null);
     }
@@ -35,7 +38,8 @@ public class CompanyProfileQueryService {
             String companyCode
     ) {
         CompanyProfile entity = repository
-                .findByCompanyCodeAndDeletedAtIsNull(
+                .findByTenantIdAndCompanyCodeAndDeletedAtIsNull(
+                        requireTenantId(),
                         companyCode
                 )
                 .orElseThrow(() ->
@@ -51,11 +55,21 @@ public class CompanyProfileQueryService {
 
     public CompanyProfile findCurrentEntity() {
         return repository
-                .findFirstByActiveFlagTrueAndDeletedAtIsNullOrderByIdAsc()
+                .findFirstByTenantIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdAsc(
+                        requireTenantId()
+                )
                 .orElseThrow(() ->
                         new IllegalArgumentException(
                                 "有効な会社情報が登録されていません。"
                         )
                 );
+    }
+
+    private String requireTenantId() {
+        String tenantId = TenantContext.getTenantId();
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new IllegalStateException("テナント情報が取得できません。");
+        }
+        return tenantId;
     }
 }

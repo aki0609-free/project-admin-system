@@ -9,27 +9,32 @@ import type {
 } from '@/features/dashboard/types/dashboardTypes'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
 import type { ToolbarItem } from '@/shared/ui/toolbar/types'
+import { formatLocalDate } from '@/features/dashboard/utils/dashboardDate'
 
 export type NoticeDialogForm = Omit<NoticeCreateRequest, 'content'> & {
   content: string
 }
 
 export const noticeDialogSchema = z.object({
-  title: z.string().min(1, '必須です'),
+  title: z.string().trim().min(1, '必須です').max(300, '300文字以内で入力してください'),
   start: z.string().min(1, '必須です'),
   end: z.string().min(1, '必須です'),
   type: z.enum(['IMPORTANT', 'WARNING', 'INFO']),
   color: z.string().min(1, '必須です'),
   contentFormat: z.enum(['PLAIN_TEXT', 'HTML', 'MARKDOWN']),
-  content: z.string(),
+  content: z.string().max(60_000, '60000文字以内で入力してください'),
   pinnedFlag: z.boolean(),
   activeFlag: z.boolean(),
+}).refine(value => value.end >= value.start, {
+  message: '予定終了日は予定開始日以降にしてください',
+  path: ['end'],
 })
 
 export const useNoticeEditDialog = (
   visible: Ref<boolean>,
   notice: Ref<NoticeResponse | null | undefined>,
   emitSubmit: (value: NoticeCreateRequest) => void,
+  saving: Ref<boolean>,
 ) => {
   const activeTab = ref<'edit' | 'preview'>('edit')
 
@@ -75,8 +80,8 @@ export const useNoticeEditDialog = (
       gridColumn: '1 / -1',
       required: true,
     },
-    { key: 'start', label: '開始日', type: 'date', required: true },
-    { key: 'end', label: '終了日', type: 'date', required: true },
+    { key: 'start', label: '予定開始日', type: 'date', required: true },
+    { key: 'end', label: '予定終了日', type: 'date', required: true },
     { key: 'type', label: '種別', type: 'select', options: typeItems },
     { key: 'color', label: '色', type: 'select', options: colorItems },
     {
@@ -90,7 +95,7 @@ export const useNoticeEditDialog = (
   ])
 
   const resetForCreate = () => {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = formatLocalDate(new Date())
 
     form.title = ''
     form.start = today
@@ -158,12 +163,15 @@ export const useNoticeEditDialog = (
       type: 'button',
       label: 'キャンセル',
       intent: 'secondary',
+      disabled: saving.value,
       onClick: close,
     },
     {
       type: 'button',
       label: isEdit.value ? '更新' : '作成',
       intent: 'primary',
+      loading: saving.value,
+      disabled: saving.value,
       onClick: submit,
     },
   ])

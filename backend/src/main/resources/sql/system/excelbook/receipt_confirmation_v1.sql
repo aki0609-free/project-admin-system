@@ -39,15 +39,18 @@ SELECT
     COALESCE(ct.paid_amount, 0) AS paid_amount,
     COALESCE(ct.fee, 0) AS fee,
     COALESCE(ct.offset_amount, 0) AS offset_amount,
+    COALESCE(ct.adjustment_amount, 0) AS adjustment_amount,
     COALESCE(ct.paid_amount, 0)
         + COALESCE(ct.fee, 0)
         + COALESCE(ct.offset_amount, 0)
+        + COALESCE(ct.adjustment_amount, 0)
         AS settled_amount,
     COALESCE(ct.billing_amount, 0)
         - (
             COALESCE(ct.paid_amount, 0)
             + COALESCE(ct.fee, 0)
             + COALESCE(ct.offset_amount, 0)
+            + COALESCE(ct.adjustment_amount, 0)
         ) AS remaining_amount,
     COALESCE(ct.payment_status, 'UNPAID') AS payment_status,
     ct.note
@@ -181,10 +184,11 @@ INSERT INTO excel_book_data_source_catalog_column (
     (@receipt_confirmation_catalog_id, 'paid_amount', '入金額', 'NUMBER', 10, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default'),
     (@receipt_confirmation_catalog_id, 'fee', '手数料', 'NUMBER', 11, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default'),
     (@receipt_confirmation_catalog_id, 'offset_amount', '相殺', 'NUMBER', 12, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default'),
-    (@receipt_confirmation_catalog_id, 'settled_amount', '合計金額', 'NUMBER', 13, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default'),
-    (@receipt_confirmation_catalog_id, 'remaining_amount', '残額', 'NUMBER', 14, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default'),
-    (@receipt_confirmation_catalog_id, 'payment_status', '入金状態', 'STRING', 15, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default'),
-    (@receipt_confirmation_catalog_id, 'note', '備考', 'STRING', 16, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default')
+    (@receipt_confirmation_catalog_id, 'adjustment_amount', 'その他調整額', 'NUMBER', 13, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default'),
+    (@receipt_confirmation_catalog_id, 'settled_amount', '合計金額', 'NUMBER', 14, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default'),
+    (@receipt_confirmation_catalog_id, 'remaining_amount', '残額', 'NUMBER', 15, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default'),
+    (@receipt_confirmation_catalog_id, 'payment_status', '入金状態', 'STRING', 16, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default'),
+    (@receipt_confirmation_catalog_id, 'note', '備考', 'STRING', 17, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default')
 ON DUPLICATE KEY UPDATE
     display_name = VALUES(display_name),
     data_type = VALUES(data_type),

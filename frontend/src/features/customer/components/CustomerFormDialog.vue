@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-
-import { z } from 'zod'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
@@ -26,6 +24,7 @@ import type {
   CustomerSavePayload,
   CustomerSite,
 } from '../types/customerTypes'
+import { customerSchema } from '../validation/customerSchema'
 
 const props = defineProps<{
   modelValue: boolean
@@ -33,6 +32,8 @@ const props = defineProps<{
   sites: CustomerSite[]
   employees: CustomerEmployee[]
   isCreateMode: boolean
+  loading?: boolean
+  errorMessage?: string
 }>()
 
 const emit = defineEmits<{
@@ -41,6 +42,8 @@ const emit = defineEmits<{
   (e: 'save', value: CustomerSavePayload): void
 
   (e: 'delete', id: number): void
+
+  (e: 'dismiss-error'): void
 }>()
 
 const dialogModel = computed({
@@ -49,6 +52,8 @@ const dialogModel = computed({
 })
 
 const activeTab = ref('basic')
+const validationMessage = ref('')
+const basicFormRef = ref<{ validateAll: () => boolean } | null>(null)
 
 const pageTabs = [
   {
@@ -105,6 +110,7 @@ watch(
     }
 
     activeTab.value = 'basic'
+    validationMessage.value = ''
   },
 )
 
@@ -156,18 +162,36 @@ const employeeFilterRules = computed(() =>
   createSimpleTableFilterRules<CustomerEmployee>(employeeColumns.value),
 )
 
-const schema = z
-  .object({
-    name: z.string().trim().min(1, '顧客名は必須です'),
-    invoiceType: z.enum(['PATTERN_1', 'PATTERN_2', 'PATTERN_3']),
-  })
-  .passthrough()
+const schema = customerSchema
 
 function handleClose() {
   dialogModel.value = false
 }
 
-function handleSave() {
+function dismissError() {
+  validationMessage.value = ''
+  emit('dismiss-error')
+}
+
+async function handleSave() {
+  validationMessage.value = ''
+
+  const result = schema.safeParse(form)
+  if (!result.success) {
+    activeTab.value = 'basic'
+    validationMessage.value = result.error.issues[0]?.message ?? '基本情報を確認してください。'
+    await nextTick()
+    basicFormRef.value?.validateAll()
+    return
+  }
+
+  const childError = validateChildRows()
+  if (childError) {
+    activeTab.value = childError.tab
+    validationMessage.value = childError.message
+    return
+  }
+
   emit('save', {
     customer: {
       ...form,
@@ -177,6 +201,43 @@ function handleSave() {
 
     employees: [...employeeRows.rows.value],
   })
+}
+
+function validateChildRows(): { tab: string; message: string } | null {
+  const sites = siteRows.visibleRows.value
+  for (const site of sites) {
+    if (!site.name.trim()) {
+      return { tab: 'sites', message: '現場名は必須です。' }
+    }
+    if (site.contactPersonEmail && !isEmail(site.contactPersonEmail)) {
+      return { tab: 'sites', message: `現場「${site.name}」のメールアドレス形式が正しくありません。` }
+    }
+    if (site.distanceFromCompanyKm != null) {
+      const distance = Number(site.distanceFromCompanyKm)
+      if (!Number.isFinite(distance) || distance < 0 || !Number.isInteger(distance)) {
+        return { tab: 'sites', message: `現場「${site.name}」の会社からの距離は0以上の整数で入力してください。` }
+      }
+    }
+  }
+
+  const employees = employeeRows.visibleRows.value
+  for (const employee of employees) {
+    if (!employee.name.trim()) {
+      return { tab: 'employees', message: '顧客社員名は必須です。' }
+    }
+    if (employee.email && !isEmail(employee.email)) {
+      return { tab: 'employees', message: `顧客社員「${employee.name}」のメールアドレス形式が正しくありません。` }
+    }
+    if ((employee.invoiceToFlag || employee.invoiceCcFlag) && !employee.email.trim()) {
+      return { tab: 'employees', message: `請求書送付先に指定した「${employee.name}」にはメールアドレスが必要です。` }
+    }
+  }
+
+  return null
+}
+
+function isEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
 }
 
 function handleDelete() {
@@ -255,6 +316,7 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
     type: 'button',
     label: 'キャンセル',
     intent: 'utility',
+    disabled: props.loading,
     onClick: handleClose,
   },
   {
@@ -262,7 +324,9 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
     label: '顧客情報を保存',
     color: 'primary',
     intent: 'primary',
-    onClick: handleSave,
+    loading: props.loading,
+    disabled: props.loading,
+    onClick: () => void handleSave(),
   },
 ])
 
@@ -312,10 +376,23 @@ const employeeToolbarItems = computed<ToolbarItem[]>(() => [
     :left-footer-items="leftFooterItems"
     :right-footer-items="rightFooterItems"
   >
+    <v-progress-linear v-if="loading" indeterminate class="mb-3" />
+
+    <v-alert
+      v-if="validationMessage || errorMessage"
+      type="error"
+      variant="tonal"
+      closable
+      class="mb-3"
+      @click:close="dismissError"
+    >
+      {{ validationMessage || errorMessage }}
+    </v-alert>
+
     <TabLayout v-model="activeTab" :tabs="pageTabs">
       <template #default="{ active }">
         <div v-if="active === 'basic'">
-          <FormLayout v-model="form" :schema="schema">
+          <FormLayout ref="basicFormRef" v-model="form" :schema="schema">
             <TabbedForm v-model="form" :tabs="[...formTabs]" :fields="fields" />
           </FormLayout>
         </div>

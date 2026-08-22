@@ -41,7 +41,7 @@ public class EmployeeFinanceBalanceCommandService {
         }
 
         EmployeeSaving saving = savingRepository
-                .findFirstByEmployeeIdAndActiveFlagTrueOrderByIdDesc(employeeId)
+                .findFirstByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(employeeId)
                 .orElse(null);
 
         if (saving == null) {
@@ -72,7 +72,7 @@ public class EmployeeFinanceBalanceCommandService {
 
         EmployeeLoan loan = amount.compareTo(BigDecimal.ZERO) > 0
                 ? loanRepository
-                        .findFirstByEmployeeIdAndActiveFlagTrueOrderByIdDesc(employeeId)
+                        .findFirstByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(employeeId)
                         .orElse(null)
                 : loanRepository
                         .findFirstByEmployeeIdAndApprovalStatusAndDeletedAtIsNullOrderByIdDesc(

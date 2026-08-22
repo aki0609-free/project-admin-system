@@ -18,6 +18,7 @@ export const useCustomerSiteColumns = () => {
       key: 'id',
       width: '100px',
       filter: { type: 'text' },
+      formatter: value => Number(value) > 0 ? String(value) : '',
     },
     {
       title: '現場名',
@@ -58,6 +59,9 @@ export const useCustomerSiteColumns = () => {
       filter: { type: 'text' },
       editable: true,
       type: 'number',
+      min: 0,
+      step: 1,
+      suffix: 'km',
       formatter: value =>
         value == null || value === ''
           ? ''

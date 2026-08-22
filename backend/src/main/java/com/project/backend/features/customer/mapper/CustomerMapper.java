@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.project.backend.common.dayrule.dto.DayRule;
+import com.project.backend.common.dayrule.enums.DayRuleType;
 import com.project.backend.common.dayrule.utils.DayRuleUtils;
 import com.project.backend.features.customer.dto.*;
 import com.project.backend.features.customer.entity.Customer;
@@ -27,15 +28,15 @@ public class CustomerMapper {
             Customer entity,
             CustomerSaveRequest request
     ) {
-        entity.setName(request.name());
-        entity.setFuriganaName(request.furiganaName());
-        entity.setShortName(request.shortName());
-        entity.setPostNo(request.postNo());
-        entity.setAddress(request.address());
-        entity.setRepresentativeName(request.representativeName());
-        entity.setPhone(request.phone());
-        entity.setJobType(request.jobType());
-        entity.setContractFlag(request.contractFlag());
+        entity.setName(request.name().trim());
+        entity.setFuriganaName(trimToNull(request.furiganaName()));
+        entity.setShortName(trimToNull(request.shortName()));
+        entity.setPostNo(trimToNull(request.postNo()));
+        entity.setAddress(trimToNull(request.address()));
+        entity.setRepresentativeName(trimToNull(request.representativeName()));
+        entity.setPhone(trimToNull(request.phone()));
+        entity.setJobType(trimToNull(request.jobType()));
+        entity.setContractFlag(trimToNull(request.contractFlag()));
 
         entity.setInvoiceType(
                 request.invoiceType() != null
@@ -171,7 +172,7 @@ public class CustomerMapper {
         );
 
         entity.setClosingDayValue(
-                rule == null
+                rule == null || rule.type() == DayRuleType.END_OF_MONTH
                         ? null
                         : rule.value()
         );
@@ -194,7 +195,7 @@ public class CustomerMapper {
         );
 
         entity.setPaymentDayValue(
-                rule == null
+                rule == null || rule.type() == DayRuleType.END_OF_MONTH
                         ? null
                         : rule.value()
         );
@@ -220,15 +221,15 @@ public class CustomerMapper {
             CustomerSite entity,
             CustomerSiteRequest request
     ) {
-        entity.setName(request.name());
+        entity.setName(request.name().trim());
         entity.setContactPersonName(
-                request.contactPersonName()
+                trimToNull(request.contactPersonName())
         );
         entity.setContactPersonPhone(
-                request.contactPersonPhone()
+                trimToNull(request.contactPersonPhone())
         );
         entity.setContactPersonEmail(
-                request.contactPersonEmail()
+                trimToNull(request.contactPersonEmail())
         );
         entity.setDistanceFromCompanyKm(
                 request.distanceFromCompanyKm()
@@ -270,18 +271,18 @@ public class CustomerMapper {
             CustomerEmployee entity,
             CustomerEmployeeRequest request
     ) {
-        entity.setName(request.name());
+        entity.setName(request.name().trim());
         entity.setFuriganaName(
-                request.furiganaName()
+                trimToNull(request.furiganaName())
         );
         entity.setPosition(
-                request.position()
+                trimToNull(request.position())
         );
         entity.setPhone(
-                request.phone()
+                trimToNull(request.phone())
         );
         entity.setEmail(
-                request.email()
+                trimToNull(request.email())
         );
         entity.setInvoiceToFlag(
                 Boolean.TRUE.equals(
@@ -313,5 +314,13 @@ public class CustomerMapper {
                         entity.getInvoiceCcFlag()
                 )
         );
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }

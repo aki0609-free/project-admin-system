@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, provide, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import {
   ContextMenu,
   DetailsView,
@@ -13,11 +13,9 @@ import {
 } from '@syncfusion/ej2-vue-filemanager'
 import axiosApiClient from '@/app/plugins/axiosApiClient'
 import { configureSyncfusion } from '@/app/plugins/syncfusion'
+import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import { configureFileManagerJapaneseLocale } from '../i18n/fileManagerJa'
-import type {
-  DocumentArea,
-  DocumentAreaResponse,
-} from '../types/documentTypes'
+import type { DocumentArea, DocumentAreaResponse } from '../types/documentTypes'
 
 import '@syncfusion/ej2-base/styles/material3.css'
 import '@syncfusion/ej2-buttons/styles/material3.css'
@@ -41,10 +39,13 @@ interface FileManagerResultEvent {
   action?: string
 }
 
-const areaMetadata: Record<
-  DocumentArea,
-  { icon: string; description: string }
-> = {
+interface FileManagerFailureEvent {
+  error?: {
+    message?: string
+  }
+}
+
+const areaMetadata: Record<DocumentArea, { icon: string; description: string }> = {
   GENERAL: {
     icon: 'mdi-folder-edit-outline',
     description: '契約書や社内資料などを自由に保管できます。',
@@ -108,22 +109,18 @@ const selectedArea = ref<DocumentArea>('GENERAL')
 const loadingAreas = ref(false)
 const areaLoadError = ref(false)
 const operationMessage = ref('')
+const operationError = ref('')
+let operationMessageTimer: ReturnType<typeof setTimeout> | undefined
 
 const currentArea = computed<DocumentAreaResponse>(
-  () =>
-    areas.value.find(area => area.area === selectedArea.value)
-    ?? defaultArea,
+  () => areas.value.find((area) => area.area === selectedArea.value) ?? defaultArea,
 )
-const editable = computed(() =>
-  currentArea.value.allowedOperations.includes('UPLOAD'),
-)
+const editable = computed(() => currentArea.value.allowedOperations.includes('UPLOAD'))
 const currentMetadata = computed(() => areaMetadata[selectedArea.value])
 
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '')
-  .replace(/\/$/, '')
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
 const fileManagerBaseUrl = computed(
-  () =>
-    `${apiBaseUrl}/api/admin/documents/file-manager/${selectedArea.value}`,
+  () => `${apiBaseUrl}/api/admin/documents/file-manager/${selectedArea.value}`,
 )
 const ajaxSettings = computed(() => ({
   url: `${fileManagerBaseUrl.value}/operations`,
@@ -149,46 +146,16 @@ const toolbarSettings = computed<ToolbarSettingsModel>(() => ({
         'View',
         'Details',
       ]
-    : [
-        'Download',
-        'SortBy',
-        'Refresh',
-        'Selection',
-        'View',
-        'Details',
-      ],
+    : ['Download', 'SortBy', 'Refresh', 'Selection', 'View', 'Details'],
 }))
 
 const contextMenuSettings = computed<ContextMenuSettingsModel>(() => ({
   visible: true,
   file: editable.value
-    ? [
-        'Open',
-        '|',
-        'Cut',
-        'Copy',
-        '|',
-        'Delete',
-        'Rename',
-        '|',
-        'Download',
-        'Details',
-      ]
+    ? ['Open', '|', 'Cut', 'Copy', '|', 'Delete', 'Rename', '|', 'Download', 'Details']
     : ['Open', '|', 'Download', 'Details'],
   folder: editable.value
-    ? [
-        'Open',
-        '|',
-        'Cut',
-        'Copy',
-        'Paste',
-        '|',
-        'Delete',
-        'Rename',
-        '|',
-        'Download',
-        'Details',
-      ]
+    ? ['Open', '|', 'Cut', 'Copy', 'Paste', '|', 'Delete', 'Rename', '|', 'Download', 'Details']
     : ['Open', '|', 'Download', 'Details'],
   layout: editable.value
     ? [
@@ -207,19 +174,14 @@ const contextMenuSettings = computed<ContextMenuSettingsModel>(() => ({
     : ['SortBy', 'View', 'Refresh', '|', 'Details', 'SelectAll'],
 }))
 
-function setAuthorizationHeader(
-  args: BeforeSendEventArgs | BeforeDownloadEventArgs,
-) {
+function setAuthorizationHeader(args: BeforeSendEventArgs | BeforeDownloadEventArgs) {
   const settings = args.ajaxSettings as MutableAjaxSettings | undefined
   if (!settings) return
 
-  settings.beforeSend = request => {
+  settings.beforeSend = (request) => {
     const token = localStorage.getItem('accessToken')
     if (token) {
-      request.httpRequest.setRequestHeader(
-        'Authorization',
-        `Bearer ${token}`,
-      )
+      request.httpRequest.setRequestHeader('Authorization', `Bearer ${token}`)
     }
     request.httpRequest.setRequestHeader('X-Tenant-ID', 'default')
   }
@@ -243,9 +205,22 @@ function handleSuccess(args: FileManagerResultEvent) {
     rename: '名前を変更しました。',
     move: '選択項目を移動しました。',
     copy: '選択項目をコピーしました。',
+    upload: 'ファイルをアップロードしました。',
     download: 'ダウンロードを開始しました。',
   }
   operationMessage.value = messages[args.action] ?? ''
+  operationError.value = ''
+  if (!operationMessage.value) return
+  if (operationMessageTimer) clearTimeout(operationMessageTimer)
+  operationMessageTimer = setTimeout(() => {
+    operationMessage.value = ''
+    operationMessageTimer = undefined
+  }, 4000)
+}
+
+function handleFailure(args: FileManagerFailureEvent) {
+  operationMessage.value = ''
+  operationError.value = args.error?.message || '書類の操作に失敗しました。'
 }
 
 async function loadAreas() {
@@ -253,9 +228,7 @@ async function loadAreas() {
   areaLoadError.value = false
 
   try {
-    const response = await axiosApiClient.get<DocumentAreaResponse[]>(
-      '/api/admin/documents/areas',
-    )
+    const response = await axiosApiClient.get<DocumentAreaResponse[]>('/api/admin/documents/areas')
     areas.value = response.data
   } catch {
     areaLoadError.value = true
@@ -266,26 +239,26 @@ async function loadAreas() {
 }
 
 onMounted(loadAreas)
+watch(selectedArea, () => {
+  operationMessage.value = ''
+  operationError.value = ''
+})
+onBeforeUnmount(() => {
+  if (operationMessageTimer) clearTimeout(operationMessageTimer)
+})
 </script>
 
 <template>
-  <v-container fluid class="document-management-page pa-4">
-    <div class="d-flex flex-wrap align-center ga-3 mb-4">
-      <div>
-        <h1 class="text-h5 font-weight-bold">書類管理</h1>
-        <p class="text-body-2 text-medium-emphasis mt-1">
-          自由書類、生成帳票、バックアップ、テンプレートを一元管理します。
-        </p>
-      </div>
-      <v-spacer />
-      <v-chip
-        color="primary"
-        variant="tonal"
-        prepend-icon="mdi-shield-account-outline"
-      >
+  <ListDetailPageLayout
+    class="document-management-page"
+    title="書類管理"
+    description="自由書類、生成帳票、バックアップ、テンプレートを一元管理します。"
+  >
+    <template #header-actions>
+      <v-chip color="primary" variant="tonal" prepend-icon="mdi-shield-account-outline">
         SYS_ADMIN専用
       </v-chip>
-    </div>
+    </template>
 
     <v-alert
       v-if="!licenseRegistered"
@@ -298,14 +271,11 @@ onMounted(loadAreas)
       VITE_SYNCFUSION_LICENSE_KEYを設定して再起動してください。
     </v-alert>
 
-    <v-alert
-      v-if="areaLoadError"
-      type="warning"
-      variant="tonal"
-      density="compact"
-      class="mb-4"
-    >
+    <v-alert v-if="areaLoadError" type="warning" variant="tonal" density="compact" class="mb-4">
       領域設定を取得できなかったため、既定の権限表示を使用しています。
+      <template #append>
+        <v-btn variant="text" size="small" @click="loadAreas">再取得</v-btn>
+      </template>
     </v-alert>
 
     <v-alert
@@ -318,6 +288,18 @@ onMounted(loadAreas)
       @click:close="operationMessage = ''"
     >
       {{ operationMessage }}
+    </v-alert>
+
+    <v-alert
+      v-if="operationError"
+      type="error"
+      variant="tonal"
+      density="compact"
+      closable
+      class="mb-4"
+      @click:close="operationError = ''"
+    >
+      {{ operationError }}
     </v-alert>
 
     <v-card variant="outlined" class="mb-4">
@@ -345,16 +327,10 @@ onMounted(loadAreas)
           <span class="text-body-2">
             {{ currentMetadata.description }}
           </span>
-          <v-chip
-            size="small"
-            :color="editable ? 'success' : 'secondary'"
-            variant="tonal"
-          >
+          <v-chip size="small" :color="editable ? 'success' : 'secondary'" variant="tonal">
             {{ editable ? '編集可能' : '参照専用' }}
           </v-chip>
-          <span class="text-caption text-medium-emphasis">
-            1ファイルあたり最大50MB
-          </span>
+          <span class="text-caption text-medium-emphasis"> 1ファイルあたり最大50MB </span>
         </div>
       </v-card-text>
     </v-card>
@@ -385,10 +361,11 @@ onMounted(loadAreas)
           :before-send="handleBeforeSend"
           :before-download="handleBeforeDownload"
           :success="handleSuccess"
+          :failure="handleFailure"
         />
       </v-card-text>
     </v-card>
-  </v-container>
+  </ListDetailPageLayout>
 </template>
 
 <style scoped>

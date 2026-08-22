@@ -19,6 +19,8 @@ import type {
 const {
   activeTab,
   loading,
+  errorMessage,
+  successMessage,
   message,
   checklist,
   closingSetting,
@@ -95,8 +97,14 @@ const backupSettingFields: GridFormFieldDef<AnnualReportBackupSetting>[] = [
 ]
 
 const supportLinkSchema = z.object({
-  incidentReportUrl: z.string().url('URL形式で入力してください').or(z.literal('')),
-  manualUrl: z.string().url('URL形式で入力してください').or(z.literal('')),
+  incidentReportUrl: z
+    .string()
+    .url('URL形式で入力してください')
+    .startsWith('https://', 'HTTPSのURLを入力してください'),
+  manualUrl: z
+    .string()
+    .url('URL形式で入力してください')
+    .startsWith('https://', 'HTTPSのURLを入力してください'),
 })
 
 const supportLinkFields: GridFormFieldDef<ExternalSupportLinkSetting>[] = [
@@ -151,7 +159,9 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
     type: 'button',
     label: '閉じる',
     intent: 'secondary',
-    onClick: () => { checklistDialog.value = false },
+    onClick: () => {
+      checklistDialog.value = false
+    },
   },
   {
     type: 'button',
@@ -168,6 +178,28 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
     title="業務管理"
     description="退職処理、給与締日、月次締め帳票、年度バックアップ、寮費、外部リンクを管理します。"
   >
+    <v-alert
+      v-if="errorMessage"
+      type="error"
+      variant="tonal"
+      closable
+      class="mb-4"
+      @click:close="errorMessage = ''"
+    >
+      {{ errorMessage }}
+    </v-alert>
+
+    <v-alert
+      v-if="successMessage"
+      type="success"
+      variant="tonal"
+      closable
+      class="mb-4"
+      @click:close="successMessage = ''"
+    >
+      {{ successMessage }}
+    </v-alert>
+
     <v-card :loading="loading" variant="outlined">
       <v-tabs v-model="activeTab" color="primary">
         <v-tab value="resignation">退職時設定</v-tab>
@@ -188,9 +220,7 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
               <GridBasedForm v-model="message" :fields="resignationMessageFields" />
             </FormLayout>
             <div class="actions">
-              <v-btn color="primary" :loading="loading" @click="saveMessage">
-                文言を保存
-              </v-btn>
+              <v-btn color="primary" :loading="loading" @click="saveMessage"> 文言を保存 </v-btn>
             </div>
           </section>
 
@@ -202,15 +232,18 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
                 <h2>退職時TODO</h2>
                 <p>必須にした項目は、確認しないと退職処理を実行できません。</p>
               </div>
-              <v-btn color="primary" variant="tonal" @click="openChecklistCreate">
-                TODO追加
-              </v-btn>
+              <v-btn color="primary" variant="tonal" @click="openChecklistCreate"> TODO追加 </v-btn>
             </div>
 
             <v-table density="comfortable">
               <thead>
                 <tr>
-                  <th>順序</th><th>コード</th><th>項目名</th><th>必須</th><th>有効</th><th />
+                  <th>順序</th>
+                  <th>コード</th>
+                  <th>項目名</th>
+                  <th>必須</th>
+                  <th>有効</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -225,7 +258,9 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
                   <td>{{ item.activeFlag ? '有効' : '無効' }}</td>
                   <td class="row-actions">
                     <v-btn size="small" variant="text" @click="openChecklistEdit(item)">編集</v-btn>
-                    <v-btn size="small" color="error" variant="text" @click="removeChecklist(item)">削除</v-btn>
+                    <v-btn size="small" color="error" variant="text" @click="removeChecklist(item)"
+                      >削除</v-btn
+                    >
                   </td>
                 </tr>
               </tbody>
@@ -257,14 +292,25 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
             <v-table density="comfortable">
               <thead>
                 <tr>
-                  <th>生成</th><th>順序</th><th>帳票</th><th>形式</th><th>保存年数</th><th>必須</th>
+                  <th>生成</th>
+                  <th>順序</th>
+                  <th>帳票</th>
+                  <th>形式</th>
+                  <th>保存年数</th>
+                  <th>必須</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="item in closingOutputs" :key="item.reportCode">
                   <td><v-checkbox v-model="item.activeFlag" hide-details density="compact" /></td>
                   <td>
-                    <v-text-field v-model.number="item.executionOrder" type="number" min="1" hide-details density="compact" />
+                    <v-text-field
+                      v-model.number="item.executionOrder"
+                      type="number"
+                      min="1"
+                      hide-details
+                      density="compact"
+                    />
                   </td>
                   <td>
                     <div class="item-name">{{ item.reportName || item.reportCode }}</div>
@@ -317,7 +363,9 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
             <v-divider />
 
             <h2>手動実行</h2>
-            <p>障害時の再確認や初回移行時に、対象年度を指定して実行できます。完了済み年度は重複作成しません。</p>
+            <p>
+              障害時の再確認や初回移行時に、対象年度を指定して実行できます。完了済み年度は重複作成しません。
+            </p>
             <div class="manual-backup-row">
               <v-text-field
                 v-model.number="manualBackupFiscalYear"
@@ -339,8 +387,11 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
               variant="tonal"
             >
               {{ lastBackupResult.fiscalYear }}年度: {{ lastBackupResult.status }} ／
-              {{ lastBackupResult.fileCount }}ファイル ／ {{ lastBackupResult.totalSize.toLocaleString() }} bytes
-              <span v-if="lastBackupResult.errorMessage">（{{ lastBackupResult.errorMessage }}）</span>
+              {{ lastBackupResult.fileCount }}ファイル ／
+              {{ lastBackupResult.totalSize.toLocaleString() }} bytes
+              <span v-if="lastBackupResult.errorMessage"
+                >（{{ lastBackupResult.errorMessage }}）</span
+              >
             </v-alert>
           </section>
         </v-window-item>
@@ -434,15 +485,51 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
 </template>
 
 <style scoped>
-.settings-section h2 { margin: 0; }
-.settings-section p { margin: 6px 0 0; color: #64748b; }
-.settings-section { display: grid; gap: 16px; padding: 24px; }
-.settings-section.narrow { max-width: 760px; }
-.section-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
-.actions { display: flex; justify-content: flex-end; }
-.row-actions { white-space: nowrap; text-align: right; }
-.item-name { font-weight: 700; }
-.item-description { margin-top: 2px; color: #64748b; font-size: 12px; }
-.check-row { display: flex; gap: 24px; }
-.manual-backup-row { display: grid; grid-template-columns: minmax(220px, 1fr) auto; align-items: center; gap: 12px; }
+.settings-section h2 {
+  margin: 0;
+}
+.settings-section p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+.settings-section {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+}
+.settings-section.narrow {
+  max-width: 760px;
+}
+.section-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.row-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+.item-name {
+  font-weight: 700;
+}
+.item-description {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+}
+.check-row {
+  display: flex;
+  gap: 24px;
+}
+.manual-backup-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
 </style>

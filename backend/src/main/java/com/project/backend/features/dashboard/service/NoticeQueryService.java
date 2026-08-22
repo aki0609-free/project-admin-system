@@ -3,6 +3,7 @@ package com.project.backend.features.dashboard.service;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.data.domain.PageRequest;
@@ -11,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.project.backend.app.tenant.context.TenantContext;
 import com.project.backend.features.dashboard.dto.NoticeResponse;
+import com.project.backend.features.dashboard.entity.Notice;
+import com.project.backend.features.dashboard.enums.NoticeType;
 import com.project.backend.features.dashboard.mapper.NoticeMapper;
 import com.project.backend.features.dashboard.repository.NoticeRepository;
 
@@ -29,15 +32,47 @@ public class NoticeQueryService {
 
     @Transactional(readOnly = true)
     public List<NoticeResponse> findAll() {
+        LocalDate today = LocalDate.now(clock);
+
         return noticeRepository
-                .findCurrent(
+                .findAllActive(
                         requireTenantId(),
-                        LocalDate.now(clock),
                         PageRequest.of(0, MAX_RESULT_COUNT)
                 )
                 .stream()
+                .sorted(noticeComparator(today))
                 .map(noticeMapper::toResponse)
                 .toList();
+    }
+
+    private Comparator<Notice> noticeComparator(LocalDate today) {
+        return Comparator
+                .comparing(Notice::isPinnedFlag)
+                .reversed()
+                .thenComparingLong(notice -> dateDistance(today, notice.getStartDate()))
+                .thenComparingLong(notice -> dateDistance(today, notice.getEndDate()))
+                .thenComparingInt(notice -> typePriority(notice.getType()))
+                .thenComparing(
+                        Notice::getId,
+                        Comparator.nullsLast(Comparator.reverseOrder())
+                );
+    }
+
+    private long dateDistance(LocalDate today, LocalDate targetDate) {
+        if (targetDate == null) {
+            return Long.MAX_VALUE;
+        }
+        return Math.abs(ChronoUnit.DAYS.between(today, targetDate));
+    }
+
+    private int typePriority(NoticeType type) {
+        if (type == NoticeType.IMPORTANT) {
+            return 0;
+        }
+        if (type == NoticeType.WARNING) {
+            return 1;
+        }
+        return 2;
     }
 
     @Transactional(readOnly = true)

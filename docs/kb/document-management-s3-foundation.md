@@ -154,6 +154,8 @@ spring:
 - 1ファイル上限：50MB
 - 認証：FileManagerの全Ajax処理へJWTと`X-Tenant-ID`を付与
 - ダウンロード：フォームPOSTを使わずAjax方式で認証ヘッダーを付与
+- 一覧APIの1回あたり取得件数：1件以上1000件以下
+- 50MB上限は画面だけでなく、書類管理サービスでも再検証する
 
 初期バンドル肥大化を避けるため、書類管理画面は遅延読み込みする。
 
@@ -168,6 +170,8 @@ spring:
 - S3一覧はページングへ対応し、1000オブジェクトを超えても処理できる
 - APIレスポンスでは物理S3キーの`documents/{area}/`部分を隠す
 - S3 CopyObjectのコピー元キーは日本語と空白を含めてURLエンコードする
+- FileManagerの操作失敗は画面内に表示し、成功メッセージは4秒で自動的に閉じる
+- 管理画面共通のページヘッダー・余白を使用し、FileManager本体は特殊画面として維持する
 
 ## 8. 動作確認
 
@@ -181,6 +185,7 @@ DocumentAreaPolicyTest
 DocumentStorageKeyResolverTest
 DocumentManagementServiceTest
 SyncfusionFileManagerServiceTest
+document-management-ui.spec.ts
 ```
 
 確認内容：

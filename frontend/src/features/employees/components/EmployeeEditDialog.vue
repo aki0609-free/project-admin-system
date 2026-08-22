@@ -49,6 +49,7 @@ const {
   leftFooterItems,
   rightFooterItems,
   resignDialogVisible,
+  validationMessage,
 } = useEmployeeEditDialog(
   visible,
   toRef(props, 'employee'),
@@ -102,6 +103,17 @@ watch(
     :left-footer-items="leftFooterItems"
     :right-footer-items="rightFooterItems"
   >
+    <v-alert
+      v-if="validationMessage"
+      type="error"
+      variant="tonal"
+      closable
+      class="mb-4"
+      @click:close="validationMessage = ''"
+    >
+      {{ validationMessage }}
+    </v-alert>
+
     <TabLayout v-model="activeTab" :tabs="tabs">
       <template #default="{ active }">
         <FormLayout v-if="active === 'basic'" v-model="formModel" :schema="basicSchema">

@@ -154,10 +154,21 @@ public class CustomerSiteBillingRateCommandService {
             );
         }
 
-        if (request.baseUnitPrice() != null
-                && request.baseUnitPrice().signum() < 0) {
+        validateNonNegative(request.baseUnitPrice(), "基準単価");
+        validateNonNegative(request.overtimeUnitPrice(), "残業単価");
+        validateNonNegative(request.nightUnitPrice(), "深夜単価");
+        validateNonNegative(request.holidayUnitPrice(), "休日単価");
+        validateNonNegative(request.commuteUnitPrice(), "通勤単価");
+
+        if (request.displayOrder() != null && request.displayOrder() < 1) {
+            throw new IllegalArgumentException("表示順は1以上で入力してください。");
+        }
+    }
+
+    private void validateNonNegative(java.math.BigDecimal value, String label) {
+        if (value != null && value.signum() < 0) {
             throw new IllegalArgumentException(
-                    "基準単価は0以上で入力してください。"
+                    label + "は0以上で入力してください。"
             );
         }
     }

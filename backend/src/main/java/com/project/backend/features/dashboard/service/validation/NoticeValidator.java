@@ -34,15 +34,15 @@ public class NoticeValidator {
         }
 
         if (request.start() == null) {
-            throw new IllegalArgumentException("開始日は必須です。");
+            throw new IllegalArgumentException("予定開始日は必須です。");
         }
 
         if (request.end() == null) {
-            throw new IllegalArgumentException("終了日は必須です。");
+            throw new IllegalArgumentException("予定終了日は必須です。");
         }
 
         if (request.end().isBefore(request.start())) {
-            throw new IllegalArgumentException("終了日は開始日以降にしてください。");
+            throw new IllegalArgumentException("予定終了日は予定開始日以降にしてください。");
         }
 
         if (StringUtils.hasText(request.color())

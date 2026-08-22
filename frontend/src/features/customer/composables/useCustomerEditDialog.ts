@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useCreateCustomerMutation } from '../api/useCreateCustomerMutation'
 import { useCustomerDetailQuery } from '../api/useCustomerDetailQuery'
 import { useDeleteCustomerMutation } from '../api/useDeleteCustomerMutation'
@@ -38,6 +38,7 @@ export const useCustomerEditDialog = () => {
   const isCreateMode = ref(false)
   const selectedCustomerId = ref<number | null>(null)
   const editingCustomer = ref<Customer | null>(null)
+  const errorMessage = ref('')
 
   const customerDetailQuery = useCustomerDetailQuery(selectedCustomerId)
 
@@ -45,7 +46,20 @@ export const useCustomerEditDialog = () => {
   const updateMutation = useUpdateCustomerMutation()
   const deleteMutation = useDeleteCustomerMutation()
 
+  const loading = computed(
+    () =>
+      customerDetailQuery.isFetching.value ||
+      createMutation.isPending.value ||
+      updateMutation.isPending.value ||
+      deleteMutation.isPending.value,
+  )
+
   const detail = computed(() => customerDetailQuery.data.value ?? null)
+
+  watch(detail, (value) => {
+    if (!value || isCreateMode.value || value.id !== selectedCustomerId.value) return
+    editingCustomer.value = toCustomer(value)
+  })
 
   const editingSites = computed(() =>
     detail.value?.sites.map(toCustomerSite) ?? [],
@@ -56,6 +70,7 @@ export const useCustomerEditDialog = () => {
   )
 
   function openCreate() {
+    errorMessage.value = ''
     isCreateMode.value = true
     selectedCustomerId.value = null
     editingCustomer.value = createEmptyCustomer()
@@ -63,6 +78,7 @@ export const useCustomerEditDialog = () => {
   }
 
   function openEdit(row: CustomerListItem) {
+    errorMessage.value = ''
     isCreateMode.value = false
     selectedCustomerId.value = row.id
     editingCustomer.value = toCustomer(row)
@@ -70,28 +86,51 @@ export const useCustomerEditDialog = () => {
   }
 
   async function save(payload: CustomerSavePayload) {
-    const body = toCustomerSaveRequest(payload)
+    try {
+      errorMessage.value = ''
+      const body = toCustomerSaveRequest(payload)
 
-    if (isCreateMode.value) {
-      await createMutation.mutateAsync(body)
-    } else {
-      await updateMutation.mutateAsync({
-        id: payload.customer.id,
-        body,
-      })
+      if (isCreateMode.value) {
+        await createMutation.mutateAsync(body)
+      } else {
+        await updateMutation.mutateAsync({
+          id: payload.customer.id,
+          body,
+        })
+      }
+
+      dialog.value = false
+      selectedCustomerId.value = null
+      editingCustomer.value = null
+    } catch (error) {
+      errorMessage.value = toErrorMessage(error, '顧客情報の保存に失敗しました。')
     }
-
-    dialog.value = false
-    selectedCustomerId.value = null
-    editingCustomer.value = null
   }
 
   async function remove(id: number) {
-    await deleteMutation.mutateAsync(id)
+    try {
+      errorMessage.value = ''
+      await deleteMutation.mutateAsync(id)
 
-    dialog.value = false
-    selectedCustomerId.value = null
-    editingCustomer.value = null
+      dialog.value = false
+      selectedCustomerId.value = null
+      editingCustomer.value = null
+    } catch (error) {
+      errorMessage.value = toErrorMessage(error, '顧客情報の削除に失敗しました。')
+    }
+  }
+
+  function clearError() {
+    errorMessage.value = ''
+  }
+
+  function toErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof Error && error.message) return error.message
+    if (typeof error === 'object' && error !== null) {
+      const candidate = error as Record<string, unknown>
+      if (typeof candidate.message === 'string') return candidate.message
+    }
+    return fallback
   }
 
   return {
@@ -101,9 +140,12 @@ export const useCustomerEditDialog = () => {
     editingCustomer,
     editingSites,
     editingEmployees,
+    loading,
+    errorMessage,
     openCreate,
     openEdit,
     save,
     remove,
+    clearError,
   }
 }

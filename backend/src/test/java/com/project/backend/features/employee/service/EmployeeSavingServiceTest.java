@@ -7,6 +7,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +25,11 @@ import com.project.backend.features.employee.repository.EmployeeSavingRepository
 
 class EmployeeSavingServiceTest {
 
+    private static final Clock CLOCK = Clock.fixed(
+            Instant.parse("2026-08-22T00:00:00Z"),
+            ZoneOffset.UTC
+    );
+
     private EmployeeSavingRepository repository;
     private EmployeeRepository employeeRepository;
     private EmployeeSavingService service;
@@ -33,7 +41,8 @@ class EmployeeSavingServiceTest {
         service = new EmployeeSavingService(
                 repository,
                 employeeRepository,
-                new EmployeeSavingMapper()
+                new EmployeeSavingMapper(),
+                CLOCK
         );
     }
 
@@ -64,6 +73,30 @@ class EmployeeSavingServiceTest {
         assertThatThrownBy(() -> service.create(request(true)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("既に");
+    }
+
+    @Test
+    void create_shouldRejectPercentageOverOneHundred() {
+        when(employeeRepository.findByIdAndDeletedAtIsNull(1L))
+                .thenReturn(Optional.of(employee()));
+        EmployeeSavingSaveRequest request = request(true);
+        request.setPercentage(new BigDecimal("100.01"));
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("100%以下");
+    }
+
+    @Test
+    void delete_shouldUseBusinessClockWhenBalanceIsZero() {
+        EmployeeSaving saving = new EmployeeSaving();
+        saving.setCurrentBalance(BigDecimal.ZERO);
+        when(repository.findByIdAndDeletedAtIsNull(20L))
+                .thenReturn(Optional.of(saving));
+
+        service.delete(20L);
+
+        assertThat(saving.getDeletedAt()).isEqualTo(CLOCK.instant());
     }
 
     private Employee employee() {

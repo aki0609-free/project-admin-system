@@ -82,7 +82,7 @@ class DailyReportInputItemServiceTest {
     }
 
     @Test
-    void calculate_shouldPassDailyReportContextAndManualAmountsToRuleCalculation() {
+    void calculate_shouldPassContextWithoutOverridingRuleAmountUnlessExplicitlyRequested() {
         DailyReportSaveRequest request = mockRequest();
         Employee employee = new Employee();
         employee.setId(10L);
@@ -127,7 +127,50 @@ class DailyReportInputItemServiceTest {
                 .containsEntry("overtimeHours", BigDecimal.valueOf(2))
                 .containsEntry("salaryType", SalaryType.HOURLY)
                 .containsEntry("hourlyWage", BigDecimal.valueOf(1500));
-        assertThat(amountsCaptor.getValue()).containsEntry(1L, 500);
+        assertThat(amountsCaptor.getValue()).isEmpty();
+    }
+
+    @Test
+    void calculate_shouldPassExplicitAllowanceOverrideToRuleCalculation() {
+        DailyReportSaveRequest request = mockRequest();
+        when(request.allowances()).thenReturn(List.of(
+                new DailyReportAllowanceSaveRequest(
+                        1L,
+                        "OVERTIME",
+                        "時間外手当",
+                        1_200,
+                        500,
+                        true,
+                        "勤務実績の補正",
+                        null,
+                        null
+                )
+        ));
+
+        Employee employee = new Employee();
+        employee.setId(10L);
+        when(employeeRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(employee));
+        when(employeeContractRepository.findByEmployeeIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.empty());
+        when(payrollItemDailyInputService.findAllowanceItems(
+                anyMap(), anyMap(), anyMap(), any()))
+                .thenReturn(List.of(inputItem(1L, "OVERTIME", 500)));
+        when(payrollItemDailyInputService.findDeductionItems(
+                anyMap(), anyMap(), anyMap(), any()))
+                .thenReturn(List.of());
+
+        service.calculate(request);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<Long, Integer>> amountsCaptor =
+                ArgumentCaptor.forClass(Map.class);
+        verify(payrollItemDailyInputService).findAllowanceItems(
+                anyMap(), amountsCaptor.capture(), anyMap(), any()
+        );
+        assertThat(amountsCaptor.getValue()).containsExactlyEntriesOf(
+                Map.of(1L, 500)
+        );
     }
 
     @Test

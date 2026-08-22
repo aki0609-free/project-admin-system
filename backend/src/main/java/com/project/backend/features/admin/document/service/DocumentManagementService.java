@@ -26,6 +26,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DocumentManagementService {
 
+    static final int MAX_LIST_PAGE_SIZE = 1000;
+    static final long MAX_UPLOAD_SIZE_BYTES = 50L * 1024 * 1024;
+
     private final StorageService storageService;
     private final DocumentAreaPolicy areaPolicy;
     private final DocumentStorageKeyResolver keyResolver;
@@ -41,6 +44,11 @@ public class DocumentManagementService {
             int maxKeys
     ) {
         areaPolicy.requireAllowed(area, DocumentOperation.READ);
+        if (maxKeys < 1 || maxKeys > MAX_LIST_PAGE_SIZE) {
+            throw new IllegalArgumentException(
+                    "maxKeysは1以上1000以下で指定してください。"
+            );
+        }
         String prefix = keyResolver.resolve(area, relativePath);
         StorageListPage page = storageService.listDirectory(
                 prefix,
@@ -145,6 +153,11 @@ public class DocumentManagementService {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException(
                     "アップロードファイルは必須です。"
+            );
+        }
+        if (file.getSize() > MAX_UPLOAD_SIZE_BYTES) {
+            throw new IllegalArgumentException(
+                    "アップロードできるファイルは50MB以下です。"
             );
         }
 

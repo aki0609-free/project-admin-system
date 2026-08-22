@@ -107,9 +107,14 @@ watch(
 )
 
 watch(
-  () => props.detailResponse,
-  (detail) => {
-    if (!props.modelValue || !detail || props.isCreateMode) return
+  [
+    () => props.modelValue,
+    () => props.detailResponse,
+    () => props.deduction?.id,
+    () => props.isCreateMode,
+  ],
+  ([opened, detail, deductionId, createMode]) => {
+    if (!opened || !detail || createMode || detail.id !== deductionId) return
     form.policy = detail.policy
       ? structuredClone(detail.policy)
       : createDefaultPayrollItemPolicy()

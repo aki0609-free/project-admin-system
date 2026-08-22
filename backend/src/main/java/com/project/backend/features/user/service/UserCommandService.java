@@ -1,7 +1,7 @@
 package com.project.backend.features.user.service;
 
+import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
 
@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.project.backend.app.security.permission.entity.Role;
 import com.project.backend.app.security.permission.repository.RoleRepository;
+import com.project.backend.app.persistence.EnableHibernateFilters;
 import com.project.backend.features.user.dto.UserCreateRequest;
 import com.project.backend.features.user.dto.UserUpdateRequest;
 import com.project.backend.features.user.entity.User;
@@ -21,11 +22,13 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@EnableHibernateFilters
 public class UserCommandService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Clock clock;
 
     @SuppressWarnings("null")
     public Long create(UserCreateRequest request) {
@@ -54,6 +57,12 @@ public class UserCommandService {
 
         Set<Role> roles = getRoles(request.getRoles());
 
+        validateSystemAdministratorRemains(
+                user,
+                request.getEnabled(),
+                request.getRoles()
+        );
+
         user.setUsername(request.getUsername());
         user.setEnabled(request.getEnabled());
         user.setRoles(roles);
@@ -70,19 +79,22 @@ public class UserCommandService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("ユーザーが見つかりません。id=" + id));
 
-        String deletedUsername = buildDeletedUsername(user.getUsername(), user.getId());
+        validateSystemAdministratorRemains(user, false, Set.of());
+
+        Instant deletedAt = clock.instant();
+        String deletedUsername = buildDeletedUsername(user.getUsername(), user.getId(), deletedAt);
 
         user.setUsername(deletedUsername);
         user.setEnabled(false);
-        user.setDeletedAt(Instant.now());
+        user.setDeletedAt(deletedAt);
 
         userRepository.save(user);
     }
 
-    private String buildDeletedUsername(String username, Long id) {
+    private String buildDeletedUsername(String username, Long id, Instant deletedAt) {
         String suffix = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
-                .withZone(ZoneId.systemDefault())
-                .format(Instant.now());
+                .withZone(clock.getZone())
+                .format(deletedAt);
 
         return username + "__deleted__" + id + "__" + suffix;
     }
@@ -90,6 +102,27 @@ public class UserCommandService {
     private void validateDuplicateUsername(String username) {
         if (userRepository.findByUsername(username).isPresent()) {
             throw new IllegalArgumentException("同じユーザー名が既に存在します。username=" + username);
+        }
+    }
+
+    private void validateSystemAdministratorRemains(
+            User currentUser,
+            Boolean enabledAfterChange,
+            Set<String> roleNamesAfterChange
+    ) {
+        boolean currentlySystemAdministrator = currentUser.getRoles() != null
+                && currentUser.getRoles().stream()
+                        .anyMatch(role -> "SYS_ADMIN".equals(role.getName()));
+        boolean remainsEnabledSystemAdministrator = Boolean.TRUE.equals(enabledAfterChange)
+                && roleNamesAfterChange != null
+                && roleNamesAfterChange.contains("SYS_ADMIN");
+
+        if (currentlySystemAdministrator
+                && !remainsEnabledSystemAdministrator
+                && !userRepository.existsAnotherEnabledSystemAdministrator(currentUser.getId())) {
+            throw new IllegalArgumentException(
+                    "有効なSYS_ADMINユーザーを最低1名残す必要があります。"
+            );
         }
     }
 

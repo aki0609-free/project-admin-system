@@ -57,7 +57,7 @@ const tabFields = computed(() => {
       v-for="field in tabFields[activeTabName] ?? []"
       :key="String(field.key)"
       cols="12"
-      md="6"
+      :md="field.fullWidth ? 12 : 6"
     >
       <EditableFormCell :field="field" />
     </v-col>

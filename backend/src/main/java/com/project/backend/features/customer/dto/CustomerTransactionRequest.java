@@ -19,6 +19,7 @@ public record CustomerTransactionRequest(
         Integer paidAmount,
         Integer fee,
         Integer offsetAmount,
+        Integer adjustmentAmount,
         Integer totalAmount,
         CustomerPaymentStatus paymentStatus,
         String note

@@ -6,11 +6,12 @@ sql/system/excelbook/renderer_selection_v1.sql
 sql/system/excelbook/monthly_summary_v1.sql
 sql/system/excelbook/monthly_labor_v1.sql
 sql/system/excelbook/labor_cost_payment_v1.sql
+sql/operation/monthly/customer_transaction_sync_v1.sql
+sql/operation/monthly/customer_transaction_adjustment_v1.sql
 sql/system/excelbook/receipt_confirmation_v1.sql
 sql/system/report/monthly_snapshot_foundation_v1.sql
 sql/operation/monthly/closing_output_foundation_v1.sql
 sql/operation/monthly/customer_billing_closing_v1.sql
-sql/operation/monthly/customer_transaction_sync_v1.sql
 sql/employee/business_settings_v1.sql
 sql/system/notice/closing_notice_foundation_v1.sql
 sql/employee/finance_foundation_v1.sql
@@ -24,6 +25,7 @@ sql/system/backup/business_data_backup_foundation_v1.sql
 sql/system/import/tax_import_foundation_v1.sql
 sql/system/import/resident_tax_editor_foundation_v1.sql
 sql/system/report/envelope/changeDefinition.sql
+sql/system/report/envelope/envelope_foundation_v1.sql
 sql/system/report/pay_slip/monthly_pay_slip_view_foundation_v1.sql
 sql/system/report/pay_slip/daily_pay_slip_view_foundation_v1.sql
 sql/system/report/pay_slip/setup.sql

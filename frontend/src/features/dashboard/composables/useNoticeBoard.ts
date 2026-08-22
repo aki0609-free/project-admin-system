@@ -68,7 +68,7 @@ export const useNoticeBoard = (
 
     {
       key: 'from',
-      label: '開始日',
+      label: '予定開始日',
       type: 'date',
       md: 3,
       prependIcon: 'mdi-calendar-start',
@@ -76,7 +76,7 @@ export const useNoticeBoard = (
 
     {
       key: 'to',
-      label: '終了日',
+      label: '予定終了日',
       type: 'date',
       md: 3,
       prependIcon: 'mdi-calendar-end',

@@ -15,6 +15,8 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
+import com.project.backend.common.dayrule.dto.DayRule;
+import com.project.backend.common.dayrule.enums.DayRuleType;
 import com.project.backend.features.customer.dto.CustomerEmployeeRequest;
 import com.project.backend.features.customer.dto.CustomerSaveRequest;
 import com.project.backend.features.customer.dto.CustomerSiteRequest;
@@ -84,6 +86,43 @@ class CustomerCommandServiceTest {
                 .hasMessageContaining("メールアドレス");
 
         verify(customerRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void create_shouldRejectInvalidSiteEmailAndDistance() {
+        CustomerSiteRequest invalidEmail = new CustomerSiteRequest(
+                null, "本社現場", null, null, "invalid-email", null,
+                true, false, false
+        );
+        assertThatThrownBy(() -> service.create(
+                request(List.of(invalidEmail), List.of())
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("メールアドレス");
+
+        CustomerSiteRequest invalidDistance = new CustomerSiteRequest(
+                null, "本社現場", null, null, null, -1,
+                true, false, false
+        );
+        assertThatThrownBy(() -> service.create(
+                request(List.of(invalidDistance), List.of())
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("距離");
+
+        verify(customerRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void create_shouldRejectOutOfRangeClosingDay() {
+        CustomerSaveRequest request = new CustomerSaveRequest(
+                "テスト顧客", null, null, null, null, null, null,
+                null, null, CustomerInvoiceType.PATTERN_1,
+                new DayRule(DayRuleType.DAY_OF_MONTH, 32, 0),
+                null, List.of(), List.of()
+        );
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("1日から31日");
     }
 
     @Test

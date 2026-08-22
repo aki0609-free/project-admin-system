@@ -3,6 +3,7 @@ package com.project.backend.features.user.controller;
 import com.project.backend.features.user.service.UserCommandService;
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,10 +21,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import jakarta.validation.Valid;
+
 
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@PreAuthorize("hasAuthority('user:view')")
 public class UserController {
 
     private final UserCommandService userCommandService;
@@ -40,20 +44,23 @@ public class UserController {
     }
 
     @PostMapping
-    public Long create(@RequestBody UserCreateRequest request) {
+    @PreAuthorize("hasAuthority('user:manage')")
+    public Long create(@Valid @RequestBody UserCreateRequest request) {
 
         return userCommandService.create(request);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('user:manage')")
     public void update(
         @PathVariable Long id,
-        @RequestBody UserUpdateRequest request
+        @Valid @RequestBody UserUpdateRequest request
     ) {
         userCommandService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('user:manage')")
     public void delete(@PathVariable Long id) {
         userCommandService.delete(id);
     }

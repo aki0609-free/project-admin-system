@@ -50,8 +50,11 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
         assertThat(resources)
-                .hasSize(39)
-                .contains("sql/admin/external_support_links_v1.sql");
+                .hasSize(41)
+                .contains(
+                        "sql/admin/external_support_links_v1.sql",
+                        "sql/operation/monthly/customer_transaction_adjustment_v1.sql"
+                );
         RuntimeSchemaAssetInstaller.apply(mysqlContainer, resources);
         RuntimeSchemaAssetInstaller.apply(
                 mysqlContainer,
@@ -238,6 +241,23 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND show_on_monthly_statement = TRUE
                   AND carry_to_monthly_settlement = TRUE
                   AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM payroll_item_balance_policy policy
+                JOIN deduction_masters deduction
+                  ON deduction.id = policy.target_master_id
+                 AND deduction.tenant_id = policy.tenant_id
+                WHERE policy.tenant_id = 'default'
+                  AND policy.target_type = 'DEDUCTION'
+                  AND policy.target_code = 'WIFI_FEE'
+                  AND policy.application_scope = 'EMPLOYEE_ENROLLMENT'
+                  AND policy.input_source = 'TRANSACTION'
+                  AND policy.balance_tracking_flag = FALSE
+                  AND policy.active_flag = TRUE
+                  AND policy.deleted_at IS NULL
+                  AND deduction.enabled = TRUE
+                  AND deduction.deleted_at IS NULL
                 """, Integer.class)).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM import_target WHERE target_code LIKE 'IMPORT_%TAX%'"

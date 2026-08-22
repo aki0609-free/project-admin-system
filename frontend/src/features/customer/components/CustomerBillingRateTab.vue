@@ -166,9 +166,18 @@ const rowSchema = z.object({
     .number()
     .min(0, '深夜単価は0以上で入力してください'),
 
+  holidayUnitPrice: z.coerce
+    .number()
+    .min(0, '休日単価は0以上で入力してください'),
+
   commuteUnitPrice: z.coerce
     .number()
     .min(0, '通勤単価は0以上で入力してください'),
+
+  displayOrder: z.coerce
+    .number()
+    .int('順番は整数で入力してください')
+    .min(1, '順番は1以上で入力してください'),
 
   effectiveFrom: z
     .string()

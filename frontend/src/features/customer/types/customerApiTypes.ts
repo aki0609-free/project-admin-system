@@ -190,6 +190,7 @@ export type CustomerPaymentConfirmRequest = {
   paidAmount: number | null
   fee: number | null
   offsetAmount: number | null
+  adjustmentAmount: number | null
   note: string | null
 }
 
@@ -205,6 +206,7 @@ export type CustomerTransactionResponse = {
   paidAmount: number | null
   fee: number | null
   offsetAmount: number | null
+  adjustmentAmount: number | null
   totalAmount: number | null
   paymentStatus: CustomerPaymentStatus | null
   note: string | null
@@ -220,6 +222,7 @@ export type CustomerTransactionRequest = {
   paidAmount: number | null
   fee: number | null
   offsetAmount: number | null
+  adjustmentAmount: number | null
   totalAmount: number | null
   paymentStatus: CustomerPaymentStatus
   note: string | null

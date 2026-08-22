@@ -43,7 +43,17 @@ V1では承認ワークフローを導入せず、登録データは承認済み
 - 貸付登録後の従業員は変更できない。
 - 積立登録後の従業員は変更できない。
 - 承認状態はV1画面に表示せず、バックエンドで `APPROVED` に固定する。
+- 画面と保存APIは、残高・承認状態・承認コメントを入力として受け付けない。
+- 貯蓄率は画面・APIの両方で0%以上100%以下に制限する。
+- 一覧と編集画面にDB採番IDを業務項目として表示しない。
 - 入力エラーは `EMPLOYEE_FINANCE_INVALID_REQUEST` と業務メッセージを返す。
+
+### 3.1 残高更新の境界
+
+- 残高の更新経路は日報保存時の `EmployeeFinanceBalanceCommandService` に限定する。
+- 残高照会と残高更新は、有効かつ論理削除されていない貸付・貯蓄だけを対象とする。
+- 貸付・貯蓄の削除日時にはシステム共通の業務時刻 `Clock` を使用する。
+- 日報画面から登録できない既知事象は、本ページ改修には含めず、日報とRule基盤を一体で整理する工程へ繰り越す。
 
 ## 4. 積立予定額
 
@@ -86,6 +96,19 @@ infrastructure/scripts/database/apply_runtime_schema_upgrade.sh
 6. 同一従業員へ有効な貸付を2件登録できない。
 7. 同一従業員へ有効な積立設定を2件登録できない。
 8. 残高は編集画面から直接変更できない。
+9. 保存APIへ残高・承認情報を送信できない。
+10. 論理削除済みの有効データを残高照会・更新の対象にしない。
+11. 貯蓄率が0%未満または100%超の場合は画面・APIで拒否する。
+
+自動テスト：
+
+```text
+EmployeeLoanServiceTest
+EmployeeSavingServiceTest
+EmployeeFinanceBalanceCommandServiceTest
+EmployeeFinanceQueryServiceTest
+employee-loan-savings-ui.spec.ts
+```
 
 ## 7. V2候補
 
