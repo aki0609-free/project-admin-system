@@ -25,13 +25,20 @@ public class PayrollItemRuleParameterResolverRegistry {
             String resolverKey,
             PayrollItemRuleParameterResolutionContext context
     ) {
-        PayrollItemRuleParameterValueResolver resolver = resolvers.get(resolverKey);
+        String key = resolverKey;
+        String argument = null;
+        int separator = resolverKey == null ? -1 : resolverKey.indexOf(':');
+        if (separator > 0) {
+            key = resolverKey.substring(0, separator);
+            argument = resolverKey.substring(separator + 1);
+        }
+        PayrollItemRuleParameterValueResolver resolver = resolvers.get(key);
         if (resolver == null) {
             throw new IllegalStateException(
                     "給与項目パラメーターResolverが見つかりません。key="
                             + resolverKey
             );
         }
-        return resolver.resolve(context);
+        return resolver.resolve(context.withResolverArgument(argument));
     }
 }

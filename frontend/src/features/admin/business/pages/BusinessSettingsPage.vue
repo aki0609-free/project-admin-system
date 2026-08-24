@@ -25,7 +25,6 @@ const {
   checklist,
   closingSetting,
   closingOutputs,
-  dormitoryFees,
   annualReportBackup,
   externalSupportLinks,
   manualBackupFiscalYear,
@@ -39,14 +38,10 @@ const {
   removeChecklist,
   saveClosing,
   saveOutputs,
-  saveDormitoryFeeSettings,
   saveBackupSetting,
   executeBackup,
   saveExternalSupportLinks,
 } = useBusinessSettingsPage()
-
-const dormitoryTypeLabel = (type: 'SINGLE_ROOM' | 'SHARED_ROOM') =>
-  type === 'SINGLE_ROOM' ? '一人部屋' : '複数人部屋'
 
 const resignationMessageSchema = z.object({
   dialogTitle: z.string().min(1, '必須です'),
@@ -206,7 +201,6 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
         <v-tab value="closing">締日設定</v-tab>
         <v-tab value="outputs">締め帳票</v-tab>
         <v-tab value="backup">帳票バックアップ</v-tab>
-        <v-tab value="dormitory">寮費設定</v-tab>
         <v-tab value="other">その他設定</v-tab>
       </v-tabs>
 
@@ -393,55 +387,6 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
                 >（{{ lastBackupResult.errorMessage }}）</span
               >
             </v-alert>
-          </section>
-        </v-window-item>
-
-        <v-window-item value="dormitory">
-          <section class="settings-section">
-            <h2>寮費設定</h2>
-            <p>
-              部屋タイプ別の日額を設定します。日報の「寮費徴収日数」とRuleを使って、
-              土日など日報を作成しない日をまとめて計算できます。
-            </p>
-            <v-alert type="info" variant="tonal">
-              仮設定は0円です。正式な金額を確認してから変更してください。
-            </v-alert>
-            <v-table density="comfortable">
-              <thead>
-                <tr>
-                  <th>寮タイプ</th>
-                  <th>日額</th>
-                  <th>有効</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="item in dormitoryFees" :key="item.dormitoryType">
-                  <td>
-                    <div class="item-name">{{ dormitoryTypeLabel(item.dormitoryType) }}</div>
-                    <div class="item-description">{{ item.dormitoryType }}</div>
-                  </td>
-                  <td>
-                    <v-text-field
-                      v-model.number="item.dailyAmount"
-                      type="number"
-                      min="0"
-                      step="1"
-                      suffix="円／日"
-                      hide-details
-                      density="compact"
-                    />
-                  </td>
-                  <td>
-                    <v-checkbox v-model="item.activeFlag" hide-details density="compact" />
-                  </td>
-                </tr>
-              </tbody>
-            </v-table>
-            <div class="actions">
-              <v-btn color="primary" :loading="loading" @click="saveDormitoryFeeSettings">
-                寮費設定を保存
-              </v-btn>
-            </div>
           </section>
         </v-window-item>
 

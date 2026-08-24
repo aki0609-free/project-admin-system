@@ -136,13 +136,22 @@ public class PayrollItemPolicyService {
             throw new IllegalArgumentException("入力元切替パラメーターは1件だけ設定できます。");
         }
         if (request.parameterDefinitions() == null) return;
-        var keys = new java.util.HashSet<String>();
+        var definitionsByKey = new java.util.LinkedHashMap<
+                String, PayrollItemParameterDefinitionSaveRequest>();
         for (PayrollItemParameterDefinitionSaveRequest definition
                 : request.parameterDefinitions()) {
+            if (definition == null) {
+                throw new IllegalArgumentException("パラメーター定義が不正です。");
+            }
             String key = normalizeKey(definition.key());
-            if (!keys.add(key)) {
+            if (definitionsByKey.putIfAbsent(key, definition) != null) {
                 throw new IllegalArgumentException(
                         "パラメーターキーが重複しています。key=" + key);
+            }
+            if (definition.displayName() == null
+                    || definition.displayName().isBlank()) {
+                throw new IllegalArgumentException(
+                        "パラメーターの表示名は必須です。key=" + key);
             }
             if (definition.inputType() == PayrollItemParameterInputType.SELECT
                     && (definition.options() == null || definition.options().isEmpty())) {
@@ -150,6 +159,8 @@ public class PayrollItemPolicyService {
                         definition.displayName() + " の選択肢を設定してください。"
                 );
             }
+            validateOptions(definition);
+            validateDefaultValue(definition);
             if (definition.inputSourceOverride()) {
                 if (definition.inputType() != PayrollItemParameterInputType.SELECT) {
                     throw new IllegalArgumentException(
@@ -167,6 +178,111 @@ public class PayrollItemPolicyService {
                     );
                 }
             }
+        }
+        definitionsByKey.forEach((key, definition) ->
+                validateResolver(key, definition, definitionsByKey));
+    }
+
+    private void validateOptions(
+            PayrollItemParameterDefinitionSaveRequest definition
+    ) {
+        if (definition.inputType() != PayrollItemParameterInputType.SELECT) {
+            return;
+        }
+        var values = new java.util.HashSet<String>();
+        for (PayrollItemParameterOption option : definition.options()) {
+            if (option == null || option.label() == null
+                    || option.label().isBlank() || option.value() == null
+                    || option.value().isBlank()) {
+                throw new IllegalArgumentException(
+                        definition.displayName()
+                                + " の選択肢は表示名と値を入力してください。"
+                );
+            }
+            if (!values.add(option.value())) {
+                throw new IllegalArgumentException(
+                        definition.displayName()
+                                + " の選択肢の値が重複しています。value="
+                                + option.value()
+                );
+            }
+        }
+    }
+
+    private void validateDefaultValue(
+            PayrollItemParameterDefinitionSaveRequest definition
+    ) {
+        String value = definition.defaultValue();
+        if (value == null || value.isBlank()) return;
+        try {
+            switch (definition.inputType()) {
+                case NUMBER -> new java.math.BigDecimal(value);
+                case BOOLEAN -> {
+                    if (!"true".equalsIgnoreCase(value)
+                            && !"false".equalsIgnoreCase(value)) {
+                        throw new IllegalArgumentException();
+                    }
+                }
+                case DATE -> java.time.LocalDate.parse(value);
+                case SELECT -> {
+                    if (definition.options().stream()
+                            .noneMatch(option -> option.value().equals(value))) {
+                        throw new IllegalArgumentException();
+                    }
+                }
+                case TEXT -> { }
+            }
+        } catch (RuntimeException exception) {
+            throw new IllegalArgumentException(
+                    definition.displayName() + " の初期値が不正です。",
+                    exception
+            );
+        }
+    }
+
+    private void validateResolver(
+            String parameterKey,
+            PayrollItemParameterDefinitionSaveRequest definition,
+            java.util.Map<String, PayrollItemParameterDefinitionSaveRequest>
+                    definitionsByKey
+    ) {
+        String resolverKey = definition.ruleValueResolverKey();
+        if (resolverKey == null || resolverKey.isBlank()) return;
+        if (!definition.ruleParameter()) {
+            throw new IllegalArgumentException(
+                    "Rule値Resolverを指定した項目はRuleへ渡す設定を有効にしてください。key="
+                            + parameterKey
+            );
+        }
+        String prefix = "SELECT_OPTION_CALCULATION_VALUE:";
+        if (!resolverKey.startsWith(prefix)
+                || resolverKey.length() == prefix.length()) {
+            throw new IllegalArgumentException(
+                    "未対応のRule値Resolverです。key=" + resolverKey
+            );
+        }
+        String sourceKey = normalizeKey(resolverKey.substring(prefix.length()));
+        PayrollItemParameterDefinitionSaveRequest source =
+                definitionsByKey.get(sourceKey);
+        if (source == null
+                || source.inputType() != PayrollItemParameterInputType.SELECT) {
+            throw new IllegalArgumentException(
+                    "選択肢計算値Resolverの参照元は同じ設定内のSELECT項目にしてください。key="
+                            + sourceKey
+            );
+        }
+        if (definition.inputType() != PayrollItemParameterInputType.NUMBER) {
+            throw new IllegalArgumentException(
+                    "選択肢計算値Resolverの出力先はNUMBER項目にしてください。key="
+                            + parameterKey
+            );
+        }
+        if (source.options().stream()
+                .anyMatch(option -> option.calculationValue() == null)) {
+            throw new IllegalArgumentException(
+                    source.displayName()
+                            + " の全選択肢に計算値を設定してください。"
+            );
         }
     }
 

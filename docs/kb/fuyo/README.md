@@ -15,8 +15,8 @@
 ## 手当・控除基盤との境界
 
 - 寮費、携帯電話貸出料、Wi-Fiなどの項目コード・入力方式・残高方式は共通の手当・控除マスターで定義する。
-- Fuyo固有の寮タイプ別日額は、Coreへ`DORMITORY_FEE`分岐を置かず、Resolverキー`DORMITORY_DAILY_AMOUNT`で会社固有サービスを呼び出す。
-- Resolverは従業員別パラメーター`dormitoryType`とFuyoの寮費設定を参照し、Ruleへ`dormitoryDailyAmount`を渡す。
+- 寮タイプ別日額は、控除マスターの`dormitoryType`選択肢に計算値として設定する。
+- 汎用Resolver `SELECT_OPTION_CALCULATION_VALUE:dormitoryType` は選択された部屋タイプの計算値をRuleへ`dormitoryDailyAmount`として渡す。
 - 日報Ruleは汎用パラメーター`dormitoryDailyAmount`と`itemQuantity`だけを使用する。
 
 ## 管理方針

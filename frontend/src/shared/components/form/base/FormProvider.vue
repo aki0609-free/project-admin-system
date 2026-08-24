@@ -1,7 +1,7 @@
-<script setup lang="ts" generic="Schema extends ZodObject<any>">
-import { FormContextKey } from '@/shared/components/form/base/types/types';
-import { computed, provide, ref } from 'vue';
-import z, { ZodObject } from 'zod';
+<script setup lang="ts" generic="Schema extends ZodObject">
+import { FormContextKey } from '@/shared/components/form/base/types/types'
+import { computed, provide, ref } from 'vue'
+import type { ZodObject, ZodType, z } from 'zod'
 
 // Type Definition
 type T = z.infer<Schema>
@@ -48,18 +48,31 @@ function validate(): boolean {
 
 // Single Validation
 function validateField(key: keyof T) {
-  const fieldSchema = props.schema.pick({[key]: true} as any)
+  const errorKey = String(key)
+  const fieldSchema = (props.schema.shape as Record<string, ZodType>)[errorKey]
 
-  const fieldData = { [key]: model.value[key] }
-  const result = fieldSchema.safeParse(fieldData)
+  // A form schema may intentionally validate only a subset of the displayed
+  // fields, so fields without an explicit schema are treated as valid.
+  if (!fieldSchema) {
+    clearFieldError(errorKey)
+    return true
+  }
+
+  const result = fieldSchema.safeParse(model.value[key])
 
   if (!result.success) {
-    errors.value[key as string] = result.error.issues.map(i => i.message)
+    errors.value[errorKey] = result.error.issues.map(i => i.message)
     return false
   }
 
-  delete errors.value[key as string]
+  clearFieldError(errorKey)
   return true
+}
+
+function clearFieldError(key: string) {
+  const nextErrors = { ...errors.value }
+  Reflect.deleteProperty(nextErrors, key)
+  errors.value = nextErrors
 }
 
 defineExpose({

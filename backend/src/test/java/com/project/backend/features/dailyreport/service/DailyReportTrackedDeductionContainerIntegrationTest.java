@@ -11,8 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.project.backend.features.admin.business.entity.DormitoryFeeSetting;
-import com.project.backend.features.admin.business.repository.DormitoryFeeSettingRepository;
 import com.project.backend.features.dailyreport.dto.DailyReportDeductionSaveRequest;
 import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
 import com.project.backend.features.dailyreport.repository.DailyReportDeductionRepository;
@@ -39,7 +37,7 @@ import com.project.backend.features.master.payrollitem.balance.PayrollItemParame
 import com.project.backend.features.master.payrollitem.balance.PayrollItemParameterDefinitionRepository;
 import com.project.backend.features.master.payrollitem.balance.PayrollItemParameterInputType;
 import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
-import com.project.backend.features.admin.business.service.DormitoryDailyAmountRuleParameterResolver;
+import com.project.backend.features.master.payrollitem.parameter.SelectOptionCalculationValueResolver;
 import com.project.backend.features.system.rule.entity.RuleMaster;
 import com.project.backend.features.system.rule.enums.RuleDslType;
 import com.project.backend.features.system.rule.enums.RuleType;
@@ -75,9 +73,6 @@ class DailyReportTrackedDeductionContainerIntegrationTest
 
     @Autowired
     private RuleMasterRepository ruleMasterRepository;
-
-    @Autowired
-    private DormitoryFeeSettingRepository dormitoryFeeSettingRepository;
 
     @Autowired
     private DailyReportCommandService dailyReportCommandService;
@@ -221,11 +216,6 @@ class DailyReportTrackedDeductionContainerIntegrationTest
         rule.setActiveFlag(true);
         ruleMasterRepository.saveAndFlush(rule);
 
-        DormitoryFeeSetting fee = new DormitoryFeeSetting();
-        fee.setDormitoryType(DormitoryType.SHARED_ROOM);
-        fee.setDailyAmount(new BigDecimal("450"));
-        fee.setActiveFlag(true);
-        dormitoryFeeSettingRepository.saveAndFlush(fee);
     }
 
     private DeductionMaster saveDeduction(
@@ -275,7 +265,10 @@ class DailyReportTrackedDeductionContainerIntegrationTest
             dormitoryType.setDisplayName("寮タイプ");
             dormitoryType.setInputType(PayrollItemParameterInputType.SELECT);
             dormitoryType.setRequiredFlag(true);
-            dormitoryType.setOptionsJson("[{\"label\":\"複数人部屋\",\"value\":\"SHARED_ROOM\"}]");
+            dormitoryType.setOptionsJson(
+                    "[{\"label\":\"複数人部屋\",\"value\":\"SHARED_ROOM\","
+                            + "\"calculationValue\":450}]"
+            );
             dormitoryType.setRuleParameterFlag(false);
             dormitoryType.setActiveFlag(true);
             parameterDefinitionRepository.saveAndFlush(dormitoryType);
@@ -290,7 +283,7 @@ class DailyReportTrackedDeductionContainerIntegrationTest
             dailyAmount.setDefaultValue("0");
             dailyAmount.setRuleParameterFlag(true);
             dailyAmount.setRuleValueResolverKey(
-                    DormitoryDailyAmountRuleParameterResolver.KEY);
+                    SelectOptionCalculationValueResolver.KEY + ":dormitoryType");
             dailyAmount.setActiveFlag(true);
             parameterDefinitionRepository.saveAndFlush(dailyAmount);
         }

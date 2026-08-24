@@ -185,7 +185,9 @@ public class EmployeePayrollItemSettingService {
                                                     new PayrollItemRuleParameterResolutionContext(
                                                             employeeId,
                                                             targetDate,
-                                                            values
+                                                            values,
+                                                            policy.getId(),
+                                                            null
                                                     )
                                             )
                                     );

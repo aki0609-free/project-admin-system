@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -96,5 +97,96 @@ class PayrollItemPolicyServiceTest {
                         false, false, List.of())))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("従業員別適用");
+    }
+
+    @Test
+    void synchronize_shouldRejectDuplicateSelectOptionValues() {
+        TenantContext.setTenantId("tenant-a");
+        PayrollItemPolicyService service = new PayrollItemPolicyService(
+                mock(PayrollItemBalancePolicyRepository.class),
+                mock(PayrollItemParameterDefinitionRepository.class),
+                new ObjectMapper(), Clock.systemUTC());
+
+        assertThatThrownBy(() -> service.synchronize(
+                PayrollItemTargetType.DEDUCTION, 1L, "CUSTOM_FEE", "独自控除",
+                employeePolicy(List.of(new PayrollItemParameterDefinitionSaveRequest(
+                        "type", "種別", PayrollItemParameterInputType.SELECT,
+                        true, "A", List.of(
+                                new PayrollItemParameterOption("A", "A"),
+                                new PayrollItemParameterOption("B", "A")
+                        ), false, false, false, 10)))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("重複");
+    }
+
+    @Test
+    void synchronize_shouldRejectResolverWithoutSelectSource() {
+        TenantContext.setTenantId("tenant-a");
+        PayrollItemPolicyService service = new PayrollItemPolicyService(
+                mock(PayrollItemBalancePolicyRepository.class),
+                mock(PayrollItemParameterDefinitionRepository.class),
+                new ObjectMapper(), Clock.systemUTC());
+
+        assertThatThrownBy(() -> service.synchronize(
+                PayrollItemTargetType.DEDUCTION, 1L, "CUSTOM_FEE", "独自控除",
+                employeePolicy(List.of(new PayrollItemParameterDefinitionSaveRequest(
+                        "dailyAmount", "日額", PayrollItemParameterInputType.NUMBER,
+                        true, "0", List.of(), true, false, false,
+                        "SELECT_OPTION_CALCULATION_VALUE:missingType", 10)))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("SELECT項目");
+    }
+
+    @Test
+    void synchronize_shouldAcceptSelectCalculationValueResolver() {
+        TenantContext.setTenantId("tenant-a");
+        var policyRepository = mock(PayrollItemBalancePolicyRepository.class);
+        var definitionRepository = mock(PayrollItemParameterDefinitionRepository.class);
+        when(policyRepository
+                .findByTenantIdAndTargetTypeAndTargetCodeAndDeletedAtIsNull(
+                        "tenant-a", PayrollItemTargetType.DEDUCTION, "CUSTOM_FEE"))
+                .thenReturn(Optional.empty());
+        when(policyRepository.save(any(PayrollItemBalancePolicy.class)))
+                .thenAnswer(invocation -> {
+                    PayrollItemBalancePolicy policy = invocation.getArgument(0);
+                    policy.setId(10L);
+                    return policy;
+                });
+        when(definitionRepository
+                .findAllByTenantIdAndBalancePolicyIdOrderByDisplayOrderAscIdAsc(
+                        "tenant-a", 10L))
+                .thenReturn(List.of());
+        PayrollItemPolicyService service = new PayrollItemPolicyService(
+                policyRepository, definitionRepository,
+                new ObjectMapper(), Clock.systemUTC());
+
+        service.synchronize(
+                PayrollItemTargetType.DEDUCTION, 1L, "CUSTOM_FEE", "独自控除",
+                employeePolicy(List.of(
+                        new PayrollItemParameterDefinitionSaveRequest(
+                                "type", "種別", PayrollItemParameterInputType.SELECT,
+                                true, "A", List.of(
+                                        new PayrollItemParameterOption(
+                                                "A", "A", BigDecimal.valueOf(100))
+                                ), false, false, false, 10),
+                        new PayrollItemParameterDefinitionSaveRequest(
+                                "dailyAmount", "日額", PayrollItemParameterInputType.NUMBER,
+                                true, "0", List.of(), true, false, false,
+                                "SELECT_OPTION_CALCULATION_VALUE:type", 20)
+                )));
+
+        verify(definitionRepository,
+                org.mockito.Mockito.times(2)).save(any(PayrollItemParameterDefinition.class));
+    }
+
+    private PayrollItemPolicySaveRequest employeePolicy(
+            List<PayrollItemParameterDefinitionSaveRequest> definitions
+    ) {
+        return new PayrollItemPolicySaveRequest(
+                PayrollItemApplicationScope.EMPLOYEE_ENROLLMENT,
+                PayrollItemInputSource.DAILY_REPORT,
+                false, BalanceUnit.AMOUNT, null, null,
+                false, false, definitions
+        );
     }
 }

@@ -6,9 +6,13 @@ import type {
 
 const policy = defineModel<PayrollItemPolicy>({ required: true })
 
-defineProps<{
+const props = defineProps<{
   canManage: boolean
+  existingParameterKeys?: string[]
 }>()
+
+const isExistingParameter = (definition: PayrollItemParameterDefinition) =>
+  props.existingParameterKeys?.includes(definition.key) ?? false
 
 const addDefinition = () => {
   const nextOrder = policy.value.parameterDefinitions.length * 10 + 10
@@ -32,7 +36,7 @@ const removeDefinition = (index: number) => {
 }
 
 const addOption = (definition: PayrollItemParameterDefinition) => {
-  definition.options.push({ label: '', value: '' })
+  definition.options.push({ label: '', value: '', calculationValue: null })
 }
 </script>
 
@@ -115,7 +119,7 @@ const addOption = (definition: PayrollItemParameterDefinition) => {
       <v-expansion-panels variant="accordion">
         <v-expansion-panel
           v-for="(definition, index) in policy.parameterDefinitions"
-          :key="`${definition.key}-${index}`"
+          :key="index"
         >
           <v-expansion-panel-title>
             {{ definition.displayName || definition.key || `入力項目 ${index + 1}` }}
@@ -123,7 +127,17 @@ const addOption = (definition: PayrollItemParameterDefinition) => {
           <v-expansion-panel-text>
             <v-row>
               <v-col cols="12" md="4">
-                <v-text-field v-model="definition.key" label="パラメーターキー" :readonly="!canManage" />
+                <v-text-field
+                  v-model="definition.key"
+                  label="パラメーターキー"
+                  :readonly="!canManage || isExistingParameter(definition)"
+                  :hint="
+                    isExistingParameter(definition)
+                      ? '従業員設定・Rule連携の識別子として使用中のため変更できません'
+                      : '英字で開始し、英数字と_で入力してください'
+                  "
+                  persistent-hint
+                />
               </v-col>
               <v-col cols="12" md="4">
                 <v-text-field v-model="definition.displayName" label="表示名" :readonly="!canManage" />
@@ -160,9 +174,19 @@ const addOption = (definition: PayrollItemParameterDefinition) => {
                 <v-btn v-if="canManage" size="x-small" @click="addOption(definition)">追加</v-btn>
               </div>
               <v-row v-for="(option, optionIndex) in definition.options" :key="optionIndex">
-                <v-col cols="5"><v-text-field v-model="option.label" label="表示名" :readonly="!canManage" /></v-col>
-                <v-col cols="5"><v-text-field v-model="option.value" label="値" :readonly="!canManage" /></v-col>
-                <v-col cols="2"><v-btn v-if="canManage" color="error" variant="text" @click="definition.options.splice(optionIndex, 1)">削除</v-btn></v-col>
+                <v-col cols="12" md="4"><v-text-field v-model="option.label" label="表示名" :readonly="!canManage" /></v-col>
+                <v-col cols="12" md="3"><v-text-field v-model="option.value" label="値" :readonly="!canManage" /></v-col>
+                <v-col cols="12" md="3">
+                  <v-text-field
+                    v-model.number="option.calculationValue"
+                    label="計算値（任意）"
+                    type="number"
+                    hint="Ruleで参照する単価など"
+                    persistent-hint
+                    :readonly="!canManage"
+                  />
+                </v-col>
+                <v-col cols="12" md="2"><v-btn v-if="canManage" color="error" variant="text" @click="definition.options.splice(optionIndex, 1)">削除</v-btn></v-col>
               </v-row>
             </template>
 

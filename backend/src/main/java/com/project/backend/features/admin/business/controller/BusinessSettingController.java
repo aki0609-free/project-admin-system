@@ -16,8 +16,6 @@ import com.project.backend.features.admin.business.dto.BusinessClosingSettingRes
 import com.project.backend.features.admin.business.dto.AnnualReportBackupSettingResponse;
 import com.project.backend.features.admin.business.dto.AnnualReportBackupSettingSaveRequest;
 import com.project.backend.features.admin.business.dto.BusinessClosingSettingSaveRequest;
-import com.project.backend.features.admin.business.dto.DormitoryFeeSettingResponse;
-import com.project.backend.features.admin.business.dto.DormitoryFeeSettingSaveRequest;
 import com.project.backend.features.admin.business.dto.ExternalSupportLinkSettingResponse;
 import com.project.backend.features.admin.business.dto.ExternalSupportLinkSettingSaveRequest;
 import com.project.backend.features.admin.business.dto.MonthlyClosingOutputAdminResponse;
@@ -73,18 +71,6 @@ public class BusinessSettingController {
             @PathVariable int fiscalYear
     ) {
         return annualReportBackupService.execute(fiscalYear);
-    }
-
-    @GetMapping("/dormitory-fees")
-    public List<DormitoryFeeSettingResponse> findDormitoryFees() {
-        return service.findDormitoryFees();
-    }
-
-    @PutMapping("/dormitory-fees")
-    public List<DormitoryFeeSettingResponse> saveDormitoryFees(
-            @Valid @RequestBody List<@Valid DormitoryFeeSettingSaveRequest> requests
-    ) {
-        return service.saveDormitoryFees(requests);
     }
 
     @GetMapping("/resignation-message")

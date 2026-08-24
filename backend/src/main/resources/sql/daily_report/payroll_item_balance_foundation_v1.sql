@@ -481,8 +481,32 @@ INSERT INTO payroll_item_parameter_definition (
 SELECT policy.id, 'dormitoryType', '寮タイプ', 'SELECT',
        TRUE, NULL,
        JSON_ARRAY(
-           JSON_OBJECT('label', '一人部屋', 'value', 'SINGLE_ROOM'),
-           JSON_OBJECT('label', '複数人部屋', 'value', 'SHARED_ROOM')
+           JSON_OBJECT(
+               'label', '一人部屋',
+               'value', 'SINGLE_ROOM',
+               'calculationValue', COALESCE((
+                   SELECT fee.daily_amount
+                   FROM dormitory_fee_setting fee
+                   WHERE fee.tenant_id = policy.tenant_id
+                     AND fee.dormitory_type = 'SINGLE_ROOM'
+                     AND fee.active_flag = TRUE
+                     AND fee.deleted_at IS NULL
+                   LIMIT 1
+               ), 0)
+           ),
+           JSON_OBJECT(
+               'label', '複数人部屋',
+               'value', 'SHARED_ROOM',
+               'calculationValue', COALESCE((
+                   SELECT fee.daily_amount
+                   FROM dormitory_fee_setting fee
+                   WHERE fee.tenant_id = policy.tenant_id
+                     AND fee.dormitory_type = 'SHARED_ROOM'
+                     AND fee.active_flag = TRUE
+                     AND fee.deleted_at IS NULL
+                   LIMIT 1
+               ), 0)
+           )
        ),
        FALSE, FALSE, FALSE,
        10, TRUE, policy.tenant_id, NOW(6), NOW(6), NULL
@@ -492,12 +516,19 @@ WHERE policy.target_type = 'DEDUCTION'
   AND policy.deleted_at IS NULL
 ON DUPLICATE KEY UPDATE
     display_name = VALUES(display_name), input_type = VALUES(input_type),
-    required_flag = VALUES(required_flag), options_json = VALUES(options_json),
+    required_flag = VALUES(required_flag),
+    options_json = CASE
+        WHEN JSON_EXTRACT(
+            payroll_item_parameter_definition.options_json,
+            '$[0].calculationValue'
+        ) IS NULL THEN VALUES(options_json)
+        ELSE payroll_item_parameter_definition.options_json
+    END,
     rule_parameter_flag = FALSE,
     input_source_override_flag = VALUES(input_source_override_flag),
     active_flag = TRUE, updated_at = NOW(6), deleted_at = NULL;
 
--- Rule値Resolverにより、Fuyo固有の寮費マスターをCoreの日報計算から分離する。
+-- 選択肢の計算値を解決する汎用Resolverにより、寮費固有分岐をCoreへ置かない。
 INSERT INTO payroll_item_parameter_definition (
     balance_policy_id, parameter_key, display_name, input_type,
     required_flag, default_value, options_json,
@@ -508,7 +539,7 @@ INSERT INTO payroll_item_parameter_definition (
 SELECT policy.id, 'dormitoryDailyAmount', '寮費日額', 'NUMBER',
        TRUE, '0', NULL,
        TRUE, FALSE, FALSE,
-       'DORMITORY_DAILY_AMOUNT', 15, TRUE, policy.tenant_id,
+       'SELECT_OPTION_CALCULATION_VALUE:dormitoryType', 15, TRUE, policy.tenant_id,
        NOW(6), NOW(6), NULL
 FROM payroll_item_balance_policy policy
 WHERE policy.target_type = 'DEDUCTION'

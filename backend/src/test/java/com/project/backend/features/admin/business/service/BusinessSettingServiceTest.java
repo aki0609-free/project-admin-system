@@ -8,7 +8,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Optional;
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -18,11 +17,8 @@ import org.junit.jupiter.api.Test;
 
 import com.project.backend.common.closing.repository.ClosingSettingRepository;
 import com.project.backend.features.admin.business.dto.MonthlyClosingOutputSaveRequest;
-import com.project.backend.features.admin.business.dto.DormitoryFeeSettingSaveRequest;
-import com.project.backend.features.admin.business.repository.DormitoryFeeSettingRepository;
 import com.project.backend.features.employee.repository.EmployeeResignationChecklistRepository;
 import com.project.backend.features.employee.repository.EmployeeResignationSettingRepository;
-import com.project.backend.features.employee.enums.DormitoryType;
 import com.project.backend.features.employee.entity.EmployeeResignationChecklistMaster;
 import com.project.backend.features.operation.monthly.entity.MonthlyClosingOutputDefinition;
 import com.project.backend.features.operation.monthly.enums.MonthlyClosingOutputType;
@@ -41,7 +37,6 @@ class BusinessSettingServiceTest {
 
     private MonthlyClosingOutputDefinitionRepository definitionRepository;
     private OperationReportPreviewRepository previewRepository;
-    private DormitoryFeeSettingRepository dormitoryFeeSettingRepository;
     private EmployeeResignationChecklistRepository checklistRepository;
     private BusinessSettingService service;
 
@@ -49,7 +44,6 @@ class BusinessSettingServiceTest {
     void setUp() {
         definitionRepository = mock(MonthlyClosingOutputDefinitionRepository.class);
         previewRepository = mock(OperationReportPreviewRepository.class);
-        dormitoryFeeSettingRepository = mock(DormitoryFeeSettingRepository.class);
         checklistRepository = mock(EmployeeResignationChecklistRepository.class);
         service = new BusinessSettingService(
                 mock(EmployeeResignationSettingRepository.class),
@@ -57,7 +51,6 @@ class BusinessSettingServiceTest {
                 mock(ClosingSettingRepository.class),
                 definitionRepository,
                 previewRepository,
-                dormitoryFeeSettingRepository,
                 CLOCK
         );
     }
@@ -72,48 +65,6 @@ class BusinessSettingServiceTest {
         service.deleteChecklist(10L);
 
         assertThat(checklist.getDeletedAt()).isEqualTo(CLOCK.instant());
-    }
-
-    @Test
-    void findDormitoryFees_shouldReturnZeroAmountDefaultsWhenMasterIsEmpty() {
-        when(dormitoryFeeSettingRepository
-                .findAllByDeletedAtIsNullOrderByDormitoryTypeAsc())
-                .thenReturn(List.of());
-
-        var result = service.findDormitoryFees();
-
-        assertThat(result).extracting(item -> item.dormitoryType())
-                .containsExactly(DormitoryType.SINGLE_ROOM, DormitoryType.SHARED_ROOM);
-        assertThat(result).allSatisfy(item -> {
-            assertThat(item.dailyAmount()).isEqualByComparingTo(BigDecimal.ZERO);
-            assertThat(item.activeFlag()).isTrue();
-        });
-    }
-
-    @Test
-    void saveDormitoryFees_shouldCreateRoomTypeSettings() {
-        when(dormitoryFeeSettingRepository
-                .findByDormitoryTypeAndDeletedAtIsNull(DormitoryType.SINGLE_ROOM))
-                .thenReturn(Optional.empty());
-        when(dormitoryFeeSettingRepository
-                .findAllByDeletedAtIsNullOrderByDormitoryTypeAsc())
-                .thenReturn(List.of());
-
-        service.saveDormitoryFees(List.of(
-                new DormitoryFeeSettingSaveRequest(
-                        DormitoryType.SINGLE_ROOM,
-                        BigDecimal.valueOf(500),
-                        true
-                )
-        ));
-
-        verify(dormitoryFeeSettingRepository).save(
-                org.mockito.ArgumentMatchers.argThat(setting ->
-                        setting.getDormitoryType() == DormitoryType.SINGLE_ROOM
-                                && setting.getDailyAmount().compareTo(BigDecimal.valueOf(500)) == 0
-                                && setting.isActiveFlag()
-                )
-        );
     }
 
     @Test

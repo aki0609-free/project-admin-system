@@ -36,7 +36,7 @@
 | `dormitoryFlag` | BOOLEAN | 入寮中か |
 | `dormitoryType` | STRING | `SINGLE_ROOM` または `SHARED_ROOM` |
 | `targetDate` | DATE | 日報対象日 |
-| `dormitoryDailyAmount` | DECIMAL | 業務設定の寮タイプ別日額 |
+| `dormitoryDailyAmount` | DECIMAL | 控除マスターの寮タイプ選択肢に設定した日額 |
 | `dormitoryChargeDays` | INTEGER | 当該日報で徴収する日数（0〜31） |
 
 ## 5. 寮費Ruleの推奨形
@@ -52,7 +52,7 @@ V1のRule名は `DORMITORY_DAILY_FEE` とし、JEXL式は次のとおりとす�
 dormitoryFlag ? dormitoryDailyAmount * dormitoryChargeDays : 0
 ```
 
-日額は「管理者メニュー → 業務設定 → 寮費設定」で管理する。初期値は誤徴収防止のため0円とする。
+日額は「マスター管理 → 控除 → 寮費 → 適用・連携設定」で、寮タイプ選択肢の計算値として管理する。初期値は誤徴収防止のため0円とする。業務管理の寮費設定は使用しない。
 
 ## 6. 日報を作成しない日の扱い
 

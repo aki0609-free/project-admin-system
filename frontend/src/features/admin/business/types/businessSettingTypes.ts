@@ -1,5 +1,4 @@
 import type { DayRule } from '@/shared/types/dayRuleTypes'
-import type { DormitoryType } from '@/features/employees/types/employeeApiTypes'
 
 export type ResignationMessage = {
   dialogTitle: string
@@ -50,18 +49,6 @@ export type MonthlyClosingOutputSetting = {
 export type MonthlyClosingOutputSaveRequest = Pick<
   MonthlyClosingOutputSetting,
   'reportCode' | 'executionOrder' | 'activeFlag' | 'backupRetentionYears'
->
-
-export type DormitoryFeeSetting = {
-  id: number | null
-  dormitoryType: DormitoryType
-  dailyAmount: number
-  activeFlag: boolean
-}
-
-export type DormitoryFeeSettingSaveRequest = Pick<
-  DormitoryFeeSetting,
-  'dormitoryType' | 'dailyAmount' | 'activeFlag'
 >
 
 export type AnnualReportBackupSetting = {

@@ -10,7 +10,10 @@ import type { DeductionDetailResponse } from '@/features/master/deduction/types/
 import { useDeductionFormFields } from '@/features/master/deduction/composables/useDeductionFormFields'
 import { usePayrollRuleOptionsQuery } from '@/features/master/payrollitem/api/usePayrollRuleOptionsQuery'
 import PayrollItemPolicyEditor from '@/features/master/payrollitem/components/PayrollItemPolicyEditor.vue'
-import { createDefaultPayrollItemPolicy } from '@/features/master/payrollitem/types/payrollItemPolicyTypes'
+import {
+  clonePayrollItemPolicy,
+  createDefaultPayrollItemPolicy,
+} from '@/features/master/payrollitem/types/payrollItemPolicyTypes'
 
 const props = defineProps<{
   modelValue: boolean
@@ -34,6 +37,7 @@ const dialogModel = computed({
 })
 
 const activeTab = ref<'basic' | 'application' | 'details'>('basic')
+const existingParameterKeys = ref<string[]>([])
 
 const form = reactive<DeductionMaster>({
   id: -1,
@@ -80,6 +84,7 @@ watch(
     activeTab.value = 'basic'
 
     if (!props.deduction) {
+      existingParameterKeys.value = []
       Object.assign(form, {
         id: -1,
         code: '',
@@ -104,6 +109,9 @@ watch(
       return
     }
 
+    existingParameterKeys.value = props.deduction.policy.parameterDefinitions.map(
+      definition => definition.key,
+    )
     Object.assign(form, props.deduction)
   },
 )
@@ -117,8 +125,11 @@ watch(
   ],
   ([opened, detail, deductionId, createMode]) => {
     if (!opened || !detail || createMode || detail.id !== deductionId) return
+    existingParameterKeys.value = detail.policy?.parameterDefinitions.map(
+      definition => definition.key,
+    ) ?? []
     form.policy = detail.policy
-      ? structuredClone(detail.policy)
+      ? clonePayrollItemPolicy(detail.policy)
       : createDefaultPayrollItemPolicy()
   },
   { immediate: true },
@@ -156,7 +167,10 @@ function handleClose() {
 function handleSave() {
   saveError.value = validateForm()
   if (saveError.value) return
-  emit('save', { ...form })
+  emit('save', {
+    ...form,
+    policy: clonePayrollItemPolicy(form.policy),
+  })
 }
 
 function validateForm(): string {
@@ -172,8 +186,9 @@ function validateForm(): string {
   if (form.calculationType === 'FIXED' && form.defaultAmount == null) {
     return '固定計算では固定金額を入力してください。'
   }
-  if (form.calculationType === 'MANUAL' && !form.allowManualInput) {
-    return '手入力計算では手入力許可を有効にしてください。'
+  if (form.calculationType === 'MANUAL') {
+    // MANUALは入力そのものが基準金額になるため、常に手入力可として保存する。
+    form.allowManualInput = true
   }
   if (form.minAmount != null && form.maxAmount != null && form.minAmount > form.maxAmount) {
     return '下限金額は上限金額以下にしてください。'
@@ -211,6 +226,7 @@ function handleDelete() {
               v-else-if="active === 'application'"
               v-model="form.policy"
               :can-manage="canManage"
+              :existing-parameter-keys="existingParameterKeys"
             />
 
             <div v-else-if="active === 'details' && hasDetailTab">

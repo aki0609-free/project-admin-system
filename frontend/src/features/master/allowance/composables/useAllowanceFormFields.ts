@@ -79,11 +79,11 @@ export const useAllowanceFormFields = (formOptions: AllowanceFormFieldOptions) =
     },
     {
       key: 'allowManualInput',
-      label: '手入力許可',
+      label: '計算結果の手動変更を許可',
       type: 'checkbox',
       tab: '計算設定',
       editable: formOptions.canManage.value,
-      visible: model => model.calculationType === 'MANUAL',
+      visible: model => model.calculationType === 'AUTO' || model.calculationType === 'FIXED',
     },
     { key: 'minAmount', label: '下限金額', type: 'number', tab: '計算設定', editable: formOptions.canManage.value },
     { key: 'maxAmount', label: '上限金額', type: 'number', tab: '計算設定', editable: formOptions.canManage.value },

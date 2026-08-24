@@ -6,14 +6,12 @@ import {
   getAnnualReportBackupSetting,
   getClosingOutputs,
   getClosingSetting,
-  getDormitoryFees,
   getExternalSupportLinkSetting,
   getResignationChecklist,
   getResignationMessage,
   saveClosingOutputs,
   saveClosingSetting,
   saveAnnualReportBackupSetting,
-  saveDormitoryFees,
   saveExternalSupportLinkSetting,
   saveResignationMessage,
   updateResignationChecklist,
@@ -22,7 +20,6 @@ import type {
   AnnualReportBackupResult,
   AnnualReportBackupSetting,
   BusinessClosingSetting,
-  DormitoryFeeSetting,
   ExternalSupportLinkSetting,
   MonthlyClosingOutputSetting,
   ResignationChecklistItem,
@@ -41,7 +38,7 @@ const emptyChecklist = (): ResignationChecklistItem => ({
 })
 
 export const useBusinessSettingsPage = () => {
-  const activeTab = ref<'resignation' | 'closing' | 'outputs' | 'backup' | 'dormitory' | 'other'>(
+  const activeTab = ref<'resignation' | 'closing' | 'outputs' | 'backup' | 'other'>(
     'resignation',
   )
   const loading = ref(false)
@@ -56,7 +53,6 @@ export const useBusinessSettingsPage = () => {
   const checklist = ref<ResignationChecklistItem[]>([])
   const closingSetting = ref<BusinessClosingSetting | null>(null)
   const closingOutputs = ref<MonthlyClosingOutputSetting[]>([])
-  const dormitoryFees = ref<DormitoryFeeSetting[]>([])
   const annualReportBackup = reactive<AnnualReportBackupSetting>({
     fiscalYearStartMonth: 4,
     graceDays: 14,
@@ -116,11 +112,6 @@ export const useBusinessSettingsPage = () => {
             closingOutputs.value = value
           })
           .catch(() => failures.push('締め帳票')),
-        getDormitoryFees()
-          .then((value) => {
-            dormitoryFees.value = value
-          })
-          .catch(() => failures.push('寮費設定')),
         getAnnualReportBackupSetting()
           .then((value) => Object.assign(annualReportBackup, value))
           .catch(() => failures.push('帳票バックアップ')),
@@ -200,17 +191,6 @@ export const useBusinessSettingsPage = () => {
       )
     }, '締め帳票設定を保存しました。')
 
-  const saveDormitoryFeeSettings = () =>
-    run(async () => {
-      dormitoryFees.value = await saveDormitoryFees(
-        dormitoryFees.value.map((item) => ({
-          dormitoryType: item.dormitoryType,
-          dailyAmount: Number(item.dailyAmount),
-          activeFlag: item.activeFlag,
-        })),
-      )
-    }, '寮費設定を保存しました。')
-
   const saveBackupSetting = () =>
     run(async () => {
       Object.assign(
@@ -256,7 +236,6 @@ export const useBusinessSettingsPage = () => {
     checklist,
     closingSetting,
     closingOutputs,
-    dormitoryFees,
     annualReportBackup,
     externalSupportLinks,
     manualBackupFiscalYear,
@@ -271,7 +250,6 @@ export const useBusinessSettingsPage = () => {
     removeChecklist,
     saveClosing,
     saveOutputs,
-    saveDormitoryFeeSettings,
     saveBackupSetting,
     executeBackup,
     saveExternalSupportLinks,

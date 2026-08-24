@@ -2,8 +2,6 @@ package com.project.backend.features.admin.business.service;
 
 import java.time.Instant;
 import java.time.Clock;
-import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -20,17 +18,12 @@ import com.project.backend.common.dayrule.dto.DayRule;
 import com.project.backend.common.dayrule.enums.DayRuleType;
 import com.project.backend.features.admin.business.dto.BusinessClosingSettingResponse;
 import com.project.backend.features.admin.business.dto.BusinessClosingSettingSaveRequest;
-import com.project.backend.features.admin.business.dto.DormitoryFeeSettingResponse;
-import com.project.backend.features.admin.business.dto.DormitoryFeeSettingSaveRequest;
 import com.project.backend.features.admin.business.dto.MonthlyClosingOutputAdminResponse;
 import com.project.backend.features.admin.business.dto.MonthlyClosingOutputSaveRequest;
 import com.project.backend.features.admin.business.dto.ResignationChecklistAdminResponse;
 import com.project.backend.features.admin.business.dto.ResignationChecklistSaveRequest;
 import com.project.backend.features.admin.business.dto.ResignationMessageSaveRequest;
-import com.project.backend.features.admin.business.entity.DormitoryFeeSetting;
-import com.project.backend.features.admin.business.repository.DormitoryFeeSettingRepository;
 import com.project.backend.features.employee.dto.EmployeeResignationMessageResponse;
-import com.project.backend.features.employee.enums.DormitoryType;
 import com.project.backend.features.employee.entity.EmployeeResignationChecklistMaster;
 import com.project.backend.features.employee.entity.EmployeeResignationSetting;
 import com.project.backend.features.employee.repository.EmployeeResignationChecklistRepository;
@@ -56,54 +49,7 @@ public class BusinessSettingService {
     private final ClosingSettingRepository closingSettingRepository;
     private final MonthlyClosingOutputDefinitionRepository outputDefinitionRepository;
     private final OperationReportPreviewRepository reportPreviewRepository;
-    private final DormitoryFeeSettingRepository dormitoryFeeSettingRepository;
     private final Clock clock;
-
-    @Transactional(readOnly = true)
-    public List<DormitoryFeeSettingResponse> findDormitoryFees() {
-        Map<DormitoryType, DormitoryFeeSetting> settings = dormitoryFeeSettingRepository
-                .findAllByDeletedAtIsNullOrderByDormitoryTypeAsc()
-                .stream()
-                .collect(Collectors.toMap(
-                        DormitoryFeeSetting::getDormitoryType,
-                        Function.identity()
-                ));
-
-        return Arrays.stream(DormitoryType.values())
-                .map(type -> {
-                    DormitoryFeeSetting setting = settings.get(type);
-                    return setting == null
-                            ? new DormitoryFeeSettingResponse(null, type, BigDecimal.ZERO, true)
-                            : toDormitoryFeeResponse(setting);
-                })
-                .toList();
-    }
-
-    public List<DormitoryFeeSettingResponse> saveDormitoryFees(
-            List<DormitoryFeeSettingSaveRequest> requests
-    ) {
-        if (requests == null || requests.isEmpty()) {
-            throw new IllegalArgumentException("寮費設定は1件以上必要です。");
-        }
-        if (requests.stream().map(DormitoryFeeSettingSaveRequest::dormitoryType)
-                .distinct().count() != requests.size()) {
-            throw new IllegalArgumentException("寮タイプが重複しています。");
-        }
-
-        for (DormitoryFeeSettingSaveRequest request : requests) {
-            if (request.dailyAmount() == null || request.dailyAmount().signum() < 0) {
-                throw new IllegalArgumentException("寮費日額は0円以上で指定してください。");
-            }
-            DormitoryFeeSetting entity = dormitoryFeeSettingRepository
-                    .findByDormitoryTypeAndDeletedAtIsNull(request.dormitoryType())
-                    .orElseGet(DormitoryFeeSetting::new);
-            entity.setDormitoryType(request.dormitoryType());
-            entity.setDailyAmount(request.dailyAmount());
-            entity.setActiveFlag(Boolean.TRUE.equals(request.activeFlag()));
-            dormitoryFeeSettingRepository.save(entity);
-        }
-        return findDormitoryFees();
-    }
 
     @Transactional(readOnly = true)
     public EmployeeResignationMessageResponse findResignationMessage() {
@@ -282,17 +228,6 @@ public class BusinessSettingService {
                 setting.getDialogTitle(),
                 setting.getGuidanceMessage(),
                 setting.getConfirmationMessage()
-        );
-    }
-
-    private DormitoryFeeSettingResponse toDormitoryFeeResponse(
-            DormitoryFeeSetting entity
-    ) {
-        return new DormitoryFeeSettingResponse(
-                entity.getId(),
-                entity.getDormitoryType(),
-                entity.getDailyAmount(),
-                entity.isActiveFlag()
         );
     }
 

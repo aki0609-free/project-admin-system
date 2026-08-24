@@ -8,7 +8,10 @@ import type { AllowanceMaster } from '@/features/master/allowance/types/allowanc
 import { useAllowanceFormFields } from '@/features/master/allowance/composables/useAllowanceFormFields'
 import { usePayrollRuleOptionsQuery } from '@/features/master/payrollitem/api/usePayrollRuleOptionsQuery'
 import PayrollItemPolicyEditor from '@/features/master/payrollitem/components/PayrollItemPolicyEditor.vue'
-import { createDefaultPayrollItemPolicy } from '@/features/master/payrollitem/types/payrollItemPolicyTypes'
+import {
+  clonePayrollItemPolicy,
+  createDefaultPayrollItemPolicy,
+} from '@/features/master/payrollitem/types/payrollItemPolicyTypes'
 
 const props = defineProps<{
   modelValue: boolean
@@ -29,6 +32,7 @@ const dialogModel = computed({
 })
 
 const activeTab = ref<'basic' | 'application'>('basic')
+const existingParameterKeys = ref<string[]>([])
 const pageTabs = [
   { label: '基本情報', value: 'basic' },
   { label: '適用・連携設定', value: 'application' },
@@ -64,6 +68,7 @@ watch(
     activeTab.value = 'basic'
 
     if (!props.allowance) {
+      existingParameterKeys.value = []
       Object.assign(form, {
         id: -1,
         code: '',
@@ -88,6 +93,9 @@ watch(
       return
     }
 
+    existingParameterKeys.value = props.allowance.policy.parameterDefinitions.map(
+      definition => definition.key,
+    )
     Object.assign(form, props.allowance)
   },
 )
@@ -96,6 +104,9 @@ watch(
   () => props.allowance,
   (allowance) => {
     if (!props.modelValue || !allowance || props.isCreateMode) return
+    existingParameterKeys.value = allowance.policy.parameterDefinitions.map(
+      definition => definition.key,
+    )
     Object.assign(form, allowance)
   },
 )
@@ -123,7 +134,10 @@ function handleClose() {
 function handleSave() {
   saveError.value = validateForm()
   if (saveError.value) return
-  emit('save', { ...form })
+  emit('save', {
+    ...form,
+    policy: clonePayrollItemPolicy(form.policy),
+  })
 }
 
 function validateForm(): string {
@@ -139,8 +153,9 @@ function validateForm(): string {
   if (form.calculationType === 'FIXED' && form.defaultAmount == null) {
     return '固定計算では固定金額を入力してください。'
   }
-  if (form.calculationType === 'MANUAL' && !form.allowManualInput) {
-    return '手入力計算では手入力許可を有効にしてください。'
+  if (form.calculationType === 'MANUAL') {
+    // MANUALは入力そのものが基準金額になるため、常に手入力可として保存する。
+    form.allowManualInput = true
   }
   if (form.minAmount != null && form.maxAmount != null && form.minAmount > form.maxAmount) {
     return '下限金額は上限金額以下にしてください。'
@@ -176,6 +191,7 @@ function handleDelete() {
               v-else-if="active === 'application'"
               v-model="form.policy"
               :can-manage="canManage"
+              :existing-parameter-keys="existingParameterKeys"
             />
           </template>
         </TabLayout>

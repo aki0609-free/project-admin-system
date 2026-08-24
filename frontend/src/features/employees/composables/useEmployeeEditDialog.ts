@@ -112,8 +112,8 @@ export const useEmployeeEditDialog = (
       ],
       editable: formModel.employmentStatus !== 'RESIGNED',
     },
-    { key: 'phone', label: '電話', type: 'text', gridColumn: '3 / span 2' },
-    { key: 'email', label: 'メール', type: 'text', gridColumn: '1 / span 4' },
+    { key: 'phone', label: '電話番号', type: 'text', gridColumn: '1 / span 2' },
+    { key: 'email', label: 'メール', type: 'text', gridColumn: '3 / span 2' },
     {
       key: 'postalCode',
       label: '郵便番号',

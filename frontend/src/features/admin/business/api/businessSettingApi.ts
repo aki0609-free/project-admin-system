@@ -3,8 +3,6 @@ import type {
   AnnualReportBackupResult,
   AnnualReportBackupSetting,
   BusinessClosingSetting,
-  DormitoryFeeSetting,
-  DormitoryFeeSettingSaveRequest,
   ExternalSupportLinkSetting,
   MonthlyClosingOutputSaveRequest,
   MonthlyClosingOutputSetting,
@@ -60,15 +58,6 @@ export const getClosingOutputs = () =>
 export const saveClosingOutputs = (requests: MonthlyClosingOutputSaveRequest[]) =>
   put<MonthlyClosingOutputSetting[], MonthlyClosingOutputSaveRequest[]>(
     `${basePath}/closing-outputs`,
-    requests,
-  )
-
-export const getDormitoryFees = () =>
-  get<DormitoryFeeSetting[]>(`${basePath}/dormitory-fees`)
-
-export const saveDormitoryFees = (requests: DormitoryFeeSettingSaveRequest[]) =>
-  put<DormitoryFeeSetting[], DormitoryFeeSettingSaveRequest[]>(
-    `${basePath}/dormitory-fees`,
     requests,
   )
 

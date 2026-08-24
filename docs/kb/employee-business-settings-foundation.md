@@ -13,7 +13,7 @@
 | 退職時設定 | 退職ダイアログのタイトル、案内文、警告見出し、必須／任意TODO |
 | 締日設定 | 給与締日と給与支払日 |
 | 締め帳票 | 月次締め時に生成する帳票、実行順、バックアップ保存年数 |
-| 寮費設定 | 一人部屋・複数人部屋の日額と有効状態 |
+| 寮費設定 | 控除マスターへ統合済み。業務管理では設定しない |
 
 業務設定画面とAPIは `SYS_ADMIN` のみ使用できる。
 
@@ -139,7 +139,7 @@ V1では締め帳票はすべて必須として扱う。任意帳票の失敗継
 | PUT/DELETE | `/resignation-checklist/{id}` | TODO更新・削除 |
 | GET/PUT | `/closing-setting` | 給与締日・支払日取得・保存 |
 | GET/PUT | `/closing-outputs` | 月次締め帳票取得・一括保存 |
-| GET/PUT | `/dormitory-fees` | 寮タイプ別日額取得・一括保存 |
+| 廃止 | `/dormitory-fees` | 控除マスターの選択肢計算値へ統合 |
 | GET/PUT | `/annual-report-backup` | 年度帳票バックアップ設定 |
 | POST | `/annual-report-backup/{fiscalYear}/execute` | 年度帳票バックアップ手動実行 |
 | GET/PUT | `/external-support-links` | Jira・Confluenceリンク設定 |
@@ -157,7 +157,7 @@ V1では締め帳票はすべて必須として扱う。任意帳票の失敗継
 
 ```text
 BusinessSettingServiceTest
-DormitoryDailyAmountRuleParameterResolverTest
+SelectOptionCalculationValueResolverTest
 ExternalSupportLinkSettingServiceTest
 business-settings-ui.spec.ts
 ```
