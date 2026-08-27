@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.project.backend.features.system.mail.dto.MailTemplatePreviewRequest;
 import com.project.backend.features.system.mail.dto.MailTemplatePreviewResponse;
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/system/mail-templates")
+@PreAuthorize("hasAnyRole('SYS_ADMIN', 'ADMIN')")
 @RequiredArgsConstructor
 public class MailTemplateAdminController {
 

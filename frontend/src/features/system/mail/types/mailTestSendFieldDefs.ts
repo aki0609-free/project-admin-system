@@ -16,10 +16,20 @@ export const mailTestSendFields: GridFormFieldDef<MailTestSendForm>[] = [
     autoGrow: true,
   },
   {
+    key: 'attachmentStorageType',
+    label: '添付保存先',
+    type: 'select',
+    options: [
+      { title: 'Local', value: 'LOCAL' },
+      { title: 'S3', value: 'S3' },
+    ],
+    gridColumn: '1 / span 1',
+  },
+  {
     key: 'attachmentFilePath',
     label: '添付ファイルキー',
     type: 'text',
-    gridColumn: '1 / span 3',
+    gridColumn: '2 / span 2',
   },
   {
     key: 'attachmentFileName',

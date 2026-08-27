@@ -48,6 +48,7 @@ export const createMailTestSendForm = (): MailTestSendForm => ({
   bcc: '',
   subject: 'テストメール',
   body: 'これはProjectAdminからのテストメールです。',
+  attachmentStorageType: 'LOCAL',
   attachmentFilePath: '',
   attachmentFileName: '',
 })

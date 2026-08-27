@@ -24,10 +24,8 @@ public class MailDirectSendService {
 
         boolean success = workerService.sendOne(queue);
 
-        return resultBuilder.sent(
-                1,
-                success ? 1 : 0,
-                success ? 0 : 1
-        );
+        return success
+                ? resultBuilder.sent(1, 1, 0)
+                : resultBuilder.failed(1);
     }
 }

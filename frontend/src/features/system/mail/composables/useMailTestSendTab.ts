@@ -11,6 +11,7 @@ import { mailTestSendSchema } from '../types/mailTestSendSchemas'
 export const useMailTestSendTab = () => {
   const sendMutation = useSendTestMailMutation()
   const lastMessage = ref('')
+  const lastMessageType = ref<'success' | 'error'>('success')
 
   const formModel = reactive<MailTestSendForm>(
     createMailTestSendForm(),
@@ -18,13 +19,18 @@ export const useMailTestSendTab = () => {
 
   const send = async () => {
     lastMessage.value = ''
+    try {
+      const result = await sendMutation.mutateAsync(
+        toMailTestSendRequest(formModel),
+      ) as MailSendResult
 
-    const result = await sendMutation.mutateAsync(
-      toMailTestSendRequest(formModel),
-    ) as MailSendResult
-
-    lastMessage.value = result.message
-    alert(result.message)
+      const succeeded = result.sentCount > 0 && result.failedCount === 0
+      lastMessageType.value = succeeded ? 'success' : 'error'
+      lastMessage.value = result.message
+    } catch {
+      lastMessageType.value = 'error'
+      lastMessage.value = 'テストメールの送信に失敗しました。'
+    }
   }
 
   const leftToolbarItems = computed<ToolbarItem[]>(() => [
@@ -45,6 +51,7 @@ export const useMailTestSendTab = () => {
     schema: mailTestSendSchema,
     sendMutation,
     lastMessage,
+    lastMessageType,
     send,
     leftToolbarItems,
   }

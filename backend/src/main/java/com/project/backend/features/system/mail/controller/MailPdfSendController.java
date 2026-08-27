@@ -1,6 +1,7 @@
 package com.project.backend.features.system.mail.controller;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.project.backend.features.system.mail.dto.MailPdfSendRequest;
 import com.project.backend.features.system.mail.dto.MailSendResult;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/system/mail/pdf")
+@PreAuthorize("isAuthenticated()")
 @RequiredArgsConstructor
 public class MailPdfSendController {
 

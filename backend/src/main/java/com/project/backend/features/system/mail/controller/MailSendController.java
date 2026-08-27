@@ -3,6 +3,7 @@ package com.project.backend.features.system.mail.controller;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.project.backend.features.system.mail.dto.MailActivateDraftRequest;
 import com.project.backend.features.system.mail.dto.MailSendQueueResponse;
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/system/mail")
+@PreAuthorize("hasAnyRole('SYS_ADMIN', 'ADMIN')")
 @RequiredArgsConstructor
 public class MailSendController {
 

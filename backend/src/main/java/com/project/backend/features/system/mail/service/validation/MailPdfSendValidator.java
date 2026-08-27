@@ -4,7 +4,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import com.project.backend.app.storage.service.StorageService;
+import com.project.backend.app.storage.enums.StorageType;
 import com.project.backend.features.system.mail.dto.MailPdfSendRequest;
+import com.project.backend.features.system.mail.enums.MailStorageType;
 import com.project.backend.features.system.mail.properties.MailProperties;
 
 import lombok.RequiredArgsConstructor;
@@ -48,10 +50,24 @@ public class MailPdfSendValidator {
             throw new RuntimeException("pdfFileName は必須です。");
         }
 
-        if (!storageService.exists(request.pdfFileKey())) {
+        if (request.storageType() == null) {
+            throw new RuntimeException("storageType は必須です。");
+        }
+
+        if (!storageService.exists(toStorageType(request.storageType()), request.pdfFileKey())) {
             throw new RuntimeException(
-                    "PDFファイルが存在しません。 fileKey=" + request.pdfFileKey()
+                    "PDFファイルが存在しません。 storageType="
+                            + request.storageType()
+                            + ", fileKey="
+                            + request.pdfFileKey()
             );
         }
+    }
+
+    private StorageType toStorageType(MailStorageType storageType) {
+        return switch (storageType) {
+            case LOCAL -> StorageType.LOCAL;
+            case S3 -> StorageType.S3;
+        };
     }
 }

@@ -1,4 +1,7 @@
-import type { MailRecipientType } from '@/features/system/mail/types/mailApiTypes'
+import type {
+  MailRecipientType,
+  MailStorageType,
+} from '@/features/system/mail/types/mailApiTypes'
 
 export type MailRecipientForm = {
   id: number
@@ -24,6 +27,7 @@ export type MailTestSendForm = {
   bcc: string
   subject: string
   body: string
+  attachmentStorageType: MailStorageType
   attachmentFilePath: string
   attachmentFileName: string
 }

@@ -25,6 +25,15 @@ public class MailSendResultBuilder {
                 .build();
     }
 
+    public MailSendResult failed(int targetCount) {
+        return MailSendResult.builder()
+                .targetCount(targetCount)
+                .sentCount(0)
+                .failedCount(targetCount)
+                .message("メール送信に失敗しました。メール管理の送信履歴を確認してください。")
+                .build();
+    }
+
     public MailSendResult activateAndSent(
             MailSendResult activateResult,
             MailSendResult sendResult

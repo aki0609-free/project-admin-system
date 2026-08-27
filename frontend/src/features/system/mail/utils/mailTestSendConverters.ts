@@ -20,7 +20,7 @@ export const toMailTestSendRequest = (
 
   if (form.attachmentFilePath.trim()) {
     attachments.push({
-      storageType: 'LOCAL',
+      storageType: form.attachmentStorageType,
       fileKey: form.attachmentFilePath.trim(),
       fileName: form.attachmentFileName.trim() || 'attachment.pdf',
       fileSize: null,

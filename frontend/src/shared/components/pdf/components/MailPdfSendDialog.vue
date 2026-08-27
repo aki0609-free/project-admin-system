@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import type {
   MailPdfSendRequest,
   MailRecipientGroupResponse,
@@ -30,6 +30,7 @@ const visible = computed({
 
 const mutation = useSendPdfMailMutation()
 const recipientGroupsQuery = useMailRecipientGroupsQuery()
+const sendErrorMessage = ref('')
 
 const form = reactive({
   recipientGroupKey: null as string | null,
@@ -80,6 +81,8 @@ watch(
   (value) => {
     if (!value) return
 
+    sendErrorMessage.value = ''
+
     form.recipientGroupKey = null
     form.to = ''
     form.cc = ''
@@ -129,6 +132,8 @@ const close = () => {
 const send = async () => {
   if (!canSend.value || !props.pdfFileKey || !props.pdfFileName) return
 
+  sendErrorMessage.value = ''
+
   const request: MailPdfSendRequest = {
     mailType: props.mailType ?? 'PDF_MAIL',
     businessKey: props.businessKey ?? null,
@@ -151,6 +156,11 @@ const send = async () => {
   }
 
   const result = (await mutation.mutateAsync(request)) as MailSendResult
+
+  if (result.failedCount > 0 || result.sentCount === 0) {
+    sendErrorMessage.value = result.message || 'メール送信に失敗しました。'
+    return
+  }
 
   emit('sent', result)
   visible.value = false
@@ -257,8 +267,13 @@ const send = async () => {
           />
         </div>
 
-        <v-alert v-if="mutation.isError.value" type="error" variant="tonal" density="compact">
-          メール送信に失敗しました。
+        <v-alert
+          v-if="mutation.isError.value || sendErrorMessage"
+          type="error"
+          variant="tonal"
+          density="compact"
+        >
+          {{ sendErrorMessage || 'メール送信に失敗しました。' }}
         </v-alert>
       </v-card-text>
 

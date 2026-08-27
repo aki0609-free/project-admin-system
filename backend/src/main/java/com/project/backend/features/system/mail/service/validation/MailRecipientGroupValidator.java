@@ -42,6 +42,7 @@ public class MailRecipientGroupValidator {
             if (!StringUtils.hasText(recipient.email())) {
                 throw new RuntimeException("email は必須です。");
             }
+            MailAddressValidator.validate("email", recipient.email());
         }
     }
 

@@ -29,7 +29,8 @@ const successSnackbar = ref(false)
 const successMessage = ref('')
 const pdfFrame = ref<HTMLIFrameElement | null>(null)
 
-const canSendMail = computed(() => !!props.pdfFileKey)
+const mailAvailable = computed(() => props.pdfFileKey !== undefined)
+const canSendMail = computed(() => mailAvailable.value && !!props.pdfFileKey)
 
 const close = () => {
   visible.value = false
@@ -82,6 +83,7 @@ const handleMailSent = (result: MailSendResult) => {
         </v-btn>
 
         <v-btn
+          v-if="mailAvailable"
           class="ml-2"
           color="primary"
           variant="outlined"

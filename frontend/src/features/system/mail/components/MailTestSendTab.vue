@@ -9,6 +9,7 @@ const {
   fields,
   schema,
   lastMessage,
+  lastMessageType,
   leftToolbarItems,
 } = useMailTestSendTab()
 </script>
@@ -37,7 +38,7 @@ const {
 
     <v-alert
       v-if="lastMessage"
-      type="success"
+      :type="lastMessageType"
       variant="tonal"
     >
       {{ lastMessage }}

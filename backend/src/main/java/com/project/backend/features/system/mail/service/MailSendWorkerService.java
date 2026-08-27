@@ -15,9 +15,11 @@ import com.project.backend.features.system.mail.service.validation.MailDuplicate
 import com.project.backend.features.system.mail.service.validation.MailQueueValidator;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MailSendWorkerService {
 
     private final JavaMailSender mailSender;
@@ -45,6 +47,15 @@ public class MailSendWorkerService {
 
         } catch (Exception e) {
             markFailedOrWaiting(mail, e);
+            log.warn(
+                    "Mail send failed. queueId={}, mailType={}, businessKey={}, status={}, retryCount={}, errorType={}",
+                    mail.getId(),
+                    mail.getMailType(),
+                    mail.getBusinessKey(),
+                    mail.getStatus(),
+                    mail.getRetryCount(),
+                    e.getClass().getSimpleName()
+            );
             return false;
         }
     }

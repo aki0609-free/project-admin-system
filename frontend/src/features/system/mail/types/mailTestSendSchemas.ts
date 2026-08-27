@@ -7,6 +7,7 @@ export const mailTestSendSchema = z.object({
   bcc: z.string(),
   subject: z.string().min(1, '必須です'),
   body: z.string().min(1, '必須です'),
+  attachmentStorageType: z.enum(['LOCAL', 'S3']),
   attachmentFilePath: z.string(),
   attachmentFileName: z.string(),
 })

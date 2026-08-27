@@ -24,6 +24,10 @@ public class MailQueueCreateValidator {
             throw new RuntimeException("toAddresses は必須です。");
         }
 
+        MailAddressValidator.validateAll("toAddresses", request.toAddresses());
+        MailAddressValidator.validateAll("ccAddresses", request.ccAddresses());
+        MailAddressValidator.validateAll("bccAddresses", request.bccAddresses());
+
         if (!StringUtils.hasText(request.subject())) {
             throw new RuntimeException("subject は必須です。");
         }

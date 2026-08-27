@@ -18,6 +18,10 @@ public class MailTestSendValidator {
             throw new RuntimeException("toAddresses は必須です。");
         }
 
+        MailAddressValidator.validateAll("toAddresses", request.toAddressesOrEmpty());
+        MailAddressValidator.validateAll("ccAddresses", request.ccAddressesOrEmpty());
+        MailAddressValidator.validateAll("bccAddresses", request.bccAddressesOrEmpty());
+
         if (!StringUtils.hasText(request.subject())) {
             throw new RuntimeException("subject は必須です。");
         }
