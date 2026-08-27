@@ -3,6 +3,7 @@ export type DocumentArea =
   | 'GENERATED_REPORTS'
   | 'BACKUPS'
   | 'TEMPLATES'
+  | 'IMPORT_SCRIPTS'
 
 export type DocumentOperation =
   | 'READ'

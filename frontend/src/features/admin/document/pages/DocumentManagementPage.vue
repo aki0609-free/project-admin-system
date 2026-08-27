@@ -62,6 +62,10 @@ const areaMetadata: Record<DocumentArea, { icon: string; description: string }> 
     icon: 'mdi-file-cog-outline',
     description: '台帳・帳票テンプレートを参照できます。',
   },
+  IMPORT_SCRIPTS: {
+    icon: 'mdi-language-python',
+    description: '外部データ取込で実行するPython・Shellスクリプトを管理します。',
+  },
 }
 
 const defaultArea: DocumentAreaResponse = {
@@ -97,6 +101,22 @@ const fallbackAreas: DocumentAreaResponse[] = [
     area: 'TEMPLATES',
     displayName: 'テンプレート',
     allowedOperations: ['READ', 'SEARCH', 'DETAILS', 'DOWNLOAD'],
+  },
+  {
+    area: 'IMPORT_SCRIPTS',
+    displayName: '取込スクリプト',
+    allowedOperations: [
+      'READ',
+      'SEARCH',
+      'DETAILS',
+      'DOWNLOAD',
+      'CREATE_DIRECTORY',
+      'UPLOAD',
+      'COPY',
+      'MOVE',
+      'RENAME',
+      'DELETE',
+    ],
   },
 ]
 
@@ -252,7 +272,7 @@ onBeforeUnmount(() => {
   <ListDetailPageLayout
     class="document-management-page"
     title="書類管理"
-    description="自由書類、生成帳票、バックアップ、テンプレートを一元管理します。"
+    description="自由書類、生成帳票、バックアップ、テンプレート、取込スクリプトを一元管理します。"
   >
     <template #header-actions>
       <v-chip color="primary" variant="tonal" prepend-icon="mdi-shield-account-outline">
@@ -330,7 +350,9 @@ onBeforeUnmount(() => {
           <v-chip size="small" :color="editable ? 'success' : 'secondary'" variant="tonal">
             {{ editable ? '編集可能' : '参照専用' }}
           </v-chip>
-          <span class="text-caption text-medium-emphasis"> 1ファイルあたり最大50MB </span>
+          <span class="text-caption text-medium-emphasis">
+            {{ selectedArea === 'IMPORT_SCRIPTS' ? '.py/.sh・最大1MB' : '1ファイルあたり最大50MB' }}
+          </span>
         </div>
       </v-card-text>
     </v-card>
@@ -351,7 +373,7 @@ onBeforeUnmount(() => {
           :navigation-pane-settings="{ visible: true, minWidth: '220px' }"
           :upload-settings="{
             autoUpload: true,
-            maxFileSize: 50 * 1024 * 1024,
+            maxFileSize: selectedArea === 'IMPORT_SCRIPTS' ? 1024 * 1024 : 50 * 1024 * 1024,
             minFileSize: 1,
           }"
           :allow-drag-and-drop="editable"

@@ -20,6 +20,12 @@ class DocumentAreaPolicyTest {
     }
 
     @Test
+    void importScripts_shouldAllowAllOperations() {
+        assertThat(policy.allowedOperations(DocumentArea.IMPORT_SCRIPTS))
+                .containsExactlyInAnyOrder(DocumentOperation.values());
+    }
+
+    @Test
     void managedAreas_shouldBeReadOnly() {
         assertThat(policy.allowedOperations(DocumentArea.GENERATED_REPORTS))
                 .containsExactlyInAnyOrder(

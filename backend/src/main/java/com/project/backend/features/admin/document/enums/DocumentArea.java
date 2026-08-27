@@ -4,7 +4,8 @@ public enum DocumentArea {
     GENERAL("自由書類"),
     GENERATED_REPORTS("生成帳票"),
     BACKUPS("バックアップ"),
-    TEMPLATES("テンプレート");
+    TEMPLATES("テンプレート"),
+    IMPORT_SCRIPTS("取込スクリプト");
 
     private final String displayName;
 

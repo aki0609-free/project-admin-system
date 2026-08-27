@@ -22,6 +22,12 @@ public class DocumentStorageKeyResolver {
             throw new IllegalArgumentException("documentArea は必須です。");
         }
 
+        if (area == DocumentArea.IMPORT_SCRIPTS) {
+            return joinSegments(
+                    properties.getImports().getScript().getPath()
+            );
+        }
+
         StorageProperties.Document document = properties.getDocument();
 
         return joinSegments(
@@ -31,6 +37,9 @@ public class DocumentStorageKeyResolver {
                     case GENERATED_REPORTS -> document.getGeneratedReportsPath();
                     case BACKUPS -> document.getBackupsPath();
                     case TEMPLATES -> document.getTemplatesPath();
+                    case IMPORT_SCRIPTS -> throw new IllegalStateException(
+                            "取込スクリプト領域は個別に解決されます。"
+                    );
                 }
         );
     }

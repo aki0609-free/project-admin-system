@@ -35,6 +35,7 @@ public class DocumentAreaPolicy {
         operationsByArea.put(DocumentArea.GENERATED_REPORTS, READ_ONLY_OPERATIONS);
         operationsByArea.put(DocumentArea.BACKUPS, READ_ONLY_OPERATIONS);
         operationsByArea.put(DocumentArea.TEMPLATES, READ_ONLY_OPERATIONS);
+        operationsByArea.put(DocumentArea.IMPORT_SCRIPTS, ALL_OPERATIONS);
     }
 
     public List<DocumentAreaResponse> findAreas() {

@@ -2,6 +2,8 @@ package com.project.backend.features.system.imports.service;
 
 import java.nio.file.Path;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,16 +24,18 @@ public class ImportExecutionService {
     private final ImportScriptExecutorService scriptExecutorService;
     private final ImportCsvJobLauncherService csvJobLauncherService;
     private final ImportCsvPathResolver csvPathResolver;
+    private final ImportHistoryService importHistoryService;
 
     public ImportExecuteResult executeUpload(
             String targetCode,
             MultipartFile file
     ) {
         Path tempFile = null;
+        ImportTargetDefinition target = null;
+        String fileName = file != null ? file.getOriginalFilename() : null;
 
         try {
-            ImportTargetDefinition target =
-                    importTargetAdminService.findByTargetCode(targetCode);
+            target = importTargetAdminService.findByTargetCode(targetCode);
 
             if (target.sourceType() != ImportSourceType.UPLOAD) {
                 throw new RuntimeException("この定義はUPLOAD取込ではありません。 targetCode=" + targetCode);
@@ -39,8 +43,7 @@ public class ImportExecutionService {
 
             tempFile = uploadFileService.saveToTempFile(file);
 
-            String originalFileName =
-                    tempFile.getFileName().toString();
+            fileName = tempFile.getFileName().toString();
 
             Path importPath = tempFile;
             if (target.scriptType() != null
@@ -54,20 +57,27 @@ public class ImportExecutionService {
             return csvJobLauncherService.run(
                     target,
                     importPath,
-                    originalFileName
+                    fileName
             );
 
         } catch (Exception e) {
-            throw new RuntimeException("CSVインポートに失敗しました。", e);
+            savePreJobFailure(target, fileName, e);
+            throw new RuntimeException(
+                    "CSVインポートに失敗しました。 "
+                            + rootMessage(e),
+                    e
+            );
         } finally {
             uploadFileService.deleteTempFile(tempFile);
         }
     }
 
     public ImportExecuteResult executeFromDefinition(String targetCode) {
+        ImportTargetDefinition target = null;
+        String fileName = null;
+
         try {
-            ImportTargetDefinition target =
-                    importTargetAdminService.findByTargetCode(targetCode);
+            target = importTargetAdminService.findByTargetCode(targetCode);
 
             if (target.sourceType() == ImportSourceType.UPLOAD) {
                 throw new RuntimeException("この定義はUPLOAD取込です。 targetCode=" + targetCode);
@@ -80,15 +90,67 @@ public class ImportExecutionService {
             Path csvPath = csvPathResolver.resolveExisting(
                     target.fixedFilePath()
             );
+            fileName = csvPath.getFileName().toString();
 
             return csvJobLauncherService.run(
                     target,
                     csvPath,
-                    csvPath.getFileName().toString()
+                    fileName
             );
 
         } catch (Exception e) {
-            throw new RuntimeException("定義ベースのCSVインポートに失敗しました。", e);
+            savePreJobFailure(target, fileName, e);
+            throw new RuntimeException(
+                    "定義ベースのCSVインポートに失敗しました。 "
+                            + rootMessage(e),
+                    e
+            );
         }
+    }
+
+    private void savePreJobFailure(
+            ImportTargetDefinition target,
+            String fileName,
+            Exception exception
+    ) {
+        if (target == null) {
+            return;
+        }
+
+        importHistoryService.saveFailure(
+                target,
+                fileName,
+                null,
+                currentUsername(),
+                new RuntimeException(rootMessage(exception), exception)
+        );
+    }
+
+    private String currentUsername() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null
+                || authentication.getName() == null
+                || authentication.getName().isBlank()) {
+            return "system";
+        }
+
+        return authentication.getName();
+    }
+
+    private String rootMessage(Throwable throwable) {
+        Throwable current = throwable;
+        String message = null;
+
+        while (current != null) {
+            if (current.getMessage() != null
+                    && !current.getMessage().isBlank()) {
+                message = current.getMessage();
+            }
+            current = current.getCause();
+        }
+
+        return message != null ? message : throwable.getClass().getSimpleName();
     }
 }

@@ -24,4 +24,14 @@ public class ImportScriptProperties {
      * エラー表示へ保持する標準出力の最大文字数。
      */
     private int maxOutputCharacters = 20000;
+
+    /**
+     * S3スクリプトの展開先と、ダウンロード原本の一時保存先。
+     */
+    private String workDirectory = "/tmp/projectadmin/imports";
+
+    /**
+     * 実行可能なスクリプトの最大バイト数。
+     */
+    private long maxScriptBytes = 1024L * 1024L;
 }

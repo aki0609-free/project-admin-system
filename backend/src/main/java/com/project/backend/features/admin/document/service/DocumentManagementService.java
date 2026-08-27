@@ -28,6 +28,7 @@ public class DocumentManagementService {
 
     static final int MAX_LIST_PAGE_SIZE = 1000;
     static final long MAX_UPLOAD_SIZE_BYTES = 50L * 1024 * 1024;
+    static final long MAX_IMPORT_SCRIPT_SIZE_BYTES = 1024L * 1024L;
 
     private final StorageService storageService;
     private final DocumentAreaPolicy areaPolicy;
@@ -165,6 +166,7 @@ public class DocumentManagementService {
                 file.getOriginalFilename(),
                 "ファイル名"
         );
+        validateImportScript(area, originalFileName, file.getSize());
         String relativePath = joinRelativePath(
                 directoryPath,
                 originalFileName
@@ -218,6 +220,9 @@ public class DocumentManagementService {
         requireNonRootPath(sourcePath);
 
         String validatedName = validateName(newName, "変更後名称");
+        if (!directory) {
+            validateImportScript(area, validatedName, 0L);
+        }
         String parent = parentPath(sourcePath);
         String targetPath = joinRelativePath(parent, validatedName);
 
@@ -427,5 +432,28 @@ public class DocumentManagementService {
         return index >= 0
                 ? normalized.substring(index + 1)
                 : normalized;
+    }
+
+    private void validateImportScript(
+            DocumentArea area,
+            String fileName,
+            long fileSize
+    ) {
+        if (area != DocumentArea.IMPORT_SCRIPTS) {
+            return;
+        }
+
+        String lowerCaseName = fileName.toLowerCase(Locale.ROOT);
+        if (!lowerCaseName.endsWith(".py")
+                && !lowerCaseName.endsWith(".sh")) {
+            throw new IllegalArgumentException(
+                    "取込スクリプトは.pyまたは.sh形式で登録してください。"
+            );
+        }
+        if (fileSize > MAX_IMPORT_SCRIPT_SIZE_BYTES) {
+            throw new IllegalArgumentException(
+                    "取込スクリプトは1MB以下で登録してください。"
+            );
+        }
     }
 }

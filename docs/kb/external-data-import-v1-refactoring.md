@@ -241,6 +241,23 @@ convert_income_tax_table.py
 
 ## 4.8 スクリプト実行
 
+### 環境別の配置方式
+
+| 環境 | 保存元 | 実行方式 |
+|---|---|---|
+| Local／Docker | `${project.storage.local-base-path}/imports/scripts` | 検証済みのローカルファイルを直接実行 |
+| AWS | S3の`imports/scripts/` | 実行直前に一時作業領域へ取得し、実行後に削除 |
+
+AWS上のスクリプトは「管理者メニュー → 書類管理 → 取込スクリプト」で確認・更新する。利用者は`SYS_ADMIN`に限定する。同梱スクリプトは起動時に不足分だけ初期登録し、管理画面で更新済みのファイルは上書きしない。
+
+安全制約：
+
+- `.py`または`.sh`だけを許可
+- 1ファイル1MB以下
+- 絶対パス、`..`、制御文字を拒否
+- S3から取得した一時ファイルは実行終了後に削除
+- スクリプト種別と拡張子の一致を取込定義保存時に検証
+
 既定設定：
 
 | 設定 | 既定値 |
@@ -248,11 +265,24 @@ convert_income_tax_table.py
 | `project.imports.script.timeout-seconds` | 120秒 |
 | `project.imports.script.max-output-characters` | 20,000文字 |
 | `project.imports.script.python-command` | 環境変数またはローカルPython |
+| `project.imports.script.work-directory` | `/tmp/projectadmin/imports` |
+| `project.imports.script.max-script-bytes` | 1,048,576バイト |
+
+Localのスクリプトディレクトリは次の2設定で変更できる。
+
+```text
+PROJECT_STORAGE_LOCAL_BASE_PATH
+PROJECT_STORAGE_IMPORT_SCRIPT_PATH
+```
+
+既定値は`{local-base-path}/imports/scripts`である。
 
 スクリプト引数では、次のプレースホルダーを利用できる。
 
 ```text
 ${IMPORT_CSV_DIR}
+${IMPORT_WORK_DIR}
+${IMPORT_INPUT_FILE}
 ```
 
 実行時に、その環境の `imports/csv` 絶対パスへ置換される。
@@ -261,7 +291,10 @@ ${IMPORT_CSV_DIR}
 
 ```text
 --output ${IMPORT_CSV_DIR}/income_tax_table_2026.csv
+--input ${IMPORT_WORK_DIR}/source/source-file.xls
 ```
+
+既存DBに保存済みの`/tmp/project-admin/...`はV1互換処理で新しい作業ディレクトリへ読み替える。新規・更新する定義では`${IMPORT_WORK_DIR}`を使用する。
 
 ## 4.9 履歴
 
@@ -383,6 +416,10 @@ resident_tax_monthly
 - 外部取込フロントエンドLint：成功
 - フロントエンド本番ビルド：成功
 - 外部取込ドメインのTypeScriptエラー：解消
+- 所得税テーブル取込／社会保険料率取込／住民税Python変換：Testcontainersで成功
+- 同梱Pythonスクリプト：コンテナのPython環境で起動確認済み
+- S3スクリプト：一時展開と実行後削除のテスト成功
+- Batch起動前のPython／Shell／CSV解決失敗：`import_history`へFAILED履歴を保存
 
 プロジェクト全体のTypeScript型チェックには、応募者、顧客、日報既存箇所、メール、帳票、共通テーブル等の別ドメインの既存エラーが残っている。
 
@@ -423,4 +460,5 @@ resident_tax_monthly
 - DELETE_INSERTはステージングテーブル入替方式ではない
 - カタログ自体のCRUD画面はV1対象外。DDL／マスターデータで管理する
 - AWSでSCRIPTを利用する場合も、実行ファイルはコンテナのローカル領域へ配置する
-- S3は自由保管書類や生成帳票の管理に利用し、OSプロセスとして実行するスクリプトはデプロイ資材として管理する
+- AWSの実行原本はS3の`imports/scripts/`で管理し、実行時だけコンテナの一時領域へ展開する
+- Local／Dockerはローカル保存領域の`imports/scripts/`を直接実行する

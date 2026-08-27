@@ -13,7 +13,7 @@ INSERT INTO import_target (
     '国税庁の源泉徴収税額表を公式Excelから正規化して取り込む',
     'SCRIPT', 'income_tax_table_2026.csv', 'PYTHON',
     'convert_income_tax_table_v2.py',
-    '--year 2026 --url https://www.nta.go.jp/publication/pamph/gensen/zeigakuhyo2026/data/01-07.xls --input /tmp/project-admin/source/nta_income_tax_monthly_2026.xls --output ${IMPORT_CSV_DIR}/income_tax_table_2026.csv',
+    '--year 2026 --url https://www.nta.go.jp/publication/pamph/gensen/zeigakuhyo2026/data/01-07.xls --input ${IMPORT_WORK_DIR}/source/nta_income_tax_monthly_2026.xls --output ${IMPORT_CSV_DIR}/income_tax_table_2026.csv',
     'UPSERT', 1, 2, 'UTF-8', ',', TRUE,
     'default', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
 ),
@@ -22,7 +22,7 @@ INSERT INTO import_target (
     'insurance_rate_master', '協会けんぽ静岡県の健康保険料率を取り込む',
     'SCRIPT', 'health_insurance_rate_2026.csv', 'PYTHON',
     'convert_health_insurance_rate.py',
-    '--year 2026 --url https://www.kyoukaikenpo.or.jp/assets/R8_22shizuoka.pdf --input /tmp/project-admin/source/kyoukaikenpo_shizuoka_2026.pdf --output ${IMPORT_CSV_DIR}/health_insurance_rate_2026.csv',
+    '--year 2026 --url https://www.kyoukaikenpo.or.jp/assets/R8_22shizuoka.pdf --input ${IMPORT_WORK_DIR}/source/kyoukaikenpo_shizuoka_2026.pdf --output ${IMPORT_CSV_DIR}/health_insurance_rate_2026.csv',
     'UPSERT', 1, 2, 'UTF-8', ',', TRUE,
     'default', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
 ),
@@ -31,7 +31,7 @@ INSERT INTO import_target (
     'insurance_rate_master', '協会けんぽの介護保険料率を取り込む',
     'SCRIPT', 'care_insurance_rate_2026.csv', 'PYTHON',
     'convert_care_insurance_rate.py',
-    '--year 2026 --url https://www.kyoukaikenpo.or.jp/assets/R8_22shizuoka.pdf --input /tmp/project-admin/source/kyoukaikenpo_shizuoka_2026.pdf --output ${IMPORT_CSV_DIR}/care_insurance_rate_2026.csv',
+    '--year 2026 --url https://www.kyoukaikenpo.or.jp/assets/R8_22shizuoka.pdf --input ${IMPORT_WORK_DIR}/source/kyoukaikenpo_shizuoka_2026.pdf --output ${IMPORT_CSV_DIR}/care_insurance_rate_2026.csv',
     'UPSERT', 1, 2, 'UTF-8', ',', TRUE,
     'default', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
 ),
@@ -40,7 +40,7 @@ INSERT INTO import_target (
     'insurance_rate_master', '日本年金機構の厚生年金保険料率を取り込む',
     'SCRIPT', 'pension_insurance_rate_2026.csv', 'PYTHON',
     'convert_pension_insurance_rate.py',
-    '--year 2026 --url https://www.nenkin.go.jp/service/kounen/hokenryo/ryogaku/ryogakuhyo/20200825.files/R08ryougaku.pdf --input /tmp/project-admin/source/nenkin_pension_2026.pdf --output ${IMPORT_CSV_DIR}/pension_insurance_rate_2026.csv',
+    '--year 2026 --url https://www.nenkin.go.jp/service/kounen/hokenryo/ryogaku/ryogakuhyo/20200825.files/R08ryougaku.pdf --input ${IMPORT_WORK_DIR}/source/nenkin_pension_2026.pdf --output ${IMPORT_CSV_DIR}/pension_insurance_rate_2026.csv',
     'UPSERT', 1, 2, 'UTF-8', ',', TRUE,
     'default', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
 ),
@@ -50,7 +50,7 @@ INSERT INTO import_target (
     '正式な労働保険事業区分の確認後にcategoryとactive_flagを確定する',
     'SCRIPT', 'employment_insurance_rate_2026.csv', 'PYTHON',
     'convert_employment_insurance_rate.py',
-    '--year 2026 --category GENERAL --url https://www.mhlw.go.jp/content/001692566.pdf --input /tmp/project-admin/source/mhlw_employment_insurance_2026.pdf --output ${IMPORT_CSV_DIR}/employment_insurance_rate_2026.csv',
+    '--year 2026 --category GENERAL --url https://www.mhlw.go.jp/content/001692566.pdf --input ${IMPORT_WORK_DIR}/source/mhlw_employment_insurance_2026.pdf --output ${IMPORT_CSV_DIR}/employment_insurance_rate_2026.csv',
     'UPSERT', 1, 2, 'UTF-8', ',', FALSE,
     'default', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
 ),
@@ -59,7 +59,7 @@ INSERT INTO import_target (
     'insurance_rate_master', '協会けんぽの子ども・子育て支援金率を取り込む',
     'SCRIPT', 'child_care_support_fund_2026.csv', 'PYTHON',
     'convert_child_care_support_fund.py',
-    '--year 2026 --url https://www.kyoukaikenpo.or.jp/assets/R8_22shizuoka.pdf --input /tmp/project-admin/source/kyoukaikenpo_shizuoka_2026.pdf --output ${IMPORT_CSV_DIR}/child_care_support_fund_2026.csv',
+    '--year 2026 --url https://www.kyoukaikenpo.or.jp/assets/R8_22shizuoka.pdf --input ${IMPORT_WORK_DIR}/source/kyoukaikenpo_shizuoka_2026.pdf --output ${IMPORT_CSV_DIR}/child_care_support_fund_2026.csv',
     'UPSERT', 1, 2, 'UTF-8', ',', TRUE,
     'default', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
 ),

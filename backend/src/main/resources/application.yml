@@ -113,6 +113,9 @@ app:
   spreadsheet:
     init:
       enabled: true
+  imports:
+    init:
+      enabled: true
 
 project:
   cors:
@@ -126,9 +129,9 @@ project:
       path: ${PROJECT_STORAGE_REPORT_OUTPUT_PATH:documents/generated-reports/reports}
     imports:
       script:
-        path: imports/scripts
+        path: ${PROJECT_STORAGE_IMPORT_SCRIPT_PATH:imports/scripts}
       csv:
-        path: imports/csv
+        path: ${PROJECT_STORAGE_IMPORT_CSV_PATH:imports/csv}
     document:
       root-path: documents
       general-path: general
@@ -144,6 +147,8 @@ project:
       python-command: ${PROJECT_IMPORTS_SCRIPT_PYTHON_COMMAND:.venv/bin/python}
       timeout-seconds: ${PROJECT_IMPORTS_SCRIPT_TIMEOUT_SECONDS:120}
       max-output-characters: ${PROJECT_IMPORTS_SCRIPT_MAX_OUTPUT_CHARACTERS:20000}
+      work-directory: ${PROJECT_IMPORTS_SCRIPT_WORK_DIRECTORY:/tmp/projectadmin/imports}
+      max-script-bytes: ${PROJECT_IMPORTS_SCRIPT_MAX_BYTES:1048576}
   mail:
     from-address: ${PROJECT_MAIL_FROM_ADDRESS:${SPRING_MAIL_USERNAME:}}
     from-name: ${PROJECT_MAIL_FROM_NAME:ProjectAdmin}

@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.project.backend.app.storage.model.StorageEntry;
 import com.project.backend.app.storage.properties.StorageProperties;
 import com.project.backend.app.storage.service.StorageService;
 import com.project.backend.features.system.imports.dto.ImportScriptFileResponse;
@@ -22,16 +23,27 @@ public class ImportScriptFileQueryService {
                 .getScript()
                 .getPath();
 
-        return storageService.list(prefix)
+        return storageService.listRecursively(prefix)
                 .stream()
+                .filter(entry -> !entry.directory())
+                .map(StorageEntry::key)
                 .filter(this::isScriptFile)
-                .map(this::toResponse)
+                .map(filePath -> toResponse(prefix, filePath))
                 .sorted((a, b) -> a.filePath().compareToIgnoreCase(b.filePath()))
                 .toList();
     }
 
-    private ImportScriptFileResponse toResponse(String filePath) {
+    private ImportScriptFileResponse toResponse(
+            String prefix,
+            String filePath
+    ) {
         String normalizedPath = filePath.replace("\\", "/");
+        String normalizedPrefix = prefix.replace("\\", "/");
+        if (normalizedPath.startsWith(normalizedPrefix + "/")) {
+            normalizedPath = normalizedPath.substring(
+                    normalizedPrefix.length() + 1
+            );
+        }
 
         return ImportScriptFileResponse.builder()
                 .fileName(fileName(normalizedPath))

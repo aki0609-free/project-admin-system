@@ -146,6 +146,46 @@ class DocumentManagementServiceTest {
     }
 
     @Test
+    void upload_shouldAllowPythonInImportScriptArea() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "convert_sample.py",
+                "text/x-python",
+                "print('ok')".getBytes(java.nio.charset.StandardCharsets.UTF_8)
+        );
+
+        service.upload(DocumentArea.IMPORT_SCRIPTS, "tax", file);
+
+        verify(storageService).save(
+                org.mockito.ArgumentMatchers.eq(
+                        "imports/scripts/tax/convert_sample.py"
+                ),
+                any(InputStream.class),
+                org.mockito.ArgumentMatchers.eq(file.getSize()),
+                org.mockito.ArgumentMatchers.eq("text/x-python")
+        );
+    }
+
+    @Test
+    void upload_shouldRejectNonScriptInImportScriptArea() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "readme.txt",
+                "text/plain",
+                new byte[] {1}
+        );
+
+        assertThatThrownBy(() -> service.upload(
+                DocumentArea.IMPORT_SCRIPTS,
+                "",
+                file
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(".pyまたは.sh");
+
+        verifyNoInteractions(storageService);
+    }
+
+    @Test
     void upload_shouldRejectPathCharactersInFileName() {
         MockMultipartFile file = new MockMultipartFile(
                 "file",

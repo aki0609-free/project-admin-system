@@ -41,13 +41,16 @@ documents/
     │   └── {ledgerCode}/
     │       └── template.json   # Syncfusion Spreadsheet JSON
     └── reports/                # 帳票テンプレート
+
+imports/
+└── scripts/                    # 外部データ取込スクリプト（管理者編集可）
 ```
 
 以下の既存領域はFileManagerへ表示しない。
 
 - `_deployment/`
 - 既存の`reports-output/`
-- `imports/`
+- `imports/csv/`など、`imports/scripts/`以外の取込内部領域
 - その他、アプリケーション内部処理用の領域
 
 ## 4. 操作権限
@@ -60,6 +63,7 @@ FileManager自体は`SYS_ADMIN`ロールだけが利用できる。
 | 生成帳票 | ○ | ○ | ○ | ○ | × | × | × | × | × | × |
 | バックアップ | ○ | ○ | ○ | ○ | × | × | × | × | × | × |
 | テンプレート | ○ | ○ | ○ | ○ | × | × | × | × | × | × |
+| 取込スクリプト | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
 
 生成帳票、バックアップ、テンプレートは、業務処理や専用管理画面だけが更新する。FileManagerから変更するとDB履歴やマスタとの整合性が崩れるため、参照専用とする。
 
@@ -113,6 +117,7 @@ GENERAL
 GENERATED_REPORTS
 BACKUPS
 TEMPLATES
+IMPORT_SCRIPTS
 ```
 
 画面は`GET /areas`が返す許可操作を利用してボタンを制御する。ただし、バックエンドでも同じ制御を必ず実行する。
@@ -152,6 +157,7 @@ spring:
 - 表示形式：詳細表示
 - サムネイル：無効
 - 1ファイル上限：50MB
+- 取込スクリプト領域：`.py`／`.sh`のみ、1ファイル上限1MB
 - 認証：FileManagerの全Ajax処理へJWTと`X-Tenant-ID`を付与
 - ダウンロード：フォームPOSTを使わずAjax方式で認証ヘッダーを付与
 - 一覧APIの1回あたり取得件数：1件以上1000件以下

@@ -29,6 +29,8 @@ class DocumentStorageKeyResolverTest {
                 .isEqualTo("documents/backups");
         assertThat(resolver.resolveAreaRoot(DocumentArea.TEMPLATES))
                 .isEqualTo("documents/templates");
+        assertThat(resolver.resolveAreaRoot(DocumentArea.IMPORT_SCRIPTS))
+                .isEqualTo("imports/scripts");
     }
 
     @Test

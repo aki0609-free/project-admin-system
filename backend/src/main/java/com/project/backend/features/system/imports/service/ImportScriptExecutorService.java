@@ -2,6 +2,7 @@ package com.project.backend.features.system.imports.service;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +17,7 @@ import com.project.backend.features.system.imports.enums.ImportScriptType;
 import com.project.backend.features.system.imports.properties.ImportScriptProperties;
 import com.project.backend.features.system.imports.service.resolver.ImportCsvPathResolver;
 import com.project.backend.features.system.imports.service.resolver.ImportScriptPathResolver;
+import com.project.backend.features.system.imports.service.resolver.ResolvedImportScript;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,12 +36,12 @@ public class ImportScriptExecutorService {
     public void execute(ImportTargetDefinition target, Path inputFile) {
         validate(target);
 
-        try {
-            Path resolvedScriptPath = scriptPathResolver.resolve(target.scriptPath());
+        try (ResolvedImportScript resolvedScript =
+                     scriptPathResolver.resolve(target.scriptPath())) {
 
             List<String> command = buildCommand(
                     target,
-                    resolvedScriptPath,
+                    resolvedScript.path(),
                     inputFile
             );
 
@@ -155,12 +157,29 @@ public class ImportScriptExecutorService {
 
     private List<String> splitArgs(String args, Path inputFile) {
         List<String> result = new ArrayList<>();
+        Path workDirectory = Path.of(properties.getWorkDirectory())
+                .toAbsolutePath()
+                .normalize();
+
+        try {
+            Files.createDirectories(workDirectory);
+        } catch (Exception e) {
+            throw new RuntimeException("取込作業ディレクトリを作成できません。", e);
+        }
 
         for (String arg : args.trim().split("\\s+")) {
             if (!arg.isBlank()) {
                 String resolved = arg.replace(
                         "${IMPORT_CSV_DIR}",
                         csvPathResolver.baseDirectory().toString()
+                );
+                resolved = resolved.replace(
+                        "${IMPORT_WORK_DIR}",
+                        workDirectory.toString()
+                );
+                resolved = resolved.replace(
+                        "/tmp/project-admin",
+                        workDirectory.toString()
                 );
                 if (resolved.contains("${IMPORT_INPUT_FILE}")) {
                     if (inputFile == null) {
