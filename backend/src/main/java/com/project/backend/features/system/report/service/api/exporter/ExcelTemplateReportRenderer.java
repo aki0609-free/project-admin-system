@@ -9,6 +9,10 @@ public interface ExcelTemplateReportRenderer {
 
     boolean supports(ReportMaster reportMaster);
 
+    default boolean fallback() {
+        return false;
+    }
+
     byte[] render(
             ReportMaster reportMaster,
             byte[] template,

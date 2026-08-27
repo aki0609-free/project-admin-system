@@ -49,6 +49,15 @@ public class ReportMasterAdminService {
     public ReportMasterDetailResponse create(ReportMasterSaveRequest request) {
         validator.validate(request);
 
+        if (reportMasterRepository.existsByReportCodeAndDeletedAtIsNull(
+                request.reportCode()
+        )) {
+            throw new IllegalArgumentException(
+                    "reportCode が重複しています: "
+                            + request.reportCode()
+            );
+        }
+
         ReportMaster entity = new ReportMaster();
 
         updater.apply(entity, request);
@@ -66,6 +75,12 @@ public class ReportMasterAdminService {
 
         ReportMaster entity = reportMasterRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("帳票定義が見つかりません。 id=" + id));
+
+        if (!entity.getReportCode().equals(request.reportCode())) {
+            throw new IllegalArgumentException(
+                    "reportCode は作成後に変更できません。"
+            );
+        }
 
         updater.apply(entity, request);
         paramSyncService.sync(entity, request.params());

@@ -9,6 +9,7 @@ export type SelectOption = {
 
 export const useReportMasterBasicFields = (
   templateOptions: Ref<SelectOption[]>,
+  isEdit: Ref<boolean>,
 ) => {
   const fields = computed<GridFormFieldDef<ReportMasterForm>[]>(() => [
     {
@@ -16,6 +17,7 @@ export const useReportMasterBasicFields = (
       label: '帳票コード',
       type: 'text',
       gridColumn: '1 / span 2',
+      editable: !isEdit.value,
     },
     {
       key: 'reportName',

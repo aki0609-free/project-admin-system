@@ -22,7 +22,10 @@ export const useUpdateReportMasterMutation = () => {
         request,
       ),
 
-    onSuccess: async (_data: any, variables: any) => {
+    onSuccess: async (
+      _data: ReportMasterDetailResponse,
+      variables: Payload,
+    ) => {
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: queryKeys.reportMasters.all,

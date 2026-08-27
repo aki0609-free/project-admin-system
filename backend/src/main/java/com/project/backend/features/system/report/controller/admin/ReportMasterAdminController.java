@@ -2,6 +2,7 @@ package com.project.backend.features.system.report.controller.admin;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.project.backend.features.system.report.dto.ReportMasterDetailResponse;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/system/report-masters")
+@PreAuthorize("hasRole('SYS_ADMIN')")
 @RequiredArgsConstructor
 public class ReportMasterAdminController {
 

@@ -15,7 +15,7 @@ export const useDeleteReportSignatureMutation = () => {
     mutationFn: ({ id }: Payload) =>
       del<{ message: string }>(`/api/system/report-signatures/${id}`),
 
-    onSuccess: async (_data: any, variables: any) => {
+    onSuccess: async (_data: { message: string }, variables: Payload) => {
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: queryKeys.reportSignatures.all,

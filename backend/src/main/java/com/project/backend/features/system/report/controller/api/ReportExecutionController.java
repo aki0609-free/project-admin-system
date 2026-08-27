@@ -1,5 +1,6 @@
 package com.project.backend.features.system.report.controller.api;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.project.backend.features.system.report.dto.ReportExecuteRequest;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/system/report-execution")
+@PreAuthorize("hasRole('SYS_ADMIN')")
 @RequiredArgsConstructor
 public class ReportExecutionController {
 

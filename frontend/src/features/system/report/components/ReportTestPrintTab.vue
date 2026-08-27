@@ -48,9 +48,6 @@ const executeTestPrint = async () => {
   await execute(selectedReport.value.reportCode, apiParams.value)
 }
 
-const handleSendMail = () => {
-  alert('メール送信（ダミー）')
-}
 </script>
 
 <template>
@@ -121,7 +118,6 @@ const handleSendMail = () => {
       v-model="previewVisible"
       title="テスト印刷プレビュー"
       :pdf-url="pdfUrl"
-      @send-mail="handleSendMail"
     />
   </div>
 </template>

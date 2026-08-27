@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.project.backend.features.system.report.dto.ReportDownloadFile;
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/system/report-histories")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('SYS_ADMIN')")
 public class ReportDownloadController {
 
     private final ReportDownloadService reportDownloadService;

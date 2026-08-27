@@ -69,7 +69,7 @@ monthly_labor_cost_list_history
   ↓ INITIAL / RECLOSE / RETRY
 monthly_labor_cost_list_output
   ↓
-monthly_labor_cost_list.xlsx + 帳票専用Renderer
+monthly_labor_cost_list.xlsx + Excel共通Renderer
   ↓
 S3保存
   ↓
@@ -115,7 +115,7 @@ report_history
 | AC | 貯金 | `saving_amount` |
 | AD | 差引支給 | `net_payment_amount` |
 
-休日金額は原本に専用列がないため、`他手当` に含める。今後原本へ休日列を追加する場合は、帳票専用RendererとViewの列マッピングだけを変更する。
+休日金額は原本に専用列がないため、`他手当` に含める。今後原本へ休日列を追加する場合は、Viewの出力列とExcelテンプレートのプレースホルダーを変更する。
 
 ## 5. 可変手当・控除の集約ルール
 
@@ -166,18 +166,20 @@ report_history
 - 原本の罫線、列幅、行高、印刷書式を維持
 - テンプレート確認用の計算式を修復済み
 - 実行時には締め履歴の確定値を差し込む
+- ヘッダー値は `${column_name}`、明細行は `${row.column_name}` で宣言する
+- 日付表示は `${target_month:yyyy}` のように書式を指定する
 
 ### Java
 
 - `ExcelTemplateReportRenderer`
 - `ExcelTemplateReportRendererRegistry`
-- `MonthlyLaborCostListExcelRenderer`
+- `GenericExcelTemplateReportRenderer`
 - `ExcelReportExporter`
 - `ReportTemplateLoader`
 - `ReportTemplateValidator`
 - `BundledReportTemplateInitializer`
 
-共通基盤はテンプレートのS3取得、Renderer選択、保存、帳票履歴を担当する。帳票固有のセル位置は `MonthlyLaborCostListExcelRenderer` だけに閉じ込める。
+共通基盤はテンプレートのS3取得、プレースホルダー置換、明細行追加、保存、帳票履歴を担当する。帳票コード固有のJava Rendererは使用しない。セル位置はExcelテンプレートで管理し、業務計算はView・履歴・出力テーブルへ閉じ込める。
 
 ### SQL
 
@@ -219,6 +221,8 @@ report_history
 - 会社名、対象年月、支払日を出力
 - 先頭・末尾従業員を出力
 - 基本給、差引支給の合計を検証
+- 出力値がExcel数値型であることを検証
+- 存在しないカラム名を指定した場合にセル位置付きで失敗することを検証
 
 ### 回帰テスト
 
@@ -236,7 +240,7 @@ report_history
 
 1. DB SQLを上記順で適用する。
 2. Backendをbuild・ECR push・deployする。
-3. 起動時に `templates/reports/monthly_labor_cost_list.xlsx` がS3へ初期登録されたことを確認する。
+3. `templates/reports/monthly_labor_cost_list.xlsx` を書類管理から更新する。起動時初期登録は未登録時のみであり、既存テンプレートを自動上書きしない。
 4. 月次締め対象月を準備する。
 5. `MONTHLY_LABOR_COST_LIST` を含む月次締めを実行する。
 6. S3へ `.xlsx` が保存されたことを確認する。
@@ -249,6 +253,6 @@ report_history
 
 - Excelファイル内の手入力値は正データにしない。
 - 計算結果の正は月次履歴テーブルとする。
-- Renderer変更はBackendの再build・再deployが必要。
-- セル配置変更はこの帳票のRendererだけで対応でき、帳票共通基盤の変更は不要。
-- 原本の列追加・削除時は、View・履歴・出力・Renderer・テストの5点を同時に更新する。
+- プレースホルダーの追加・移動だけならBackendの再buildは不要。S3上のExcelテンプレート更新だけで反映できる。
+- 新しい書式処理や共通Renderer自体の変更時のみBackendの再build・再deployが必要。
+- 原本の列追加・削除時は、View・履歴・出力・Excelテンプレート・テストの5点を同時に更新する。

@@ -7,6 +7,7 @@ import { useReportMasterBasicFields } from '@/features/system/report/composables
 const props = defineProps<{
   modelValue: ReportMasterForm
   templateOptions: { title: string; value: string }[]
+  isEdit: boolean
 }>()
 
 const emit = defineEmits<{
@@ -20,6 +21,7 @@ const model = computed<ReportMasterForm>({
 
 const { fields } = useReportMasterBasicFields(
   toRef(props, 'templateOptions'),
+  toRef(props, 'isEdit'),
 )
 </script>
 

@@ -24,6 +24,31 @@ import static net.logstash.logback.argument.StructuredArguments.*;
 public class GlobalExceptionHandler {
 
     @SuppressWarnings("null")
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(
+            IllegalArgumentException ex,
+            HttpServletRequest request) {
+
+        ErrorCode code = ErrorCode.VALIDATION_ERROR;
+        String traceId = MDC.get("traceId");
+
+        log.warn(
+                "invalid request argument",
+                keyValue("errorCode", code.getCode()),
+                keyValue("path", request.getRequestURI()),
+                keyValue("traceId", traceId),
+                keyValue("message", ex.getMessage())
+        );
+
+        return ResponseEntity
+                .status(code.getStatus())
+                .body(new ErrorResponse(
+                        code.getCode(),
+                        ex.getMessage(),
+                        traceId));
+    }
+
+    @SuppressWarnings("null")
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(
             Exception ex,

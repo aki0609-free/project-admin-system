@@ -22,7 +22,10 @@ export const useUpdateReportSignatureMutation = () => {
         request,
       ),
 
-    onSuccess: async (_data: any, variables: any) => {
+    onSuccess: async (
+      _data: ReportSignatureResponse,
+      variables: Payload,
+    ) => {
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: queryKeys.reportSignatures.all,

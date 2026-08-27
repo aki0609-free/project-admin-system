@@ -16,8 +16,13 @@ public class ExcelTemplateReportRendererRegistry {
 
     public ExcelTemplateReportRenderer resolve(ReportMaster reportMaster) {
         return renderers.stream()
+                .filter(renderer -> !renderer.fallback())
                 .filter(renderer -> renderer.supports(reportMaster))
                 .findFirst()
+                .or(() -> renderers.stream()
+                        .filter(ExcelTemplateReportRenderer::fallback)
+                        .filter(renderer -> renderer.supports(reportMaster))
+                        .findFirst())
                 .orElseThrow(() -> new IllegalStateException(
                         "ExcelテンプレートRendererが登録されていません。reportCode="
                                 + reportMaster.getReportCode()

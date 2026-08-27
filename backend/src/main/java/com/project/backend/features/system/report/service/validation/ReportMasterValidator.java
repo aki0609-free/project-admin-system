@@ -7,15 +7,23 @@ import org.springframework.util.StringUtils;
 
 import com.project.backend.features.system.report.dto.ReportMasterSaveRequest;
 import com.project.backend.features.system.report.enums.ReportCleanupType;
+import com.project.backend.features.system.report.enums.ReportOutputFormat;
 import com.project.backend.features.system.report.enums.ReportPreProcessType;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class ReportMasterValidator {
 
     private static final Pattern SAFE_IDENTIFIER =
             Pattern.compile("^[A-Za-z][A-Za-z0-9_]{0,199}$");
     private static final Pattern SHA_256 =
             Pattern.compile("^[A-Fa-f0-9]{64}$");
+    private static final Pattern REPORT_CODE =
+            Pattern.compile("^[A-Z0-9][A-Z0-9_-]{0,99}$");
+
+    private final ReportTemplateValidator reportTemplateValidator;
 
     public void validate(ReportMasterSaveRequest request) {
         if (request == null) {
@@ -24,6 +32,11 @@ public class ReportMasterValidator {
 
         if (!StringUtils.hasText(request.reportCode())) {
             throw new RuntimeException("reportCode は必須です。");
+        }
+        if (!REPORT_CODE.matcher(request.reportCode()).matches()) {
+            throw new RuntimeException(
+                    "reportCode は半角英大文字、数字、_、-で指定してください。"
+            );
         }
 
         if (!StringUtils.hasText(request.reportName())) {
@@ -34,9 +47,48 @@ public class ReportMasterValidator {
             throw new RuntimeException("workTable は必須です。");
         }
 
+        validateOptionalIdentifier("workTable", request.workTable());
+        validateOptionalIdentifier("inputTable", request.inputTable());
+        validateOptionalIdentifier("outputTable", request.outputTable());
+        validateOptionalIdentifier("procedureName", request.procedureName());
+        validateOptionalIdentifier(
+                "cleanupProcedureName",
+                request.cleanupProcedureName()
+        );
+
         validatePreProcess(request);
         validateCleanup(request);
+        validateOutputDefinition(request);
         validateSnapshotDefinition(request);
+    }
+
+    private void validateOutputDefinition(ReportMasterSaveRequest request) {
+        ReportOutputFormat outputFormat = request.outputFormat();
+        if (outputFormat == null) {
+            throw new RuntimeException("outputFormat は必須です。");
+        }
+
+        if (outputFormat == ReportOutputFormat.PDF) {
+            reportTemplateValidator.validateJrxmlFileName(
+                    request.templateFileName()
+            );
+            return;
+        }
+
+        if (outputFormat == ReportOutputFormat.EXCEL
+                && StringUtils.hasText(request.templateFileName())) {
+            reportTemplateValidator.validateExcelFileName(
+                    request.templateFileName()
+            );
+            return;
+        }
+
+        if (outputFormat == ReportOutputFormat.CSV
+                && StringUtils.hasText(request.templateFileName())) {
+            throw new RuntimeException(
+                    "CSV帳票にはテンプレートファイルを指定できません。"
+            );
+        }
     }
 
     private void validatePreProcess(ReportMasterSaveRequest request) {

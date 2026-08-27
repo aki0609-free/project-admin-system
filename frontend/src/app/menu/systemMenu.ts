@@ -73,6 +73,7 @@ export const systemMenu: MenuItem = {
       component: ReportMasterPage,
       resource: 'system',
       action: 'manage',
+      roles: [Role.SYS_ADMIN],
     },
   ],
 }

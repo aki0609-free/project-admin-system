@@ -2,6 +2,7 @@ package com.project.backend.features.system.report.controller.admin;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.project.backend.features.system.report.dto.ReportTestParamTemplateResponse;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/system/report-test-param-templates")
+@PreAuthorize("hasRole('SYS_ADMIN')")
 @RequiredArgsConstructor
 public class ReportTestParamTemplateController {
 

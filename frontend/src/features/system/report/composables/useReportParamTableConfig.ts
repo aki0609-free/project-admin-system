@@ -5,7 +5,7 @@ import type {
 } from '@/shared/components/table/simple_table/types/item/types'
 import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
 import type { ReportParamFormItem } from '@/features/system/report/types/reportFormTypes'
-import {
+import type {
   ReportParamControlType,
   ReportParamType,
 } from '@/features/system/report/types/reportEnums'

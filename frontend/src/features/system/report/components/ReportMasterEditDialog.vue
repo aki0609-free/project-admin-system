@@ -64,6 +64,7 @@ const {
             v-if="active === 'basic'"
             v-model="form"
             :template-options="templateOptions"
+            :is-edit="isEdit"
           />
 
           <ReportMasterExecutionTab
