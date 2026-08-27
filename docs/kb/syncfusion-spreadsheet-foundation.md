@@ -57,6 +57,8 @@ AWS環境では既存の書類管理S3バケットへ保存される。ローカ
 
 コード生成台帳にもDB上の`template_file_path`が残る場合があるが、V1の互換列であり実際の生成には使用しない。画面の生成可否は、保存テンプレートの有無だけでなくRendererの方式を含めて判定する。
 
+台帳管理APIはRendererの`requiresTemplate()`を`templateRequired`として返す。管理画面はこの値を参照し、テンプレート方式にだけ「Spreadsheetテンプレート編集」を表示する。台帳コードごとの画面ハードコードでは判定しない。
+
 労務費支払一覧は対象データが0件でも、10名分の空欄を持つA4横の完成フォーマットを表示する。これにより、データ投入前でもレイアウトを確認できる。
 
 ## 4. ライセンスキー管理
@@ -609,6 +611,29 @@ Content-Type: application/json
 9. 展開済みWorkbook JSONを生成帳票領域へ保存する。
 10. 読取専用Spreadsheetダイアログでプレビューする。
 
+### 15.3.1 月次締めとの連携
+
+通常の「締め処理 → 台帳」操作は締め前確認用の作業ファイルを生成する。月次締め実行時は、`monthly_closing_output_definition.output_type = 'LEDGER'`の有効定義を読み、同じ生成基盤から確定ファイルを作成する。
+
+| 操作 | 保存先 | 編集 |
+| --- | --- | --- |
+| 締め前生成 | `ledgers/{tenant}/{book}/{yyyy-MM}/...` | Renderer設定に従う |
+| 初回締め | `ledgers/{tenant}/{book}/{yyyy-MM}/closing/v1/...` | 不可 |
+| 再締め | `ledgers/{tenant}/{book}/{yyyy-MM}/closing/v{N}/...` | 不可 |
+
+月間労務表のような対象別台帳は、選択一覧データソースから対象を全件解決し、対象ごとに1ファイルを生成する。確定Workbookの`projectAdminMetadata`には`closingVersion`と`finalized=true`を保存する。
+
+V1の締め対象台帳は次の4件である。
+
+| `book_code` | 台帳 |
+| --- | --- |
+| `MONTHLY_LABOR` | 月間労務表 |
+| `LABOR_COST_PAYMENT` | 労務費支払一覧 |
+| `RECEIPT_CONFIRMATION` | 入金確認表 |
+| `MONTHLY_SUMMARY` | 月間集計表 |
+
+4台帳は月次確定資産として`backup_retention_years = 7`を設定する。
+
 ### 15.4 予約変数
 
 | 変数 | 内容 |
@@ -766,3 +791,34 @@ Spreadsheet生成の画面、API、ローカル、AWS DEV、Testcontainers確認
 3. 外部クライアントや手動運用が旧APIを利用していないことを確認する
 4. 旧ローカルExcelファイルを移行または不要と判断する
 5. DB列削除用DDLと復旧手順を別途レビューする
+
+## 17. V1最終監査（2026-08-27）
+
+### 17.1 マスターと生成方式
+
+ローカル環境で次の有効台帳を確認した。
+
+| 台帳 | Renderer | テンプレート |
+| --- | --- | --- |
+| 入金確認表 | `RECEIPT_CONFIRMATION_V1` | 必須 |
+| 労務費支払一覧 | `LABOR_COST_PAYMENT_V1` | 不要（コード生成） |
+| 月間労務表 | `MONTHLY_LABOR_V1` | 不要（コード生成） |
+| 月間集計表 | `MONTHLY_SUMMARY` | 必須 |
+| 従業員台帳（動作確認） | `REPEATING_ROW` | 必須 |
+
+管理画面と締め処理画面の両方から同じ有効マスターを取得できることを確認した。
+対象月`2026-08`では、入金確認表、労務費支払一覧、月間集計表、従業員選択付き月間労務表の実生成に成功した。
+
+### 17.2 設定不整合の防止
+
+- 未登録の`rendererKey`はマスター保存時に拒否する。
+- `REPEATING_ROW`のようなテンプレート方式では変数マッピングを必須とする。
+- コード生成方式ではテンプレート編集APIを拒否し、意味のない空テンプレートを保存させない。
+- `templateRequired`をAPIで返し、Frontendはテンプレート方式の台帳だけ編集ボタンを表示する。
+- `bookCode`はテンプレート、生成物、締め設定の参照キーになるため、作成後は変更不可とする。
+
+### 17.3 締めと履歴
+
+月次締めでは、有効な台帳マスターを対象に締めVersion付きの生成物を保存する。
+再締め時は同じパスを上書きせず、Versionごとの生成物を保持する。
+単体テスト、実MySQLを使ったTestcontainers統合テスト、FrontendのLint・本番Buildが成功している。

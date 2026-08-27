@@ -32,23 +32,35 @@ class SpreadsheetTemplateServiceTest {
     private ExcelBookMasterRepository repository;
     private StorageService storageService;
     private SpreadsheetTemplateService service;
+    private ExcelBookTemplateRequirementResolver templateRequirementResolver;
     private ExcelBookMaster master;
 
     @BeforeEach
     void setUp() {
         repository = mock(ExcelBookMasterRepository.class);
         storageService = mock(StorageService.class);
+        templateRequirementResolver = mock(
+                ExcelBookTemplateRequirementResolver.class
+        );
+        when(templateRequirementResolver.requiresTemplate(any()))
+                .thenReturn(true);
         service = new SpreadsheetTemplateService(
                 repository,
                 storageService,
                 new DocumentStorageKeyResolver(new StorageProperties()),
-                objectMapper
+                objectMapper,
+                templateRequirementResolver
         );
 
         master = new ExcelBookMaster();
         master.setId(42L);
         master.setBookCode("MONTHLY_LEDGER");
         master.setTenantId("tenant-a");
+        master.setLayoutType(
+                com.project.backend.features.system.excelbook.enums
+                        .ExcelBookLayoutType.REPEATING_ROW
+        );
+        master.setRendererKey("REPEATING_ROW");
 
         when(repository.findByIdAndDeletedAtIsNull(42L))
                 .thenReturn(Optional.of(master));
@@ -140,6 +152,28 @@ class SpreadsheetTemplateServiceTest {
                 ))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("10MB");
+
+        verifyNoInteractions(storageService);
+    }
+
+    @Test
+    void save_shouldRejectTemplateForCodeGeneratedLedger()
+            throws Exception {
+        when(templateRequirementResolver.requiresTemplate(
+                "REPEATING_ROW"
+        )).thenReturn(false);
+        JsonNode workbook = objectMapper.readTree(
+                """
+                {"sheets":[]}
+                """
+        );
+
+        assertThatThrownBy(() -> service.save(
+                42L,
+                new SpreadsheetTemplateSaveRequest(workbook)
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("コード生成台帳");
 
         verifyNoInteractions(storageService);
     }

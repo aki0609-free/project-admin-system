@@ -129,7 +129,8 @@ async function handleDelete(form: ExcelBookMasterForm) {
   >
     <template #search>
       <v-alert type="info" variant="tonal" density="compact">
-        行を選択すると、マスター設定とSpreadsheetテンプレートを編集できます。
+        行を選択するとマスター設定を編集できます。テンプレート方式の台帳だけ、
+        Spreadsheetテンプレートを編集できます。
         台帳の生成は「締め処理 → 台帳」から実行します。
       </v-alert>
     </template>

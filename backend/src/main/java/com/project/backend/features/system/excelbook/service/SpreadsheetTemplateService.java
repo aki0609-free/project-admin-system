@@ -31,9 +31,11 @@ public class SpreadsheetTemplateService {
     private final StorageService storageService;
     private final DocumentStorageKeyResolver storageKeyResolver;
     private final ObjectMapper objectMapper;
+    private final ExcelBookTemplateRequirementResolver templateRequirementResolver;
 
     public SpreadsheetTemplateResponse find(Long masterId) {
         ExcelBookMaster master = findMaster(masterId);
+        requireTemplateRenderer(master);
         String relativePath = relativePath(master);
         String storageKey = storageKeyResolver.resolve(
                 DocumentArea.TEMPLATES,
@@ -61,6 +63,7 @@ public class SpreadsheetTemplateService {
             SpreadsheetTemplateSaveRequest request
     ) {
         ExcelBookMaster master = findMaster(masterId);
+        requireTemplateRenderer(master);
         JsonNode workbook = validate(request);
         byte[] data = serialize(workbook);
 
@@ -89,6 +92,17 @@ public class SpreadsheetTemplateService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "台帳マスタが見つかりません。id=" + masterId
                 ));
+    }
+
+    private void requireTemplateRenderer(ExcelBookMaster master) {
+        String rendererKey = master.getRendererKey() == null
+                ? master.getLayoutType().name()
+                : master.getRendererKey();
+        if (!templateRequirementResolver.requiresTemplate(rendererKey)) {
+            throw new IllegalArgumentException(
+                    "コード生成台帳にはSpreadsheetテンプレートを登録できません。"
+            );
+        }
     }
 
     private JsonNode validate(SpreadsheetTemplateSaveRequest request) {

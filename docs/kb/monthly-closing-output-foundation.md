@@ -241,7 +241,7 @@ report_delivery_definition
 1. 月次締め実行・項目・対象マスタを追加（実装済み）
 2. 帳票マスタへView、historyTable、HTMLテンプレート情報を追加（実装済み）
 3. ストアドを`View -> historyTable -> outputTable`へ統一
-4. 台帳を締めVersion付きS3キーへ対応
+4. 台帳を締めVersion付きS3キーへ対応（実装済み）
 5. `operation/reportpreview`の共通描画処理を`system/report`へ移動
 6. 旧定義を新しい締め対象マスタへ移行
 7. 互換APIを確認後に旧処理を削除
@@ -264,7 +264,15 @@ monthly_closing_output_definition
 monthly_closing_item
 ```
 
-`MonthlyClosingJobService`は`operation_report_preview`の有効な月次帳票を表示順に実行する。
+`MonthlyClosingJobService`は`monthly_closing_output_definition`に登録された有効な月次帳票と台帳を実行する。
+`REPORT`は帳票基盤、`LEDGER`はSpreadsheet台帳基盤へ委譲する。台帳は初回締めを`v1`、再締めを`v2`以降として、次のVersion付きキーへ確定保存する。
+
+```text
+documents/generated-reports/ledgers/{tenantId}/{bookCode}/{yyyy-MM}/closing/v{closingVersion}/...
+```
+
+対象別台帳は、締め時に選択候補を全件解決し、従業員・顧客などの対象ごとに1ファイルを生成する。月間集計表や入金確認表の締め前手入力値は、通常の月次作業ファイルから確定Versionへ引き継ぐ。
+
 `monthly_closing_output_definition`／`monthly_closing_item`による項目単位の失敗再実行は次工程で接続する。V1の初回締め・再締めでは、すべての有効帳票と顧客取引同期が成功した後だけ`monthly_closings.status`を`CLOSED`へ更新する。
 
 ストアドは`execution_id`だけを引数に受け取り、inputTableから
@@ -780,3 +788,13 @@ BundledReportTemplateInitializerTest
 output/pdf/monthly_pay_slip-sample.pdf
 output/pdf/daily_pay_slip-sample.pdf
 ```
+
+## 13. 帳票・台帳連携の最終確認（2026-08-27）
+
+- 月次締めは帳票定義だけでなく、有効な台帳定義も取得して生成する。
+- 台帳の確定ファイルは締めVersionを含む別キーへ保存し、再締めで過去Versionを上書きしない。
+- 帳票ファイルも初回締めと再締めの履歴・実ファイルを両方保持する。
+- 管理画面用テンプレートと締め処理の生成元は同じマスターを参照する。
+- コード生成台帳とテンプレート台帳を`rendererKey`で切り替え、画面側の個別ハードコードを不要にする。
+
+Testcontainersで、帳票の初回締め・再締め・履歴Version・ファイル保持と、台帳のView取得・テンプレート展開・保存を確認済みである。

@@ -115,7 +115,7 @@ public class SpreadsheetLedgerGenerationService {
                     "この台帳は対象を選択して生成してください。"
             );
         }
-        return generateOne(master, targetMonth, null);
+        return generateOne(master, targetMonth, null, null);
     }
 
     public List<SpreadsheetLedgerGenerateResponse> generateSelected(
@@ -155,14 +155,73 @@ public class SpreadsheetLedgerGenerationService {
             );
         }
         return requested.stream()
-                .map(value -> generateOne(master, targetMonth, value))
+                .map(value -> generateOne(
+                        master,
+                        targetMonth,
+                        value,
+                        null
+                ))
+                .toList();
+    }
+
+    /**
+     * 月次締めVersionの確定台帳を生成する。
+     * 対象選択型は、対象月に存在する全選択肢を個別ファイル化する。
+     */
+    public List<SpreadsheetLedgerGenerateResponse> generateForClosing(
+            String bookCode,
+            String targetMonth,
+            Integer closingVersion
+    ) {
+        validateBookCode(bookCode);
+        YearMonth.parse(targetMonth);
+        if (closingVersion == null || closingVersion < 1) {
+            throw new IllegalArgumentException(
+                    "closingVersionは1以上で指定してください。"
+            );
+        }
+
+        ExcelBookMaster master = findMaster(bookCode);
+        if (master.getSelectionMode()
+                == com.project.backend.features.system.excelbook.enums
+                .ExcelBookSelectionMode.NONE) {
+            return List.of(generateOne(
+                    master,
+                    targetMonth,
+                    null,
+                    closingVersion
+            ));
+        }
+
+        List<String> selectionValues = selectionService
+                .find(bookCode, targetMonth)
+                .options()
+                .stream()
+                .map(option -> option.value())
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        if (selectionValues.isEmpty()) {
+            throw new IllegalStateException(
+                    "月次締め台帳の生成対象がありません。bookCode="
+                            + bookCode
+            );
+        }
+        return selectionValues.stream()
+                .map(value -> generateOne(
+                        master,
+                        targetMonth,
+                        value,
+                        closingVersion
+                ))
                 .toList();
     }
 
     private SpreadsheetLedgerGenerateResponse generateOne(
             ExcelBookMaster master,
             String targetMonth,
-            String selectionValue
+            String selectionValue,
+            Integer closingVersion
     ) {
         long startedAtNanos = System.nanoTime();
 
@@ -176,7 +235,9 @@ public class SpreadsheetLedgerGenerationService {
                 renderer,
                 targetMonth
         );
-        if (renderer.editableBeforeClosing() && !editable) {
+        if (closingVersion == null
+                && renderer.editableBeforeClosing()
+                && !editable) {
             throw new IllegalStateException(
                     targetMonth + " は締め済みのため再生成できません。"
             );
@@ -230,11 +291,13 @@ public class SpreadsheetLedgerGenerationService {
                                 )
                 )
         );
+        addClosingMetadata(workbook, closingVersion);
         String relativePath = buildRelativePath(
                 master,
                 targetMonth,
                 generatedAt,
-                selectionValue
+                selectionValue,
+                closingVersion
         );
         String storageKey = storageKeyResolver.resolve(
                 DocumentArea.GENERATED_REPORTS,
@@ -242,6 +305,11 @@ public class SpreadsheetLedgerGenerationService {
         );
         preserveManualInputs(
                 renderer,
+                master,
+                targetMonth,
+                selectionValue,
+                generatedAt,
+                closingVersion,
                 storageKey,
                 workbook
         );
@@ -268,7 +336,7 @@ public class SpreadsheetLedgerGenerationService {
                         (System.nanoTime() - startedAtNanos)
                                 / 1_000_000L
                 ),
-                editable,
+                closingVersion == null && editable,
                 workbook,
                 selectionValue
         );
@@ -294,14 +362,35 @@ public class SpreadsheetLedgerGenerationService {
 
     private void preserveManualInputs(
             SpreadsheetLedgerRenderer renderer,
+            ExcelBookMaster master,
+            String targetMonth,
+            String selectionValue,
+            Instant generatedAt,
+            Integer closingVersion,
             String storageKey,
             JsonNode generated
     ) {
-        if (!renderer.usesStableMonthlyPath()
-                || !storageService.exists(storageKey)) {
+        if (!renderer.usesStableMonthlyPath()) {
             return;
         }
-        try (InputStream input = storageService.load(storageKey)) {
+        String existingStorageKey = storageKey;
+        if (closingVersion != null) {
+            String workingRelativePath = buildRelativePath(
+                    master,
+                    targetMonth,
+                    generatedAt,
+                    selectionValue,
+                    null
+            );
+            existingStorageKey = storageKeyResolver.resolve(
+                    DocumentArea.GENERATED_REPORTS,
+                    workingRelativePath
+            );
+        }
+        if (!storageService.exists(existingStorageKey)) {
+            return;
+        }
+        try (InputStream input = storageService.load(existingStorageKey)) {
             JsonNode existing = objectMapper.readTree(input);
             renderer.preserveManualInputs(
                     generated,
@@ -357,7 +446,8 @@ public class SpreadsheetLedgerGenerationService {
             ExcelBookMaster master,
             String targetMonth,
             Instant generatedAt,
-            String selectionValue
+            String selectionValue,
+            Integer closingVersion
     ) {
         String tenantId = master.getTenantId();
         if (!StringUtils.hasText(tenantId)
@@ -374,6 +464,9 @@ public class SpreadsheetLedgerGenerationService {
                 + "/"
                 + targetMonth
                 + "/";
+        if (closingVersion != null) {
+            directory += "closing/v" + closingVersion + "/";
+        }
         if (selectionValue != null) {
             if (!SAFE_SEGMENT.matcher(selectionValue).matches()) {
                 throw new IllegalArgumentException(
@@ -382,6 +475,16 @@ public class SpreadsheetLedgerGenerationService {
                 );
             }
             directory += "selections/" + selectionValue + "/";
+        }
+        if (closingVersion != null) {
+            return directory
+                    + master.getBookCode()
+                    + "-"
+                    + targetMonth
+                    + (selectionValue == null
+                            ? ""
+                            : "-" + selectionValue)
+                    + ".json";
         }
         if (renderer(master).usesStableMonthlyPath()) {
             return directory
@@ -399,6 +502,20 @@ public class SpreadsheetLedgerGenerationService {
                 .withZone(clock.getZone())
                 .format(generatedAt)
                 + ".json";
+    }
+
+    private void addClosingMetadata(
+            JsonNode workbook,
+            Integer closingVersion
+    ) {
+        if (closingVersion == null
+                || !(workbook instanceof com.fasterxml.jackson.databind.node
+                .ObjectNode root)) {
+            return;
+        }
+        root.withObject("/projectAdminMetadata")
+                .put("closingVersion", closingVersion)
+                .put("finalized", true);
     }
 
     private SpreadsheetLedgerRenderer renderer(

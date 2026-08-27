@@ -27,6 +27,7 @@ export function createEmptyExcelBookForm(): ExcelBookMasterForm {
     },
     dataSourceCode: '',
     templateSheetName: 'TEMPLATE',
+    templateRequired: true,
     activeFlag: true,
     variableMappings: [],
     _isNew: true,

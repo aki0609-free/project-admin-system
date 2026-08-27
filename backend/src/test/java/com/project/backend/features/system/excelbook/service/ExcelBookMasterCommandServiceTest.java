@@ -28,15 +28,24 @@ class ExcelBookMasterCommandServiceTest {
     private ExcelBookMasterRepository repository;
     private ExcelBookMasterCommandService service;
     private ExcelBookDataSourceCatalogService catalogService;
+    private ExcelBookTemplateRequirementResolver templateRequirementResolver;
 
     @BeforeEach
     void setUp() {
         repository = mock(ExcelBookMasterRepository.class);
         catalogService = mock(ExcelBookDataSourceCatalogService.class);
+        templateRequirementResolver = mock(
+                ExcelBookTemplateRequirementResolver.class
+        );
+        when(templateRequirementResolver.requiresTemplate(any()))
+                .thenReturn(true);
+        when(templateRequirementResolver.requiresVariableMappings(any()))
+                .thenReturn(false);
         service = new ExcelBookMasterCommandService(
                 repository,
                 new ExcelBookMasterMapper(),
-                catalogService
+                catalogService,
+                templateRequirementResolver
         );
         ExcelBookDataSourceCatalog catalog =
                 new ExcelBookDataSourceCatalog();

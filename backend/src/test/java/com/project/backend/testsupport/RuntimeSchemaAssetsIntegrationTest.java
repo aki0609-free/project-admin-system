@@ -121,6 +121,22 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND active_flag = TRUE
                   AND deleted_at IS NULL
                 """, Integer.class)).isEqualTo(4);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM monthly_closing_output_definition
+                WHERE tenant_id = 'default'
+                  AND output_type = 'LEDGER'
+                  AND output_code IN (
+                      'MONTHLY_LABOR',
+                      'LABOR_COST_PAYMENT',
+                      'RECEIPT_CONFIRMATION',
+                      'MONTHLY_SUMMARY'
+                  )
+                  AND required_flag = TRUE
+                  AND active_flag = TRUE
+                  AND backup_retention_years = 7
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(4);
         assertFoundationDailyPayRulesCalculateAmounts();
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)

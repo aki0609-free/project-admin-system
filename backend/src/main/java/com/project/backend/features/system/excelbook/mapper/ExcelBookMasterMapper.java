@@ -17,6 +17,13 @@ import com.project.backend.features.system.excelbook.enums.ExcelBookSourceType;
 public class ExcelBookMasterMapper {
 
     public ExcelBookMasterResponse toResponse(ExcelBookMaster entity) {
+        return toResponse(entity, true);
+    }
+
+    public ExcelBookMasterResponse toResponse(
+            ExcelBookMaster entity,
+            boolean templateRequired
+    ) {
         return new ExcelBookMasterResponse(
                 entity.getId(),
                 entity.getBookCode(),
@@ -41,6 +48,7 @@ public class ExcelBookMasterMapper {
                 ),
                 entity.getSourceName(),
                 entity.getTemplateSheetName(),
+                templateRequired,
                 entity.getActiveFlag(),
                 entity.getVariableMappings().stream()
                         .map(mapping ->

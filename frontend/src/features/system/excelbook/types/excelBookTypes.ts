@@ -65,6 +65,7 @@ export type ExcelBookMasterResponse = {
   print: ExcelBookPrintConfig
   dataSourceCode: string
   templateSheetName: string
+  templateRequired: boolean
   activeFlag: boolean
   variableMappings: ExcelBookVariableMapping[]
 }

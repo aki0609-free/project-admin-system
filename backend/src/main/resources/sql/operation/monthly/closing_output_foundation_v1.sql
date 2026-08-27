@@ -83,21 +83,44 @@ CREATE TABLE IF NOT EXISTS monthly_closing_item (
         REFERENCES monthly_closing_execution (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 初期マスター例。実際の帳票・台帳コード確定後に有効化する。
--- INSERT INTO monthly_closing_output_definition (
---     output_type, output_code, execution_order,
---     required_flag, active_flag, backup_retention_years,
---     tenant_id, created_at, updated_at
--- ) VALUES
---     ('REPORT', 'MONTHLY_PAY_SLIP', 10, TRUE, TRUE, 7,
---      'default', NOW(6), NOW(6)),
---     ('REPORT', 'MONTHLY_INVOICE', 20, TRUE, TRUE, 7,
---      'default', NOW(6), NOW(6)),
---     ('LEDGER', 'MONTHLY_LABOR_TABLE', 30, TRUE, TRUE, NULL,
---      'default', NOW(6), NOW(6)),
---     ('LEDGER', 'MONTHLY_LABOR_COST', 40, TRUE, TRUE, NULL,
---      'default', NOW(6), NOW(6)),
---     ('LEDGER', 'PAYMENT_CONFIRMATION', 50, TRUE, TRUE, NULL,
---      'default', NOW(6), NOW(6)),
---     ('LEDGER', 'MONTHLY_SUMMARY', 60, TRUE, TRUE, NULL,
---      'default', NOW(6), NOW(6));
+-- 月次締め時に確定生成するSpreadsheet台帳。
+-- output_codeはexcel_book_master.book_codeと一致させる。
+INSERT INTO monthly_closing_output_definition (
+    output_type,
+    output_code,
+    execution_order,
+    required_flag,
+    active_flag,
+    backup_retention_years,
+    tenant_id,
+    created_at,
+    updated_at,
+    deleted_at
+) VALUES
+    (
+        'LEDGER', 'MONTHLY_LABOR', 30,
+        TRUE, TRUE, 7, 'default',
+        CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
+    ),
+    (
+        'LEDGER', 'LABOR_COST_PAYMENT', 40,
+        TRUE, TRUE, 7, 'default',
+        CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
+    ),
+    (
+        'LEDGER', 'RECEIPT_CONFIRMATION', 50,
+        TRUE, TRUE, 7, 'default',
+        CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
+    ),
+    (
+        'LEDGER', 'MONTHLY_SUMMARY', 60,
+        TRUE, TRUE, 7, 'default',
+        CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
+    )
+ON DUPLICATE KEY UPDATE
+    execution_order = VALUES(execution_order),
+    required_flag = VALUES(required_flag),
+    active_flag = VALUES(active_flag),
+    backup_retention_years = VALUES(backup_retention_years),
+    deleted_at = NULL,
+    updated_at = CURRENT_TIMESTAMP(6);

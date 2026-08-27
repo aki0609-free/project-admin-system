@@ -10,6 +10,7 @@ import com.project.backend.features.operation.monthly.entity.MonthlyClosingOutpu
 import com.project.backend.features.operation.monthly.enums.MonthlyClosingOutputType;
 import com.project.backend.features.operation.monthly.repository.MonthlyClosingOutputDefinitionRepository;
 import com.project.backend.features.operation.monthly.service.executor.MonthlyClosingJobExecutor;
+import com.project.backend.features.operation.book.service.SpreadsheetLedgerGenerationService;
 import com.project.backend.features.operation.reportpreview.entity.OperationReportPreview;
 import com.project.backend.features.operation.reportpreview.enums.OperationType;
 import com.project.backend.features.operation.reportpreview.repository.OperationReportPreviewRepository;
@@ -29,6 +30,7 @@ public class MonthlyClosingJobService {
     private final OperationReportPreviewRepository previewRepository;
     private final MonthlyClosingOutputDefinitionRepository outputDefinitionRepository;
     private final MonthlyClosingJobExecutor executor;
+    private final SpreadsheetLedgerGenerationService ledgerGenerationService;
 
     public void executeClosing(
             Long monthlyClosingId,
@@ -36,9 +38,11 @@ public class MonthlyClosingJobService {
             Integer closingVersion
     ) {
         List<OperationReportPreview> previews = resolveClosingReports();
-        if (previews.isEmpty()) {
+        List<MonthlyClosingOutputDefinition> ledgerDefinitions =
+                resolveClosingLedgers();
+        if (previews.isEmpty() && ledgerDefinitions.isEmpty()) {
             throw new IllegalStateException(
-                    "有効な月次締め帳票が設定されていません。"
+                    "有効な月次締め帳票・台帳が設定されていません。"
             );
         }
 
@@ -63,6 +67,15 @@ public class MonthlyClosingJobService {
                     monthlyClosingId,
                     preview,
                     period,
+                    closingVersion
+            );
+        }
+
+        for (MonthlyClosingOutputDefinition definition
+                : ledgerDefinitions) {
+            ledgerGenerationService.generateForClosing(
+                    definition.getOutputCode(),
+                    period.targetMonth(),
                     closingVersion
             );
         }
@@ -103,6 +116,18 @@ public class MonthlyClosingJobService {
                     }
                     return preview;
                 })
+                .toList();
+    }
+
+    private List<MonthlyClosingOutputDefinition> resolveClosingLedgers() {
+        return outputDefinitionRepository
+                .findByOutputTypeAndDeletedAtIsNullOrderByExecutionOrderAscIdAsc(
+                        MonthlyClosingOutputType.LEDGER
+                )
+                .stream()
+                .filter(definition -> Boolean.TRUE.equals(
+                        definition.getActiveFlag()
+                ))
                 .toList();
     }
 

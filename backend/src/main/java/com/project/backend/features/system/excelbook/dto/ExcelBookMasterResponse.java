@@ -15,6 +15,7 @@ public record ExcelBookMasterResponse(
         ExcelBookPrintConfig print,
         String dataSourceCode,
         String templateSheetName,
+        Boolean templateRequired,
         Boolean activeFlag,
         List<ExcelBookVariableMappingResponse> variableMappings
 ) {
@@ -40,6 +41,7 @@ public record ExcelBookMasterResponse(
                 ExcelBookPrintConfig.defaults(),
                 dataSourceCode,
                 templateSheetName,
+                true,
                 activeFlag,
                 variableMappings
         );
@@ -66,6 +68,7 @@ public record ExcelBookMasterResponse(
                 ExcelBookPrintConfig.defaults(),
                 dataSourceCode,
                 templateSheetName,
+                true,
                 activeFlag,
                 variableMappings
         );

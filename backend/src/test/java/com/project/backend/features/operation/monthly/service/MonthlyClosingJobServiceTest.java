@@ -23,6 +23,7 @@ import com.project.backend.features.operation.monthly.entity.MonthlyClosingOutpu
 import com.project.backend.features.operation.monthly.enums.MonthlyClosingOutputType;
 import com.project.backend.features.operation.monthly.repository.MonthlyClosingOutputDefinitionRepository;
 import com.project.backend.features.operation.monthly.service.executor.MonthlyClosingJobExecutor;
+import com.project.backend.features.operation.book.service.SpreadsheetLedgerGenerationService;
 import com.project.backend.features.operation.reportpreview.entity.OperationReportPreview;
 import com.project.backend.features.operation.reportpreview.enums.OperationType;
 import com.project.backend.features.operation.reportpreview.repository.OperationReportPreviewRepository;
@@ -36,6 +37,7 @@ class MonthlyClosingJobServiceTest {
             invoiceTargetCustomerQueryService;
     private InvoiceReportCodeResolver reportCodeResolver;
     private MonthlyClosingJobExecutor executor;
+    private SpreadsheetLedgerGenerationService ledgerGenerationService;
     private MonthlyClosingCustomerTransactionService transactionService;
     private MonthlyClosingJobService service;
 
@@ -51,17 +53,25 @@ class MonthlyClosingJobServiceTest {
         );
         reportCodeResolver = mock(InvoiceReportCodeResolver.class);
         executor = mock(MonthlyClosingJobExecutor.class);
+        ledgerGenerationService = mock(
+                SpreadsheetLedgerGenerationService.class
+        );
         transactionService = mock(
                 MonthlyClosingCustomerTransactionService.class
         );
         service = new MonthlyClosingJobService(
                 previewRepository,
                 outputDefinitionRepository,
-                executor
+                executor,
+                ledgerGenerationService
         );
         when(outputDefinitionRepository
                 .findByOutputTypeAndDeletedAtIsNullOrderByExecutionOrderAscIdAsc(
                         MonthlyClosingOutputType.REPORT
+                )).thenReturn(List.of());
+        when(outputDefinitionRepository
+                .findByOutputTypeAndDeletedAtIsNullOrderByExecutionOrderAscIdAsc(
+                        MonthlyClosingOutputType.LEDGER
                 )).thenReturn(List.of());
     }
 
@@ -201,6 +211,40 @@ class MonthlyClosingJobServiceTest {
         verify(executor).execute(10L, paySlip, period(), 1);
     }
 
+    @Test
+    void executeClosing_shouldGenerateConfiguredLedgers() {
+        OperationReportPreview paySlip = preview(
+                "MONTHLY_PAY_SLIP",
+                "PRINT_MONTHLY_PAY_SLIP"
+        );
+        when(previewRepository
+                .findByOperationTypeAndActiveFlagTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
+                        OperationType.MONTHLY
+                )).thenReturn(List.of(paySlip));
+
+        MonthlyClosingOutputDefinition monthlyLabor =
+                ledgerDefinition("MONTHLY_LABOR", true);
+        MonthlyClosingOutputDefinition disabled =
+                ledgerDefinition("DISABLED_LEDGER", false);
+        when(outputDefinitionRepository
+                .findByOutputTypeAndDeletedAtIsNullOrderByExecutionOrderAscIdAsc(
+                        MonthlyClosingOutputType.LEDGER
+                )).thenReturn(List.of(monthlyLabor, disabled));
+
+        service.executeClosing(10L, period(), 3);
+
+        verify(ledgerGenerationService).generateForClosing(
+                "MONTHLY_LABOR",
+                "2026-07",
+                3
+        );
+        verify(ledgerGenerationService, never()).generateForClosing(
+                "DISABLED_LEDGER",
+                "2026-07",
+                3
+        );
+    }
+
     private OperationReportPreview preview(
             String reportCode,
             String jobCode
@@ -219,6 +263,18 @@ class MonthlyClosingJobServiceTest {
                 new MonthlyClosingOutputDefinition();
         definition.setOutputType(MonthlyClosingOutputType.REPORT);
         definition.setOutputCode(reportCode);
+        definition.setActiveFlag(active);
+        return definition;
+    }
+
+    private MonthlyClosingOutputDefinition ledgerDefinition(
+            String bookCode,
+            boolean active
+    ) {
+        MonthlyClosingOutputDefinition definition =
+                new MonthlyClosingOutputDefinition();
+        definition.setOutputType(MonthlyClosingOutputType.LEDGER);
+        definition.setOutputCode(bookCode);
         definition.setActiveFlag(active);
         return definition;
     }

@@ -181,6 +181,41 @@ class SpreadsheetLedgerGenerationServiceTest {
     }
 
     @Test
+    void generateForClosing_shouldSaveVersionedFinalizedWorkbook()
+            throws Exception {
+        var results = service.generateForClosing(
+                "EMPLOYEE_LEDGER",
+                "2026-07",
+                2
+        );
+
+        assertThat(results).hasSize(1);
+        var result = results.getFirst();
+        assertThat(result.storagePath()).isEqualTo(
+                "ledgers/tenant-a/EMPLOYEE_LEDGER/2026-07/"
+                        + "closing/v2/EMPLOYEE_LEDGER-2026-07.json"
+        );
+        assertThat(result.editable()).isFalse();
+        assertThat(result.workbook()
+                .path("projectAdminMetadata")
+                .path("closingVersion")
+                .asInt()).isEqualTo(2);
+        assertThat(result.workbook()
+                .path("projectAdminMetadata")
+                .path("finalized")
+                .asBoolean()).isTrue();
+        verify(storageService).save(
+                eq("documents/generated-reports/"
+                        + result.storagePath()),
+                any(InputStream.class),
+                eq((long) objectMapper.writeValueAsBytes(
+                        result.workbook()
+                ).length),
+                eq("application/json")
+        );
+    }
+
+    @Test
     void findActive_shouldDistinguishTemplateAndCodeGeneration() {
         ExcelBookMaster codeGenerated = new ExcelBookMaster();
         codeGenerated.setId(43L);

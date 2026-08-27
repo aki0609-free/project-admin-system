@@ -220,14 +220,16 @@ const title = computed(() =>
 )
 
 const leftFooterItems = computed<ToolbarItem[]>(() => [
-  {
-    type: 'button',
-    label: 'Spreadsheetテンプレート編集',
-    color: 'primary',
-    intent: 'secondary',
-    disabled: form._isNew || props.saving,
-    onClick: () => emit('edit-template', { ...form }),
-  },
+  ...(form.templateRequired
+    ? [{
+        type: 'button' as const,
+        label: 'Spreadsheetテンプレート編集',
+        color: 'primary',
+        intent: 'secondary' as const,
+        disabled: form._isNew || props.saving,
+        onClick: () => emit('edit-template', { ...form }),
+      }]
+    : []),
   {
     type: 'button',
     label: '削除',
@@ -392,14 +394,25 @@ watch(
       </div>
 
       <v-alert
-        v-if="form.layoutType !== 'REPEATING_ROW'"
+        v-if="!form.templateRequired"
         type="info"
         variant="tonal"
         density="compact"
         class="mt-5"
       >
-        固定配置台帳は専用ViewとRendererで配置します。
-        テンプレート変数の登録は不要です。
+        この台帳は専用RendererがSpreadsheet全体を生成するため、
+        テンプレート登録と変数マッピングは不要です。
+      </v-alert>
+
+      <v-alert
+        v-else-if="form.layoutType !== 'REPEATING_ROW'"
+        type="info"
+        variant="tonal"
+        density="compact"
+        class="mt-5"
+      >
+        この台帳はSpreadsheetテンプレートを利用し、
+        専用Rendererがデータと手入力欄を配置します。
       </v-alert>
 
       <v-divider v-if="form.layoutType === 'REPEATING_ROW'" class="my-5" />

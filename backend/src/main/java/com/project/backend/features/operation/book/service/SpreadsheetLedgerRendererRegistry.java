@@ -7,11 +7,14 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import com.project.backend.features.system.excelbook.service.ExcelBookTemplateRequirementResolver;
+
 /**
  * rendererKeyから帳票固有Rendererを解決するRegistry。
  */
 @Component
-public class SpreadsheetLedgerRendererRegistry {
+public class SpreadsheetLedgerRendererRegistry
+        implements ExcelBookTemplateRequirementResolver {
 
     private final Map<String, SpreadsheetLedgerRenderer> renderers;
 
@@ -56,5 +59,15 @@ public class SpreadsheetLedgerRendererRegistry {
 
     public List<String> keys() {
         return renderers.keySet().stream().sorted().toList();
+    }
+
+    @Override
+    public boolean requiresTemplate(String rendererKey) {
+        return findRequired(rendererKey).requiresTemplate();
+    }
+
+    @Override
+    public boolean requiresVariableMappings(String rendererKey) {
+        return findRequired(rendererKey).requiresVariableMappings();
     }
 }

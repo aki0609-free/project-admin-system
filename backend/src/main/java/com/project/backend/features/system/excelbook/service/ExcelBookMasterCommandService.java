@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.project.backend.features.system.excelbook.dto.ExcelBookMasterRequest;
 import com.project.backend.features.system.excelbook.entity.ExcelBookMaster;
 import com.project.backend.features.system.excelbook.mapper.ExcelBookMasterMapper;
+import com.project.backend.features.system.excelbook.enums.ExcelBookLayoutType;
 import com.project.backend.features.system.excelbook.enums.ExcelBookSelectionMode;
 import com.project.backend.features.system.excelbook.repository.ExcelBookMasterRepository;
 
@@ -27,6 +28,7 @@ public class ExcelBookMasterCommandService {
     private final ExcelBookMasterRepository repository;
     private final ExcelBookMasterMapper mapper;
     private final ExcelBookDataSourceCatalogService catalogService;
+    private final ExcelBookTemplateRequirementResolver templateRequirementResolver;
 
     @SuppressWarnings("null")
     public Long create(ExcelBookMasterRequest request) {
@@ -93,6 +95,18 @@ public class ExcelBookMasterCommandService {
                 )) {
             throw new IllegalArgumentException(
                     "rendererKey は半角英大文字、数字、_、-で指定してください。"
+            );
+        }
+        String rendererKey = request.rendererKey() == null
+                || request.rendererKey().isBlank()
+                ? (request.layoutType() == null
+                        ? ExcelBookLayoutType.REPEATING_ROW.name()
+                        : request.layoutType().name())
+                : request.rendererKey();
+        if (templateRequirementResolver.requiresVariableMappings(rendererKey)
+                && request.variableMappings().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "このRendererにはテンプレート変数が1件以上必要です。"
             );
         }
         var catalog = catalogService.findRequired(
