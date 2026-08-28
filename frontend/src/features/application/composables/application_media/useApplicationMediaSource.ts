@@ -59,7 +59,11 @@ export const useApplicationMediaSource = () => {
     try {
       await saveBulkMutation.mutateAsync(request)
 
+      // mutation側のinvalidate中は未保存編集を守るためwatchが再取得結果を無視する。
+      // dirty解除後に明示的に再取得し、作成済み行の一時フラグと採用数・単価を
+      // 必ずサーバー確定値へ戻す。
       isDirty.value = false
+      await mediasQuery.refetch()
       saveMessage.value = '保存しました。'
       saveSuccess.value = true
       showSaveAlert.value = true

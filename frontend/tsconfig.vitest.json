@@ -9,18 +9,7 @@
   },
 
   "include": [
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts",
-    "src/**/__tests__/**/*",
-    "src/features/application/types/applicantTypes.ts",
-    "src/features/application/utils/applicantMetrics.ts",
-    "src/features/dailyreport/utils/dailyReportTimeCalculator.ts",
-    "src/features/dashboard/utils/dashboardDate.ts",
-    "src/features/customer/validation/customerSchema.ts",
-    "src/features/employees/types/*.ts",
-    "src/features/employees/utils/employeeFormFactory.ts",
-    "src/features/employees/validation/*.ts",
-    "src/shared/utils/TimeUtils.ts",
+    "src/**/*",
     "env.d.ts"
   ]
 }

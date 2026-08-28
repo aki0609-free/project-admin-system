@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.project.backend.features.operation.monthly.dto.MonthlyClosingPeriod;
 import com.project.backend.features.operation.monthly.entity.MonthlyClosingOutputDefinition;
 import com.project.backend.features.operation.monthly.enums.MonthlyClosingOutputType;
-import com.project.backend.features.operation.monthly.repository.MonthlyClosingOutputDefinitionRepository;
 import com.project.backend.features.operation.monthly.service.executor.MonthlyClosingJobExecutor;
 import com.project.backend.features.operation.book.service.SpreadsheetLedgerGenerationService;
 import com.project.backend.features.operation.reportpreview.entity.OperationReportPreview;
@@ -22,113 +21,91 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class MonthlyClosingJobService {
 
-    private static final String MONTHLY_INVOICE_JOB_CODE =
-            "PRINT_MONTHLY_INVOICE";
-    private static final String MONTHLY_ORDER_FORM_JOB_CODE =
-            "PRINT_MONTHLY_ORDER_FORM";
-
     private final OperationReportPreviewRepository previewRepository;
-    private final MonthlyClosingOutputDefinitionRepository outputDefinitionRepository;
     private final MonthlyClosingJobExecutor executor;
     private final SpreadsheetLedgerGenerationService ledgerGenerationService;
+    private final MonthlyClosingOutputDefinitionService outputDefinitionService;
 
     public void executeClosing(
             Long monthlyClosingId,
             MonthlyClosingPeriod period,
             Integer closingVersion
     ) {
-        List<OperationReportPreview> previews = resolveClosingReports();
-        List<MonthlyClosingOutputDefinition> ledgerDefinitions =
-                resolveClosingLedgers();
-        if (previews.isEmpty() && ledgerDefinitions.isEmpty()) {
+        executeClosing(
+                monthlyClosingId,
+                period,
+                closingVersion,
+                outputDefinitionService.findActiveCompanyOutputs()
+        );
+    }
+
+    public void executeClosing(
+            Long monthlyClosingId,
+            MonthlyClosingPeriod period,
+            Integer closingVersion,
+            List<MonthlyClosingOutputDefinition> definitions
+    ) {
+        if (definitions == null || definitions.isEmpty()) {
             throw new IllegalStateException(
                     "有効な月次締め帳票・台帳が設定されていません。"
             );
         }
 
-        for (OperationReportPreview preview : previews) {
-            String jobCode =
-                    preview.getJobCode();
-
-            if (jobCode == null || jobCode.isBlank()) {
-                throw new IllegalStateException(
-                        "月次締め帳票のjobCodeが未設定です。reportCode="
-                                + preview.getReportCode()
-                );
-            }
-
-            if (MONTHLY_INVOICE_JOB_CODE.equals(jobCode)
-                    || MONTHLY_ORDER_FORM_JOB_CODE.equals(jobCode)) {
-                // 顧客向け帳票は顧客別締日の「顧客請求締め」で確定する。
-                continue;
-            }
-
-            executor.execute(
+        for (MonthlyClosingOutputDefinition definition
+                : definitions) {
+            executeDefinition(
                     monthlyClosingId,
-                    preview,
                     period,
-                    closingVersion
+                    closingVersion,
+                    definition
             );
         }
+    }
 
-        for (MonthlyClosingOutputDefinition definition
-                : ledgerDefinitions) {
+    private void executeDefinition(
+            Long monthlyClosingId,
+            MonthlyClosingPeriod period,
+            Integer closingVersion,
+            MonthlyClosingOutputDefinition definition
+    ) {
+        if (definition.getOutputType() == MonthlyClosingOutputType.LEDGER) {
             ledgerGenerationService.generateForClosing(
                     definition.getOutputCode(),
                     period.targetMonth(),
                     closingVersion
             );
+            return;
         }
 
-    }
-
-    private List<OperationReportPreview> resolveClosingReports() {
-        List<MonthlyClosingOutputDefinition> definitions =
-                outputDefinitionRepository
-                        .findByOutputTypeAndDeletedAtIsNullOrderByExecutionOrderAscIdAsc(
-                                MonthlyClosingOutputType.REPORT
-                        );
-
-        if (definitions.isEmpty()) {
-            return previewRepository
-                    .findByOperationTypeAndActiveFlagTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
-                            OperationType.MONTHLY
-                    );
+        if (definition.getOutputType() != MonthlyClosingOutputType.REPORT) {
+            throw new IllegalStateException(
+                    "未対応の月次締め出力区分です。outputType="
+                            + definition.getOutputType()
+            );
         }
 
-        return definitions.stream()
-                .filter(definition -> Boolean.TRUE.equals(definition.getActiveFlag()))
-                .map(definition -> {
-                    OperationReportPreview preview = previewRepository
-                            .findByOperationTypeAndReportCodeAndDeletedAtIsNull(
-                                    OperationType.MONTHLY,
-                                    definition.getOutputCode()
-                            )
-                            .orElseThrow(() -> new IllegalStateException(
-                                    "締め帳票に対応する月次帳票が見つかりません。reportCode="
-                                            + definition.getOutputCode()
-                            ));
-                    if (!Boolean.TRUE.equals(preview.getActiveFlag())) {
-                        throw new IllegalStateException(
-                                "締め帳票が帳票管理側で無効です。reportCode="
-                                        + definition.getOutputCode()
-                        );
-                    }
-                    return preview;
-                })
-                .toList();
-    }
-
-    private List<MonthlyClosingOutputDefinition> resolveClosingLedgers() {
-        return outputDefinitionRepository
-                .findByOutputTypeAndDeletedAtIsNullOrderByExecutionOrderAscIdAsc(
-                        MonthlyClosingOutputType.LEDGER
+        OperationReportPreview preview = previewRepository
+                .findByOperationTypeAndReportCodeAndDeletedAtIsNull(
+                        OperationType.MONTHLY,
+                        definition.getOutputCode()
                 )
-                .stream()
-                .filter(definition -> Boolean.TRUE.equals(
-                        definition.getActiveFlag()
-                ))
-                .toList();
+                .filter(item -> Boolean.TRUE.equals(item.getActiveFlag()))
+                .orElseThrow(() -> new IllegalStateException(
+                        "有効な締め帳票が見つかりません。reportCode="
+                                + definition.getOutputCode()
+                ));
+        if (preview.getJobCode() == null || preview.getJobCode().isBlank()) {
+            throw new IllegalStateException(
+                    "月次締め帳票のjobCodeが未設定です。reportCode="
+                            + preview.getReportCode()
+            );
+        }
+        executor.execute(
+                monthlyClosingId,
+                preview,
+                period,
+                closingVersion
+        );
     }
 
 }

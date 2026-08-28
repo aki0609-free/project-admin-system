@@ -3,7 +3,7 @@ export type MonthlyClosingResponse = {
 
   targetMonth: string
 
-  status: 'OPEN' | 'CLOSED'
+  status: 'OPEN' | 'PROCESSING' | 'CLOSED' | 'FAILED'
 
   closingVersion: number
 

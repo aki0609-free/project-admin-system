@@ -125,4 +125,69 @@ class MonthlyClosingExecutionStateServiceTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("必須");
     }
+
+    @Test
+    void completeItems_shouldCompleteAllWaitingItems() {
+        MonthlyClosingItem waiting = new MonthlyClosingItem();
+        waiting.setStatus(MonthlyClosingItemStatus.WAITING);
+        MonthlyClosingItem completed = new MonthlyClosingItem();
+        completed.setStatus(MonthlyClosingItemStatus.COMPLETED);
+        when(itemRepository
+                .findByMonthlyClosingExecutionIdAndDeletedAtIsNullOrderByIdAsc(
+                        10L
+                ))
+                .thenReturn(List.of(waiting, completed));
+
+        service.completeItems(10L);
+
+        assertThat(waiting.getStatus())
+                .isEqualTo(MonthlyClosingItemStatus.COMPLETED);
+        assertThat(waiting.getStartedAt()).isEqualTo(NOW);
+        assertThat(waiting.getCompletedAt()).isEqualTo(NOW);
+        verify(itemRepository).saveAll(List.of(waiting, completed));
+    }
+
+    @Test
+    void fail_shouldPersistExecutionItemAndClosingFailure() {
+        MonthlyClosing closing = new MonthlyClosing();
+        closing.setId(1L);
+        MonthlyClosingExecution execution =
+                new MonthlyClosingExecution();
+        execution.setId(10L);
+        execution.setMonthlyClosingId(1L);
+        MonthlyClosingItem item = new MonthlyClosingItem();
+        item.setStatus(MonthlyClosingItemStatus.WAITING);
+        when(executionRepository.findById(10L))
+                .thenReturn(Optional.of(execution));
+        when(closingRepository.findById(1L))
+                .thenReturn(Optional.of(closing));
+        when(itemRepository
+                .findByMonthlyClosingExecutionIdAndDeletedAtIsNullOrderByIdAsc(
+                        10L
+                ))
+                .thenReturn(List.of(item));
+
+        service.fail(10L, new IllegalStateException("帳票生成失敗"));
+
+        assertThat(execution.getStatus())
+                .isEqualTo(MonthlyClosingExecutionStatus.FAILED);
+        assertThat(item.getStatus())
+                .isEqualTo(MonthlyClosingItemStatus.FAILED);
+        assertThat(closing.getStatus())
+                .isEqualTo(MonthlyClosingStatus.FAILED);
+        assertThat(closing.getNote()).isEqualTo("帳票生成失敗");
+    }
+
+    @Test
+    void nextVersion_shouldSkipVersionUsedByFailedExecution() {
+        MonthlyClosingExecution failed = new MonthlyClosingExecution();
+        failed.setClosingVersion(3);
+        when(executionRepository
+                .findByMonthlyClosingIdAndDeletedAtIsNullOrderByClosingVersionDesc(
+                        1L
+                ))
+                .thenReturn(List.of(failed));
+
+        assertThat(service.nextVersion(1L, 2)).isEqualTo(4);
+    }
 }

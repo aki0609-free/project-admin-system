@@ -9,6 +9,8 @@ const money = (value: number | null | undefined) => `${Number(value ?? 0).toLoca
 
 const statusLabel = (status: string | undefined) => {
   if (status === 'CLOSED') return '締め済み'
+  if (status === 'PROCESSING') return '処理中'
+  if (status === 'FAILED') return '失敗（再実行可能）'
   if (status === 'OPEN') return '未締め'
   return '未作成'
 }

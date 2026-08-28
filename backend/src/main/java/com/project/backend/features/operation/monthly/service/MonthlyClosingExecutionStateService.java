@@ -115,11 +115,48 @@ public class MonthlyClosingExecutionStateService {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void completeItems(Long executionId) {
+        Instant now = Instant.now(clock);
+        List<MonthlyClosingItem> items = itemRepository
+                .findByMonthlyClosingExecutionIdAndDeletedAtIsNullOrderByIdAsc(
+                        executionId
+                );
+        for (MonthlyClosingItem item : items) {
+            if (item.getStatus() == MonthlyClosingItemStatus.COMPLETED) {
+                continue;
+            }
+            item.setStatus(MonthlyClosingItemStatus.COMPLETED);
+            if (item.getStartedAt() == null) {
+                item.setStartedAt(now);
+            }
+            item.setCompletedAt(now);
+            item.setErrorMessage(null);
+        }
+        itemRepository.saveAll(items);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void fail(Long executionId, Throwable error) {
         Instant now = Instant.now(clock);
         String message = limitError(error);
         MonthlyClosingExecution execution =
                 findExecution(executionId);
+        List<MonthlyClosingItem> items = itemRepository
+                .findByMonthlyClosingExecutionIdAndDeletedAtIsNullOrderByIdAsc(
+                        executionId
+                );
+        for (MonthlyClosingItem item : items) {
+            if (item.getStatus() == MonthlyClosingItemStatus.COMPLETED) {
+                continue;
+            }
+            item.setStatus(MonthlyClosingItemStatus.FAILED);
+            if (item.getStartedAt() == null) {
+                item.setStartedAt(now);
+            }
+            item.setCompletedAt(now);
+            item.setErrorMessage(message);
+        }
+        itemRepository.saveAll(items);
         execution.setStatus(MonthlyClosingExecutionStatus.FAILED);
         execution.setCompletedAt(now);
         execution.setErrorMessage(message);
@@ -130,6 +167,24 @@ public class MonthlyClosingExecutionStateService {
         closing.setStatus(MonthlyClosingStatus.FAILED);
         closing.setNote(message);
         closingRepository.save(closing);
+    }
+
+    @Transactional(readOnly = true)
+    public int nextVersion(Long monthlyClosingId, Integer completedVersion) {
+        int latestExecutionVersion = executionRepository
+                .findByMonthlyClosingIdAndDeletedAtIsNullOrderByClosingVersionDesc(
+                        monthlyClosingId
+                )
+                .stream()
+                .map(MonthlyClosingExecution::getClosingVersion)
+                .filter(java.util.Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+        int latestCompletedVersion = completedVersion != null
+                ? completedVersion
+                : 0;
+        return Math.max(latestExecutionVersion, latestCompletedVersion) + 1;
     }
 
     private void ensureNoRequiredFailure(Long executionId) {

@@ -6,7 +6,16 @@ import { useClosingSummaryQuery } from '../api/useClosingSummaryQuery'
 import { useCloseClosingMutation } from '../api/useCloseClosingMutation'
 import { useRecloseClosingMutation } from '../api/useRecloseClosingMutation'
 
-const currentMonth = () => new Date().toISOString().slice(0, 7)
+const currentMonth = () => {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(new Date())
+  const year = parts.find(part => part.type === 'year')?.value
+  const month = parts.find(part => part.type === 'month')?.value
+  return `${year}-${month}`
+}
 
 export const useMonthlyOperationPage = () => {
   const targetMonth = ref(currentMonth())
@@ -22,6 +31,23 @@ export const useMonthlyOperationPage = () => {
 
   const isClosed = computed(
     () => summary.value?.closing?.status === 'CLOSED',
+  )
+  const isProcessing = computed(
+    () => summary.value?.closing?.status === 'PROCESSING',
+  )
+  const isFailed = computed(
+    () => summary.value?.closing?.status === 'FAILED',
+  )
+  const hasCompletedVersion = computed(
+    () => (summary.value?.closing?.closingVersion ?? 0) > 0,
+  )
+  const shouldReclose = computed(
+    () => isClosed.value || (isFailed.value && hasCompletedVersion.value),
+  )
+  const busy = computed(
+    () => closeMutation.isPending.value
+      || recloseMutation.isPending.value
+      || isProcessing.value,
   )
 
   const tabs = [
@@ -56,9 +82,11 @@ export const useMonthlyOperationPage = () => {
   const leftToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
-      label: isClosed.value ? '再締め' : '締め処理',
+      label: shouldReclose.value ? '再締め' : '締め処理',
       color: 'primary',
-      onClick: isClosed.value
+      disabled: busy.value,
+      loading: busy.value,
+      onClick: shouldReclose.value
         ? recloseClosing
         : closeClosing,
     },
@@ -69,6 +97,7 @@ export const useMonthlyOperationPage = () => {
       type: 'button',
       label: '再読込',
       color: 'secondary',
+      disabled: busy.value,
       onClick: async () => {
         await summaryQuery.refetch()
       },

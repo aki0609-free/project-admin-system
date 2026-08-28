@@ -2,11 +2,9 @@ package com.project.backend.features.application.mapper;
 
 import java.time.YearMonth;
 
-import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 
 import com.project.backend.features.application.dto.ApplicationMediaCreateRequest;
@@ -36,7 +34,6 @@ public interface ApplicationMediaMapper {
     )
     ApplicationMedia toEntity(ApplicationMediaCreateRequest request);
 
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "hires", ignore = true)
     @Mapping(target = "unitPrice", ignore = true)
     @Mapping(

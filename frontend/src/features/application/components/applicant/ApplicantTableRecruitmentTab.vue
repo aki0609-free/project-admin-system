@@ -22,12 +22,12 @@ const filterRules = computed(() =>
 
 <template>
   <SimpleTable
-    tableKey="applicant-recruitment-table"
-    itemKey="id"
+    table-key="applicant-recruitment-table"
+    item-key="id"
     :items="props.applicants"
     :columns="columns"
-    :filterRules="filterRules"
-    :enableRowClick="true"
+    :filter-rules="filterRules"
+    :enable-row-click="true"
     @row-click="(row) => emit('row-click', row)"
   />
 </template>

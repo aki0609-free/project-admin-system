@@ -8,13 +8,13 @@ export const useDeleteApplicantMutation = () => {
 
   return useAppMutation({
     mutationFn: (id: number) =>
-      del<void>('/api/applicants/{id}', {
+      del<unknown>('/api/applicants/{id}', {
         params: {
           path: { id },
         },
       }),
 
-    onSuccess: async (_result: any, id: any) => {
+    onSuccess: async (_result: unknown, id: number) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.applicants.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.applicationMedias.all }),

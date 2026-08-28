@@ -75,12 +75,13 @@ PDF・CSV・Excelとして登録された帳票は、バッチ成功だけでな
 | 操作 | Version | 取得元 | 用途 |
 | --- | ---: | --- | --- |
 | 初回締め | v1 | 最新View | 最初の確定 |
-| 失敗再実行 | 同じVersion | historyTable | ファイル生成などの復旧 |
+| 失敗後の再実行 | 新しい実行Version | 最新View | 失敗原因を修正した後の再確定 |
 | 再締め | 現在Version + 1 | 最新View | 修正後の再確定 |
 | 過去表示 | 指定Version | S3 | 過去帳票・台帳の確認 |
 
-失敗再実行でViewを読み直してはいけない。同じVersionの内容が変わるためである。
-日報修正を取り込む場合は再締めを実行し、新しいVersionを作成する。
+各実行Versionは成功・失敗を問わず再利用しない。失敗したVersionは監査履歴として残し、
+次の実行ではVersionを1つ進めて最新Viewから再確定する。
+`monthly_closings.closing_version`は最後に成功したVersionを表し、失敗だけでは更新しない。
 
 ## 5. 状態
 
@@ -96,8 +97,8 @@ FAILED
 - 必須項目が1件でも失敗した場合、月次締め全体を`CLOSED`にしない
 - 帳票ファイル生成または顧客取引同期に失敗した場合も`CLOSED`にしない
 - 成功済みファイルとhistoryTableは削除しない
-- 同じVersionの再実行では失敗項目だけを再処理する
-- 任意項目の失敗を締め失敗にするかは締め対象マスタの`required_flag`で決める
+- 失敗した実行Versionは上書きせず、次のVersionで再実行する
+- `required_flag`は将来の任意出力制御用に保持する。V1の実行対象はすべて一括Transactionで扱い、1件でも失敗した場合は締め全体を`FAILED`とする
 
 ## 6. 月次締め対象マスタ
 
@@ -238,7 +239,7 @@ report_delivery_definition
 
 ## 10. 段階移行
 
-1. 月次締め実行・項目・対象マスタを追加（実装済み）
+1. 月次締め実行・項目・対象マスタを追加し、初回締め・再締めへ接続（実装済み）
 2. 帳票マスタへView、historyTable、HTMLテンプレート情報を追加（実装済み）
 3. ストアドを`View -> historyTable -> outputTable`へ統一
 4. 台帳を締めVersion付きS3キーへ対応（実装済み）
@@ -264,7 +265,13 @@ monthly_closing_output_definition
 monthly_closing_item
 ```
 
-`MonthlyClosingJobService`は`monthly_closing_output_definition`に登録された有効な月次帳票と台帳を実行する。
+`MonthlyClosingCommandService`は実行Versionと状態を管理し、
+`MonthlyClosingWorkflowService`が法定預り返金・帳票・台帳を同一Transactionで確定する。
+失敗時は業務Transactionをロールバックしたうえで、別Transactionにより
+`monthly_closing_execution`、`monthly_closing_item`、`monthly_closings`を`FAILED`として保存する。
+
+`MonthlyClosingJobService`は`monthly_closing_output_definition`に登録された有効な自社月次帳票と台帳を実行する。
+顧客締日で確定する`MONTHLY_INVOICE`と`MONTHLY_ORDER_FORM`は自社月次締めから除外し、顧客請求締めで実行する。
 `REPORT`は帳票基盤、`LEDGER`はSpreadsheet台帳基盤へ委譲する。台帳は初回締めを`v1`、再締めを`v2`以降として、次のVersion付きキーへ確定保存する。
 
 ```text
@@ -273,12 +280,14 @@ documents/generated-reports/ledgers/{tenantId}/{bookCode}/{yyyy-MM}/closing/v{cl
 
 対象別台帳は、締め時に選択候補を全件解決し、従業員・顧客などの対象ごとに1ファイルを生成する。月間集計表や入金確認表の締め前手入力値は、通常の月次作業ファイルから確定Versionへ引き継ぐ。
 
-`monthly_closing_output_definition`／`monthly_closing_item`による項目単位の失敗再実行は次工程で接続する。V1の初回締め・再締めでは、すべての有効帳票と顧客取引同期が成功した後だけ`monthly_closings.status`を`CLOSED`へ更新する。
+V1の初回締め・再締めでは、すべての必須帳票・台帳が成功した後だけ
+`monthly_closings.status`を`CLOSED`へ更新する。実行中は`PROCESSING`、失敗時は`FAILED`とし、
+画面は処理中の二重実行を禁止する。
 
 ストアドは`execution_id`だけを引数に受け取り、inputTableから
 `tenant_id`、`target_month`、`closing_version`、`execution_mode`を取得する。
-`INITIAL`と`RECLOSE`は最新ViewからhistoryTableを作成し、
-`RETRY`はhistoryTableを変更せずoutputTableだけを再構築する。
+`INITIAL`と`RECLOSE`は最新ViewからhistoryTableを作成する。
+V1では失敗Versionを上書きする`RETRY`は使用せず、新しい実行Versionで再処理する。
 
 ## 10.1 顧客取引への請求額同期
 

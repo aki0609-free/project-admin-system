@@ -8,13 +8,13 @@ export const useDeleteApplicationMediaMutation = () => {
 
   return useAppMutation({
     mutationFn: (id: number) =>
-      del<void>('/api/application-media/{id}', {
+      del<unknown>('/api/application-media/{id}', {
         params: {
           path: { id },
         },
       }),
 
-    onSuccess: async (_: any, id: any) => {
+    onSuccess: async (_result: unknown, id: number) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.applicationMedias.all }),
         queryClient.removeQueries({ queryKey: queryKeys.applicationMedias.detail(id) }),

@@ -1,4 +1,4 @@
-import { ApplicationMediaListItem, CellBaseType } from "./types"
+import type { ApplicationMediaListItem, CellBaseType } from './types'
 
 export type FilterState = {
   mediaYearMonth: string
@@ -7,7 +7,7 @@ export type FilterState = {
 
 export type ApplicationMediaPivotRowBase = {
   mediaName: string
-} & Record<string, any>
+} & Record<string, string | number | null>
 
 export type ApplicationMediaPivotRow = ApplicationMediaPivotRowBase & {
   id: number

@@ -28,12 +28,25 @@
 - 氏名と応募者番号は必須とする。
 - PUT更新では、退職日や退職理由などの任意項目を空欄へ戻せる。
 - Chartの分母が0の場合、割合は `0%` とし、`NaN`を表示しない。
+- Chartと総計は同じ集計関数を使用し、同じ絞り込み条件で件数がずれないようにする。
+- 応募媒体の一括保存後はサーバーから再取得し、採用人数・採用単価と新規／更新状態を同期する。
+- 応募媒体の任意項目は更新時に空欄へ戻せる。ただし採用人数・採用単価などの計算項目は入力値で上書きしない。
 
 ## 主なコード
 
 - Frontend画面: `frontend/src/features/application/pages/ApplicantView.vue`
 - Chart集計: `frontend/src/features/application/composables/applicant/useApplicantChartSummary.ts`
 - 総計: `frontend/src/features/application/composables/applicant/useApplicantAnalysisSummary.ts`
-- 共通判定: `frontend/src/features/application/utils/applicantMetrics.ts`
+- 応募者共通集計: `frontend/src/features/application/utils/applicantAnalytics.ts`
+- 応募媒体共通集計: `frontend/src/features/application/utils/applicationMediaAnalytics.ts`
+- 応募媒体保存同期: `frontend/src/features/application/composables/application_media/useApplicationMediaSource.ts`
 - Backend更新: `backend/src/main/java/com/project/backend/features/application/service/ApplicantCommandService.java`
 - Entity変換: `backend/src/main/java/com/project/backend/features/application/mapper/ApplicantMapper.java`
+- 応募媒体Entity変換: `backend/src/main/java/com/project/backend/features/application/mapper/ApplicationMediaMapper.java`
+
+## V1確認テスト
+
+- 応募者の空集合・月別・媒体別集計
+- 応募媒体の総応募者数・面接数・採用数・採用単価
+- 応募者更新時に任意項目を空へ戻せること
+- 応募媒体更新時に任意項目を空へ戻し、計算項目を維持すること

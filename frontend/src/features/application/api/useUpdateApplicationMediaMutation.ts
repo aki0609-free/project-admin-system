@@ -11,14 +11,17 @@ export const useUpdateApplicationMediaMutation = () => {
     mutationFn: (payload: ApplicationMediaUpdateRequest) => {
       const { id, ...body } = payload
 
-      return put<void, typeof body>('/api/application-media/{id}', body, {
+      return put<unknown, typeof body>('/api/application-media/{id}', body, {
         params: {
           path: { id },
         },
       })
     },
 
-    onSuccess: async (_: any, payload: any) => {
+    onSuccess: async (
+      _result: unknown,
+      payload: ApplicationMediaUpdateRequest,
+    ) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.applicationMedias.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.applicationMedias.detail(payload.id) }),

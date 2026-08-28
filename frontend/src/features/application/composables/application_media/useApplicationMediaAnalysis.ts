@@ -42,7 +42,7 @@ export const useApplicationMediaAnalysis = (
 
   const aiAnalysisEnabled = false
 
-  const analyzeByAi = async () => {
+  const analyzeByAi = () => {
     // 将来ここで使う payload
     // const aiPayload = computed(() => ({
     //   totalCost: summary.totalCost.value,
@@ -55,7 +55,7 @@ export const useApplicationMediaAnalysis = (
     // const aiAnalysisMutation = useApplicationMediaAiAnalysisMutation()
     // return await aiAnalysisMutation.mutateAsync(aiPayload.value)
 
-    console.info('AI分析はまだ未接続です')
+    return Promise.resolve()
   }
 
   return {

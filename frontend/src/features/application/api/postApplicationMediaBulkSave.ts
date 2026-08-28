@@ -5,7 +5,7 @@ import type { ApplicationMediaBulkSaveRequest } from '@/features/application/typ
 export const postApplicationMediaBulkSave = (
   payload: ApplicationMediaBulkSaveRequest,
 ) => {
-  return post<void, ApplicationMediaBulkSaveRequest>(
+  return post<unknown, ApplicationMediaBulkSaveRequest>(
     '/api/application-media/bulk-save',
     payload,
   )
