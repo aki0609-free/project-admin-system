@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/vue-query'
 import { useAppMutation } from '@/shared/api/useAppMutation'
 import { put } from '@/shared/api/http'
 import type { CustomerSaveRequest } from '../types/customerApiTypes'
+import { useCustomerMasterStore } from '../store/useCustomerMasterStore'
 import { queryKeys } from './queryKeys'
 
 export type UpdateCustomerPayload = {
@@ -12,6 +13,7 @@ export type UpdateCustomerPayload = {
 
 export const useUpdateCustomerMutation = () => {
   const queryClient = useQueryClient()
+  const customerMasterStore = useCustomerMasterStore()
 
   return useAppMutation({
     mutationFn: ({ id, body }: UpdateCustomerPayload) =>
@@ -29,6 +31,7 @@ export const useUpdateCustomerMutation = () => {
         queryClient.invalidateQueries({
           queryKey: queryKeys.customers.detail(payload.id),
         }),
+        customerMasterStore.refresh(),
       ])
     },
   })

@@ -11,8 +11,8 @@ export const useCustomerMasterStore = defineStore('customer-master', () => {
   const customers = ref<CustomerOptionItemResponse[]>([])
   const sites = ref<CustomerSiteOptionItemResponse[]>([])
 
-  const load = async () => {
-    if (loaded.value || loading.value) return
+  const load = async (force = false) => {
+    if ((!force && loaded.value) || loading.value) return
 
     loading.value = true
 
@@ -27,6 +27,13 @@ export const useCustomerMasterStore = defineStore('customer-master', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  /**
+   * 顧客・現場の更新後に、日報と翌日準備が使う選択肢を再同期する。
+   */
+  const refresh = async () => {
+    await load(true)
   }
 
   const customerOptions = computed(() =>
@@ -67,5 +74,6 @@ export const useCustomerMasterStore = defineStore('customer-master', () => {
     findCustomer,
     findSite,
     load,
+    refresh,
   }
 })

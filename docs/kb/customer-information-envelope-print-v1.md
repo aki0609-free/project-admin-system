@@ -53,7 +53,18 @@
 
 請求単価は顧客の現場ごとに管理し、職種・現場役割・適用期間で解決する。
 
+- 画面上の複数行保存は`bulk-save` APIを使用し、削除・追加・更新を1トランザクションで確定する
+- いずれか1行の検証または保存に失敗した場合、同じ保存操作の変更はすべてロールバックする
+- 同一の現場・職種・役職で適用期間が重複する単価は登録しない
+- 単価は0以上、最大13桁＋小数2桁とする
+- 職種コード・役職コードは100文字、名称は200文字、備考は1000文字以内とする
+
 単価の詳細は顧客請求締めと月間集計のKBを参照する。
+
+### 2.5 顧客・現場候補の同期
+
+日報と翌日準備で使用する顧客・現場候補はPiniaストアでキャッシュする。
+通常の画面遷移ではキャッシュを再利用するが、顧客の作成・更新・削除が成功した時点で強制再取得し、古い顧客名や削除済み現場が選択候補に残らないようにする。
 
 ## 3. 削除と参照整合性
 
@@ -176,6 +187,7 @@ frontend/src/features/customer/validation/customerSchema.ts
 
 ```text
 backend/src/main/java/com/project/backend/features/customer/service/CustomerCommandService.java
+backend/src/main/java/com/project/backend/features/customer/service/CustomerSiteBillingRateCommandService.java
 backend/src/main/java/com/project/backend/features/customer/mapper/CustomerMapper.java
 backend/src/main/java/com/project/backend/features/system/batch/service/BatchExecutionParameterService.java
 backend/src/main/java/com/project/backend/features/system/report/service/initializer/BundledReportTemplateInitializer.java
@@ -191,6 +203,7 @@ backend/src/main/java/com/project/backend/features/system/report/service/initial
 - 保存時に文字列の前後空白を除去
 - 空文字の任意項目は`NULL`へ正規化
 - フロントエンドとバックエンドの両方で検証
+- 請求単価の複数行保存はAPI単位で原子性を保証
 
 ## 9. テスト
 
@@ -203,6 +216,7 @@ backend/src/main/java/com/project/backend/features/system/report/service/initial
 - 長3／角2 JRXMLのコンパイルとPDF生成
 - 複数顧客IDのバッチパラメータ保存・復元
 - Map、入れ子リスト、1000件超の配列を拒否
+- 請求単価の顧客所有権、期間重複、負数、小数桁、更新IDを検証
 
 フロントエンド／E2E：
 
@@ -211,6 +225,7 @@ backend/src/main/java/com/project/backend/features/system/report/service/initial
 - 封筒印刷の入力ダイアログ
 - 顧客選択から実際の長3／角2 PDF生成
 - PDFプレビュー表示
+- 顧客・現場候補の通常キャッシュと、顧客変更後の強制再取得
 
 ## 10. V1で追加しない範囲
 

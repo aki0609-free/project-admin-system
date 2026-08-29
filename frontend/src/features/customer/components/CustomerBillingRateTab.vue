@@ -13,9 +13,7 @@ import { createSimpleTableFilterRules } from '@/shared/components/table/simple_t
 import { useEditableChildRows } from '../composables/useEditableChildRows'
 
 import { useCustomerSiteBillingRatesQuery } from '../api/useCustomerSiteBillingRatesQuery'
-import { useCreateCustomerSiteBillingRateMutation } from '../api/useCreateCustomerSiteBillingRateMutation'
-import { useUpdateCustomerSiteBillingRateMutation } from '../api/useUpdateCustomerSiteBillingRateMutation'
-import { useDeleteCustomerSiteBillingRateMutation } from '../api/useDeleteCustomerSiteBillingRateMutation'
+import { useBulkSaveCustomerSiteBillingRatesMutation } from '../api/useBulkSaveCustomerSiteBillingRatesMutation'
 
 import {
   createEmptyCustomerSiteBillingRate,
@@ -50,14 +48,8 @@ const {
   computed(() => props.customerId),
 )
 
-const createMutation =
-  useCreateCustomerSiteBillingRateMutation()
-
-const updateMutation =
-  useUpdateCustomerSiteBillingRateMutation()
-
-const deleteMutation =
-  useDeleteCustomerSiteBillingRateMutation()
+const bulkSaveMutation =
+  useBulkSaveCustomerSiteBillingRatesMutation()
 
 const {
   columns,
@@ -90,9 +82,7 @@ const canEdit = computed(() =>
 const loading = computed(() =>
   isFetching.value
   || saving.value
-  || createMutation.isPending.value
-  || updateMutation.isPending.value
-  || deleteMutation.isPending.value,
+  || bulkSaveMutation.isPending.value,
 )
 
 watch(
@@ -122,6 +112,24 @@ watch(
   },
 )
 
+const unitPriceSchema = z.coerce
+  .number()
+  .finite('単価は数値で入力してください')
+  .min(0, '単価は0以上で入力してください')
+  .max(
+    9_999_999_999_999.99,
+    '単価は9,999,999,999,999.99以下で入力してください',
+  )
+  .refine(
+    value => {
+      const valueInCents = value * 100
+      return Math.abs(
+        valueInCents - Math.round(valueInCents),
+      ) < 0.000001
+    },
+    '単価は小数第2位までで入力してください',
+  )
+
 const rowSchema = z.object({
   customerSiteId: z
     .number()
@@ -130,22 +138,26 @@ const rowSchema = z.object({
   jobCode: z
     .string()
     .trim()
-    .min(1, '職種コードは必須です'),
+    .min(1, '職種コードは必須です')
+    .max(100, '職種コードは100文字以内で入力してください'),
 
   jobName: z
     .string()
     .trim()
-    .min(1, '職種名は必須です'),
+    .min(1, '職種名は必須です')
+    .max(200, '職種名は200文字以内で入力してください'),
 
   siteRoleCode: z
     .string()
     .trim()
-    .min(1, '役職コードは必須です'),
+    .min(1, '役職コードは必須です')
+    .max(100, '役職コードは100文字以内で入力してください'),
 
   siteRoleName: z
     .string()
     .trim()
-    .min(1, '現場役職は必須です'),
+    .min(1, '現場役職は必須です')
+    .max(200, '現場役職は200文字以内で入力してください'),
 
   billingUnit: z.enum([
     'HOURLY',
@@ -154,25 +166,15 @@ const rowSchema = z.object({
     'FIXED',
   ]),
 
-  baseUnitPrice: z.coerce
-    .number()
-    .min(0, '基準単価は0以上で入力してください'),
+  baseUnitPrice: unitPriceSchema,
 
-  overtimeUnitPrice: z.coerce
-    .number()
-    .min(0, '残業単価は0以上で入力してください'),
+  overtimeUnitPrice: unitPriceSchema,
 
-  nightUnitPrice: z.coerce
-    .number()
-    .min(0, '深夜単価は0以上で入力してください'),
+  nightUnitPrice: unitPriceSchema,
 
-  holidayUnitPrice: z.coerce
-    .number()
-    .min(0, '休日単価は0以上で入力してください'),
+  holidayUnitPrice: unitPriceSchema,
 
-  commuteUnitPrice: z.coerce
-    .number()
-    .min(0, '通勤単価は0以上で入力してください'),
+  commuteUnitPrice: unitPriceSchema,
 
   displayOrder: z.coerce
     .number()
@@ -183,6 +185,10 @@ const rowSchema = z.object({
     .string()
     .trim()
     .min(1, '適用開始日は必須です'),
+
+  note: z
+    .string()
+    .max(1000, '備考は1000文字以内で入力してください'),
 })
 
 function addBillingRate() {
@@ -272,33 +278,18 @@ async function saveBillingRates() {
   saving.value = true
 
   try {
-    const deletedRows =
+    const deletedIds =
       editableRows.rows.value.filter(row =>
         row._isDeleted
         && !row._isNew
         && row.id > 0,
-      )
-
-    for (const row of deletedRows) {
-      await deleteMutation.mutateAsync({
-        customerId,
-        billingRateId: row.id,
-      })
-    }
+      ).map(row => row.id)
 
     const newRows =
       editableRows.rows.value.filter(row =>
         row._isNew
         && !row._isDeleted,
       )
-
-    for (const row of newRows) {
-      await createMutation.mutateAsync({
-        customerId,
-        body:
-          toCustomerSiteBillingRateRequest(row),
-      })
-    }
 
     const updatedRows =
       editableRows.rows.value.filter(row =>
@@ -308,14 +299,18 @@ async function saveBillingRates() {
         && row.id > 0,
       )
 
-    for (const row of updatedRows) {
-      await updateMutation.mutateAsync({
-        customerId,
-        billingRateId: row.id,
-        body:
-          toCustomerSiteBillingRateRequest(row),
-      })
-    }
+    await bulkSaveMutation.mutateAsync({
+      customerId,
+      body: {
+        created: newRows.map(
+          toCustomerSiteBillingRateRequest,
+        ),
+        updated: updatedRows.map(
+          toCustomerSiteBillingRateRequest,
+        ),
+        deletedIds,
+      },
+    })
 
     await refetch()
 

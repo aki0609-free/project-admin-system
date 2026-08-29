@@ -1,10 +1,24 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
+import type { DefineComponent } from 'vue'
 import SimpleTable from './SimpleTable.vue' 
 import type { SimpleTableColumnDef, SimpleTableEditableRow } from './types/item/types' 
 import type { SimpleTableFilterRule } from './types/filter/types'
 
-const meta: Meta = {
+type StoryComponentProps = {
+  tableKey: string
+  itemKey: keyof DemoTableRow
+  items: DemoTableRow[]
+  columns: SimpleTableColumnDef<DemoTableRow>[]
+  filterRules: SimpleTableFilterRule<DemoTableRow>[]
+}
+
+const StoryComponent = SimpleTable as unknown as DefineComponent<
+  StoryComponentProps
+>
+
+const meta: Meta<typeof StoryComponent> = {
   title: 'Components/Tables/SimpleTable',
+  component: StoryComponent,
 }
 
 type DemoTableRow = SimpleTableEditableRow & {
@@ -14,7 +28,7 @@ type DemoTableRow = SimpleTableEditableRow & {
 }
 
 export default meta
-type Story = StoryObj
+type Story = StoryObj<typeof StoryComponent>
 
 // サンプルデータ
 const columns: SimpleTableColumnDef<DemoTableRow>[] = [
@@ -38,19 +52,11 @@ const filterRules: SimpleTableFilterRule<DemoTableRow>[] =
   }))
 
 export const Default: Story = {
-  render: () => ({
-    components: { SimpleTable },
-    setup() {
-      return { items, columns, filterRules }
-    },
-    template: `
-      <SimpleTable
-        tableKey="demo"
-        itemKey="id"
-        :items="items"
-        :columns="columns"
-        :filterRules="filterRules"
-      />
-    `,
-  }),
+  args: {
+    tableKey: 'demo',
+    itemKey: 'id',
+    items,
+    columns,
+    filterRules,
+  },
 }

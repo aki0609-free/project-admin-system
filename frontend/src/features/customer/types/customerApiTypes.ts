@@ -89,6 +89,12 @@ export type CustomerSiteBillingRateRequest = {
   _isDeleted?: boolean
 }
 
+export type CustomerSiteBillingRateBulkSaveRequest = {
+  created: CustomerSiteBillingRateRequest[]
+  updated: CustomerSiteBillingRateRequest[]
+  deletedIds: number[]
+}
+
 export type CustomerEmployeeResponse = {
   id: number
   customerId: number

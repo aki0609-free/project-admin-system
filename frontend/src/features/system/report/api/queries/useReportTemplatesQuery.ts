@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { useAppQuery } from '@/shared/api/useAppQuery'
 import { get } from '@/shared/api/http'
 import { queryKeys } from '@/features/system/report/api/queryKeys'
-import type { ReportTemplateResponse } from '@/features/system/report/types/reportMasterApiTypes'
+import type { ReportTemplateResponse } from '@/features/system/report/types/reportTemplateApiTypes'
 
 export const useReportTemplatesQuery = () => {
   const query = useAppQuery<ReportTemplateResponse[]>({

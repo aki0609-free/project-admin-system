@@ -9,10 +9,12 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
+import com.project.backend.features.customer.dto.CustomerSiteBillingRateBulkSaveRequest;
 import com.project.backend.features.customer.dto.CustomerSiteBillingRateRequest;
 import com.project.backend.features.customer.entity.CustomerSite;
 import com.project.backend.features.customer.enums.CustomerBillingUnit;
@@ -97,6 +99,58 @@ class CustomerSiteBillingRateCommandServiceTest {
                 .hasMessage("残業単価は0以上で入力してください。");
 
         verify(siteRepository, never()).findByIdAndDeletedAtIsNull(any());
+        verify(rateRepository, never()).save(any());
+    }
+
+    @Test
+    void create_shouldRejectUnitPriceWithMoreThanTwoDecimalPlaces() {
+        CustomerSiteBillingRateRequest request = request(20L, null);
+        CustomerSiteBillingRateRequest invalid =
+                new CustomerSiteBillingRateRequest(
+                        request.id(),
+                        request.customerSiteId(),
+                        request.jobCode(),
+                        request.jobName(),
+                        request.siteRoleCode(),
+                        request.siteRoleName(),
+                        request.billingUnit(),
+                        new BigDecimal("100.001"),
+                        request.overtimeUnitPrice(),
+                        request.nightUnitPrice(),
+                        request.holidayUnitPrice(),
+                        request.commuteUnitPrice(),
+                        request.effectiveFrom(),
+                        request.effectiveTo(),
+                        request.displayOrder(),
+                        request.activeFlag(),
+                        request.note(),
+                        request._isNew(),
+                        request._isUpdated(),
+                        request._isDeleted()
+                );
+
+        assertThatThrownBy(() -> service.create(10L, invalid))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("基準単価は小数第2位までで入力してください。");
+
+        verify(siteRepository, never()).findByIdAndDeletedAtIsNull(any());
+        verify(rateRepository, never()).save(any());
+    }
+
+    @Test
+    void bulkSave_shouldRejectUpdatedItemWithoutPersistedId() {
+        CustomerSiteBillingRateRequest invalidUpdate = request(20L, null);
+
+        assertThatThrownBy(() -> service.bulkSave(
+                10L,
+                new CustomerSiteBillingRateBulkSaveRequest(
+                        List.of(),
+                        List.of(invalidUpdate),
+                        List.of()
+                )
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("更新対象の請求単価IDが不正です。");
+
         verify(rateRepository, never()).save(any());
     }
 

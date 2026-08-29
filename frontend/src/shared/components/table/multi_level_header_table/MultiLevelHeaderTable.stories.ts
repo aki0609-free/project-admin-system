@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3'
+import type { DefineComponent } from 'vue'
 import MultiLevelHeaderTable from './MultiLevelHeaderTable.vue'
 import type { MultiLevelHeaderTableDef } from './types/item/types'
 
@@ -62,7 +63,7 @@ const def: MultiLevelHeaderTableDef<RowData> = {
   },
   columns: [
     {
-      key: 'personal' as any,
+      key: 'personal',
       title: '個人情報',
       subColumns: [
         {
@@ -86,7 +87,7 @@ const def: MultiLevelHeaderTableDef<RowData> = {
       ],
     },
     {
-      key: 'money' as any,
+      key: 'money',
       title: '給与情報',
       subColumns: [
         {
@@ -112,17 +113,27 @@ const def: MultiLevelHeaderTableDef<RowData> = {
   ],
 }
 
+type StoryComponentProps = {
+  data: RowData[]
+  def: MultiLevelHeaderTableDef<RowData>
+  tableKey?: string
+}
+
+const StoryComponent = MultiLevelHeaderTable as unknown as DefineComponent<
+  StoryComponentProps
+>
+
 /* =========================
    Storybook
 ========================= */
 
-const meta: Meta<typeof MultiLevelHeaderTable> = {
+const meta: Meta<typeof StoryComponent> = {
   title: 'Components/Tables/MultiLevelHeaderTable',
-  component: MultiLevelHeaderTable,
+  component: StoryComponent,
 }
 
 export default meta
-type Story = StoryObj<typeof MultiLevelHeaderTable>
+type Story = StoryObj<typeof StoryComponent>
 
 /* =========================
    Default
@@ -190,11 +201,11 @@ export const DeepNested: Story = {
       row: { key: 'name', title: '名前', filter: { type: 'text' } },
       columns: [
         {
-          key: 'all' as any,
+          key: 'all',
           title: '全体',
           subColumns: [
             {
-              key: 'personal' as any,
+              key: 'personal',
               title: '個人',
               subColumns: [
                 {
@@ -218,7 +229,7 @@ export const DeepNested: Story = {
               ],
             },
             {
-              key: 'money' as any,
+              key: 'money',
               title: 'お金',
               subColumns: [
                 {

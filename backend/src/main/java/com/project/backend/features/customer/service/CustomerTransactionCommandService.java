@@ -198,15 +198,13 @@ public class CustomerTransactionCommandService {
                     exception
             );
         }
-        int remainingAmount = billingAmount - collectedAmount;
-
         entity.setTotalAmount(collectedAmount);
 
         if (collectedAmount <= 0) {
             entity.setPaymentStatus(CustomerPaymentStatus.UNPAID);
-        } else if (remainingAmount > 0) {
+        } else if (collectedAmount < billingAmount) {
             entity.setPaymentStatus(CustomerPaymentStatus.PARTIAL);
-        } else if (remainingAmount == 0) {
+        } else if (collectedAmount == billingAmount) {
             entity.setPaymentStatus(CustomerPaymentStatus.PAID);
         } else {
             entity.setPaymentStatus(CustomerPaymentStatus.OVERPAID);

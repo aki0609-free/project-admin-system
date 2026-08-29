@@ -9,13 +9,21 @@ export const normalizeTimeHHmm = (
   // 09:00:00 → 09:00
   const hhmmssMatch = text.match(/^(\d{1,2}):(\d{2}):\d{2}$/)
   if (hhmmssMatch) {
-    return `${hhmmssMatch[1].padStart(2, '0')}:${hhmmssMatch[2]}`
+    const hours = hhmmssMatch[1]
+    const minutes = hhmmssMatch[2]
+    if (hours && minutes) {
+      return `${hours.padStart(2, '0')}:${minutes}`
+    }
   }
 
   // 9:00 → 09:00
   const hhmmMatch = text.match(/^(\d{1,2}):(\d{2})$/)
   if (hhmmMatch) {
-    return `${hhmmMatch[1].padStart(2, '0')}:${hhmmMatch[2]}`
+    const hours = hhmmMatch[1]
+    const minutes = hhmmMatch[2]
+    if (hours && minutes) {
+      return `${hours.padStart(2, '0')}:${minutes}`
+    }
   }
 
   return text

@@ -3,9 +3,11 @@ import { useQueryClient } from '@tanstack/vue-query'
 import { useAppMutation } from '@/shared/api/useAppMutation'
 import { del } from '@/shared/api/http'
 import { queryKeys } from './queryKeys'
+import { useCustomerMasterStore } from '../store/useCustomerMasterStore'
 
 export const useDeleteCustomerMutation = () => {
   const queryClient = useQueryClient()
+  const customerMasterStore = useCustomerMasterStore()
 
   return useAppMutation({
     mutationFn: (id: number) =>
@@ -23,6 +25,7 @@ export const useDeleteCustomerMutation = () => {
         queryClient.removeQueries({
           queryKey: queryKeys.customers.detail(id),
         }),
+        customerMasterStore.refresh(),
       ])
     },
   })

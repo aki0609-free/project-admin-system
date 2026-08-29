@@ -44,7 +44,7 @@ const activeTab = ref('basic')
 const editMode = ref(false)
 const operationMessage = ref('')
 const operationMessageType = ref<'success' | 'error'>('success')
-let operationMessageTimer: ReturnType<typeof window.setTimeout> | undefined
+let operationMessageTimer: number | undefined
 
 const form = reactive<CompanyProfileForm>(createEmptyCompanyProfileForm())
 

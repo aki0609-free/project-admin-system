@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.backend.features.customer.dto.CustomerSiteBillingRateRequest;
+import com.project.backend.features.customer.dto.CustomerSiteBillingRateBulkSaveRequest;
 import com.project.backend.features.customer.dto.CustomerSiteBillingRateResponse;
 import com.project.backend.features.customer.service.CustomerSiteBillingRateCommandService;
 import com.project.backend.features.customer.service.CustomerSiteBillingRateQueryService;
@@ -46,6 +47,13 @@ public class CustomerSiteBillingRateController {
                         @PathVariable Long customerId,
                         @RequestBody CustomerSiteBillingRateRequest request) {
                 return commandService.create(customerId, request);
+        }
+
+        @PostMapping("/bulk-save")
+        public void bulkSave(
+                        @PathVariable Long customerId,
+                        @RequestBody CustomerSiteBillingRateBulkSaveRequest request) {
+                commandService.bulkSave(customerId, request);
         }
 
         @PutMapping("/{billingRateId}")

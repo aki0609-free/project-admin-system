@@ -28,6 +28,11 @@ const sites: CustomerSite[] = [
   },
 ]
 
+const firstSite = sites[0]
+if (!firstSite) {
+  throw new Error('顧客現場テストデータがありません。')
+}
+
 describe('customer editable table columns', () => {
   it('新規現場・顧客社員の一時IDを表示しない', () => {
     const siteIdColumn = useCustomerSiteColumns().columns.value
@@ -35,8 +40,8 @@ describe('customer editable table columns', () => {
     const employeeIdColumn = useCustomerEmployeeColumns().columns.value
       .find(column => column.key === 'id')
 
-    expect(siteIdColumn?.formatter?.(-10, sites[0]!)).toBe('')
-    expect(siteIdColumn?.formatter?.(5, sites[0]!)).toBe('5')
+    expect(siteIdColumn?.formatter?.(-10, firstSite)).toBe('')
+    expect(siteIdColumn?.formatter?.(5, firstSite)).toBe('5')
     expect(employeeIdColumn?.formatter?.(-20, {} as never)).toBe('')
   })
 
@@ -50,7 +55,7 @@ describe('customer editable table columns', () => {
       min: 0,
       suffix: 'km',
     })
-    expect(distanceColumn?.formatter?.(12, sites[0]!)).toBe('12km')
+    expect(distanceColumn?.formatter?.(12, firstSite)).toBe('12km')
   })
 
   it('保存済みの全現場を名称付き請求単価候補にする', () => {

@@ -91,8 +91,7 @@
       @click.stop
     >
       <DayRuleField
-        :model-value="modelValue as any"
-        @update:model-value="modelValue = $event"
+        v-model="dayRuleValue"
       />
 
       <div class="d-flex justify-end mt-1">
@@ -124,6 +123,7 @@
 
 <script setup lang="ts" generic="T extends { id: number }">
 import type { SimpleTableColumnDef } from '@/shared/components/table/simple_table/types/item/types'
+import type { DayRule } from '@/shared/types/dayRuleTypes'
 import DayRuleField from '@/shared/components/form/base/components/form/DayRuleField.vue'
 import { computed, ref } from 'vue'
 
@@ -220,6 +220,22 @@ const checkboxValue = computed<boolean>({
 const numberInputValue = computed(() => {
   const value = rawValue.value
   return value == null || value === '' ? '' : Number(value)
+})
+
+const dayRuleValue = computed<DayRule | null>({
+  get() {
+    const value = rawValue.value
+    return value == null || value === ''
+      ? null
+      : value as DayRule
+  },
+  set(value) {
+    emit('update', {
+      id: props.item.id,
+      field: props.field,
+      value,
+    })
+  },
 })
 
 const updateNumberValue = (value: string | number | null) => {
