@@ -12,6 +12,7 @@ import com.project.backend.features.customer.entity.Customer;
 import com.project.backend.features.customer.entity.CustomerEmployee;
 import com.project.backend.features.customer.entity.CustomerSite;
 import com.project.backend.features.customer.enums.CustomerInvoiceType;
+import com.project.backend.features.customer.enums.CustomerContractStatus;
 
 @Component
 public class CustomerMapper {
@@ -36,7 +37,11 @@ public class CustomerMapper {
         entity.setRepresentativeName(trimToNull(request.representativeName()));
         entity.setPhone(trimToNull(request.phone()));
         entity.setJobType(trimToNull(request.jobType()));
-        entity.setContractFlag(trimToNull(request.contractFlag()));
+        entity.setContractFlag(
+                request.contractFlag() != null
+                        ? request.contractFlag()
+                        : CustomerContractStatus.ACTIVE
+        );
 
         entity.setInvoiceType(
                 request.invoiceType() != null

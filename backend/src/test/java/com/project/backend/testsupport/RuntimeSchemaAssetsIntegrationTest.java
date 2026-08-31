@@ -57,9 +57,10 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
         assertThat(resources)
-                .hasSize(41)
+                .hasSize(42)
                 .contains(
                         "sql/admin/external_support_links_v1.sql",
+                        "sql/customer/customer_contract_status_v1.sql",
                         "sql/operation/monthly/customer_transaction_adjustment_v1.sql"
                 );
         RuntimeSchemaAssetInstaller.apply(mysqlContainer, resources);

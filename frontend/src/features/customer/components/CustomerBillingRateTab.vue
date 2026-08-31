@@ -163,7 +163,6 @@ const rowSchema = z.object({
     'HOURLY',
     'DAILY',
     'MONTHLY',
-    'FIXED',
   ]),
 
   baseUnitPrice: unitPriceSchema,

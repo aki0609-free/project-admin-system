@@ -14,7 +14,17 @@ export const useCustomerColumns = () => {
       { title: '代表者名', key: 'representativeName', width: '160px', filter: { type: 'text' } },
       { title: '電話番号', key: 'phone', width: '160px', filter: { type: 'text' } },
       { title: '職種', key: 'jobType', width: '140px', filter: { type: 'text' } },
-      { title: '契約有無', key: 'contractFlag', width: '120px', filter: { type: 'text' } },
+      {
+        title: '契約状態',
+        key: 'contractFlag',
+        width: '120px',
+        filter: { type: 'select' },
+        formatter: value => ({
+          ACTIVE: '契約中',
+          INACTIVE: '未契約',
+          ENDED: '契約終了',
+        })[String(value)] ?? '',
+      },
       {
         title: '請求書',
         key: 'invoiceType',

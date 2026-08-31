@@ -38,7 +38,6 @@ const rows = computed<Row[]>(() =>
 
 const columns = computed(() => {
   const defs: SimpleTableColumnDef<Row>[] = [
-    { title: 'ID', key: 'id', width: '180px', filter: { type: 'text' } },
     { title: 'groupKey', key: 'groupKey', width: '180px', filter: { type: 'text' } },
     { title: 'groupName', key: 'groupName', width: '180px', filter: { type: 'text' } },
     { title: '宛先数', key: 'recipientCount', width: '180px', filter: { type: 'text' } },

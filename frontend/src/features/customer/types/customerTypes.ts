@@ -13,12 +13,16 @@ export type CustomerBillingUnit =
   | 'HOURLY'
   | 'DAILY'
   | 'MONTHLY'
-  | 'FIXED'
 
 export type CustomerInvoiceType =
   | 'PATTERN_1'
   | 'PATTERN_2'
   | 'PATTERN_3'
+
+export type CustomerContractStatus =
+  | 'ACTIVE'
+  | 'INACTIVE'
+  | 'ENDED'
 
 export type Customer = {
   id: number
@@ -30,7 +34,7 @@ export type Customer = {
   representativeName: string
   phone: string
   jobType: string
-  contractFlag: string
+  contractFlag: CustomerContractStatus
   invoiceType: CustomerInvoiceType
   closingDayRule: DayRule | null
   paymentDayRule: DayRule | null

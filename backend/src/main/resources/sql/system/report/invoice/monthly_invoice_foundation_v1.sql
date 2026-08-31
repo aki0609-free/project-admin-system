@@ -3,6 +3,16 @@
 
 SET NAMES utf8mb4;
 
+-- V1では期間固定額をMONTHLYへ統合する。
+-- 既存データが残っていても、基盤適用時に安全に移行できるよう冪等なUPDATEとする。
+UPDATE customer_site_billing_rates
+SET billing_unit = 'MONTHLY'
+WHERE billing_unit = 'FIXED';
+
+UPDATE daily_report
+SET billing_unit = 'MONTHLY'
+WHERE billing_unit = 'FIXED';
+
 CREATE TABLE IF NOT EXISTS monthly_invoice_input (
     id BIGINT NOT NULL AUTO_INCREMENT,
     execution_id VARCHAR(100) NOT NULL,
@@ -121,78 +131,208 @@ CREATE TABLE IF NOT EXISTS monthly_invoice_render_execution (
         (tenant_id, execution_id, business_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- DAILY / HOURLYは日報の単価スナップショットだけで確定できる。
--- MONTHLY / FIXEDは請求期間単位の一度だけ課金するルールが別途必要なため、
--- V1ではcalculation_ready_flag=falseとして誤請求を防ぐ。
-CREATE OR REPLACE VIEW vw_monthly_invoice_latest_detail AS
+-- 顧客締め実行の期間内で、MONTHLYの基本料金は同じ請求単価につき一度だけ計上する。
+-- 残業・深夜・休日・通勤費は日報ごとの実績として従来どおり加算する。
+CREATE OR REPLACE VIEW vw_monthly_invoice_execution_detail AS
 SELECT
-    dr.tenant_id,
-    dr.customer_id,
-    dr.work_date,
-    dr.customer_site_id,
-    COALESCE(dr.site_name, site.name, '') AS site_name,
-    dr.job_code,
-    dr.job_name,
-    dr.site_role_code,
-    dr.site_role_name,
-    dr.billing_unit,
+    source.execution_id,
+    source.tenant_id,
+    source.customer_id,
+    source.work_date,
+    source.customer_site_id,
+    source.site_name,
+    source.job_code,
+    source.job_name,
+    source.site_role_code,
+    source.site_role_name,
+    source.billing_unit,
     CASE
-        WHEN dr.billing_unit = 'DAILY'
-            THEN COALESCE(dr.work_hours, 0) / 8
-        WHEN dr.billing_unit = 'HOURLY'
-            THEN COALESCE(dr.work_hours, 0)
+        WHEN source.billing_unit = 'DAILY'
+            THEN source.work_hours / 8
+        WHEN source.billing_unit = 'HOURLY'
+            THEN source.work_hours
+        WHEN source.billing_unit = 'MONTHLY'
+             AND source.billing_rate_occurrence = 1
+            THEN 1
         ELSE 0
     END AS base_quantity,
-    COALESCE(dr.billing_base_unit_price, 0) AS base_unit_price,
+    source.billing_base_unit_price AS base_unit_price,
     ROUND(
         CASE
-            WHEN dr.billing_unit = 'DAILY'
-                THEN COALESCE(dr.work_hours, 0) / 8
-                    * COALESCE(dr.billing_base_unit_price, 0)
-            WHEN dr.billing_unit = 'HOURLY'
-                THEN COALESCE(dr.work_hours, 0)
-                    * COALESCE(dr.billing_base_unit_price, 0)
+            WHEN source.billing_unit = 'DAILY'
+                THEN source.work_hours / 8 * source.billing_base_unit_price
+            WHEN source.billing_unit = 'HOURLY'
+                THEN source.work_hours * source.billing_base_unit_price
+            WHEN source.billing_unit = 'MONTHLY'
+                 AND source.billing_rate_occurrence = 1
+                THEN source.billing_base_unit_price
             ELSE 0
         END,
         0
     ) AS base_amount,
-    COALESCE(dr.overtime_hours, 0) AS overtime_hours,
-    COALESCE(dr.billing_overtime_unit_price, 0) AS overtime_unit_price,
+    source.overtime_hours,
+    source.billing_overtime_unit_price AS overtime_unit_price,
     ROUND(
-        COALESCE(dr.overtime_hours, 0)
-            * COALESCE(dr.billing_overtime_unit_price, 0),
+        source.overtime_hours * source.billing_overtime_unit_price,
         0
     ) AS overtime_amount,
-    COALESCE(dr.night_work_hours, 0) AS night_hours,
-    COALESCE(dr.billing_night_unit_price, 0) AS night_unit_price,
+    source.night_work_hours AS night_hours,
+    source.billing_night_unit_price AS night_unit_price,
     ROUND(
-        COALESCE(dr.night_work_hours, 0)
-            * COALESCE(dr.billing_night_unit_price, 0),
+        source.night_work_hours * source.billing_night_unit_price,
         0
     ) AS night_amount,
-    COALESCE(dr.holiday_work_hours, 0) AS holiday_hours,
-    COALESCE(dr.billing_holiday_unit_price, 0) AS holiday_unit_price,
+    source.holiday_work_hours AS holiday_hours,
+    source.billing_holiday_unit_price AS holiday_unit_price,
     ROUND(
-        COALESCE(dr.holiday_work_hours, 0)
-            * COALESCE(dr.billing_holiday_unit_price, 0),
+        source.holiday_work_hours * source.billing_holiday_unit_price,
         0
     ) AS holiday_amount,
-    COALESCE(dr.mileage, 0) AS commute_distance,
-    COALESCE(dr.billing_commute_unit_price, 0) AS commute_unit_price,
+    source.mileage AS commute_distance,
+    source.billing_commute_unit_price AS commute_unit_price,
     ROUND(
-        COALESCE(dr.mileage, 0)
-            * COALESCE(dr.billing_commute_unit_price, 0),
+        source.mileage * source.billing_commute_unit_price,
         0
     ) AS commute_amount,
-    dr.billing_unit IN ('DAILY', 'HOURLY') AS calculation_ready_flag
-FROM daily_report dr
-LEFT JOIN customer_sites site
-  ON site.tenant_id = dr.tenant_id
- AND site.id = dr.customer_site_id
- AND site.deleted_at IS NULL
-WHERE dr.deleted_at IS NULL
-  AND dr.approval_status = 'APPROVED'
-  AND dr.customer_id IS NOT NULL;
+    source.billing_unit IN ('DAILY', 'HOURLY', 'MONTHLY')
+        AND (source.billing_unit <> 'MONTHLY' OR source.billing_rate_id IS NOT NULL)
+        AS calculation_ready_flag
+FROM (
+    SELECT
+        input.execution_id,
+        dr.tenant_id,
+        dr.customer_id,
+        dr.work_date,
+        dr.customer_site_id,
+        COALESCE(dr.site_name, site.name, '') AS site_name,
+        dr.job_code,
+        dr.job_name,
+        dr.site_role_code,
+        dr.site_role_name,
+        dr.billing_rate_id,
+        dr.billing_unit,
+        COALESCE(dr.work_hours, 0) AS work_hours,
+        COALESCE(dr.billing_base_unit_price, 0) AS billing_base_unit_price,
+        COALESCE(dr.overtime_hours, 0) AS overtime_hours,
+        COALESCE(dr.billing_overtime_unit_price, 0) AS billing_overtime_unit_price,
+        COALESCE(dr.night_work_hours, 0) AS night_work_hours,
+        COALESCE(dr.billing_night_unit_price, 0) AS billing_night_unit_price,
+        COALESCE(dr.holiday_work_hours, 0) AS holiday_work_hours,
+        COALESCE(dr.billing_holiday_unit_price, 0) AS billing_holiday_unit_price,
+        COALESCE(dr.mileage, 0) AS mileage,
+        COALESCE(dr.billing_commute_unit_price, 0) AS billing_commute_unit_price,
+        ROW_NUMBER() OVER (
+            PARTITION BY input.execution_id, dr.billing_rate_id
+            ORDER BY dr.work_date, dr.id
+        ) AS billing_rate_occurrence
+    FROM monthly_invoice_input input
+    JOIN daily_report dr
+      ON dr.tenant_id = input.tenant_id
+     AND dr.customer_id = input.customer_id
+     AND dr.work_date BETWEEN input.period_from AND input.period_to
+     AND dr.deleted_at IS NULL
+     AND dr.approval_status = 'APPROVED'
+    LEFT JOIN customer_sites site
+      ON site.tenant_id = dr.tenant_id
+     AND site.id = dr.customer_site_id
+     AND site.deleted_at IS NULL
+    WHERE input.deleted_at IS NULL
+) source;
+
+-- 月選択プレビュー／対象顧客検索向けの互換View。
+-- 本締めは必ず上のexecution Viewを使い、顧客固有の締め期間で正確に確定する。
+CREATE OR REPLACE VIEW vw_monthly_invoice_latest_detail AS
+SELECT
+    source.tenant_id,
+    source.customer_id,
+    source.work_date,
+    source.customer_site_id,
+    source.site_name,
+    source.job_code,
+    source.job_name,
+    source.site_role_code,
+    source.site_role_name,
+    source.billing_unit,
+    CASE
+        WHEN source.billing_unit = 'DAILY' THEN source.work_hours / 8
+        WHEN source.billing_unit = 'HOURLY' THEN source.work_hours
+        WHEN source.billing_unit = 'MONTHLY'
+             AND source.billing_rate_occurrence = 1 THEN 1
+        ELSE 0
+    END AS base_quantity,
+    source.billing_base_unit_price AS base_unit_price,
+    ROUND(
+        CASE
+            WHEN source.billing_unit = 'DAILY'
+                THEN source.work_hours / 8 * source.billing_base_unit_price
+            WHEN source.billing_unit = 'HOURLY'
+                THEN source.work_hours * source.billing_base_unit_price
+            WHEN source.billing_unit = 'MONTHLY'
+                 AND source.billing_rate_occurrence = 1
+                THEN source.billing_base_unit_price
+            ELSE 0
+        END,
+        0
+    ) AS base_amount,
+    source.overtime_hours,
+    source.billing_overtime_unit_price AS overtime_unit_price,
+    ROUND(source.overtime_hours * source.billing_overtime_unit_price, 0)
+        AS overtime_amount,
+    source.night_work_hours AS night_hours,
+    source.billing_night_unit_price AS night_unit_price,
+    ROUND(source.night_work_hours * source.billing_night_unit_price, 0)
+        AS night_amount,
+    source.holiday_work_hours AS holiday_hours,
+    source.billing_holiday_unit_price AS holiday_unit_price,
+    ROUND(source.holiday_work_hours * source.billing_holiday_unit_price, 0)
+        AS holiday_amount,
+    source.mileage AS commute_distance,
+    source.billing_commute_unit_price AS commute_unit_price,
+    ROUND(source.mileage * source.billing_commute_unit_price, 0)
+        AS commute_amount,
+    source.billing_unit IN ('DAILY', 'HOURLY', 'MONTHLY')
+        AND (source.billing_unit <> 'MONTHLY' OR source.billing_rate_id IS NOT NULL)
+        AS calculation_ready_flag
+FROM (
+    SELECT
+        dr.tenant_id,
+        dr.customer_id,
+        dr.work_date,
+        dr.customer_site_id,
+        COALESCE(dr.site_name, site.name, '') AS site_name,
+        dr.job_code,
+        dr.job_name,
+        dr.site_role_code,
+        dr.site_role_name,
+        dr.billing_rate_id,
+        dr.billing_unit,
+        COALESCE(dr.work_hours, 0) AS work_hours,
+        COALESCE(dr.billing_base_unit_price, 0) AS billing_base_unit_price,
+        COALESCE(dr.overtime_hours, 0) AS overtime_hours,
+        COALESCE(dr.billing_overtime_unit_price, 0) AS billing_overtime_unit_price,
+        COALESCE(dr.night_work_hours, 0) AS night_work_hours,
+        COALESCE(dr.billing_night_unit_price, 0) AS billing_night_unit_price,
+        COALESCE(dr.holiday_work_hours, 0) AS holiday_work_hours,
+        COALESCE(dr.billing_holiday_unit_price, 0) AS billing_holiday_unit_price,
+        COALESCE(dr.mileage, 0) AS mileage,
+        COALESCE(dr.billing_commute_unit_price, 0) AS billing_commute_unit_price,
+        ROW_NUMBER() OVER (
+            PARTITION BY
+                dr.tenant_id,
+                dr.customer_id,
+                DATE_FORMAT(dr.work_date, '%Y-%m'),
+                dr.billing_rate_id
+            ORDER BY dr.work_date, dr.id
+        ) AS billing_rate_occurrence
+    FROM daily_report dr
+    LEFT JOIN customer_sites site
+      ON site.tenant_id = dr.tenant_id
+     AND site.id = dr.customer_site_id
+     AND site.deleted_at IS NULL
+    WHERE dr.deleted_at IS NULL
+      AND dr.approval_status = 'APPROVED'
+      AND dr.customer_id IS NOT NULL
+) source;
 
 CREATE OR REPLACE VIEW vw_monthly_invoice_render_flat AS
 SELECT
@@ -292,10 +432,8 @@ BEGIN
     IF v_execution_mode IN ('INITIAL', 'RECLOSE') THEN
         SELECT COUNT(*)
         INTO v_source_count
-        FROM vw_monthly_invoice_latest_detail source
-        WHERE source.tenant_id = v_tenant_id
-          AND source.customer_id = v_customer_id
-          AND source.work_date BETWEEN v_period_from AND v_period_to;
+        FROM vw_monthly_invoice_execution_detail source
+        WHERE source.execution_id = p_execution_id;
 
         IF v_source_count = 0 THEN
             SIGNAL SQLSTATE '45000'
@@ -304,15 +442,13 @@ BEGIN
 
         SELECT COUNT(*)
         INTO v_not_ready_count
-        FROM vw_monthly_invoice_latest_detail source
-        WHERE source.tenant_id = v_tenant_id
-          AND source.customer_id = v_customer_id
-          AND source.work_date BETWEEN v_period_from AND v_period_to
+        FROM vw_monthly_invoice_execution_detail source
+        WHERE source.execution_id = p_execution_id
           AND source.calculation_ready_flag = FALSE;
 
         IF v_not_ready_count > 0 THEN
             SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'MONTHLY/FIXED billing rule is not configured';
+                SET MESSAGE_TEXT = 'unsupported or incomplete billing unit configuration';
         END IF;
 
         INSERT INTO monthly_invoice_history (
@@ -445,10 +581,8 @@ BEGIN
             v_tenant_id,
             NOW(6),
             NOW(6)
-        FROM vw_monthly_invoice_latest_detail source
-        WHERE source.tenant_id = v_tenant_id
-          AND source.customer_id = v_customer_id
-          AND source.work_date BETWEEN v_period_from AND v_period_to;
+        FROM vw_monthly_invoice_execution_detail source
+        WHERE source.execution_id = p_execution_id;
 
         UPDATE monthly_invoice_history history
         SET

@@ -4,9 +4,12 @@ import type {
   MailPdfSendRequest,
   MailRecipientGroupResponse,
   MailSendResult,
+  MailTemplateResponse,
 } from '@/features/system/mail/types/mailApiTypes'
 import { useSendPdfMailMutation } from '../api/useSendPdfMailMutation'
 import { useMailRecipientGroupsQuery } from '@/features/system/mail/api/queries/useMailRecipientGroupsQuery'
+import { useMailTemplatesQuery } from '@/features/system/mail/api/queries/useMailTemplatesQuery'
+import { usePreviewMailTemplateMutation } from '@/features/system/mail/api/mutations/usePreviewMailTemplateMutation'
 
 const props = defineProps<{
   modelValue: boolean
@@ -30,10 +33,14 @@ const visible = computed({
 
 const mutation = useSendPdfMailMutation()
 const recipientGroupsQuery = useMailRecipientGroupsQuery()
+const mailTemplatesQuery = useMailTemplatesQuery()
+const templatePreviewMutation = usePreviewMailTemplateMutation()
 const sendErrorMessage = ref('')
+const templateErrorMessage = ref('')
 
 const form = reactive({
   recipientGroupKey: null as string | null,
+  templateKey: null as string | null,
 
   to: '',
   cc: '',
@@ -41,6 +48,7 @@ const form = reactive({
 
   subject: '',
   body: '',
+  htmlFlag: false,
 })
 
 const groupItems = computed(() =>
@@ -56,6 +64,25 @@ const selectedGroup = computed<MailRecipientGroupResponse | null>(() => {
   return (
     recipientGroupsQuery.groups.value.find((group) => group.groupKey === form.recipientGroupKey) ??
     null
+  )
+})
+
+const templateItems = computed(() =>
+  mailTemplatesQuery.templates.value
+    .filter((template) => template.activeFlag)
+    .map((template) => ({
+      title: `${template.templateName}（${template.templateKey}）`,
+      value: template.templateKey,
+    })),
+)
+
+const selectedTemplate = computed<MailTemplateResponse | null>(() => {
+  if (!form.templateKey) return null
+
+  return (
+    mailTemplatesQuery.templates.value.find(
+      (template) => template.templateKey === form.templateKey,
+    ) ?? null
   )
 })
 
@@ -82,8 +109,10 @@ watch(
     if (!value) return
 
     sendErrorMessage.value = ''
+    templateErrorMessage.value = ''
 
     form.recipientGroupKey = null
+    form.templateKey = null
     form.to = ''
     form.cc = ''
     form.bcc = ''
@@ -96,6 +125,7 @@ watch(
       '',
       'よろしくお願いいたします。',
     ].join('\n')
+    form.htmlFlag = false
   },
 )
 
@@ -115,6 +145,37 @@ watch(
   },
 )
 
+watch(
+  () => selectedTemplate.value,
+  async (template) => {
+    if (!template) return
+
+    templateErrorMessage.value = ''
+    try {
+      const preview = await templatePreviewMutation.mutateAsync({
+        subjectTemplate: template.subjectTemplate,
+        bodyTemplate: template.bodyTemplate,
+        htmlFlag: template.htmlFlag,
+        variables: {
+          fileName: props.pdfFileName ?? '',
+          documentName: props.title ?? props.pdfFileName ?? '',
+          reportName: props.title ?? '',
+          mailType: props.mailType ?? 'PDF_MAIL',
+          businessKey: props.businessKey ?? '',
+          recipientName: selectedGroup.value?.groupName ?? '',
+          recipientEmail: form.to,
+        },
+      })
+
+      form.subject = preview.subject
+      form.body = preview.body
+      form.htmlFlag = preview.htmlFlag
+    } catch {
+      templateErrorMessage.value = 'メッセージテンプレートの適用に失敗しました。'
+    }
+  },
+)
+
 const canSend = computed(
   () =>
     !!props.pdfFileKey &&
@@ -122,7 +183,8 @@ const canSend = computed(
     !!form.to.trim() &&
     !!form.subject.trim() &&
     !!form.body.trim() &&
-    !mutation.isPending.value,
+    !mutation.isPending.value &&
+    !templatePreviewMutation.isPending.value,
 )
 
 const close = () => {
@@ -148,7 +210,7 @@ const send = async () => {
 
     subject: form.subject,
     body: form.body,
-    htmlFlag: false,
+    htmlFlag: form.htmlFlag,
 
     storageType: props.storageType,
     pdfFileKey: props.pdfFileKey,
@@ -168,7 +230,7 @@ const send = async () => {
 </script>
 
 <template>
-  <v-dialog v-model="visible" width="960" max-width="calc(100vw - 48px)" scrollable>
+  <v-dialog v-model="visible" width="1180" max-width="calc(100vw - 48px)" scrollable>
     <v-card rounded="xl" class="mail-card">
       <div class="mail-header">
         <div class="header-icon">
@@ -199,7 +261,6 @@ const send = async () => {
             <div class="attachment-title">
               {{ pdfFileName ?? 'document.pdf' }}
             </div>
-            <div class="attachment-sub">{{ storageType }} / {{ pdfFileKey ?? '未設定' }}</div>
           </div>
         </div>
 
@@ -246,6 +307,20 @@ const send = async () => {
             hide-details
           />
 
+          <v-select
+            v-model="form.templateKey"
+            label="メッセージテンプレート"
+            placeholder="選択しない場合は自由入力"
+            :items="templateItems"
+            :loading="mailTemplatesQuery.isLoading.value || templatePreviewMutation.isPending.value"
+            clearable
+            prepend-inner-icon="mdi-text-box-check-outline"
+            variant="outlined"
+            density="comfortable"
+            hint="テンプレート適用後も件名と本文を自由に編集できます"
+            persistent-hint
+          />
+
           <v-text-field
             v-model="form.subject"
             label="件名"
@@ -257,7 +332,7 @@ const send = async () => {
 
           <v-textarea
             v-model="form.body"
-            label="本文"
+            :label="form.htmlFlag ? '本文（HTML）' : '本文'"
             prepend-inner-icon="mdi-text-box-outline"
             variant="outlined"
             rows="8"
@@ -266,6 +341,15 @@ const send = async () => {
             class="body-field"
           />
         </div>
+
+        <v-alert
+          v-if="templateErrorMessage"
+          type="error"
+          variant="tonal"
+          density="compact"
+        >
+          {{ templateErrorMessage }}
+        </v-alert>
 
         <v-alert
           v-if="mutation.isError.value || sendErrorMessage"
@@ -343,15 +427,6 @@ const send = async () => {
 .attachment-title {
   font-weight: 700;
   color: #0f172a;
-}
-
-.attachment-sub {
-  margin-top: 2px;
-  font-size: 12px;
-  color: #64748b;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .field-grid {

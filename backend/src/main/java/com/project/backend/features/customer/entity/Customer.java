@@ -2,6 +2,7 @@ package com.project.backend.features.customer.entity;
 
 import com.project.backend.app.base.entity.BaseEntity;
 import com.project.backend.common.dayrule.enums.DayRuleType;
+import com.project.backend.features.customer.enums.CustomerContractStatus;
 import com.project.backend.features.customer.enums.CustomerInvoiceType;
 
 import jakarta.persistence.*;
@@ -42,8 +43,10 @@ public class Customer extends BaseEntity {
     @Column(name = "job_type")
     private String jobType;
 
-    @Column(name = "contract_flag")
-    private String contractFlag;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "contract_flag", nullable = false, length = 20)
+    @Builder.Default
+    private CustomerContractStatus contractFlag = CustomerContractStatus.ACTIVE;
 
     /**
      * 顧客に適用する請求書レイアウト。

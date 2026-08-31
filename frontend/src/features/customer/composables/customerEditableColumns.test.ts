@@ -34,15 +34,14 @@ if (!firstSite) {
 }
 
 describe('customer editable table columns', () => {
-  it('新規現場・顧客社員の一時IDを表示しない', () => {
+  it('現場・顧客社員の内部ID列を表示しない', () => {
     const siteIdColumn = useCustomerSiteColumns().columns.value
       .find(column => column.key === 'id')
     const employeeIdColumn = useCustomerEmployeeColumns().columns.value
       .find(column => column.key === 'id')
 
-    expect(siteIdColumn?.formatter?.(-10, firstSite)).toBe('')
-    expect(siteIdColumn?.formatter?.(5, firstSite)).toBe('5')
-    expect(employeeIdColumn?.formatter?.(-20, {} as never)).toBe('')
+    expect(siteIdColumn).toBeUndefined()
+    expect(employeeIdColumn).toBeUndefined()
   })
 
   it('距離は0以上の数値入力としてkm表示する', () => {
@@ -88,5 +87,17 @@ describe('customer editable table columns', () => {
         suffix: '円',
       })
     }
+  })
+
+  it('単価区分は日額・時間単価・月額だけを選択できる', () => {
+    const { columns } = useCustomerBillingRateColumns(ref(sites))
+    const billingUnitColumn = columns.value
+      .find(column => column.key === 'billingUnit')
+
+    expect(billingUnitColumn?.enumOptions).toEqual([
+      { title: '日額', value: 'DAILY' },
+      { title: '時間単価', value: 'HOURLY' },
+      { title: '月額', value: 'MONTHLY' },
+    ])
   })
 })

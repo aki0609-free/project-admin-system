@@ -33,10 +33,6 @@ const billingUnitItems: SelectItem[] = [
     title: '月額',
     value: 'MONTHLY',
   },
-  {
-    title: '固定額',
-    value: 'FIXED',
-  },
 ]
 
 const billingUnitLabels:
@@ -44,7 +40,6 @@ const billingUnitLabels:
     DAILY: '日額',
     HOURLY: '時間単価',
     MONTHLY: '月額',
-    FIXED: '固定額',
   }
 
 function formatNullableCurrency(

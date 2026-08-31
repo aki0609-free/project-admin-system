@@ -37,7 +37,9 @@ export const customerSchema = z
     representativeName: optionalText(255, '代表者名'),
     phone: optionalText(255, '電話番号'),
     jobType: optionalText(255, '職種'),
-    contractFlag: optionalText(255, '契約有無'),
+    contractFlag: z.enum(['ACTIVE', 'INACTIVE', 'ENDED'], {
+      message: '契約状態を選択してください',
+    }),
     invoiceType: z.enum(['PATTERN_1', 'PATTERN_2', 'PATTERN_3']),
     closingDayRule: dayRuleSchema,
     paymentDayRule: dayRuleSchema,

@@ -12,12 +12,16 @@ export type CustomerBillingUnit =
   | 'HOURLY'
   | 'DAILY'
   | 'MONTHLY'
-  | 'FIXED'
 
 export type CustomerInvoiceType =
   | 'PATTERN_1'
   | 'PATTERN_2'
   | 'PATTERN_3'
+
+export type CustomerContractStatus =
+  | 'ACTIVE'
+  | 'INACTIVE'
+  | 'ENDED'
 
 export type CustomerSiteResponse = {
   id: number
@@ -117,7 +121,7 @@ export type CustomerListItemResponse = {
   representativeName: string | null
   phone: string | null
   jobType: string | null
-  contractFlag: string | null
+  contractFlag: CustomerContractStatus | null
   invoiceType: CustomerInvoiceType
   closingDayRule: DayRule | null
   paymentDayRule: DayRule | null
@@ -166,7 +170,7 @@ export type CustomerSaveRequest = {
   representativeName: string | null
   phone: string | null
   jobType: string | null
-  contractFlag: string | null
+  contractFlag: CustomerContractStatus
   invoiceType: CustomerInvoiceType
   closingDayRule: DayRule | null
   paymentDayRule: DayRule | null

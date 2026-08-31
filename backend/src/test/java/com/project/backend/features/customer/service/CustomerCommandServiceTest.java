@@ -28,6 +28,7 @@ import com.project.backend.features.customer.repository.CustomerEmployeeReposito
 import com.project.backend.features.customer.repository.CustomerRepository;
 import com.project.backend.features.customer.repository.CustomerSiteBillingRateRepository;
 import com.project.backend.features.customer.repository.CustomerSiteRepository;
+import com.project.backend.features.customer.service.integration.CustomerInvoiceMailGroupSynchronizer;
 
 class CustomerCommandServiceTest {
 
@@ -39,6 +40,8 @@ class CustomerCommandServiceTest {
     private final CustomerSiteBillingRateRepository billingRateRepository =
             mock(CustomerSiteBillingRateRepository.class);
     private final CustomerReferenceGuard referenceGuard = mock(CustomerReferenceGuard.class);
+    private final CustomerInvoiceMailGroupSynchronizer invoiceMailGroupSynchronizer =
+            mock(CustomerInvoiceMailGroupSynchronizer.class);
     private final CustomerCommandService service = new CustomerCommandService(
             customerRepository,
             siteRepository,
@@ -46,6 +49,7 @@ class CustomerCommandServiceTest {
             billingRateRepository,
             new CustomerMapper(),
             referenceGuard,
+            invoiceMailGroupSynchronizer,
             Clock.fixed(NOW, ZoneOffset.UTC)
     );
 
@@ -86,6 +90,19 @@ class CustomerCommandServiceTest {
                 .hasMessageContaining("メールアドレス");
 
         verify(customerRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void create_shouldRejectSameEmployeeAsToAndCc() {
+        CustomerEmployeeRequest recipient = new CustomerEmployeeRequest(
+                null, "担当者", null, null, null, "recipient@example.com",
+                true, true, true, false, false
+        );
+
+        assertThatThrownBy(() -> service.create(
+                request(List.of(), List.of(recipient))
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("同時");
     }
 
     @Test
@@ -139,6 +156,7 @@ class CustomerCommandServiceTest {
 
         verify(referenceGuard).assertCustomerDeletable(10L);
         assertThat(customer.getDeletedAt()).isEqualTo(NOW);
+        verify(invoiceMailGroupSynchronizer).delete(10L);
         verify(customerRepository, never()).delete(customer);
     }
 

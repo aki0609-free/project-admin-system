@@ -86,7 +86,7 @@ public class CustomerSiteBillingRate extends BaseEntity {
 
     /**
      * DAILYなら日額、HOURLYなら時間単価、
-     * MONTHLYなら月額、FIXEDなら固定額。
+     * MONTHLYなら顧客締め期間ごとの月額。
      */
     @Column(
             name = "base_unit_price",

@@ -3,6 +3,7 @@ package com.project.backend.features.customer.dto;
 import java.util.List;
 
 import com.project.backend.common.dayrule.dto.DayRule;
+import com.project.backend.features.customer.enums.CustomerContractStatus;
 import com.project.backend.features.customer.enums.CustomerInvoiceType;
 
 public record CustomerSaveRequest(
@@ -14,7 +15,7 @@ public record CustomerSaveRequest(
         String representativeName,
         String phone,
         String jobType,
-        String contractFlag,
+        CustomerContractStatus contractFlag,
 
         CustomerInvoiceType invoiceType,
 

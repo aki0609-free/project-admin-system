@@ -31,7 +31,7 @@ SELECT
     @fixture_tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL,
     @fixture_customer_name, 'いーつーいーげつかんしゅうけいけんしょうこきゃく', 'E2E検証顧客',
     '100-0001', '東京都千代田区E2E 1-1', 'E2E 担当者', '03-0000-0000',
-    '建設', '契約中', 'PATTERN_1',
+    '建設', 'ACTIVE', 'PATTERN_1',
     'END_OF_MONTH', NULL, 0,
     'DAY_OF_MONTH', 25, 1
 WHERE @fixture_customer_id IS NULL;

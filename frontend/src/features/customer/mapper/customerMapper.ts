@@ -9,6 +9,7 @@ import type {
 } from '../types/customerApiTypes'
 import type {
   Customer,
+  CustomerContractStatus,
   CustomerEmployee,
   CustomerListItem,
   CustomerSavePayload,
@@ -28,6 +29,23 @@ function toNullableString(value: string | null | undefined): string | null {
 function toNullableId(id: number | null | undefined): number | null {
   if (id == null || id < 0) return null
   return id
+}
+
+function toCustomerContractStatus(value: string | null | undefined): CustomerContractStatus {
+  switch (value?.trim().toUpperCase()) {
+    case 'INACTIVE':
+      return 'INACTIVE'
+    case 'ENDED':
+      return 'ENDED'
+    case 'ACTIVE':
+    case '契約中':
+    case '有':
+    case 'あり':
+    case '有り':
+      return 'ACTIVE'
+    default:
+      return 'INACTIVE'
+  }
 }
 
 function toDayRule(value: DayRule | null | undefined): DayRule | null {
@@ -66,7 +84,7 @@ export function toCustomer(
     representativeName: toStringValue(response.representativeName),
     phone: toStringValue(response.phone),
     jobType: toStringValue(response.jobType),
-    contractFlag: toStringValue(response.contractFlag),
+    contractFlag: toCustomerContractStatus(response.contractFlag),
     invoiceType: response.invoiceType ?? 'PATTERN_1',
     closingDayRule: toDayRule(response.closingDayRule),
     paymentDayRule: toDayRule(response.paymentDayRule),
@@ -168,7 +186,7 @@ export function toCustomerSaveRequest(
     representativeName: toNullableString(payload.customer.representativeName),
     phone: toNullableString(payload.customer.phone),
     jobType: toNullableString(payload.customer.jobType),
-    contractFlag: toNullableString(payload.customer.contractFlag),
+    contractFlag: payload.customer.contractFlag,
     invoiceType: payload.customer.invoiceType,
     closingDayRule: toDayRuleRequest(payload.customer.closingDayRule),
     paymentDayRule: toDayRuleRequest(payload.customer.paymentDayRule),

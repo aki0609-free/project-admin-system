@@ -33,20 +33,62 @@ public class CustomerBillingSummaryService {
 
     private static final BigDecimal V1_TAX_RATE = new BigDecimal("0.10");
     private static final String AMOUNT_SQL = """
+            WITH scoped AS (
+                SELECT
+                    report.billing_rate_id,
+                    report.billing_unit,
+                    COALESCE(report.work_hours, 0) AS work_hours,
+                    COALESCE(report.billing_base_unit_price, 0) AS base_unit_price,
+                    COALESCE(report.overtime_hours, 0) AS overtime_hours,
+                    COALESCE(report.billing_overtime_unit_price, 0) AS overtime_unit_price,
+                    COALESCE(report.night_work_hours, 0) AS night_hours,
+                    COALESCE(report.billing_night_unit_price, 0) AS night_unit_price,
+                    COALESCE(report.holiday_work_hours, 0) AS holiday_hours,
+                    COALESCE(report.billing_holiday_unit_price, 0) AS holiday_unit_price,
+                    COALESCE(report.mileage, 0) AS mileage,
+                    COALESCE(report.billing_commute_unit_price, 0) AS commute_unit_price,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY report.billing_rate_id
+                        ORDER BY report.work_date, report.id
+                    ) AS billing_rate_occurrence
+                FROM daily_report report
+                WHERE report.tenant_id = ?
+                  AND report.customer_id = ?
+                  AND report.work_date BETWEEN ? AND ?
+                  AND report.deleted_at IS NULL
+                  AND report.approval_status = 'APPROVED'
+            )
             SELECT
                 COALESCE(SUM(
-                    source.base_amount
-                    + source.overtime_amount
-                    + source.night_amount
-                    + source.holiday_amount
-                    + source.commute_amount
+                    ROUND(
+                        CASE
+                            WHEN scoped.billing_unit = 'DAILY'
+                                THEN scoped.work_hours / 8 * scoped.base_unit_price
+                            WHEN scoped.billing_unit = 'HOURLY'
+                                THEN scoped.work_hours * scoped.base_unit_price
+                            WHEN scoped.billing_unit = 'MONTHLY'
+                                 AND scoped.billing_rate_occurrence = 1
+                                THEN scoped.base_unit_price
+                            ELSE 0
+                        END,
+                        0
+                    )
+                    + ROUND(scoped.overtime_hours * scoped.overtime_unit_price, 0)
+                    + ROUND(scoped.night_hours * scoped.night_unit_price, 0)
+                    + ROUND(scoped.holiday_hours * scoped.holiday_unit_price, 0)
+                    + ROUND(scoped.mileage * scoped.commute_unit_price, 0)
                 ), 0) AS subtotal_amount,
-                SUM(CASE WHEN source.calculation_ready_flag = FALSE THEN 1 ELSE 0 END)
+                COALESCE(SUM(
+                    CASE
+                        WHEN scoped.billing_unit NOT IN ('DAILY', 'HOURLY', 'MONTHLY')
+                          OR (scoped.billing_unit = 'MONTHLY'
+                              AND scoped.billing_rate_id IS NULL)
+                            THEN 1
+                        ELSE 0
+                    END
+                ), 0)
                     AS not_ready_count
-            FROM vw_monthly_invoice_latest_detail source
-            WHERE source.tenant_id = ?
-              AND source.customer_id = ?
-              AND source.work_date BETWEEN ? AND ?
+            FROM scoped
             """;
 
     private final CustomerBillingClosingRepository repository;

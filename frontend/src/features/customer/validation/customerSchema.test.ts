@@ -11,7 +11,7 @@ const validCustomer = {
   representativeName: '',
   phone: '',
   jobType: '',
-  contractFlag: '',
+  contractFlag: 'ACTIVE' as const,
   invoiceType: 'PATTERN_1' as const,
   closingDayRule: null,
   paymentDayRule: null,
@@ -46,5 +46,14 @@ describe('customerSchema', () => {
       },
     })
     expect(result.success).toBe(true)
+  })
+
+  it('未定義の契約状態を拒否する', () => {
+    const result = customerSchema.safeParse({
+      ...validCustomer,
+      contractFlag: 'UNKNOWN',
+    })
+
+    expect(result.success).toBe(false)
   })
 })

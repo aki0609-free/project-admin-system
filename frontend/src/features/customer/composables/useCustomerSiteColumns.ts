@@ -14,13 +14,6 @@ export const useCustomerSiteColumns = () => {
       filter: { type: 'checkbox' },
     },
     {
-      title: 'ID',
-      key: 'id',
-      width: '100px',
-      filter: { type: 'text' },
-      formatter: value => Number(value) > 0 ? String(value) : '',
-    },
-    {
       title: '現場名',
       key: 'name',
       width: '220px',

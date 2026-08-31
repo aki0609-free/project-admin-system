@@ -8,6 +8,7 @@ import com.project.backend.common.dayrule.dto.DayRule;
 import com.project.backend.common.dayrule.enums.DayRuleType;
 import com.project.backend.features.customer.dto.CustomerSaveRequest;
 import com.project.backend.features.customer.entity.Customer;
+import com.project.backend.features.customer.enums.CustomerContractStatus;
 import com.project.backend.features.customer.enums.CustomerInvoiceType;
 
 class CustomerMapperTest {
@@ -60,6 +61,7 @@ class CustomerMapperTest {
         assertThat(entity.getName()).isEqualTo("テスト顧客");
         assertThat(entity.getFuriganaName()).isEqualTo("テスト");
         assertThat(entity.getShortName()).isNull();
+        assertThat(entity.getContractFlag()).isEqualTo(CustomerContractStatus.ACTIVE);
         assertThat(entity.getClosingDayValue()).isNull();
     }
 

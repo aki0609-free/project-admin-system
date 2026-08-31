@@ -82,7 +82,14 @@
           autofocus
         />
       </template>
-      <v-date-picker v-model="modelValue" @update:model-value="stopEdit" />
+      <v-locale-provider locale="ja">
+        <v-date-picker
+          v-model="modelValue"
+          title="日付を選択"
+          header="日付を選択"
+          @update:model-value="stopEdit"
+        />
+      </v-locale-provider>
     </v-menu>
 
     <!-- dayrule -->

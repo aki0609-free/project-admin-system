@@ -15,7 +15,18 @@ export const useCustomerFormFields = () => {
     { key: 'phone', label: '電話番号', type: 'text', tab: '基本情報' },
 
     { key: 'jobType', label: '職種', type: 'text', tab: '契約・請求' },
-    { key: 'contractFlag', label: '契約有無', type: 'text', tab: '契約・請求' },
+    {
+      key: 'contractFlag',
+      label: '契約状態',
+      type: 'select',
+      tab: '契約・請求',
+      required: true,
+      options: [
+        { title: '契約中', value: 'ACTIVE' },
+        { title: '未契約', value: 'INACTIVE' },
+        { title: '契約終了', value: 'ENDED' },
+      ],
+    },
     {
       key: 'invoiceType',
       label: '請求書パターン',

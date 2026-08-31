@@ -3,6 +3,7 @@ package com.project.backend.features.customer.dto;
 import java.util.List;
 
 import com.project.backend.common.dayrule.dto.DayRuleResponse;
+import com.project.backend.features.customer.enums.CustomerContractStatus;
 import com.project.backend.features.customer.enums.CustomerInvoiceType;
 
 public record CustomerDetailResponse(
@@ -15,7 +16,7 @@ public record CustomerDetailResponse(
         String representativeName,
         String phone,
         String jobType,
-        String contractFlag,
+        CustomerContractStatus contractFlag,
 
         CustomerInvoiceType invoiceType,
 

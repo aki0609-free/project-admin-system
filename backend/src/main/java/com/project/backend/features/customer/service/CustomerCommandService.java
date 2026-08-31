@@ -21,6 +21,7 @@ import com.project.backend.features.customer.repository.CustomerEmployeeReposito
 import com.project.backend.features.customer.repository.CustomerRepository;
 import com.project.backend.features.customer.repository.CustomerSiteBillingRateRepository;
 import com.project.backend.features.customer.repository.CustomerSiteRepository;
+import com.project.backend.features.customer.service.integration.CustomerInvoiceMailGroupSynchronizer;
 
 import lombok.RequiredArgsConstructor;
 
@@ -39,6 +40,7 @@ public class CustomerCommandService {
     private final CustomerSiteBillingRateRepository billingRateRepository;
     private final CustomerMapper customerMapper;
     private final CustomerReferenceGuard referenceGuard;
+    private final CustomerInvoiceMailGroupSynchronizer invoiceMailGroupSynchronizer;
     private final Clock clock;
 
     public Long create(CustomerSaveRequest request) {
@@ -51,6 +53,7 @@ public class CustomerCommandService {
 
         syncSites(saved.getId(), request.sites());
         syncEmployees(saved.getId(), request.employees());
+        invoiceMailGroupSynchronizer.synchronize(saved.getId(), saved.getName());
 
         return saved.getId();
     }
@@ -71,6 +74,7 @@ public class CustomerCommandService {
 
         syncSites(id, request.sites());
         syncEmployees(id, request.employees());
+        invoiceMailGroupSynchronizer.synchronize(id, customer.getName());
     }
 
     @SuppressWarnings("null")
@@ -95,6 +99,7 @@ public class CustomerCommandService {
         }
 
         customer.setDeletedAt(deletedAt);
+        invoiceMailGroupSynchronizer.delete(id);
     }
 
     private void validate(CustomerSaveRequest request) {
@@ -114,8 +119,6 @@ public class CustomerCommandService {
         validateLength(request.representativeName(), 255, "代表者名");
         validateLength(request.phone(), 255, "電話番号");
         validateLength(request.jobType(), 255, "職種");
-        validateLength(request.contractFlag(), 255, "契約有無");
-
         validateDayRule(request.closingDayRule(), "締日");
         validateDayRule(request.paymentDayRule(), "支払日");
 
@@ -260,6 +263,12 @@ public class CustomerCommandService {
                     && (request.email() == null || request.email().isBlank())) {
                 throw new IllegalArgumentException(
                         "請求書のToまたはCCに指定する担当者はメールアドレスが必須です。"
+                );
+            }
+            if (Boolean.TRUE.equals(request.invoiceToFlag())
+                    && Boolean.TRUE.equals(request.invoiceCcFlag())) {
+                throw new IllegalArgumentException(
+                        "同じ顧客担当者を請求書のToとCCへ同時に指定することはできません。"
                 );
             }
             validateLength(request.name(), 255, "顧客担当者名");
