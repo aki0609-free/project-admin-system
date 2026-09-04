@@ -31,7 +31,7 @@ export const toEmployeeSavingSaveRequest = (
   return {
     employeeId: form.employeeId,
     percentage: form.percentage,
-    minSalaryThreshold: form.minSalaryThreshold,
+    savingCalculationBaseAmount: form.savingCalculationBaseAmount,
     activeFlag: form.activeFlag,
   }
 }

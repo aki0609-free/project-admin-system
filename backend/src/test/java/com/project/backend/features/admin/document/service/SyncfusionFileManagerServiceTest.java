@@ -66,7 +66,7 @@ class SyncfusionFileManagerServiceTest {
                 request("read", "/")
         );
 
-        assertThat(response.cwd().name()).isEqualTo("自由書類");
+        assertThat(response.cwd().name()).isEqualTo("会社書類");
         assertThat(response.cwd().permission().upload()).isTrue();
         assertThat(response.files())
                 .extracting("name")
@@ -163,6 +163,16 @@ class SyncfusionFileManagerServiceTest {
     void download_shouldStreamSingleFileWithoutArchive()
             throws Exception {
         byte[] content = "sample".getBytes();
+        when(documentService.list(
+                DocumentArea.GENERAL,
+                "",
+                null,
+                1000
+        )).thenReturn(new DocumentListResponse(
+                List.of(entry("manual.pdf", false, content.length)),
+                null,
+                false
+        ));
         when(documentService.download(
                 DocumentArea.GENERAL,
                 "manual.pdf"
@@ -201,6 +211,16 @@ class SyncfusionFileManagerServiceTest {
     @Test
     void download_shouldCreateZipForDirectory()
             throws Exception {
+        when(documentService.list(
+                DocumentArea.BACKUPS,
+                "reports",
+                null,
+                1000
+        )).thenReturn(new DocumentListResponse(
+                List.of(entry("reports/2025", true, 0L)),
+                null,
+                false
+        ));
         when(documentService.listRecursively(
                 DocumentArea.BACKUPS,
                 "reports/2025"
@@ -244,6 +264,84 @@ class SyncfusionFileManagerServiceTest {
                     .isEqualTo("2025/");
             assertThat(zipInputStream.getNextEntry().getName())
                     .isEqualTo("2025/payroll.pdf");
+        }
+    }
+
+    @Test
+    void search_shouldTreatWildcardOnlyAsRecursiveList() {
+        when(documentService.listRecursively(
+                DocumentArea.GENERAL,
+                "contracts"
+        )).thenReturn(List.of(
+                entry("contracts/2026/sample.pdf", false, 3L)
+        ));
+
+        SyncfusionFileManagerResponse response = service.execute(
+                DocumentArea.GENERAL,
+                new SyncfusionFileManagerRequest(
+                        "search",
+                        "/contracts/",
+                        null,
+                        null,
+                        List.of(),
+                        null,
+                        "*",
+                        List.of(),
+                        List.of()
+                )
+        );
+
+        verify(documentService).listRecursively(
+                DocumentArea.GENERAL,
+                "contracts"
+        );
+        assertThat(response.files())
+                .singleElement()
+                .extracting("name")
+                .isEqualTo("sample.pdf");
+    }
+
+    @Test
+    void download_shouldResolveDirectoryFromStorageWhenRequestDataIsMissing()
+            throws Exception {
+        when(documentService.list(
+                DocumentArea.GENERAL,
+                "",
+                null,
+                1000
+        )).thenReturn(new DocumentListResponse(
+                List.of(entry("contracts", true, 0L)),
+                null,
+                false
+        ));
+        when(documentService.listRecursively(
+                DocumentArea.GENERAL,
+                "contracts"
+        )).thenReturn(List.of());
+
+        SyncfusionFileManagerDownload download = service.download(
+                DocumentArea.GENERAL,
+                new SyncfusionFileManagerRequest(
+                        "download",
+                        "/",
+                        null,
+                        null,
+                        List.of("contracts"),
+                        null,
+                        null,
+                        List.of(),
+                        List.of()
+                )
+        );
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        download.body().writeTo(output);
+
+        assertThat(download.fileName()).isEqualTo("contracts.zip");
+        try (ZipInputStream zipInputStream = new ZipInputStream(
+                new ByteArrayInputStream(output.toByteArray())
+        )) {
+            assertThat(zipInputStream.getNextEntry().getName())
+                    .isEqualTo("contracts/");
         }
     }
 

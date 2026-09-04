@@ -18,13 +18,6 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class ExternalSupportLinkSettingService {
 
-    static final String DEFAULT_INCIDENT_REPORT_URL =
-            "https://projectadmin1215.atlassian.net/jira/software/projects/FUYO/form/1"
-                    + "?atlOrigin=eyJpIjoiYTFkN2E2NWU2YWYwNGQ2ODk4MDRmMTliM2JkMjQ3YjgiLCJwIjoiaiJ9";
-    static final String DEFAULT_MANUAL_URL =
-            "https://projectadmin1215.atlassian.net/wiki/spaces/"
-                    + "~712020d0db24f25d734730b24dfb1508d24613/folder/19464193";
-
     private final ExternalSupportLinkSettingRepository repository;
 
     @Transactional(readOnly = true)
@@ -35,8 +28,8 @@ public class ExternalSupportLinkSettingService {
                 )
                 .map(this::toResponse)
                 .orElseGet(() -> new ExternalSupportLinkSettingResponse(
-                        DEFAULT_INCIDENT_REPORT_URL,
-                        DEFAULT_MANUAL_URL
+                        "",
+                        ""
                 ));
     }
 

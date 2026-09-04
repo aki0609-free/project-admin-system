@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component;
 import com.project.backend.features.dailyreport.repository.DailyReportRepository;
 import com.project.backend.features.employee.repository.EmployeeLoanRepository;
 import com.project.backend.features.employee.repository.EmployeeSavingRepository;
-import com.project.backend.features.employee.repository.EmployeeTimesheetRepository;
 import com.project.backend.features.operation.preparation.repository.DailyPreparationAssignmentRepository;
 import com.project.backend.features.tax.repository.ResidentTaxMonthlyRepository;
 
@@ -19,7 +18,6 @@ public class EmployeeDeletionPolicy {
     private final DailyPreparationAssignmentRepository preparationAssignmentRepository;
     private final EmployeeLoanRepository loanRepository;
     private final EmployeeSavingRepository savingRepository;
-    private final EmployeeTimesheetRepository timesheetRepository;
     private final ResidentTaxMonthlyRepository residentTaxRepository;
 
     public void verifyDeletable(Long employeeId) {
@@ -34,9 +32,6 @@ public class EmployeeDeletionPolicy {
         }
         if (savingRepository.existsByEmployeeIdAndDeletedAtIsNull(employeeId)) {
             reject("積立");
-        }
-        if (timesheetRepository.existsByEmployeeIdAndDeletedAtIsNull(employeeId)) {
-            reject("旧勤怠");
         }
         if (residentTaxRepository.existsByEmployeeIdAndDeletedAtIsNull(employeeId)) {
             reject("住民税");

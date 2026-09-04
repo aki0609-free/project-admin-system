@@ -41,11 +41,17 @@ const updateAmount = (item: DailyReportAmountItemForm, value: unknown) => {
     (item.inputMode === 'AUTO_WITH_OVERRIDE' || item.inputMode === 'FIXED_WITH_OVERRIDE') &&
     item.amount !== item.calculatedAmount
   if (!item.manualOverride) item.overrideReason = ''
+  if (item.balanceTracked && item.balanceUnit === 'AMOUNT') {
+    item.quantity = item.amount
+    const remaining = item.remainingQuantity - item.quantity
+    item.remainingAfterQuantity = item.advanceConsumptionAllowed ? remaining : Math.max(0, remaining)
+  }
 }
 
 const updateBalanceQuantity = (item: DailyReportAmountItemForm, value: unknown) => {
   item.quantity = Math.max(0, Number(value ?? 0))
-  item.remainingAfterQuantity = Math.max(0, item.remainingQuantity - item.quantity)
+  const remaining = item.remainingQuantity - item.quantity
+  item.remainingAfterQuantity = item.advanceConsumptionAllowed ? remaining : Math.max(0, remaining)
 }
 </script>
 
@@ -107,6 +113,7 @@ const updateBalanceQuantity = (item: DailyReportAmountItemForm, value: unknown) 
             <span>現在残 {{ item.remainingQuantity }}{{ balanceUnitLabel(item) }}</span>
           </div>
           <v-text-field
+            v-if="item.balanceUnit !== 'AMOUNT'"
             :model-value="item.quantity"
             type="number"
             :label="quantityLabel(item)"
@@ -114,12 +121,14 @@ const updateBalanceQuantity = (item: DailyReportAmountItemForm, value: unknown) 
             variant="outlined"
             hide-details
             min="0"
-            :max="item.remainingQuantity"
+            :max="item.advanceConsumptionAllowed ? undefined : item.remainingQuantity"
             :suffix="balanceUnitLabel(item)"
             @update:model-value="updateBalanceQuantity(item, $event)"
           />
           <div class="amount-reference">
-            保存後残高：{{ item.remainingAfterQuantity }}{{ balanceUnitLabel(item) }}
+            今回{{ itemType === 'DEDUCTION' ? '徴収' : '支給' }}：{{ item.quantity
+            }}{{ balanceUnitLabel(item) }} ／ 保存後残高：{{ item.remainingAfterQuantity
+            }}{{ balanceUnitLabel(item) }}
           </div>
         </div>
 

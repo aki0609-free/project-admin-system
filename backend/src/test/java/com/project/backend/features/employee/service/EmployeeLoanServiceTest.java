@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -32,16 +33,19 @@ class EmployeeLoanServiceTest {
 
     private EmployeeLoanRepository repository;
     private EmployeeRepository employeeRepository;
+    private EmployeeFinanceTransactionService transactionService;
     private EmployeeLoanService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(EmployeeLoanRepository.class);
         employeeRepository = mock(EmployeeRepository.class);
+        transactionService = mock(EmployeeFinanceTransactionService.class);
         service = new EmployeeLoanService(
                 repository,
                 employeeRepository,
                 new EmployeeLoanMapper(),
+                transactionService,
                 CLOCK
         );
     }
@@ -94,6 +98,8 @@ class EmployeeLoanServiceTest {
     @Test
     void delete_shouldUseBusinessClockForUntouchedLoan() {
         EmployeeLoan loan = new EmployeeLoan();
+        loan.setId(10L);
+        loan.setEmployee(employee());
         loan.setPrincipal(new BigDecimal("100000"));
         loan.setCurrentBalance(new BigDecimal("100000"));
         when(repository.findByIdAndDeletedAtIsNull(10L))
@@ -102,6 +108,23 @@ class EmployeeLoanServiceTest {
         service.delete(10L);
 
         assertThat(loan.getDeletedAt()).isEqualTo(CLOCK.instant());
+        assertThat(loan.getCurrentBalance()).isEqualByComparingTo("0");
+        assertThat(loan.isActiveFlag()).isFalse();
+        verify(transactionService).record(
+                org.mockito.ArgumentMatchers.eq(loan.getEmployee()),
+                org.mockito.ArgumentMatchers.eq(
+                        com.project.backend.features.employee.enums.EmployeeFinanceAccountType.LOAN
+                ),
+                org.mockito.ArgumentMatchers.eq(
+                        com.project.backend.features.employee.enums.EmployeeFinanceTransactionType.LOAN_DISBURSEMENT_REVERSAL
+                ),
+                org.mockito.ArgumentMatchers.eq(10L),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq(java.time.LocalDate.of(2026, 8, 22)),
+                org.mockito.ArgumentMatchers.eq(new BigDecimal("100000")),
+                org.mockito.ArgumentMatchers.eq(BigDecimal.ZERO),
+                org.mockito.ArgumentMatchers.eq("誤登録の貸付削除")
+        );
     }
 
     private Employee employee() {

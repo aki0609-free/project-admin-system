@@ -140,8 +140,8 @@ public class EmployeeSavingService {
             throw new IllegalArgumentException("積立率は0%以上100%以下で指定してください。");
         }
 
-        if (nvl(request.getMinSalaryThreshold()).compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("最低給与額は0円以上で指定してください。");
+        if (nvl(request.getSavingCalculationBaseAmount()).compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("積立計算基礎額は0円以上で指定してください。");
         }
     }
 

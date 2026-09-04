@@ -13,6 +13,8 @@ import com.project.backend.features.employee.dto.EmployeeLoanSaveRequest;
 import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.entity.EmployeeLoan;
 import com.project.backend.features.employee.enums.ApprovalStatus;
+import com.project.backend.features.employee.enums.EmployeeFinanceAccountType;
+import com.project.backend.features.employee.enums.EmployeeFinanceTransactionType;
 import com.project.backend.features.employee.mapper.EmployeeLoanMapper;
 import com.project.backend.features.employee.repository.EmployeeLoanRepository;
 import com.project.backend.features.employee.repository.EmployeeRepository;
@@ -26,6 +28,7 @@ public class EmployeeLoanService {
     private final EmployeeLoanRepository repository;
     private final EmployeeRepository employeeRepository;
     private final EmployeeLoanMapper mapper;
+    private final EmployeeFinanceTransactionService transactionService;
     private final Clock clock;
 
     @Transactional(readOnly = true)
@@ -57,7 +60,19 @@ public class EmployeeLoanService {
         entity.setApprovalStatus(ApprovalStatus.APPROVED);
         entity.setApprovalComment(null);
 
-        return mapper.toResponse(repository.save(entity));
+        EmployeeLoan saved = repository.save(entity);
+        transactionService.record(
+                saved.getEmployee(),
+                EmployeeFinanceAccountType.LOAN,
+                EmployeeFinanceTransactionType.LOAN_DISBURSEMENT,
+                saved.getId(),
+                null,
+                saved.getLoanDate() != null ? saved.getLoanDate() : java.time.LocalDate.now(clock),
+                BigDecimal.ZERO,
+                saved.getCurrentBalance(),
+                "貸付登録"
+        );
+        return mapper.toResponse(saved);
     }
 
     @SuppressWarnings("null")
@@ -81,7 +96,7 @@ public class EmployeeLoanService {
 
         Employee employee = entity.getEmployee();
         BigDecimal previousPrincipal = entity.getPrincipal();
-        BigDecimal previousBalance = entity.getCurrentBalance();
+        BigDecimal previousBalance = nvl(entity.getCurrentBalance());
         mapper.updateFromRequest(request, entity, employee);
         if (previousPrincipal.compareTo(request.getPrincipal()) != 0) {
             entity.setCurrentBalance(request.getPrincipal());
@@ -91,7 +106,21 @@ public class EmployeeLoanService {
         entity.setApprovalStatus(ApprovalStatus.APPROVED);
         entity.setApprovalComment(null);
 
-        return mapper.toResponse(repository.save(entity));
+        EmployeeLoan saved = repository.save(entity);
+        if (previousBalance.compareTo(nvl(saved.getCurrentBalance())) != 0) {
+            transactionService.record(
+                    saved.getEmployee(),
+                    EmployeeFinanceAccountType.LOAN,
+                    EmployeeFinanceTransactionType.LOAN_PRINCIPAL_ADJUSTMENT,
+                    saved.getId(),
+                    null,
+                    java.time.LocalDate.now(clock),
+                    previousBalance,
+                    saved.getCurrentBalance(),
+                    "返済開始前の借入元本訂正"
+            );
+        }
+        return mapper.toResponse(saved);
     }
 
     @Transactional
@@ -106,6 +135,22 @@ public class EmployeeLoanService {
             throw new IllegalArgumentException(
                     "一部返済済みで残高がある貸付は削除できません。有効を解除してください。"
             );
+        }
+
+        if (untouched && balance.compareTo(BigDecimal.ZERO) > 0) {
+            transactionService.record(
+                    entity.getEmployee(),
+                    EmployeeFinanceAccountType.LOAN,
+                    EmployeeFinanceTransactionType.LOAN_DISBURSEMENT_REVERSAL,
+                    entity.getId(),
+                    null,
+                    java.time.LocalDate.now(clock),
+                    balance,
+                    BigDecimal.ZERO,
+                    "誤登録の貸付削除"
+            );
+            entity.setCurrentBalance(BigDecimal.ZERO);
+            entity.setActiveFlag(false);
         }
 
         entity.setDeletedAt(Instant.now(clock));

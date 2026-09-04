@@ -14,6 +14,7 @@ const {
   tabs,
 
   preparation,
+  preparationNote,
   assignmentRows,
   dispatchRows,
 
@@ -47,9 +48,22 @@ const {
     </template>
 
     <template #before-table>
-      <p class="count-text">
-        {{ preparation ? '翌日準備あり' : '翌日準備未作成' }}
-      </p>
+      <div class="preparation-summary">
+        <p class="count-text">
+          {{ preparation ? '翌日準備あり' : '翌日準備未作成' }}
+        </p>
+        <v-textarea
+          v-model="preparationNote"
+          label="全体備考（メモ）"
+          variant="outlined"
+          density="compact"
+          rows="2"
+          auto-grow
+          maxlength="1000"
+          counter
+          hide-details="auto"
+        />
+      </div>
     </template>
 
     <TabLayout
@@ -88,5 +102,10 @@ const {
   margin: 0;
   color: #64748b;
   font-size: 13px;
+}
+
+.preparation-summary {
+  display: grid;
+  gap: 12px;
 }
 </style>

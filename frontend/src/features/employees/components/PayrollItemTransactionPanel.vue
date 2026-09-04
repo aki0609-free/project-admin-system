@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import DateFormField from '@/shared/components/form/base/components/form/DateFormField.vue'
+import MonthFormField from '@/shared/components/form/base/components/form/MonthFormField.vue'
+import { formatYearMonthDay } from '@/shared/utils/DateUtils'
 import { payrollItemTransactionApi } from '../api/payrollItemTransactionApi'
 import type {
   EmployeePayrollItemTransaction,
@@ -35,14 +38,21 @@ const form = reactive<EmployeePayrollItemTransactionRequest>({
   transactionDate: today,
   amount: 0,
   quantity: null,
+  transactionPurpose: 'PAYROLL_ITEM',
   balanceEffect: props.quantityUnit == null ? 'NONE' : 'DEBIT',
   status: 'CONFIRMED',
   sourceReference: null,
   note: null,
 })
 
-const showQuantity = computed(() => props.quantityUnit != null)
+const balanceTracked = computed(() => props.quantityUnit != null)
+const showQuantity = computed(() => balanceTracked.value && props.quantityUnit !== 'AMOUNT')
 const itemLabel = computed(() => (props.targetType === 'ALLOWANCE' ? '手当' : '控除'))
+const confirmedLabel = computed(() =>
+  form.transactionPurpose === 'BALANCE_ACCRUAL'
+    ? '請求・残高発生を確定'
+    : `月次給与へ${itemLabel.value === '手当' ? '加算' : '控除'}する`,
+)
 const quantityLabel = computed(
   () =>
     ({
@@ -73,6 +83,7 @@ const reset = () => {
     transactionDate: defaultTransactionDate(),
     amount: 0,
     quantity: null,
+    transactionPurpose: 'PAYROLL_ITEM',
     balanceEffect: props.quantityUnit == null ? 'NONE' : 'DEBIT',
     status: 'CONFIRMED',
     sourceReference: null,
@@ -110,8 +121,13 @@ const save = async () => {
     targetType: props.targetType,
     targetCode: props.targetCode,
     targetMonth: selectedMonth.value,
-    quantity: showQuantity.value ? form.quantity : null,
-    balanceEffect: showQuantity.value ? form.balanceEffect : 'NONE',
+    quantity:
+      props.quantityUnit === 'AMOUNT'
+        ? form.amount
+        : showQuantity.value
+          ? form.quantity
+          : null,
+    balanceEffect: balanceTracked.value ? form.balanceEffect : 'NONE',
     sourceReference: form.sourceReference?.trim() || null,
     note: form.note?.trim() || null,
   }
@@ -139,6 +155,7 @@ const edit = (item: EmployeePayrollItemTransaction) => {
     transactionDate: item.transactionDate,
     amount: item.amount,
     quantity: item.quantity,
+    transactionPurpose: item.transactionPurpose,
     balanceEffect: item.balanceEffect,
     status: item.status,
     sourceReference: item.sourceReference,
@@ -166,6 +183,19 @@ watch(
   },
   { immediate: true },
 )
+
+watch(
+  () => form.transactionPurpose,
+  purpose => {
+    if (!balanceTracked.value) {
+      form.balanceEffect = 'NONE'
+    } else if (purpose === 'BALANCE_ACCRUAL') {
+      form.balanceEffect = 'CREDIT'
+    } else {
+      form.balanceEffect = 'DEBIT'
+    }
+  },
+)
 </script>
 
 <template>
@@ -174,15 +204,12 @@ watch(
       <div>
         <h3>明細・月次{{ itemLabel }}</h3>
         <p>
-          明細到着時、または月次一括徴収時に登録します。確定した明細だけが月次締めへ反映されます。
+          「請求・残高発生」は未徴収・未支給残高だけを増やします。「月次給与へ直接反映」の確定分だけが月次金額に入り、下書きはどちらにも反映しません。
         </p>
       </div>
-      <v-text-field
+      <MonthFormField
         v-model="selectedMonth"
         label="対象月"
-        type="month"
-        variant="outlined"
-        hide-details
       />
     </div>
 
@@ -191,13 +218,27 @@ watch(
     }}</v-alert>
 
     <div class="transaction-form">
-      <v-text-field v-model="form.transactionDate" label="明細日" type="date" variant="outlined" />
+      <DateFormField
+        v-model="form.transactionDate"
+        label="明細日"
+        variant="outlined"
+      />
       <v-text-field
         v-model.number="form.amount"
-        :label="`${itemLabel}金額`"
+        :label="form.transactionPurpose === 'BALANCE_ACCRUAL' ? '請求・発生金額' : `${itemLabel}金額`"
         type="number"
         min="1"
         suffix="円"
+        variant="outlined"
+      />
+      <v-select
+        v-if="balanceTracked"
+        v-model="form.transactionPurpose"
+        label="明細の種類"
+        :items="[
+          { title: '請求・残高を登録（給与へ直接反映しない）', value: 'BALANCE_ACCRUAL' },
+          { title: `月次給与へ直接${itemLabel === '手当' ? '加算' : '控除'}`, value: 'PAYROLL_ITEM' },
+        ]"
         variant="outlined"
       />
       <v-text-field
@@ -210,7 +251,7 @@ watch(
         variant="outlined"
       />
       <v-select
-        v-if="showQuantity"
+        v-if="showQuantity && form.transactionPurpose === 'PAYROLL_ITEM'"
         v-model="form.balanceEffect"
         label="残高への反映"
         :items="[
@@ -224,7 +265,7 @@ watch(
         v-model="form.status"
         label="状態"
         :items="[
-          { title: '確定', value: 'CONFIRMED' },
+          { title: confirmedLabel, value: 'CONFIRMED' },
           { title: '下書き', value: 'DRAFT' },
         ]"
         variant="outlined"
@@ -244,6 +285,7 @@ watch(
         <tr>
           <th>明細日</th>
           <th>金額</th>
+          <th>明細種別</th>
           <th>状態</th>
           <th>明細番号</th>
           <th>備考</th>
@@ -252,14 +294,15 @@ watch(
       </thead>
       <tbody>
         <tr v-if="loading">
-          <td colspan="6">読み込み中...</td>
+          <td colspan="7">読み込み中...</td>
         </tr>
         <tr v-else-if="transactions.length === 0">
-          <td colspan="6">登録された明細はありません。</td>
+          <td colspan="7">登録された明細はありません。</td>
         </tr>
         <tr v-for="item in transactions" :key="item.id">
-          <td>{{ item.transactionDate }}</td>
+          <td>{{ formatYearMonthDay(item.transactionDate) }}</td>
           <td>{{ item.amount.toLocaleString() }}円</td>
+          <td>{{ item.transactionPurpose === 'BALANCE_ACCRUAL' ? '請求・残高発生' : '給与反映' }}</td>
           <td>{{ item.status === 'CONFIRMED' ? '確定' : '下書き' }}</td>
           <td>{{ item.sourceReference || '-' }}</td>
           <td>{{ item.note || '-' }}</td>

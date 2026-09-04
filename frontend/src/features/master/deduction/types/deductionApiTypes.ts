@@ -21,8 +21,6 @@ export type DeductionListItemResponse = {
   maxAmount: number | null
 
   showOnDailyStatement: boolean | null
-  showOnMonthlyStatement: boolean | null
-  carryToMonthlySettlement: boolean | null
   displayOrder: number | null
   enabled: boolean | null
   note: string | null
@@ -48,8 +46,6 @@ export type DeductionSaveRequest = {
   maxAmount: number | null
 
   showOnDailyStatement: boolean
-  showOnMonthlyStatement: boolean
-  carryToMonthlySettlement: boolean
   displayOrder: number | null
   enabled: boolean
   note: string | null

@@ -25,7 +25,4 @@ public interface DeductionMasterRepository extends JpaRepository<DeductionMaster
             String tenantId,
             List<DeductionUnit> deductionUnits
     );
-    List<DeductionMaster> findByTenantIdAndShowOnMonthlyStatementTrueAndEnabledTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
-            String tenantId
-    );
 }

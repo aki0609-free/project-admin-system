@@ -14,6 +14,9 @@ export const useDeleteEmployeeLoanMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.employeeWork.loans.all,
       })
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.employeeWork.financeTransactions.all,
+      })
     },
   })
 }

@@ -10,6 +10,6 @@ public record MonthlyClosingOutputSaveRequest(
         @NotBlank @Size(max = 100) String reportCode,
         @NotNull @Min(1) Integer executionOrder,
         @NotNull Boolean activeFlag,
-        @Min(1) @Max(100) Integer backupRetentionYears
+        @Min(1) @Max(7) Integer backupRetentionYears
 ) {
 }

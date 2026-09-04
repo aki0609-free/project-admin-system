@@ -12,12 +12,14 @@ import com.project.backend.features.dailyreport.dto.DailyReportDetailResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportEstimatedPayPreviewResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportMissingEmployeeResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportMonthlyAttendanceResponse;
+import com.project.backend.features.dailyreport.dto.DailyReportPreparationDefaultResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
 import com.project.backend.features.dailyreport.service.DailyReportCommandService;
 import com.project.backend.features.dailyreport.service.DailyReportEstimatedPayService;
 import com.project.backend.features.dailyreport.service.DailyReportMissingQueryService;
 import com.project.backend.features.dailyreport.service.DailyReportMonthlyAttendanceQueryService;
+import com.project.backend.features.dailyreport.service.DailyReportPreparationDefaultService;
 import com.project.backend.features.dailyreport.service.DailyReportQueryService;
 import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
@@ -34,6 +36,7 @@ public class DailyReportController {
     private final DailyReportMissingQueryService missingQueryService;
     private final DailyReportMonthlyAttendanceQueryService monthlyAttendanceQueryService;
     private final DailyReportEstimatedPayService estimatedPayService;
+    private final DailyReportPreparationDefaultService preparationDefaultService;
     private final EmployeeContractRepository employeeContractRepository;
 
     @GetMapping
@@ -43,6 +46,14 @@ public class DailyReportController {
             @RequestParam(required = false) Long employeeId
     ) {
         return queryService.findAll(from, to, employeeId);
+    }
+
+    @GetMapping("/preparation-defaults")
+    public DailyReportPreparationDefaultResponse findPreparationDefaults(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate workDate,
+            @RequestParam Long employeeId
+    ) {
+        return preparationDefaultService.find(workDate, employeeId);
     }
 
     @GetMapping("/{id}")

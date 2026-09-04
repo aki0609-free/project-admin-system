@@ -12,6 +12,7 @@ import com.project.backend.features.operation.preparation.dto.DailyPreparationCr
 import com.project.backend.features.operation.preparation.dto.DailyPreparationDispatchBulkSaveRequest;
 import com.project.backend.features.operation.preparation.dto.DailyPreparationDispatchResponse;
 import com.project.backend.features.operation.preparation.dto.DailyPreparationDispatchSaveRequest;
+import com.project.backend.features.operation.preparation.dto.DailyPreparationNoteUpdateRequest;
 import com.project.backend.features.operation.preparation.dto.DailyPreparationResponse;
 import com.project.backend.features.operation.preparation.service.DailyPreparationService;
 
@@ -35,6 +36,14 @@ public class DailyPreparationController {
     public DailyPreparationResponse create(
             @Valid @RequestBody DailyPreparationCreateRequest request) {
         return service.create(request);
+    }
+
+    @PutMapping("/{id}/note")
+    public DailyPreparationResponse updateNote(
+            @PathVariable Long id,
+            @Valid @RequestBody DailyPreparationNoteUpdateRequest request
+    ) {
+        return service.updateNote(id, request.note());
     }
 
     @PostMapping("/assignments")

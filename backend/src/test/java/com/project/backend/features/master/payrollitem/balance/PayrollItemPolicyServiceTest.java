@@ -100,6 +100,48 @@ class PayrollItemPolicyServiceTest {
     }
 
     @Test
+    void synchronize_shouldRejectAmountUnitForCalendarDayAccrual() {
+        TenantContext.setTenantId("tenant-a");
+        PayrollItemPolicyService service = new PayrollItemPolicyService(
+                mock(PayrollItemBalancePolicyRepository.class),
+                mock(PayrollItemParameterDefinitionRepository.class),
+                new ObjectMapper(), Clock.systemUTC());
+
+        assertThatThrownBy(() -> service.synchronize(
+                PayrollItemTargetType.DEDUCTION, 1L,
+                "DORMITORY_FEE", "寮費",
+                new PayrollItemPolicySaveRequest(
+                        PayrollItemApplicationScope.EMPLOYEE_ENROLLMENT,
+                        PayrollItemInputSource.DAILY_REPORT,
+                        true, BalanceUnit.AMOUNT, "MONTHLY",
+                        "CALENDAR_DAYS_IN_ENROLLMENT",
+                        true, false, List.of())))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("残高単位を日数");
+    }
+
+    @Test
+    void synchronize_shouldRequireAmountUnitForCalendarDaysTimesParameter() {
+        TenantContext.setTenantId("tenant-a");
+        PayrollItemPolicyService service = new PayrollItemPolicyService(
+                mock(PayrollItemBalancePolicyRepository.class),
+                mock(PayrollItemParameterDefinitionRepository.class),
+                new ObjectMapper(), Clock.systemUTC());
+
+        assertThatThrownBy(() -> service.synchronize(
+                PayrollItemTargetType.DEDUCTION, 1L,
+                "GENERIC_DAILY_FEE", "日額控除",
+                new PayrollItemPolicySaveRequest(
+                        PayrollItemApplicationScope.EMPLOYEE_ENROLLMENT,
+                        PayrollItemInputSource.DAILY_REPORT,
+                        true, BalanceUnit.DAYS, "MONTHLY",
+                        "CALENDAR_DAYS_TIMES_PARAMETER:dailyAmount",
+                        true, false, List.of())))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("残高単位を金額");
+    }
+
+    @Test
     void synchronize_shouldRejectDuplicateSelectOptionValues() {
         TenantContext.setTenantId("tenant-a");
         PayrollItemPolicyService service = new PayrollItemPolicyService(

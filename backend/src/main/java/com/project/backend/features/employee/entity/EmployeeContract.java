@@ -32,6 +32,7 @@ public class EmployeeContract extends BaseEntity {
     private LocalDate contractEndDate;
 
     @Column(name = "renewal_flag", nullable = false)
+    @Deprecated(forRemoval = false)
     private boolean renewalFlag = false;
 
     @Enumerated(EnumType.STRING)

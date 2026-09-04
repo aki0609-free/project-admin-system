@@ -206,10 +206,19 @@ export const useBusinessSettingsPage = () => {
 
   const executeBackup = () => {
     const fiscalYear = Number(manualBackupFiscalYear.value)
+    if (!Number.isInteger(fiscalYear) || fiscalYear < 2000 || fiscalYear > 2200) {
+      errorMessage.value = '対象年度は2000〜2200の整数で指定してください。'
+      return
+    }
     if (!window.confirm(`${fiscalYear}年度の帳票バックアップを実行しますか？`)) return
     return run(async () => {
-      lastBackupResult.value = await executeAnnualReportBackup(fiscalYear)
-    }, `${fiscalYear}年度の帳票バックアップを実行しました。`)
+      const result = await executeAnnualReportBackup(fiscalYear)
+      lastBackupResult.value = result
+      if (result.status !== 'COMPLETED') {
+        throw new Error(result.errorMessage || `${fiscalYear}年度の帳票バックアップに失敗しました。`)
+      }
+      showSuccess(`${fiscalYear}年度の帳票バックアップが完了しました。`)
+    })
   }
 
   const saveExternalSupportLinks = () =>

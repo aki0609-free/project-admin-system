@@ -22,6 +22,7 @@ public record DailyReportInputItemResponse(
         Integer displayOrder,
         Boolean balanceTracked,
         String balanceUnit,
+        Boolean advanceConsumptionAllowed,
         BigDecimal openingQuantity,
         BigDecimal accruedQuantity,
         BigDecimal consumedQuantity,

@@ -1,7 +1,12 @@
 package com.project.backend.features.operation.preparation.service;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,11 +52,12 @@ public class DailyPreparationService {
     private final CustomerSiteRepository customerSiteRepository;
 
     private final DailyPreparationMapper mapper;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public DailyPreparationResponse findByTargetDate(LocalDate targetDate) {
         if (targetDate == null) {
-            throw new RuntimeException("targetDate は必須です。");
+            throw new IllegalArgumentException("targetDate は必須です。");
         }
 
         DailyPreparation preparation = preparationRepository
@@ -67,19 +73,25 @@ public class DailyPreparationService {
 
     public DailyPreparationResponse create(DailyPreparationCreateRequest request) {
         if (request == null || request.getTargetDate() == null) {
-            throw new RuntimeException("targetDate は必須です。");
+            throw new IllegalArgumentException("targetDate は必須です。");
         }
 
         if (preparationRepository.existsByTargetDateAndDeletedAtIsNull(request.getTargetDate())) {
-            throw new RuntimeException("指定日の翌日準備は既に存在します。");
+            throw new IllegalArgumentException("指定日の翌日準備は既に存在します。");
         }
 
         DailyPreparation entity = new DailyPreparation();
         entity.setTargetDate(request.getTargetDate());
         entity.setStatus(DailyPreparationStatus.OPEN);
-        entity.setNote(request.getNote());
+        entity.setNote(normalizeNote(request.getNote()));
 
         return toResponse(preparationRepository.save(entity));
+    }
+
+    public DailyPreparationResponse updateNote(Long id, String note) {
+        DailyPreparation preparation = findPreparation(id);
+        preparation.setNote(normalizeNote(note));
+        return toResponse(preparationRepository.save(preparation));
     }
 
     public DailyPreparationAssignmentResponse createAssignment(
@@ -92,7 +104,7 @@ public class DailyPreparationService {
         if (assignmentRepository.existsByPreparationIdAndEmployeeIdAndDeletedAtIsNull(
                 preparation.getId(),
                 employee.getId())) {
-            throw new RuntimeException("この従業員の配置は既に存在します。");
+            throw new IllegalArgumentException("この従業員の配置は既に存在します。");
         }
 
         DailyPreparationAssignment entity = new DailyPreparationAssignment();
@@ -112,7 +124,15 @@ public class DailyPreparationService {
         Employee employee = findEmployee(request.getEmployeeId());
 
         DailyPreparationAssignment entity = assignmentRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new RuntimeException("従業員配置が見つかりません。 id=" + id));
+                .orElseThrow(() -> new IllegalArgumentException("従業員配置が見つかりません。 id=" + id));
+        requireSamePreparation(entity.getPreparationId(), preparation.getId());
+        if (assignmentRepository.existsByPreparationIdAndEmployeeIdAndIdNotAndDeletedAtIsNull(
+                preparation.getId(),
+                employee.getId(),
+                entity.getId()
+        )) {
+            throw new IllegalArgumentException("この従業員の配置は既に存在します。");
+        }
 
         applyAssignment(request, entity, preparation, employee);
 
@@ -121,9 +141,9 @@ public class DailyPreparationService {
 
     public void deleteAssignment(Long id) {
         DailyPreparationAssignment entity = assignmentRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new RuntimeException("従業員配置が見つかりません。 id=" + id));
+                .orElseThrow(() -> new IllegalArgumentException("従業員配置が見つかりません。 id=" + id));
 
-        entity.setDeletedAt(Instant.now());
+        entity.setDeletedAt(Instant.now(clock));
     }
 
     public DailyPreparationDispatchResponse createDispatch(
@@ -136,7 +156,7 @@ public class DailyPreparationService {
         if (dispatchRepository.existsByPreparationIdAndCustomerSiteIdAndDeletedAtIsNull(
                 preparation.getId(),
                 site.getId())) {
-            throw new RuntimeException("この現場の配車は既に存在します。");
+            throw new IllegalArgumentException("この現場の配車は既に存在します。");
         }
 
         DailyPreparationDispatch entity = new DailyPreparationDispatch();
@@ -156,7 +176,15 @@ public class DailyPreparationService {
         CustomerSite site = findSite(request.getCustomerSiteId());
 
         DailyPreparationDispatch entity = dispatchRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new RuntimeException("現場配車が見つかりません。 id=" + id));
+                .orElseThrow(() -> new IllegalArgumentException("現場配車が見つかりません。 id=" + id));
+        requireSamePreparation(entity.getPreparationId(), preparation.getId());
+        if (dispatchRepository.existsByPreparationIdAndCustomerSiteIdAndIdNotAndDeletedAtIsNull(
+                preparation.getId(),
+                site.getId(),
+                entity.getId()
+        )) {
+            throw new IllegalArgumentException("この現場の配車は既に存在します。");
+        }
 
         applyDispatch(request, entity, preparation, site);
 
@@ -165,24 +193,26 @@ public class DailyPreparationService {
 
     public void deleteDispatch(Long id) {
         DailyPreparationDispatch entity = dispatchRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new RuntimeException("現場配車が見つかりません。 id=" + id));
+                .orElseThrow(() -> new IllegalArgumentException("現場配車が見つかりません。 id=" + id));
 
-        entity.setDeletedAt(Instant.now());
+        entity.setDeletedAt(Instant.now(clock));
     }
 
     public DailyPreparationResponse bulkSaveAssignments(
             DailyPreparationAssignmentBulkSaveRequest request) {
         if (request == null || request.getPreparationId() == null) {
-            throw new RuntimeException("preparationId は必須です。");
+            throw new IllegalArgumentException("preparationId は必須です。");
         }
 
         DailyPreparation preparation = findPreparation(request.getPreparationId());
 
-        for (DailyPreparationAssignmentBulkSaveItemRequest item : request.getItems()) {
+        for (DailyPreparationAssignmentBulkSaveItemRequest item : safeItems(request.getItems())) {
+            if (item == null) {
+                throw new IllegalArgumentException("一括保存の行は必須です。");
+            }
+            validateBulkFlags(item.isNew(), item.isUpdated(), item.isDeleted(), item.getId());
             if (item.isDeleted()) {
-                if (item.getId() != null) {
-                    deleteAssignment(item.getId());
-                }
+                deleteAssignment(item.getId(), preparation.getId());
                 continue;
             }
 
@@ -194,15 +224,13 @@ public class DailyPreparationService {
             }
 
             if (item.isUpdated()) {
-                if (item.getId() == null) {
-                    continue;
-                }
-
                 DailyPreparationAssignmentSaveRequest saveRequest = toAssignmentSaveRequest(preparation.getId(), item);
 
                 updateAssignment(item.getId(), saveRequest);
             }
         }
+
+        removeUnusedDispatches(preparation.getId());
 
         return toResponse(preparation);
     }
@@ -224,16 +252,18 @@ public class DailyPreparationService {
     public DailyPreparationResponse bulkSaveDispatches(
             DailyPreparationDispatchBulkSaveRequest request) {
         if (request == null || request.getPreparationId() == null) {
-            throw new RuntimeException("preparationId は必須です。");
+            throw new IllegalArgumentException("preparationId は必須です。");
         }
 
         DailyPreparation preparation = findPreparation(request.getPreparationId());
 
-        for (DailyPreparationDispatchBulkSaveItemRequest item : request.getItems()) {
+        for (DailyPreparationDispatchBulkSaveItemRequest item : safeItems(request.getItems())) {
+            if (item == null) {
+                throw new IllegalArgumentException("一括保存の行は必須です。");
+            }
+            validateBulkFlags(item.isNew(), item.isUpdated(), item.isDeleted(), item.getId());
             if (item.isDeleted()) {
-                if (item.getId() != null) {
-                    deleteDispatch(item.getId());
-                }
+                deleteDispatch(item.getId(), preparation.getId());
                 continue;
             }
 
@@ -245,10 +275,6 @@ public class DailyPreparationService {
             }
 
             if (item.isUpdated()) {
-                if (item.getId() == null) {
-                    continue;
-                }
-
                 DailyPreparationDispatchSaveRequest saveRequest = toDispatchSaveRequest(preparation.getId(), item);
 
                 updateDispatch(item.getId(), saveRequest);
@@ -294,8 +320,8 @@ public class DailyPreparationService {
                 ? findSite(request.getCustomerSiteId())
                 : null;
 
-        if (customer == null && site != null && site.getCustomerId() != null) {
-            customer = findCustomer(site.getCustomerId());
+        if (site != null) {
+            customer = resolveCustomerForSite(customer, site);
         }
 
         entity.setPreparationId(preparation.getId());
@@ -322,9 +348,7 @@ public class DailyPreparationService {
                 ? findCustomer(request.getCustomerId())
                 : null;
 
-        if (customer == null && site.getCustomerId() != null) {
-            customer = findCustomer(site.getCustomerId());
-        }
+        customer = resolveCustomerForSite(customer, site);
 
         entity.setPreparationId(preparation.getId());
 
@@ -341,51 +365,159 @@ public class DailyPreparationService {
 
     private void validateAssignmentRequest(DailyPreparationAssignmentSaveRequest request) {
         if (request == null) {
-            throw new RuntimeException("リクエストが不正です。");
+            throw new IllegalArgumentException("リクエストが不正です。");
         }
 
         if (request.getPreparationId() == null) {
-            throw new RuntimeException("preparationId は必須です。");
+            throw new IllegalArgumentException("preparationId は必須です。");
         }
 
         if (request.getEmployeeId() == null) {
-            throw new RuntimeException("employeeId は必須です。");
+            throw new IllegalArgumentException("employeeId は必須です。");
         }
     }
 
     private void validateDispatchRequest(DailyPreparationDispatchSaveRequest request) {
         if (request == null) {
-            throw new RuntimeException("リクエストが不正です。");
+            throw new IllegalArgumentException("リクエストが不正です。");
         }
 
         if (request.getPreparationId() == null) {
-            throw new RuntimeException("preparationId は必須です。");
+            throw new IllegalArgumentException("preparationId は必須です。");
         }
 
         if (request.getCustomerSiteId() == null) {
-            throw new RuntimeException("customerSiteId は必須です。");
+            throw new IllegalArgumentException("customerSiteId は必須です。");
+        }
+
+        if (request.getVehicleCount() != null
+                && request.getVehicleCount() < 0) {
+            throw new IllegalArgumentException("配車台数は0以上で指定してください。");
         }
     }
 
     private DailyPreparation findPreparation(Long id) {
         return preparationRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new RuntimeException("翌日準備が見つかりません。 id=" + id));
+                .orElseThrow(() -> new IllegalArgumentException("翌日準備が見つかりません。 id=" + id));
     }
 
     private Employee findEmployee(Long id) {
         return employeeRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new RuntimeException("従業員が見つかりません。 id=" + id));
+                .orElseThrow(() -> new IllegalArgumentException("従業員が見つかりません。 id=" + id));
     }
 
     @SuppressWarnings("null")
     private Customer findCustomer(Long id) {
-        return customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("顧客が見つかりません。 id=" + id));
+        return customerRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new IllegalArgumentException("顧客が見つかりません。 id=" + id));
     }
 
     @SuppressWarnings("null")
     private CustomerSite findSite(Long id) {
-        return customerSiteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("現場が見つかりません。 id=" + id));
+        return customerSiteRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new IllegalArgumentException("現場が見つかりません。 id=" + id));
+    }
+
+    private Customer resolveCustomerForSite(
+            Customer requestedCustomer,
+            CustomerSite site
+    ) {
+        Customer siteCustomer = findCustomer(site.getCustomerId());
+        if (requestedCustomer != null
+                && !Objects.equals(requestedCustomer.getId(), siteCustomer.getId())) {
+            throw new IllegalArgumentException(
+                    "指定された顧客と現場の組み合わせが一致しません。"
+            );
+        }
+        return siteCustomer;
+    }
+
+    private void requireSamePreparation(Long actualId, Long requestedId) {
+        if (!Objects.equals(actualId, requestedId)) {
+            throw new IllegalArgumentException(
+                    "操作対象が指定された翌日準備に属していません。"
+            );
+        }
+    }
+
+    private void deleteAssignment(Long id, Long preparationId) {
+        DailyPreparationAssignment entity = assignmentRepository
+                .findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "従業員配置が見つかりません。 id=" + id
+                ));
+        requireSamePreparation(entity.getPreparationId(), preparationId);
+        entity.setDeletedAt(Instant.now(clock));
+    }
+
+    private void deleteDispatch(Long id, Long preparationId) {
+        DailyPreparationDispatch entity = dispatchRepository
+                .findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "現場配車が見つかりません。 id=" + id
+                ));
+        requireSamePreparation(entity.getPreparationId(), preparationId);
+        entity.setDeletedAt(Instant.now(clock));
+    }
+
+    private void validateBulkFlags(
+            boolean newFlag,
+            boolean updatedFlag,
+            boolean deletedFlag,
+            Long id
+    ) {
+        int enabledCount = (newFlag ? 1 : 0)
+                + (updatedFlag ? 1 : 0)
+                + (deletedFlag ? 1 : 0);
+        if (enabledCount > 1) {
+            throw new IllegalArgumentException(
+                    "一括保存の操作区分を複数指定できません。"
+            );
+        }
+        if ((updatedFlag || deletedFlag) && id == null) {
+            throw new IllegalArgumentException(
+                    "更新・削除対象のIDは必須です。"
+            );
+        }
+        if (newFlag && id != null) {
+            throw new IllegalArgumentException(
+                    "新規行にはIDを指定できません。"
+            );
+        }
+    }
+
+    private void removeUnusedDispatches(Long preparationId) {
+        Set<Long> activeSiteIds = new HashSet<>();
+        assignmentRepository
+                .findByPreparationIdAndDeletedAtIsNullOrderByEmployeeCodeAscIdAsc(preparationId)
+                .stream()
+                .map(DailyPreparationAssignment::getCustomerSiteId)
+                .filter(Objects::nonNull)
+                .forEach(activeSiteIds::add);
+
+        dispatchRepository
+                .findByPreparationIdAndDeletedAtIsNullOrderByCustomerNameAscSiteNameAscIdAsc(
+                        preparationId
+                )
+                .stream()
+                .filter(dispatch -> !activeSiteIds.contains(
+                        dispatch.getCustomerSiteId()
+                ))
+                .forEach(dispatch -> dispatch.setDeletedAt(Instant.now(clock)));
+    }
+
+    private <T> List<T> safeItems(List<T> items) {
+        return items == null ? List.of() : items;
+    }
+
+    private String normalizeNote(String note) {
+        if (note == null || note.isBlank()) {
+            return null;
+        }
+        String normalized = note.trim();
+        if (normalized.length() > 1000) {
+            throw new IllegalArgumentException("備考は1000文字以内で入力してください。");
+        }
+        return normalized;
     }
 }

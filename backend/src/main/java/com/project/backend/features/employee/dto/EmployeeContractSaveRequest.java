@@ -13,7 +13,6 @@ import jakarta.validation.constraints.Size;
 public record EmployeeContractSaveRequest(
         LocalDate contractStartDate,
         LocalDate contractEndDate,
-        Boolean renewalFlag,
         @NotNull SalaryType salaryType,
         @NotNull PaymentCycle paymentCycle,
         @DecimalMin("0.0") BigDecimal monthlySalary,

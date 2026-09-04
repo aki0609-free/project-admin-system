@@ -18,6 +18,9 @@ export const useCreateEmployeeLoanMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.employeeWork.loans.all,
       })
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.employeeWork.financeTransactions.all,
+      })
     },
   })
 }

@@ -1,4 +1,5 @@
 export type PayrollItemTransactionStatus = 'DRAFT' | 'CONFIRMED'
+export type PayrollItemTransactionPurpose = 'BALANCE_ACCRUAL' | 'PAYROLL_ITEM'
 
 export type EmployeePayrollItemTransaction = {
   id: number
@@ -10,6 +11,7 @@ export type EmployeePayrollItemTransaction = {
   transactionDate: string
   amount: number
   quantity: number | null
+  transactionPurpose: PayrollItemTransactionPurpose
   balanceEffect: 'NONE' | 'CREDIT' | 'DEBIT'
   sourceType: 'MANUAL' | 'CSV' | 'EXTERNAL' | 'MONTHLY_OPERATION'
   sourceReference: string | null
@@ -25,6 +27,7 @@ export type EmployeePayrollItemTransactionRequest = {
   transactionDate: string
   amount: number
   quantity: number | null
+  transactionPurpose: PayrollItemTransactionPurpose
   balanceEffect: 'NONE' | 'CREDIT' | 'DEBIT'
   status: PayrollItemTransactionStatus
   sourceReference: string | null

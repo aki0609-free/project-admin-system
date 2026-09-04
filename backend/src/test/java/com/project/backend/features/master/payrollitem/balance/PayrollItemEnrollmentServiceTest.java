@@ -1,6 +1,7 @@
 package com.project.backend.features.master.payrollitem.balance;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
+import com.project.backend.features.master.payrollitem.parameter.PayrollItemRuleParameterResolverRegistry;
 import com.project.backend.app.tenant.context.TenantContext;
 
 class PayrollItemEnrollmentServiceTest {
@@ -35,7 +37,8 @@ class PayrollItemEnrollmentServiceTest {
         PayrollItemEnrollmentService service = new PayrollItemEnrollmentService(
                 policyRepository, enrollmentRepository, clock,
                 new com.fasterxml.jackson.databind.ObjectMapper(),
-                mock(PayrollItemParameterDefinitionRepository.class)
+                mock(PayrollItemParameterDefinitionRepository.class),
+                new PayrollItemRuleParameterResolverRegistry(List.of())
         );
 
         PayrollItemBalancePolicy policy = new PayrollItemBalancePolicy();
@@ -80,7 +83,8 @@ class PayrollItemEnrollmentServiceTest {
         PayrollItemEnrollmentService service = new PayrollItemEnrollmentService(
                 policyRepository, enrollmentRepository, clock,
                 new com.fasterxml.jackson.databind.ObjectMapper(),
-                mock(PayrollItemParameterDefinitionRepository.class)
+                mock(PayrollItemParameterDefinitionRepository.class),
+                new PayrollItemRuleParameterResolverRegistry(List.of())
         );
 
         PayrollItemBalancePolicy policy = new PayrollItemBalancePolicy();
@@ -119,7 +123,8 @@ class PayrollItemEnrollmentServiceTest {
         PayrollItemEnrollmentService service = new PayrollItemEnrollmentService(
                 policyRepository, enrollmentRepository, clock,
                 new com.fasterxml.jackson.databind.ObjectMapper(),
-                mock(PayrollItemParameterDefinitionRepository.class)
+                mock(PayrollItemParameterDefinitionRepository.class),
+                new PayrollItemRuleParameterResolverRegistry(List.of())
         );
 
         PayrollItemBalancePolicy policy = employeeEnrollmentPolicy(5L);
@@ -156,7 +161,8 @@ class PayrollItemEnrollmentServiceTest {
         PayrollItemEnrollmentService service = new PayrollItemEnrollmentService(
                 policyRepository, enrollmentRepository, clock,
                 new com.fasterxml.jackson.databind.ObjectMapper(),
-                parameterRepository
+                parameterRepository,
+                new PayrollItemRuleParameterResolverRegistry(List.of())
         );
 
         PayrollItemBalancePolicy policy = employeeEnrollmentPolicy(5L);
@@ -197,6 +203,54 @@ class PayrollItemEnrollmentServiceTest {
                 .isEqualTo(LocalDate.of(2026, 6, 1));
         assertThat(captor.getValue().getEffectiveTo()).isNull();
         assertThat(captor.getValue().getSettingsJson()).isEqualTo("{\"amount\":\"200\"}");
+    }
+
+    @Test
+    void synchronize_shouldMaterializeResolvedParameterIntoEnrollmentHistory() {
+        TenantContext.setTenantId("default");
+        var policyRepository = mock(PayrollItemBalancePolicyRepository.class);
+        var enrollmentRepository = mock(EmployeePayrollItemEnrollmentRepository.class);
+        var parameterRepository = mock(PayrollItemParameterDefinitionRepository.class);
+        var resolverRegistry = mock(PayrollItemRuleParameterResolverRegistry.class);
+        PayrollItemEnrollmentService service = new PayrollItemEnrollmentService(
+                policyRepository, enrollmentRepository, Clock.systemUTC(),
+                new com.fasterxml.jackson.databind.ObjectMapper(),
+                parameterRepository, resolverRegistry
+        );
+
+        PayrollItemBalancePolicy policy = employeeEnrollmentPolicy(5L);
+        stubCurrent(
+                policyRepository, enrollmentRepository, policy,
+                Optional.empty()
+        );
+        PayrollItemParameterDefinition dailyAmount =
+                new PayrollItemParameterDefinition();
+        dailyAmount.setBalancePolicyId(5L);
+        dailyAmount.setParameterKey("dailyAmount");
+        dailyAmount.setDisplayName("日額");
+        dailyAmount.setInputType(PayrollItemParameterInputType.NUMBER);
+        dailyAmount.setRequiredFlag(true);
+        dailyAmount.setDefaultValue("0");
+        dailyAmount.setRuleValueResolverKey(
+                "SELECT_OPTION_CALCULATION_VALUE:type");
+        dailyAmount.setActiveFlag(true);
+        when(parameterRepository
+                .findAllByTenantIdAndBalancePolicyIdAndActiveFlagTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
+                        "default", 5L
+                )).thenReturn(List.of(dailyAmount));
+        when(resolverRegistry.resolve(any(), any()))
+                .thenReturn(new java.math.BigDecimal("1500"));
+
+        service.synchronize(
+                10L, PayrollItemTargetType.DEDUCTION, "DORMITORY_FEE",
+                true, Map.of(), LocalDate.of(2026, 9, 1)
+        );
+
+        var captor = org.mockito.ArgumentCaptor
+                .forClass(EmployeePayrollItemEnrollment.class);
+        verify(enrollmentRepository).save(captor.capture());
+        assertThat(captor.getValue().getSettingsJson())
+                .isEqualTo("{\"dailyAmount\":\"1500\"}");
     }
 
     private static PayrollItemBalancePolicy employeeEnrollmentPolicy(Long id) {

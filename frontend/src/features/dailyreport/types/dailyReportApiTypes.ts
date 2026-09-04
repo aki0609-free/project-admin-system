@@ -135,6 +135,17 @@ export type DailyReportResponse = {
   approvalComment: string | null
 }
 
+export type DailyReportPreparationDefaultResponse = {
+  available: boolean
+  preparationId: number | null
+  assignmentId: number | null
+  customerId: number | null
+  customerSiteId: number | null
+  customerName: string | null
+  siteName: string | null
+  workDescription: string | null
+}
+
 export type DailyReportDetailResponse =
   DailyReportResponse & {
     allowances: DailyReportAllowanceResponse[]

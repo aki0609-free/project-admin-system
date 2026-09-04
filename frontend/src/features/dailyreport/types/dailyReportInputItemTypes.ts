@@ -21,6 +21,7 @@ export type DailyReportInputItemResponse = {
   displayOrder: number
   balanceTracked: boolean
   balanceUnit: 'DAYS' | 'HOURS' | 'COUNT' | 'AMOUNT' | null
+  advanceConsumptionAllowed: boolean
   openingQuantity: number
   accruedQuantity: number
   consumedQuantity: number
@@ -48,6 +49,7 @@ export type DailyReportAmountItemForm = {
   displayOrder: number
   balanceTracked: boolean
   balanceUnit: 'DAYS' | 'HOURS' | 'COUNT' | 'AMOUNT' | null
+  advanceConsumptionAllowed: boolean
   openingQuantity: number
   accruedQuantity: number
   consumedQuantity: number

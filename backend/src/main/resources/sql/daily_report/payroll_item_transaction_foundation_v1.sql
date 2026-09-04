@@ -43,8 +43,10 @@ WHERE target_type = 'DEDUCTION'
   AND deleted_at IS NULL;
 
 UPDATE payroll_item_balance_policy
-SET balance_tracking_flag = FALSE,
-    input_source = 'TRANSACTION',
+SET balance_unit = 'AMOUNT',
+    balance_tracking_flag = TRUE,
+    input_source = 'DAILY_REPORT_AND_TRANSACTION',
+    carry_forward_flag = TRUE,
     updated_at = NOW(6)
 WHERE target_type = 'DEDUCTION'
   AND target_code = 'MOBILE_RENTAL'
@@ -61,6 +63,7 @@ CREATE TABLE IF NOT EXISTS employee_payroll_item_transaction (
     transaction_date DATE NOT NULL,
     amount DECIMAL(15,2) NOT NULL,
     quantity DECIMAL(12,2) NULL,
+    transaction_purpose VARCHAR(30) NOT NULL DEFAULT 'PAYROLL_ITEM',
     balance_effect VARCHAR(20) NOT NULL DEFAULT 'NONE',
     source_type VARCHAR(30) NOT NULL,
     source_reference VARCHAR(150) NULL,
@@ -87,6 +90,8 @@ CREATE TABLE IF NOT EXISTS employee_payroll_item_transaction (
         CHECK (target_type IN ('ALLOWANCE', 'DEDUCTION')),
     CONSTRAINT chk_payroll_item_transaction_source_type
         CHECK (source_type IN ('MANUAL', 'CSV', 'EXTERNAL', 'MONTHLY_OPERATION')),
+    CONSTRAINT chk_payroll_item_transaction_purpose
+        CHECK (transaction_purpose IN ('BALANCE_ACCRUAL', 'PAYROLL_ITEM')),
     CONSTRAINT chk_payroll_item_transaction_balance_effect
         CHECK (balance_effect IN ('NONE', 'CREDIT', 'DEBIT')),
     CONSTRAINT chk_payroll_item_transaction_status
@@ -111,6 +116,31 @@ SET @transaction_balance_effect_sql := IF(
 PREPARE statement FROM @transaction_balance_effect_sql;
 EXECUTE statement;
 DEALLOCATE PREPARE statement;
+
+SET @transaction_purpose_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'employee_payroll_item_transaction'
+      AND column_name = 'transaction_purpose'
+);
+SET @transaction_purpose_sql := IF(
+    @transaction_purpose_exists = 0,
+    'ALTER TABLE employee_payroll_item_transaction ADD COLUMN transaction_purpose VARCHAR(30) NOT NULL DEFAULT ''PAYROLL_ITEM'' AFTER quantity',
+    'SELECT 1'
+);
+PREPARE statement FROM @transaction_purpose_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
+-- Hibernateが先に列を作成した環境にも同じ既定値を付与する。
+ALTER TABLE employee_payroll_item_transaction
+    MODIFY COLUMN transaction_purpose VARCHAR(30) NOT NULL DEFAULT 'PAYROLL_ITEM';
+
+UPDATE employee_payroll_item_transaction
+SET transaction_purpose = 'PAYROLL_ITEM',
+    updated_at = NOW(6)
+WHERE transaction_purpose IS NULL
+   OR transaction_purpose = '';
 
 CREATE OR REPLACE VIEW vw_employee_payroll_item_transaction_confirmed AS
 SELECT
@@ -138,6 +168,7 @@ LEFT JOIN allowance_masters allowance
  AND transaction_item.target_type = 'ALLOWANCE'
  AND allowance.deleted_at IS NULL
 WHERE transaction_item.status = 'CONFIRMED'
+  AND transaction_item.transaction_purpose = 'PAYROLL_ITEM'
   AND transaction_item.deleted_at IS NULL
 GROUP BY
     transaction_item.tenant_id,

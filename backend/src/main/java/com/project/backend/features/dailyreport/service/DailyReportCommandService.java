@@ -21,6 +21,7 @@ import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.employee.repository.EmployeeRepository;
 import com.project.backend.features.employee.service.EmployeeFinanceBalanceCommandService;
+import com.project.backend.features.employee.service.EmployeeWorkEligibilityPolicy;
 
 import lombok.RequiredArgsConstructor;
 
@@ -43,6 +44,7 @@ public class DailyReportCommandService {
     private final DailyReportEstimatedPayService estimatedPayService;
     private final DailyReportBillingRateService billingRateService;
     private final DailyReportInputItemService inputItemService;
+    private final EmployeeWorkEligibilityPolicy workEligibilityPolicy;
     private final Clock clock;
 
     public DailyReportResponse create(
@@ -53,6 +55,8 @@ public class DailyReportCommandService {
         Employee employee = findEmployee(
                 request.employeeId()
         );
+        EmployeeContract contract = findEmployeeContract(employee.getId());
+        workEligibilityPolicy.verifyEligible(employee, contract, request.workDate());
 
         DailyReport entity = new DailyReport();
 
@@ -76,9 +80,6 @@ public class DailyReportCommandService {
 
         applyCalculatedAmounts(saved, calculatedItems);
 
-        EmployeeContract contract =
-                findEmployeeContract(employee.getId());
-
         estimatedPayService.applyEstimatedPay(saved, contract);
         saved = repository.save(saved);
 
@@ -95,7 +96,9 @@ public class DailyReportCommandService {
         financeBalanceCommandService.applyDailyReportAmountDiff(
                 employee.getId(),
                 nvl(saved.getSavingAmount()),
-                nvl(saved.getLoanRepaymentAmount())
+                nvl(saved.getLoanRepaymentAmount()),
+                saved.getId(),
+                saved.getWorkDate()
         );
 
         return mapper.toResponse(saved);
@@ -124,8 +127,12 @@ public class DailyReportCommandService {
         BigDecimal oldLoanRepaymentAmount =
                 nvl(entity.getLoanRepaymentAmount());
 
+        var oldWorkDate = entity.getWorkDate();
+
         Employee employee =
                 findEmployee(request.employeeId());
+        EmployeeContract contract = findEmployeeContract(employee.getId());
+        workEligibilityPolicy.verifyEligible(employee, contract, request.workDate());
 
         mapper.applyRequest(
                 request,
@@ -146,9 +153,6 @@ public class DailyReportCommandService {
                 inputItemService.calculate(request);
 
         applyCalculatedAmounts(saved, calculatedItems);
-
-        EmployeeContract contract =
-                findEmployeeContract(employee.getId());
 
         estimatedPayService.applyEstimatedPay(saved, contract);
         saved = repository.save(saved);
@@ -178,19 +182,25 @@ public class DailyReportCommandService {
                     newSavingAmount.subtract(oldSavingAmount),
                     newLoanRepaymentAmount.subtract(
                             oldLoanRepaymentAmount
-                    )
+                    ),
+                    saved.getId(),
+                    saved.getWorkDate()
             );
         } else {
             financeBalanceCommandService.applyDailyReportAmountDiff(
                     oldEmployeeId,
                     oldSavingAmount.negate(),
-                    oldLoanRepaymentAmount.negate()
+                    oldLoanRepaymentAmount.negate(),
+                    saved.getId(),
+                    oldWorkDate
             );
 
             financeBalanceCommandService.applyDailyReportAmountDiff(
                     newEmployeeId,
                     newSavingAmount,
-                    newLoanRepaymentAmount
+                    newLoanRepaymentAmount,
+                    saved.getId(),
+                    saved.getWorkDate()
             );
         }
 
@@ -209,7 +219,9 @@ public class DailyReportCommandService {
         financeBalanceCommandService.applyDailyReportAmountDiff(
                 entity.getEmployee().getId(),
                 nvl(entity.getSavingAmount()).negate(),
-                nvl(entity.getLoanRepaymentAmount()).negate()
+                nvl(entity.getLoanRepaymentAmount()).negate(),
+                entity.getId(),
+                entity.getWorkDate()
         );
 
         entity.setDeletedAt(

@@ -17,6 +17,7 @@ public record EmployeePayrollItemTransactionRequest(
         @NotNull LocalDate transactionDate,
         @NotNull @DecimalMin(value = "0.01") BigDecimal amount,
         @DecimalMin(value = "0.00") BigDecimal quantity,
+        PayrollItemTransactionPurpose transactionPurpose,
         @NotNull PayrollItemTransactionStatus status,
         @Size(max = 150) String sourceReference,
         @Size(max = 500) String note,
@@ -33,7 +34,8 @@ public record EmployeePayrollItemTransactionRequest(
             String note
     ) {
         this(PayrollItemTargetType.DEDUCTION, targetCode, targetMonth,
-                transactionDate, amount, quantity, status,
+                transactionDate, amount, quantity,
+                PayrollItemTransactionPurpose.PAYROLL_ITEM, status,
                 sourceReference, note, null);
     }
 }

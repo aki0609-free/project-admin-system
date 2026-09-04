@@ -16,14 +16,16 @@ test('document management exposes editable and read-only areas from server polic
 
   await expect(page.getByRole('heading', { name: '書類管理', exact: true })).toBeVisible()
   await expect(page.getByText('SYS_ADMIN専用', { exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: /自由書類/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /会社書類/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /生成帳票/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /バックアップ/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /テンプレート/ })).toBeVisible()
   await expect(page.getByText('編集可能', { exact: true })).toBeVisible()
+  await expect(page.getByText(/同じ場所に同名のファイルは登録できません/)).toBeVisible()
 
   await page.getByRole('button', { name: /バックアップ/ }).click()
   await expect(page.getByText('参照専用', { exact: true })).toBeVisible()
+  await expect(page.getByText(/同じ場所に同名のファイルは登録できません/)).toBeHidden()
 })
 
 test('document APIs enforce list and managed-area write boundaries', async ({ page }) => {

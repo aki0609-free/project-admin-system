@@ -2,6 +2,9 @@
 
 ProjectAdminSystemのAWSインフラをTerraformで管理する。
 
+AWSアカウント作成からCloudflare、Docker、Database初期化、CI/CD、日常運用までの詳細は、
+[`docs/specs/infrastructure/README.md`](../docs/specs/infrastructure/README.md)を正本とする。
+
 ## 構成
 
 - `bootstrap`: Terraform state管理基盤

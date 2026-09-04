@@ -86,7 +86,7 @@ test('loan and saving APIs initialize server-owned balances and allow untouched 
       data: {
         employeeId: employee.id,
         percentage: 5,
-        minSalaryThreshold: 200000,
+        savingCalculationBaseAmount: 200000,
         activeFlag: false,
       },
     })

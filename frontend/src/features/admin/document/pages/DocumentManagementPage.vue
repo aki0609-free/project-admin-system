@@ -48,7 +48,7 @@ interface FileManagerFailureEvent {
 const areaMetadata: Record<DocumentArea, { icon: string; description: string }> = {
   GENERAL: {
     icon: 'mdi-folder-edit-outline',
-    description: '契約書や社内資料などを自由に保管できます。',
+    description: '契約書や社内資料などの会社書類を保管できます。',
   },
   GENERATED_REPORTS: {
     icon: 'mdi-file-document-multiple-outline',
@@ -70,7 +70,7 @@ const areaMetadata: Record<DocumentArea, { icon: string; description: string }> 
 
 const defaultArea: DocumentAreaResponse = {
   area: 'GENERAL',
-  displayName: '自由書類',
+  displayName: '会社書類',
   allowedOperations: [
     'READ',
     'SEARCH',
@@ -272,7 +272,7 @@ onBeforeUnmount(() => {
   <ListDetailPageLayout
     class="document-management-page"
     title="書類管理"
-    description="自由書類、生成帳票、バックアップ、テンプレート、取込スクリプトを一元管理します。"
+    description="会社書類、生成帳票、バックアップ、テンプレート、取込スクリプトを一元管理します。"
   >
     <template #header-actions>
       <v-chip color="primary" variant="tonal" prepend-icon="mdi-shield-account-outline">
@@ -354,6 +354,24 @@ onBeforeUnmount(() => {
             {{ selectedArea === 'IMPORT_SCRIPTS' ? '.py/.sh・最大1MB' : '1ファイルあたり最大50MB' }}
           </span>
         </div>
+        <v-alert
+          v-if="editable"
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="mt-3"
+        >
+          同じ場所に同名のファイルは登録できません。差し替える場合は、既存ファイルを名称変更または削除してからアップロードしてください。
+        </v-alert>
+        <v-alert
+          v-if="selectedArea === 'IMPORT_SCRIPTS'"
+          type="warning"
+          variant="tonal"
+          density="compact"
+          class="mt-3"
+        >
+          登録したスクリプトは外部データ取込から実行できます。内容を確認した管理者だけが更新してください。
+        </v-alert>
       </v-card-text>
     </v-card>
 

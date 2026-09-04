@@ -89,8 +89,7 @@ export const useAllowanceFormFields = (formOptions: AllowanceFormFieldOptions) =
     { key: 'maxAmount', label: '上限金額', type: 'number', tab: '計算設定', editable: formOptions.canManage.value },
 
     { key: 'taxable', label: '課税対象', type: 'checkbox', tab: '表示設定', editable: formOptions.canManage.value },
-    { key: 'showOnDailyStatement', label: '日払い明細に表示', type: 'checkbox', tab: '表示設定', editable: formOptions.canManage.value },
-    { key: 'showOnMonthlyStatement', label: '月次明細に表示', type: 'checkbox', tab: '表示設定', editable: formOptions.canManage.value },
+    { key: 'showOnDailyStatement', label: '日報に表示', type: 'checkbox', tab: '表示設定', editable: formOptions.canManage.value },
     { key: 'displayOrder', label: '表示順', type: 'number', tab: '表示設定', editable: formOptions.canManage.value },
     { key: 'enabled', label: '有効', type: 'checkbox', tab: '表示設定', editable: formOptions.canManage.value },
     { key: 'note', label: '備考', type: 'text', tab: '表示設定', editable: formOptions.canManage.value },

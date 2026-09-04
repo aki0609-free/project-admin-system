@@ -23,6 +23,7 @@ const toAmountItemForm = (
   displayOrder: item.displayOrder,
   balanceTracked: item.balanceTracked ?? false,
   balanceUnit: item.balanceUnit ?? null,
+  advanceConsumptionAllowed: item.advanceConsumptionAllowed ?? false,
   openingQuantity: item.openingQuantity ?? 0,
   accruedQuantity: item.accruedQuantity ?? 0,
   consumedQuantity: item.consumedQuantity ?? 0,

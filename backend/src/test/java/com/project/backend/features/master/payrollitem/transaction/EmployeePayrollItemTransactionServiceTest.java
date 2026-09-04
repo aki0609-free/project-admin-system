@@ -31,6 +31,8 @@ import com.project.backend.features.master.payrollitem.balance.EmployeePayrollIt
 import com.project.backend.features.master.payrollitem.balance.EmployeePayrollItemEnrollmentRepository;
 import com.project.backend.features.master.payrollitem.balance.PayrollItemBalancePolicy;
 import com.project.backend.features.master.payrollitem.balance.PayrollItemBalancePolicyRepository;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceQueryService;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceSnapshot;
 import com.project.backend.features.master.payrollitem.enums.PayrollItemInputSource;
 import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
 
@@ -40,6 +42,8 @@ class EmployeePayrollItemTransactionServiceTest {
 
     private EmployeePayrollItemTransactionRepository repository;
     private EmployeePayrollItemTransactionService service;
+    private PayrollItemBalancePolicy policy;
+    private PayrollItemBalanceQueryService balanceQueryService;
 
     @BeforeEach
     void setUp() {
@@ -62,7 +66,7 @@ class EmployeePayrollItemTransactionServiceTest {
         when(employeeRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(employee));
 
-        PayrollItemBalancePolicy policy = new PayrollItemBalancePolicy();
+        policy = new PayrollItemBalancePolicy();
         policy.setId(20L);
         policy.setTargetType(PayrollItemTargetType.DEDUCTION);
         policy.setTargetMasterId(30L);
@@ -104,6 +108,7 @@ class EmployeePayrollItemTransactionServiceTest {
         when(repository.save(any(EmployeePayrollItemTransaction.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
+        balanceQueryService = mock(PayrollItemBalanceQueryService.class);
         service = new EmployeePayrollItemTransactionService(
                 repository,
                 employeeRepository,
@@ -116,7 +121,8 @@ class EmployeePayrollItemTransactionServiceTest {
                         Instant.parse("2026-08-11T00:00:00Z"),
                         ZoneOffset.UTC
                 ),
-                mock(com.project.backend.features.master.payrollitem.balance.PayrollItemParameterDefinitionRepository.class)
+                mock(com.project.backend.features.master.payrollitem.balance.PayrollItemParameterDefinitionRepository.class),
+                balanceQueryService
         );
     }
 
@@ -158,6 +164,7 @@ class EmployeePayrollItemTransactionServiceTest {
                 LocalDate.of(2026, 8, 5),
                 BigDecimal.valueOf(2500),
                 BigDecimal.ONE,
+                PayrollItemTransactionPurpose.PAYROLL_ITEM,
                 PayrollItemTransactionStatus.CONFIRMED,
                 "MOBILE-202608-2",
                 null,
@@ -167,6 +174,27 @@ class EmployeePayrollItemTransactionServiceTest {
         assertThatThrownBy(() -> service.create(10L, request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("残高管理しない項目");
+    }
+
+    @Test
+    void create_shouldApplyAdvanceConsumptionPolicyToConfirmedDebit() {
+        policy.setBalanceTrackingFlag(true);
+        when(balanceQueryService.findDeductionBalance(
+                10L, 30L, LocalDate.of(2026, 8, 5), null, null
+        )).thenReturn(new PayrollItemBalanceSnapshot(
+                true, BalanceUnit.AMOUNT, false,
+                BigDecimal.ZERO, BigDecimal.valueOf(1000),
+                BigDecimal.ZERO, BigDecimal.valueOf(1000)
+        ));
+
+        assertThatThrownBy(() -> service.create(
+                10L, request(LocalDate.of(2026, 8, 5))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("残数量を超えています");
+
+        policy.setAdvanceConsumptionFlag(true);
+        service.create(10L, request(LocalDate.of(2026, 8, 5)));
+        verify(repository).save(any(EmployeePayrollItemTransaction.class));
     }
 
     private EmployeePayrollItemTransactionRequest request(LocalDate date) {

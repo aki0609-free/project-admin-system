@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { formatYearMonthDay } from '@/shared/utils/DateUtils'
 import type { EmployeeForm } from '../types/employeeFormTypes'
 import PayrollItemTransactionPanel from './PayrollItemTransactionPanel.vue'
 import EmployeePayrollItemParameterField from './EmployeePayrollItemParameterField.vue'
@@ -38,8 +39,15 @@ const visibleDefinitions = computed(
 const effectiveInputSource = (item: Setting) => {
   const override = item.parameterDefinitions.find((definition) => definition.inputSourceOverride)
   const value = override ? item.parameters[override.key] : null
-  return value === 'DAILY_REPORT' || value === 'TRANSACTION' ? value : item.inputSource
+  return value === 'DAILY_REPORT' ||
+    value === 'TRANSACTION' ||
+    value === 'DAILY_REPORT_AND_TRANSACTION'
+    ? value
+    : item.inputSource
 }
+
+const supportsDailyReport = (source: string) => source !== 'TRANSACTION'
+const supportsTransaction = (source: string) => source !== 'DAILY_REPORT'
 
 const unitLabel = (unit: string) =>
   ({
@@ -76,7 +84,12 @@ const unitLabel = (unit: string) =>
             </div>
             <div class="text-caption text-medium-emphasis">
               {{ activeItem.targetType === 'ALLOWANCE' ? '手当' : '控除' }}・{{
-                effectiveInputSource(activeItem) === 'DAILY_REPORT' ? '日報入力' : '明細入力'
+                supportsDailyReport(effectiveInputSource(activeItem)) &&
+                supportsTransaction(effectiveInputSource(activeItem))
+                  ? '日報・明細入力'
+                  : supportsDailyReport(effectiveInputSource(activeItem))
+                    ? '日報入力'
+                    : '明細入力'
               }}
             </div>
           </div>
@@ -102,7 +115,7 @@ const unitLabel = (unit: string) =>
             <div class="text-subtitle-2 mb-3">残{{ unitLabel(activeItem.balanceUnit) }}</div>
             <div class="balance-grid">
               <v-text-field
-                :model-value="activeItem.effectiveFrom"
+                :model-value="formatYearMonthDay(activeItem.effectiveFrom)"
                 label="適用開始日"
                 readonly
                 density="compact"
@@ -140,7 +153,7 @@ const unitLabel = (unit: string) =>
           </div>
 
           <PayrollItemTransactionPanel
-            v-if="employeeId > 0 && effectiveInputSource(activeItem) === 'TRANSACTION'"
+            v-if="employeeId > 0 && supportsTransaction(effectiveInputSource(activeItem))"
             :employee-id="employeeId"
             :target-type="activeItem.targetType"
             :target-code="activeItem.targetCode"
@@ -148,7 +161,7 @@ const unitLabel = (unit: string) =>
             :quantity-unit="activeItem.balanceTracked ? activeItem.balanceUnit : null"
           />
           <v-alert
-            v-else-if="employeeId === 0 && effectiveInputSource(activeItem) === 'TRANSACTION'"
+            v-else-if="employeeId === 0 && supportsTransaction(effectiveInputSource(activeItem))"
             type="info"
             variant="tonal"
             class="mt-4"

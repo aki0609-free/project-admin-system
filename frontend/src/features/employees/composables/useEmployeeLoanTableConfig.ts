@@ -4,6 +4,7 @@ import type {
   SimpleTableEditableRow,
 } from '@/shared/components/table/simple_table/types/item/types'
 import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
+import { formatYearMonthDay } from '@/shared/utils/DateUtils'
 import type { EmployeeLoanResponse } from '../types/employeeWorkApiTypes'
 
 export type EmployeeLoanTableRow = SimpleTableEditableRow & {
@@ -42,8 +43,20 @@ export const useEmployeeLoanTableConfig = (loans: Ref<EmployeeLoanResponse[]>) =
       { title: '借入元本', key: 'principal', width: '180px', filter: { type: 'text' } },
       { title: '借入残高', key: 'currentBalance', width: '180px', filter: { type: 'text' } },
       { title: '月返済額', key: 'monthlyRepayment', width: '180px', filter: { type: 'text' } },
-      { title: '借入日', key: 'loanDate', width: '180px', filter: { type: 'text' } },
-      { title: '返済開始日', key: 'repaymentStartDate', width: '180px', filter: { type: 'text' } },
+      {
+        title: '借入日',
+        key: 'loanDate',
+        width: '180px',
+        filter: { type: 'date' },
+        formatter: value => formatYearMonthDay(String(value ?? '')),
+      },
+      {
+        title: '返済開始日',
+        key: 'repaymentStartDate',
+        width: '180px',
+        filter: { type: 'date' },
+        formatter: value => formatYearMonthDay(String(value ?? '')),
+      },
       { title: '状態', key: 'activeText', width: '180px', filter: { type: 'text' } },
     ]
 

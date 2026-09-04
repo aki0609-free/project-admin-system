@@ -2,7 +2,6 @@ import type {
   EmploymentStatus,
   EmploymentType,
   Gender,
-  DormitoryType,
   PaymentCycle,
   SalaryType,
   TaxCategory,
@@ -12,8 +11,6 @@ export type EmployeePayrollProfileForm = {
   taxCategory: TaxCategory
   taxDependentCount: number
 
-  dependentFlag: boolean
-  dependentOfOtherFlag: boolean
   paidLeaveRemainingDays: number
 
   incomeTaxCalcFlag: boolean
@@ -30,7 +27,6 @@ export type EmployeePayrollProfileForm = {
 export type EmployeeContractForm = {
   contractStartDate: string
   contractEndDate: string
-  renewalFlag: boolean
   salaryType: SalaryType
   paymentCycle: PaymentCycle
   monthlySalary: number
@@ -56,12 +52,6 @@ export type EmployeeForm = {
   email: string
   postalCode: string
   address: string
-  dormitoryFlag: boolean
-  dormitoryType: DormitoryType | null
-  dormitoryOpeningDays: number
-  dormitoryCurrentMonthDays: number
-  dormitoryConsumedDays: number
-  dormitoryRemainingDays: number
   activeFlag: boolean
   payrollProfile: EmployeePayrollProfileForm
   contract: EmployeeContractForm
@@ -72,7 +62,7 @@ export type EmployeeForm = {
     enabled: boolean
     effectiveFrom: string
     effectiveTo: string
-    inputSource: 'DAILY_REPORT' | 'TRANSACTION'
+    inputSource: 'DAILY_REPORT' | 'TRANSACTION' | 'DAILY_REPORT_AND_TRANSACTION'
     balanceTracked: boolean
     balanceUnit: string
     openingQuantity: number

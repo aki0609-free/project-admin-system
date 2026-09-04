@@ -17,12 +17,6 @@ export const createEmptyEmployeeForm = (): EmployeeForm => ({
   email: '',
   postalCode: '',
   address: '',
-  dormitoryFlag: false,
-  dormitoryType: null,
-  dormitoryOpeningDays: 0,
-  dormitoryCurrentMonthDays: 0,
-  dormitoryConsumedDays: 0,
-  dormitoryRemainingDays: 0,
   activeFlag: true,
   payrollItemSettings: [],
 
@@ -30,8 +24,6 @@ export const createEmptyEmployeeForm = (): EmployeeForm => ({
     taxCategory: 'KOU',
     taxDependentCount: 0,
 
-    dependentFlag: false,
-    dependentOfOtherFlag: false,
     paidLeaveRemainingDays: 0,
 
     incomeTaxCalcFlag: true,
@@ -48,7 +40,6 @@ export const createEmptyEmployeeForm = (): EmployeeForm => ({
   contract: {
     contractStartDate: '',
     contractEndDate: '',
-    renewalFlag: false,
     salaryType: 'MONTHLY',
     paymentCycle: 'MONTHLY',
     monthlySalary: 0,
@@ -76,12 +67,6 @@ export const toEmployeeForm = (detail: EmployeeDetailResponse): EmployeeForm => 
   email: detail.email ?? '',
   postalCode: detail.postalCode ?? '',
   address: detail.address ?? '',
-  dormitoryFlag: detail.dormitoryFlag ?? false,
-  dormitoryType: detail.dormitoryType ?? null,
-  dormitoryOpeningDays: detail.dormitoryOpeningDays ?? 0,
-  dormitoryCurrentMonthDays: detail.dormitoryCurrentMonthDays ?? 0,
-  dormitoryConsumedDays: detail.dormitoryConsumedDays ?? 0,
-  dormitoryRemainingDays: detail.dormitoryRemainingDays ?? 0,
   activeFlag: detail.activeFlag,
   payrollItemSettings: (detail.payrollItemSettings ?? []).map(item => ({
     ...item,
@@ -95,8 +80,6 @@ export const toEmployeeForm = (detail: EmployeeDetailResponse): EmployeeForm => 
     taxCategory: detail.payrollProfile.taxCategory,
     taxDependentCount: detail.payrollProfile.taxDependentCount,
 
-    dependentFlag: detail.payrollProfile.dependentFlag,
-    dependentOfOtherFlag: detail.payrollProfile.dependentOfOtherFlag,
     paidLeaveRemainingDays: detail.payrollProfile.paidLeaveRemainingDays ?? 0,
 
     incomeTaxCalcFlag: detail.payrollProfile.incomeTaxCalcFlag,
@@ -113,7 +96,6 @@ export const toEmployeeForm = (detail: EmployeeDetailResponse): EmployeeForm => 
   contract: {
     contractStartDate: detail.contract.contractStartDate ?? '',
     contractEndDate: detail.contract.contractEndDate ?? '',
-    renewalFlag: detail.contract.renewalFlag,
     salaryType: detail.contract.salaryType,
     paymentCycle: detail.contract.paymentCycle ?? 'MONTHLY',
     monthlySalary: detail.contract.monthlySalary ?? 0,

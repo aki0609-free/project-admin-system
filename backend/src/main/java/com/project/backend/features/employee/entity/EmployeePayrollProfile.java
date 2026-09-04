@@ -31,9 +31,11 @@ public class EmployeePayrollProfile extends BaseEntity {
     private int taxDependentCount = 0;
 
     @Column(name = "dependent_flag", nullable = false)
+    @Deprecated(forRemoval = false)
     private boolean dependentFlag = false;
 
     @Column(name = "dependent_of_other_flag", nullable = false)
+    @Deprecated(forRemoval = false)
     private boolean dependentOfOtherFlag = false;
 
     @Column(name = "paid_leave_remaining_days", precision = 5, scale = 2)

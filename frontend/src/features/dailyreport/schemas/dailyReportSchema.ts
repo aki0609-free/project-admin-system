@@ -20,12 +20,13 @@ export const dailyReportAmountItemSchema = z.object({
   displayOrder: z.number().int(),
   balanceTracked: z.boolean(),
   balanceUnit: z.enum(['DAYS', 'HOURS', 'COUNT', 'AMOUNT']).nullable(),
-  openingQuantity: z.number().min(0),
+  advanceConsumptionAllowed: z.boolean(),
+  openingQuantity: z.number(),
   accruedQuantity: z.number().min(0),
   consumedQuantity: z.number().min(0),
-  remainingQuantity: z.number().min(0),
+  remainingQuantity: z.number(),
   quantity: z.number().min(0),
-  remainingAfterQuantity: z.number().min(0),
+  remainingAfterQuantity: z.number(),
 }).superRefine((item, context) => {
   if (item.manualOverride && item.overrideReason.trim().length === 0) {
     context.addIssue({

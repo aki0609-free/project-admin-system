@@ -282,6 +282,7 @@ class DailyReportInputItemServiceTest {
         )).thenReturn(new PayrollItemBalanceSnapshot(
                 true,
                 BalanceUnit.DAYS,
+                false,
                 BigDecimal.ZERO,
                 BigDecimal.valueOf(31),
                 BigDecimal.ZERO,
@@ -293,6 +294,24 @@ class DailyReportInputItemServiceTest {
                 .hasMessageContaining("残数量を超えています")
                 .hasMessageContaining("remaining=31")
                 .hasMessageContaining("quantity=40");
+
+        when(balanceQueryService.findDeductionBalance(
+                10L,
+                9L,
+                LocalDate.of(2026, 7, 27),
+                null
+        )).thenReturn(new PayrollItemBalanceSnapshot(
+                true,
+                BalanceUnit.DAYS,
+                true,
+                BigDecimal.ZERO,
+                BigDecimal.valueOf(31),
+                BigDecimal.ZERO,
+                BigDecimal.valueOf(31)
+        ));
+        var calculated = service.calculate(request);
+        assertThat(calculated.deductions().getFirst().remainingAfterQuantity())
+                .isEqualByComparingTo("-9");
     }
 
     @Test

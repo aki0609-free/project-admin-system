@@ -140,7 +140,6 @@ class EmployeeAdminServiceTest {
                 org.mockito.ArgumentMatchers.eq(employee),
                 payrollCaptor.capture(),
                 contractCaptor.capture(),
-                org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.eq(List.of())
         );
         assertThat(payrollCaptor.getValue().getEmployee()).isSameAs(employee);
@@ -172,8 +171,6 @@ class EmployeeAdminServiceTest {
                 null,
                 null,
                 null,
-                null,
-                false,
                 null,
                 true,
                 null,

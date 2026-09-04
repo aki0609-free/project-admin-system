@@ -6,7 +6,6 @@ import java.util.List;
 import com.project.backend.features.employee.enums.EmploymentStatus;
 import com.project.backend.features.employee.enums.EmploymentType;
 import com.project.backend.features.employee.enums.Gender;
-import com.project.backend.features.employee.enums.DormitoryType;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -28,8 +27,6 @@ public record EmployeeSaveRequest(
         @Email @Size(max = 255) String email,
         @Size(max = 20) String postalCode,
         @Size(max = 500) String address,
-        Boolean dormitoryFlag,
-        DormitoryType dormitoryType,
         Boolean activeFlag,
         @Valid EmployeePayrollProfileSaveRequest payrollProfile,
         @Valid EmployeeContractSaveRequest contract,

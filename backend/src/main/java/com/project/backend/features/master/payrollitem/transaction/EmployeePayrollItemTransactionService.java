@@ -1,5 +1,6 @@
 package com.project.backend.features.master.payrollitem.transaction;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Instant;
@@ -20,6 +21,7 @@ import com.project.backend.features.master.allowance.repository.AllowanceMasterR
 import com.project.backend.features.master.payrollitem.balance.EmployeePayrollItemEnrollmentRepository;
 import com.project.backend.features.master.payrollitem.balance.PayrollItemBalancePolicy;
 import com.project.backend.features.master.payrollitem.balance.PayrollItemBalancePolicyRepository;
+import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceQueryService;
 import com.project.backend.features.master.payrollitem.balance.PayrollItemParameterDefinition;
 import com.project.backend.features.master.payrollitem.balance.PayrollItemParameterDefinitionRepository;
 import com.project.backend.features.master.payrollitem.enums.PayrollItemInputSource;
@@ -40,6 +42,7 @@ public class EmployeePayrollItemTransactionService {
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final PayrollItemParameterDefinitionRepository parameterDefinitionRepository;
+    private final PayrollItemBalanceQueryService balanceQueryService;
 
     @Transactional(readOnly = true)
     public List<EmployeePayrollItemTransactionResponse> findAll(
@@ -125,13 +128,31 @@ public class EmployeePayrollItemTransactionService {
         entity.setTargetMonth(targetMonth.atDay(1));
         entity.setTransactionDate(transactionDate);
         entity.setAmount(request.amount().setScale(2, RoundingMode.UNNECESSARY));
-        entity.setQuantity(request.quantity() == null
-                ? null : request.quantity().setScale(2, RoundingMode.UNNECESSARY));
+        PayrollItemTransactionPurpose purpose = request.transactionPurpose() == null
+                ? PayrollItemTransactionPurpose.PAYROLL_ITEM
+                : request.transactionPurpose();
+        entity.setTransactionPurpose(purpose);
+        BigDecimal quantity = request.quantity();
+        if (policy.isBalanceTrackingFlag()
+                && policy.getBalanceUnit()
+                == com.project.backend.features.master.payrollitem.balance.BalanceUnit.AMOUNT) {
+            quantity = request.amount();
+        }
+        entity.setQuantity(quantity == null
+                ? null : quantity.setScale(2, RoundingMode.UNNECESSARY));
         PayrollItemBalanceEffect effect = request.balanceEffect() == null
                 ? (policy.isBalanceTrackingFlag()
                 ? PayrollItemBalanceEffect.DEBIT
                 : PayrollItemBalanceEffect.NONE)
                 : request.balanceEffect();
+        if (purpose == PayrollItemTransactionPurpose.BALANCE_ACCRUAL) {
+            if (!policy.isBalanceTrackingFlag()) {
+                throw new IllegalArgumentException(
+                        "請求・残高発生は残高管理する項目だけ登録できます。"
+                );
+            }
+            effect = PayrollItemBalanceEffect.CREDIT;
+        }
         if (!policy.isBalanceTrackingFlag()
                 && effect != PayrollItemBalanceEffect.NONE) {
             throw new IllegalArgumentException(
@@ -144,10 +165,39 @@ public class EmployeePayrollItemTransactionService {
                     "残高を増減する取引では数量が必須です。"
             );
         }
+        validateConfirmedConsumption(entity, request, policy, effect);
         entity.setBalanceEffect(effect);
         entity.setStatus(request.status());
         entity.setSourceReference(blankToNull(request.sourceReference()));
         entity.setNote(blankToNull(request.note()));
+    }
+
+    private void validateConfirmedConsumption(
+            EmployeePayrollItemTransaction entity,
+            EmployeePayrollItemTransactionRequest request,
+            PayrollItemBalancePolicy policy,
+            PayrollItemBalanceEffect effect
+    ) {
+        if (!policy.isBalanceTrackingFlag()
+                || policy.isAdvanceConsumptionFlag()
+                || effect != PayrollItemBalanceEffect.DEBIT
+                || request.status() != PayrollItemTransactionStatus.CONFIRMED) {
+            return;
+        }
+        var balance = request.targetType() == PayrollItemTargetType.ALLOWANCE
+                ? balanceQueryService.findAllowanceBalance(
+                        entity.getEmployeeId(), policy.getTargetMasterId(),
+                        request.transactionDate(), null, entity.getId())
+                : balanceQueryService.findDeductionBalance(
+                        entity.getEmployeeId(), policy.getTargetMasterId(),
+                        request.transactionDate(), null, entity.getId());
+        if (entity.getQuantity().compareTo(balance.remainingQuantity()) > 0) {
+            throw new IllegalArgumentException(
+                    policy.getDisplayName() + "の消化数量が残数量を超えています。remaining="
+                            + balance.remainingQuantity() + ", quantity="
+                            + entity.getQuantity()
+            );
+        }
     }
 
     private PayrollItemBalancePolicy requireTransactionPolicy(
@@ -183,7 +233,7 @@ public class EmployeePayrollItemTransactionService {
                 .filter(value -> value != null && !value.isBlank())
                 .map(PayrollItemInputSource::valueOf)
                 .orElse(policy.getInputSource());
-        if (effectiveInputSource != PayrollItemInputSource.TRANSACTION) {
+        if (!effectiveInputSource.supportsTransaction()) {
             throw new IllegalArgumentException(
                     "この手当・控除項目は日報から入力します。targetCode=" + targetCode
             );
@@ -259,6 +309,7 @@ public class EmployeePayrollItemTransactionService {
                 entity.getTargetCode(),
                 entity.getTargetName(), YearMonth.from(entity.getTargetMonth()).toString(),
                 entity.getTransactionDate(), entity.getAmount(), entity.getQuantity(),
+                entity.getTransactionPurpose(),
                 entity.getBalanceEffect(),
                 entity.getSourceType(), entity.getSourceReference(), entity.getStatus(),
                 entity.getNote(), entity.getLockVersion()

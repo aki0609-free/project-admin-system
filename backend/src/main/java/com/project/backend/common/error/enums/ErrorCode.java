@@ -20,6 +20,7 @@ public enum ErrorCode {
     // ===== AUTH =====
     AUTH_INVALID_CREDENTIALS("AUTH_INVALID_CREDENTIALS", "認証に失敗しました", HttpStatus.UNAUTHORIZED),
     AUTH_TOKEN_EXPIRED("AUTH_TOKEN_EXPIRED", "トークンの有効期限が切れています", HttpStatus.UNAUTHORIZED),
+    AUTH_ACCESS_DENIED("AUTH_ACCESS_DENIED", "この操作を行う権限がありません", HttpStatus.FORBIDDEN),
     ;
 
     private final String code;

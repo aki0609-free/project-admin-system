@@ -6,6 +6,7 @@ import { useDeleteEmployeeLoanMutation } from '../api/useDeleteEmployeeLoanMutat
 import { useDeleteEmployeeSavingMutation } from '../api/useDeleteEmployeeSavingMutation'
 import { useEmployeeLoansQuery } from '../api/useEmployeeLoansQuery'
 import { useEmployeeSavingsQuery } from '../api/useEmployeeSavingsQuery'
+import { useEmployeeFinanceTransactionsQuery } from '../api/useEmployeeFinanceTransactionsQuery'
 import { useEmployeesQuery } from '../api/useEmployeesQuery'
 import { useUpdateEmployeeLoanMutation } from '../api/useUpdateEmployeeLoanMutation'
 import { useUpdateEmployeeSavingMutation } from '../api/useUpdateEmployeeSavingMutation'
@@ -15,10 +16,10 @@ import {
   toEmployeeSavingSaveRequest,
 } from '../utils/employeeLoanSavingConverters'
 import { useEmployeeSavingDialog } from './useEmployeeSavingDialog'
-import { useEmployeeLoanDialog } from './useEmployeeLoadDialog'
+import { useEmployeeLoanDialog } from './useEmployeeLoanDialog'
 
 export const useEmployeeLoanSavingsPage = () => {
-  const activeTab = ref<'loans' | 'savings'>('loans')
+  const activeTab = ref<'loans' | 'savings' | 'history'>('loans')
 
   const employeesQuery = useEmployeesQuery()
 
@@ -33,12 +34,14 @@ export const useEmployeeLoanSavingsPage = () => {
   const updateSavingMutation = useUpdateEmployeeSavingMutation()
   const deleteSavingMutation = useDeleteEmployeeSavingMutation()
   const savingDialog = useEmployeeSavingDialog()
+  const financeTransactionsQuery = useEmployeeFinanceTransactionsQuery()
 
   const busy = computed(
     () =>
       employeesQuery.isLoading.value ||
       loansQuery.isLoading.value ||
       savingsQuery.isLoading.value ||
+      financeTransactionsQuery.isLoading.value ||
       createLoanMutation.isPending.value ||
       updateLoanMutation.isPending.value ||
       deleteLoanMutation.isPending.value ||
@@ -126,6 +129,7 @@ export const useEmployeeLoanSavingsPage = () => {
   const tabs = [
     { label: '貸付', value: 'loans' },
     { label: '貯蓄', value: 'savings' },
+    { label: '残高履歴', value: 'history' },
   ]
 
   return {
@@ -145,5 +149,7 @@ export const useEmployeeLoanSavingsPage = () => {
     savingToolbarItems,
     saveSaving,
     deleteSaving,
+
+    financeTransactionsQuery,
   }
 }

@@ -36,7 +36,7 @@ class EmployeeFinanceQueryServiceTest {
         loan.setMonthlyRepayment(new BigDecimal("10000"));
         EmployeeSaving saving = new EmployeeSaving();
         saving.setCurrentBalance(new BigDecimal("15000"));
-        saving.setMinSalaryThreshold(new BigDecimal("200000"));
+        saving.setSavingCalculationBaseAmount(new BigDecimal("200000"));
         saving.setPercentage(new BigDecimal("5"));
 
         when(loanRepository

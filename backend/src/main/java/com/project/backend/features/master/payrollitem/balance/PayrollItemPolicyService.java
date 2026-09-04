@@ -21,6 +21,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PayrollItemPolicyService {
 
+    private static final String CALENDAR_DAYS_TIMES_PARAMETER_PREFIX =
+            "CALENDAR_DAYS_TIMES_PARAMETER:";
+
     private final PayrollItemBalancePolicyRepository policyRepository;
     private final PayrollItemParameterDefinitionRepository definitionRepository;
     private final ObjectMapper objectMapper;
@@ -121,7 +124,25 @@ public class PayrollItemPolicyService {
     }
 
     private void validate(PayrollItemPolicySaveRequest request) {
-        if (request.inputSource() == PayrollItemInputSource.TRANSACTION
+        if ("CALENDAR_DAYS_IN_ENROLLMENT".equals(request.accrualRuleName())
+                && (!request.balanceTracking()
+                || request.balanceUnit() != BalanceUnit.DAYS)) {
+            throw new IllegalArgumentException(
+                    "在籍期間のカレンダー日数を加算する項目は、残高管理を有効にして残高単位を日数にしてください。"
+            );
+        }
+        if (request.accrualRuleName() != null
+                && request.accrualRuleName().startsWith(
+                        CALENDAR_DAYS_TIMES_PARAMETER_PREFIX)
+                && (!request.balanceTracking()
+                || request.balanceUnit() != BalanceUnit.AMOUNT
+                || request.accrualRuleName().length()
+                == CALENDAR_DAYS_TIMES_PARAMETER_PREFIX.length())) {
+            throw new IllegalArgumentException(
+                    "在籍日数と単価から残高を加算する項目は、残高管理を有効にして残高単位を金額にしてください。"
+            );
+        }
+        if (request.inputSource().supportsTransaction()
                 && request.applicationScope()
                 != PayrollItemApplicationScope.EMPLOYEE_ENROLLMENT) {
             throw new IllegalArgumentException(
@@ -170,11 +191,12 @@ public class PayrollItemPolicyService {
                 boolean invalidOption = definition.options() == null
                         || definition.options().stream()
                         .map(PayrollItemParameterOption::value)
-                        .anyMatch(value -> !PayrollItemInputSource.DAILY_REPORT.name().equals(value)
-                                && !PayrollItemInputSource.TRANSACTION.name().equals(value));
+                        .anyMatch(value -> java.util.Arrays.stream(
+                                        PayrollItemInputSource.values())
+                                .noneMatch(source -> source.name().equals(value)));
                 if (invalidOption) {
                     throw new IllegalArgumentException(
-                            "入力元切替の値はDAILY_REPORTまたはTRANSACTIONにしてください。"
+                            "入力元切替の値が不正です。"
                     );
                 }
             }

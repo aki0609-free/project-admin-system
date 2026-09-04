@@ -20,7 +20,7 @@ export const employeeSavingSchema = z.object({
     .number()
     .min(0, '貯蓄率は0%以上で指定してください。')
     .max(100, '貯蓄率は100%以下で指定してください。'),
-  minSalaryThreshold: z.number().min(0, '最低給与額は0円以上で指定してください。'),
+  savingCalculationBaseAmount: z.number().min(0, '積立計算基礎額は0円以上で指定してください。'),
   currentBalance: z.number().min(0),
   activeFlag: z.boolean(),
 })
@@ -79,7 +79,7 @@ export const useEmployeeSavingEditDialog = (
         gridColumn: '1 / span 4',
       },
       { key: 'percentage', label: '貯蓄率%', type: 'number' },
-      { key: 'minSalaryThreshold', label: '最低給与額', type: 'number' },
+      { key: 'savingCalculationBaseAmount', label: '積立計算基礎額', type: 'number' },
       {
         key: 'currentBalance',
         label: '積立残高',

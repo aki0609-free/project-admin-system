@@ -47,7 +47,7 @@ public class EmployeeFinanceQueryService {
             return BigDecimal.ZERO;
         }
 
-        return nvl(saving.getMinSalaryThreshold())
+        return nvl(saving.getSavingCalculationBaseAmount())
                 .multiply(nvl(saving.getPercentage()))
                 .divide(ONE_HUNDRED, 2, RoundingMode.HALF_UP);
     }

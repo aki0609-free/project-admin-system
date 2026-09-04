@@ -80,15 +80,8 @@ public class DeductionPayrollItemValueProvider implements PayrollItemValueProvid
                     .map(this::toSnapshot)
                     .toList();
 
-            case MONTHLY -> repository
-                    .findByTenantIdAndShowOnMonthlyStatementTrueAndEnabledTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
-                            tenantId
-                    )
-                    .stream()
-                    .map(this::toSnapshot)
-                    .toList();
-
-            case PAYROLL, BONUS -> List.of();
+            // 月次給与はSQL Viewで集計・確定する。汎用Rule候補は返さない。
+            case MONTHLY, PAYROLL, BONUS -> List.of();
         };
     }
 

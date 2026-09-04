@@ -89,8 +89,6 @@ function createEmptyDeduction(): DeductionMaster {
     maxAmount: null,
 
     showOnDailyStatement: false,
-    showOnMonthlyStatement: true,
-    carryToMonthlySettlement: false,
     displayOrder: null,
     enabled: true,
     note: '',

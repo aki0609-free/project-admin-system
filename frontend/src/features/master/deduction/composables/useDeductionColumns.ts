@@ -72,22 +72,8 @@ export const useDeductionColumns = () => {
     { title: '上限金額', key: 'maxAmount', width: '200px', filter: { type: 'text' } },
 
     {
-      title: '日払い明細',
+      title: '日報に表示',
       key: 'showOnDailyStatement',
-      width: '200px',
-      type: 'checkbox',
-      filter: { type: 'checkbox' },
-    },
-    {
-      title: '月次明細',
-      key: 'showOnMonthlyStatement',
-      width: '200px',
-      type: 'checkbox',
-      filter: { type: 'checkbox' },
-    },
-    {
-      title: '月次精算',
-      key: 'carryToMonthlySettlement',
       width: '200px',
       type: 'checkbox',
       filter: { type: 'checkbox' },

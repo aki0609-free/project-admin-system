@@ -34,6 +34,9 @@ export const useUpdateDailyReportMutation = () => {
       await queryClient.invalidateQueries({
         queryKey: ['daily-report-monthly-attendance'],
       })
+      await queryClient.invalidateQueries({
+        queryKey: ['employee-work', 'finance-transactions'],
+      })
     },
   })
 }

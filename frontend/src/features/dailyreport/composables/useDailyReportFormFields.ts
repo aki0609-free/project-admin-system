@@ -29,6 +29,8 @@ type UseDailyReportFormFieldsOptions = {
   employees:
     Ref<EmployeeListItemResponse[]>
 
+  workDate: Ref<string>
+
   customerOptions:
     Ref<SelectOption<number>[]>
     | ComputedRef<SelectOption<number>[]>
@@ -48,23 +50,37 @@ type UseDailyReportFormFieldsOptions = {
 
 export const useDailyReportFormFields = ({
   employees,
+  workDate,
   customerOptions,
   siteOptions,
   jobOptions,
   siteRoleOptions,
 }: UseDailyReportFormFieldsOptions) => {
+  const isEligibleOn = (
+    employee: EmployeeListItemResponse,
+    targetDate: string,
+  ): boolean => {
+    if (!targetDate) return employee.activeFlag
+    if (employee.hireDate && targetDate < employee.hireDate) return false
+    if (employee.resignDate && targetDate > employee.resignDate) return false
+    if (employee.contractStartDate && targetDate < employee.contractStartDate) return false
+    return !employee.contractEndDate || targetDate <= employee.contractEndDate
+  }
+
   const employeeOptions = computed<
     SelectOption<number>[]
   >(() =>
-    employees.value.map(
-      employee => ({
-        title:
-          `${employee.employeeCode} / ${employee.employeeName}`,
+    employees.value
+      .filter(employee => isEligibleOn(employee, workDate.value))
+      .map(
+        employee => ({
+          title:
+            `${employee.employeeCode} / ${employee.employeeName}`,
 
-        value:
-          employee.id,
-      }),
-    ),
+          value:
+            employee.id,
+        }),
+      ),
   )
 
   const fields = computed(() => {

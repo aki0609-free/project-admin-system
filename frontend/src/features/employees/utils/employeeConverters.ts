@@ -21,9 +21,6 @@ export const toEmployeeSaveRequest = (
   email: blankToNull(form.email),
   postalCode: blankToNull(form.postalCode),
   address: blankToNull(form.address),
-  // 旧従業員列はバックエンドの移行互換層だけが更新する。
-  dormitoryFlag: form.dormitoryFlag,
-  dormitoryType: form.dormitoryType,
   activeFlag: form.activeFlag,
   payrollItemSettings: form.payrollItemSettings.map(item => ({
     targetType: item.targetType,

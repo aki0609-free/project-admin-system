@@ -24,6 +24,7 @@ import com.project.backend.features.employee.enums.SalaryType;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.employee.repository.EmployeePayrollProfileRepository;
 import com.project.backend.features.employee.repository.EmployeeRepository;
+import com.project.backend.features.employee.service.EmployeeWorkEligibilityPolicy;
 
 import lombok.RequiredArgsConstructor;
 
@@ -37,6 +38,7 @@ public class DailyReportMonthlyAttendanceQueryService {
     private final EmployeeContractRepository employeeContractRepository;
     private final EmployeePayrollProfileRepository payrollProfileRepository;
     private final ClosingSettingQueryService closingSettingQueryService;
+    private final EmployeeWorkEligibilityPolicy workEligibilityPolicy;
 
     @SuppressWarnings("null")
 public List<DailyReportMonthlyAttendanceResponse> findMonthlyAttendance(
@@ -74,15 +76,19 @@ public List<DailyReportMonthlyAttendanceResponse> findMonthlyAttendance(
                             .findByEmployeeIdAndDeletedAtIsNull(employee.getId())
                             .orElse(null);
 
-                    return toResponse(
-                            employee,
-                            contract,
-                            payrollProfile,
+                    return new EmployeeWithContract(employee, contract, payrollProfile);
+                })
+                .filter(item -> workEligibilityPolicy.overlaps(
+                        item.employee(), item.contract(), period.start(), period.end()
+                ))
+                .map(item -> toResponse(
+                            item.employee(),
+                            item.contract(),
+                            item.payrollProfile(),
                             targetMonth,
                             period,
-                            reportMap.getOrDefault(employee.getId(), List.of())
-                    );
-                })
+                            reportMap.getOrDefault(item.employee().getId(), List.of())
+                    ))
                 .toList();
     }
 
@@ -125,6 +131,13 @@ public List<DailyReportMonthlyAttendanceResponse> findMonthlyAttendance(
         LocalDate end = targetMonth.atDay(closingDay);
 
         return new AttendancePeriod(start, end);
+    }
+
+    private record EmployeeWithContract(
+            Employee employee,
+            EmployeeContract contract,
+            EmployeePayrollProfile payrollProfile
+    ) {
     }
 
     private DailyReportMonthlyAttendanceResponse toResponse(

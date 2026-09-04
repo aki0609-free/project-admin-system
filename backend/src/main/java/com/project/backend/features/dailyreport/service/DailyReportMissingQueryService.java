@@ -11,6 +11,8 @@ import com.project.backend.features.dailyreport.dto.DailyReportMissingEmployeeRe
 import com.project.backend.features.dailyreport.repository.DailyReportRepository;
 import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.repository.EmployeeRepository;
+import com.project.backend.features.employee.repository.EmployeeContractRepository;
+import com.project.backend.features.employee.service.EmployeeWorkEligibilityPolicy;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +23,8 @@ public class DailyReportMissingQueryService {
 
     private final DailyReportRepository dailyReportRepository;
     private final EmployeeRepository employeeRepository;
+    private final EmployeeContractRepository employeeContractRepository;
+    private final EmployeeWorkEligibilityPolicy workEligibilityPolicy;
 
     @SuppressWarnings("null")
 public List<DailyReportMissingEmployeeResponse> findMissingEmployees(
@@ -32,6 +36,13 @@ public List<DailyReportMissingEmployeeResponse> findMissingEmployees(
 
         return employeeRepository.findAllByDeletedAtIsNullOrderByIdAsc()
                 .stream()
+                .filter(employee -> workEligibilityPolicy.isEligible(
+                        employee,
+                        employeeContractRepository
+                                .findByEmployeeIdAndDeletedAtIsNull(employee.getId())
+                                .orElse(null),
+                        workDate
+                ))
                 .filter(employee ->
                         !dailyReportRepository.existsByEmployeeIdAndWorkDateAndDeletedAtIsNull(
                                 employee.getId(),

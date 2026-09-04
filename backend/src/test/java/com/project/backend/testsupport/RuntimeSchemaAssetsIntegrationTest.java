@@ -90,10 +90,13 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 "vw_daily_payment_preparation_preview",
                 "vw_daily_pay_slip_latest",
                 "vw_monthly_pay_slip_latest",
+                "vw_monthly_pay_slip_calculation_item_source",
+                "vw_monthly_pay_slip_statement_item_source",
+                "vw_monthly_pay_slip_deduction_basis",
                 "vw_employee_payroll_item_transaction_confirmed",
                 "vw_employee_legal_deposit_balance",
                 "vw_monthly_order_form_render"
-        )).isEqualTo(7);
+        )).isEqualTo(10);
         assertThat(countProcedures(
                 "sp_daily_pay_slip_prepare",
                 "sp_monthly_pay_slip_snapshot",
@@ -179,6 +182,25 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND enabled = TRUE
                   AND deleted_at IS NULL
                 """, Integer.class)).isEqualTo(10);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM deduction_masters deduction
+                JOIN payroll_item_balance_policy policy
+                  ON policy.target_master_id = deduction.id
+                 AND policy.target_type = 'DEDUCTION'
+                 AND policy.tenant_id = deduction.tenant_id
+                 AND policy.deleted_at IS NULL
+                WHERE deduction.tenant_id = 'default'
+                  AND deduction.deduction_code = 'DORMITORY_FEE'
+                  AND deduction.calculation_type = 'MANUAL'
+                  AND deduction.rule_name IS NULL
+                  AND policy.balance_unit = 'AMOUNT'
+                  AND policy.balance_tracking_flag = TRUE
+                  AND policy.accrual_rule_name =
+                      'CALENDAR_DAYS_TIMES_PARAMETER:dormitoryDailyAmount'
+                  AND policy.carry_forward_flag = TRUE
+                  AND deduction.deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM deduction_masters
@@ -354,6 +376,11 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                         0, 0,
                         'default', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
                     )
+                    """);
+            jdbcTemplate.update("""
+                    DELETE FROM closing_setting
+                    WHERE tenant_id = 'default'
+                      AND setting_code = 'PAYROLL'
                     """);
             jdbcTemplate.update("""
                     INSERT INTO closing_setting (
@@ -604,6 +631,10 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 employeeId
         );
         assertThat(mobileDeductionId).isNotNull();
+        Long temporaryAllowanceId = registerConfirmedAndDraftAllowanceTransactions(
+                employeeId
+        );
+        assertThat(temporaryAllowanceId).isNotNull();
 
         String executionId = "RESIDENT-TAX-CLOSING-INTEGRATION";
         jdbcTemplate.update("""
@@ -643,6 +674,20 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND item.deleted_at IS NULL
                 """, BigDecimal.class, TEST_TENANT_ID, employeeId);
         assertThat(fixedMobileDeduction).isEqualByComparingTo("3500");
+
+        BigDecimal fixedTemporaryAllowance = jdbcTemplate.queryForObject("""
+                SELECT item.item_value
+                FROM monthly_pay_slip_history_item item
+                JOIN monthly_pay_slip_history history
+                  ON history.id = item.monthly_pay_slip_history_id
+                WHERE history.tenant_id = ?
+                  AND history.target_month = '2026-08-01'
+                  AND history.closing_version = 1
+                  AND history.employee_id = ?
+                  AND item.item_code = 'TEMPORARY_ALLOWANCE_TEST'
+                  AND item.deleted_at IS NULL
+                """, BigDecimal.class, TEST_TENANT_ID, employeeId);
+        assertThat(fixedTemporaryAllowance).isEqualByComparingTo("4200");
 
         assertRetryUsesHistoryAndRecloseCreatesNewVersion(
                 employeeId,
@@ -744,8 +789,8 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                     'MOBILE_TEST', '携帯料金テスト', 'COMPANY',
                     'FIXED', 0, TRUE,
                     'MONTHLY', 'NONE',
-                    FALSE, TRUE,
-                    TRUE, 500, TRUE,
+                    FALSE, FALSE,
+                    FALSE, 500, TRUE,
                     'Testcontainers明細取引', ?,
                     CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
                 )
@@ -787,6 +832,25 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 }
         ));
 
+        jdbcTemplate.update("""
+                INSERT INTO employee_payroll_item_transaction (
+                    employee_id, target_type, target_master_id,
+                    target_code, target_name, target_month,
+                    transaction_date, amount, quantity,
+                    transaction_purpose, balance_effect,
+                    source_type, source_reference, status, note,
+                    lock_version, tenant_id, created_at, updated_at
+                ) VALUES (
+                    ?, 'DEDUCTION', ?,
+                    'MOBILE_TEST', '携帯料金テスト', '2026-08-01',
+                    '2026-08-03', 10000, 10000,
+                    'BALANCE_ACCRUAL', 'CREDIT',
+                    'MANUAL', 'MOBILE-202608-BILL', 'CONFIRMED',
+                    '請求額は残高だけへ反映し、月次控除へ直接含めない',
+                    0, ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                )
+                """, employeeId, deductionId, TEST_TENANT_ID);
+
         BigDecimal confirmedTotal = jdbcTemplate.queryForObject("""
                 SELECT item_value
                 FROM vw_monthly_pay_slip_variable_item
@@ -796,7 +860,99 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND item_code = 'MOBILE_TEST'
                 """, BigDecimal.class, TEST_TENANT_ID, employeeId);
         assertThat(confirmedTotal).isEqualByComparingTo("3500");
+
+        BigDecimal calculationTotal = jdbcTemplate.queryForObject("""
+                SELECT item_value
+                FROM vw_monthly_pay_slip_calculation_item_source
+                WHERE tenant_id = ?
+                  AND target_month = '2026-08-01'
+                  AND employee_id = ?
+                  AND item_code = 'MOBILE_TEST'
+                """, BigDecimal.class, TEST_TENANT_ID, employeeId);
+        BigDecimal statementTotal = jdbcTemplate.queryForObject("""
+                SELECT item_value
+                FROM vw_monthly_pay_slip_statement_item_source
+                WHERE tenant_id = ?
+                  AND target_month = '2026-08-01'
+                  AND employee_id = ?
+                  AND item_code = 'MOBILE_TEST'
+                """, BigDecimal.class, TEST_TENANT_ID, employeeId);
+        assertThat(calculationTotal).isEqualByComparingTo("3500");
+        assertThat(statementTotal).isEqualByComparingTo("3500");
         return deductionId;
+    }
+
+    private Long registerConfirmedAndDraftAllowanceTransactions(Long employeeId) {
+        jdbcTemplate.update("""
+                INSERT INTO allowance_masters (
+                    allowance_code, allowance_name, allowance_type,
+                    calculation_type, allowance_unit, detail_view_type,
+                    taxable, show_on_daily_statement,
+                    show_on_monthly_statement, display_order,
+                    enabled, note, tenant_id, created_at, updated_at
+                ) VALUES (
+                    'TEMPORARY_ALLOWANCE_TEST', '臨時手当テスト', 'COMPANY',
+                    'MANUAL', 'MONTHLY', 'NONE',
+                    TRUE, FALSE,
+                    FALSE, 510,
+                    TRUE, 'Testcontainers手当明細取引', ?,
+                    CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                )
+                """, TEST_TENANT_ID);
+        Long allowanceId = jdbcTemplate.queryForObject("""
+                SELECT id
+                FROM allowance_masters
+                WHERE tenant_id = ?
+                  AND allowance_code = 'TEMPORARY_ALLOWANCE_TEST'
+                  AND deleted_at IS NULL
+                """, Long.class, TEST_TENANT_ID);
+
+        jdbcTemplate.batchUpdate("""
+                INSERT INTO employee_payroll_item_transaction (
+                    employee_id, target_type, target_master_id,
+                    target_code, target_name, target_month,
+                    transaction_date, amount, quantity,
+                    source_type, source_reference, status, note,
+                    lock_version, tenant_id, created_at, updated_at
+                ) VALUES (
+                    ?, 'ALLOWANCE', ?,
+                    'TEMPORARY_ALLOWANCE_TEST', '臨時手当テスト', '2026-08-01',
+                    ?, ?, NULL,
+                    'MANUAL', ?, ?, NULL,
+                    0, ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                )
+                """, List.of(
+                new Object[]{
+                        employeeId, allowanceId, "2026-08-10", "4200",
+                        "ALLOWANCE-202608-1", "CONFIRMED", TEST_TENANT_ID
+                },
+                new Object[]{
+                        employeeId, allowanceId, "2026-08-15", "8800",
+                        "ALLOWANCE-202608-DRAFT", "DRAFT", TEST_TENANT_ID
+                }
+        ));
+
+        BigDecimal calculationTotal = jdbcTemplate.queryForObject("""
+                SELECT item_value
+                FROM vw_monthly_pay_slip_calculation_item_source
+                WHERE tenant_id = ?
+                  AND target_month = '2026-08-01'
+                  AND employee_id = ?
+                  AND item_category = 'ALLOWANCE'
+                  AND item_code = 'TEMPORARY_ALLOWANCE_TEST'
+                """, BigDecimal.class, TEST_TENANT_ID, employeeId);
+        BigDecimal statementTotal = jdbcTemplate.queryForObject("""
+                SELECT item_value
+                FROM vw_monthly_pay_slip_statement_item_source
+                WHERE tenant_id = ?
+                  AND target_month = '2026-08-01'
+                  AND employee_id = ?
+                  AND item_category = 'ALLOWANCE'
+                  AND item_code = 'TEMPORARY_ALLOWANCE_TEST'
+                """, BigDecimal.class, TEST_TENANT_ID, employeeId);
+        assertThat(calculationTotal).isEqualByComparingTo("4200");
+        assertThat(statementTotal).isEqualByComparingTo("4200");
+        return allowanceId;
     }
 
     private void assertAmount(Object actual, String expected) {

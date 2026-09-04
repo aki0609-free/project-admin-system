@@ -13,7 +13,7 @@ public record EmployeeSavingResponse(
         String employeeCode,
         String employeeName,
         BigDecimal percentage,
-        BigDecimal minSalaryThreshold,
+        BigDecimal savingCalculationBaseAmount,
         BigDecimal currentBalance,
         boolean activeFlag,
         ApprovalStatus approvalStatus,

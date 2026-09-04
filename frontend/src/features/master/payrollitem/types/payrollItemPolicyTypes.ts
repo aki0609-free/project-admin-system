@@ -1,5 +1,8 @@
 export type PayrollItemApplicationScope = 'ALL_EMPLOYEES' | 'EMPLOYEE_ENROLLMENT'
-export type PayrollItemInputSource = 'DAILY_REPORT' | 'TRANSACTION'
+export type PayrollItemInputSource =
+  | 'DAILY_REPORT'
+  | 'TRANSACTION'
+  | 'DAILY_REPORT_AND_TRANSACTION'
 export type PayrollItemBalanceUnit = 'AMOUNT' | 'DAYS' | 'HOURS' | 'COUNT'
 export type PayrollItemParameterInputType = 'TEXT' | 'NUMBER' | 'SELECT' | 'BOOLEAN' | 'DATE'
 

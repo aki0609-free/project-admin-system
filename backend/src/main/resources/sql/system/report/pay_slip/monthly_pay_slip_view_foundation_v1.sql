@@ -153,7 +153,10 @@ GROUP BY
     em.target_month,
     em.employee_id;
 
-CREATE OR REPLACE VIEW vw_monthly_pay_slip_variable_item_source AS
+-- 月次給与の金額計算に使用する正本。
+-- 日報実績、明細取引、残高・税計算とは異なる月次固定項目を
+-- 月次業務仕様に従って行形式へ正規化する。
+CREATE OR REPLACE VIEW vw_monthly_pay_slip_calculation_item_source AS
 WITH
 daily_pay_component AS (
     SELECT
@@ -368,6 +371,34 @@ SELECT * FROM loan_repayment
 UNION ALL
 SELECT * FROM transaction_item;
 
+-- 月次給与明細へ表示する項目の正本。
+-- V1では計算対象をすべて表示する。会社固有の表示変更はこのViewだけを
+-- 変更し、calculation_item_sourceの給与合計へ影響させない。
+CREATE OR REPLACE VIEW vw_monthly_pay_slip_statement_item_source AS
+SELECT
+    source.tenant_id,
+    source.target_month,
+    source.employee_id,
+    source.item_category,
+    source.item_code,
+    source.item_name,
+    source.display_order,
+    source.item_value
+FROM vw_monthly_pay_slip_calculation_item_source source;
+
+-- 旧View名は既存の帳票・運用資産との互換境界として維持する。
+CREATE OR REPLACE VIEW vw_monthly_pay_slip_variable_item_source AS
+SELECT
+    source.tenant_id,
+    source.target_month,
+    source.employee_id,
+    source.item_category,
+    source.item_code,
+    source.item_name,
+    source.display_order,
+    source.item_value
+FROM vw_monthly_pay_slip_statement_item_source source;
+
 CREATE OR REPLACE VIEW vw_monthly_pay_slip_variable_item AS
 SELECT
     source.tenant_id,
@@ -429,7 +460,7 @@ SELECT
             END
         ), 0) AS gross_amount
 FROM vw_monthly_pay_slip_employee_month em
-LEFT JOIN vw_monthly_pay_slip_variable_item_source item
+LEFT JOIN vw_monthly_pay_slip_calculation_item_source item
   ON item.tenant_id = em.tenant_id
  AND item.target_month = em.target_month
  AND item.employee_id = em.employee_id
@@ -438,6 +469,36 @@ GROUP BY
     em.target_month,
     em.employee_id,
     em.basic_salary;
+
+-- 帳票への表示有無とは独立して、月次控除合計・手取りを計算する。
+CREATE OR REPLACE VIEW vw_monthly_pay_slip_deduction_basis AS
+SELECT
+    em.tenant_id,
+    em.target_month,
+    em.employee_id,
+    COALESCE(SUM(
+        CASE
+            WHEN item.item_category = 'LEGAL_DEDUCTION'
+                THEN item.item_value
+            ELSE 0
+        END
+    ), 0) AS variable_legal_deduction_total,
+    COALESCE(SUM(
+        CASE
+            WHEN item.item_category = 'OTHER_DEDUCTION'
+                THEN item.item_value
+            ELSE 0
+        END
+    ), 0) AS variable_other_deduction_total
+FROM vw_monthly_pay_slip_employee_month em
+LEFT JOIN vw_monthly_pay_slip_calculation_item_source item
+  ON item.tenant_id = em.tenant_id
+ AND item.target_month = em.target_month
+ AND item.employee_id = em.employee_id
+GROUP BY
+    em.tenant_id,
+    em.target_month,
+    em.employee_id;
 
 CREATE OR REPLACE VIEW vw_monthly_pay_slip_tax_calculation AS
 WITH
@@ -774,9 +835,9 @@ SELECT
     tax.social_insurance_total
         + COALESCE(tax.income_tax, 0)
         + COALESCE(tax.resident_tax, 0)
-        + COALESCE(SUM(CASE WHEN item.item_category = 'LEGAL_DEDUCTION' THEN item.item_value ELSE 0 END), 0)
+        + deduction_basis.variable_legal_deduction_total
         AS legal_deduction_total,
-    COALESCE(SUM(CASE WHEN item.item_category = 'OTHER_DEDUCTION' THEN item.item_value ELSE 0 END), 0)
+    deduction_basis.variable_other_deduction_total
         - COALESCE((
             SELECT SUM(refund.amount)
             FROM employee_legal_deposit_refund refund
@@ -790,7 +851,8 @@ SELECT
     tax.social_insurance_total
         + COALESCE(tax.income_tax, 0)
         + COALESCE(tax.resident_tax, 0)
-        + COALESCE(SUM(CASE WHEN item.item_category IN ('LEGAL_DEDUCTION', 'OTHER_DEDUCTION') THEN item.item_value ELSE 0 END), 0)
+        + deduction_basis.variable_legal_deduction_total
+        + deduction_basis.variable_other_deduction_total
         - COALESCE((
             SELECT SUM(refund.amount)
             FROM employee_legal_deposit_refund refund
@@ -805,7 +867,8 @@ SELECT
         - tax.social_insurance_total
         - COALESCE(tax.income_tax, 0)
         - COALESCE(tax.resident_tax, 0)
-        - COALESCE(SUM(CASE WHEN item.item_category IN ('LEGAL_DEDUCTION', 'OTHER_DEDUCTION') THEN item.item_value ELSE 0 END), 0)
+        - deduction_basis.variable_legal_deduction_total
+        - deduction_basis.variable_other_deduction_total
         + COALESCE((
             SELECT SUM(refund.amount)
             FROM employee_legal_deposit_refund refund
@@ -937,6 +1000,10 @@ JOIN vw_monthly_pay_slip_tax_calculation tax
   ON tax.tenant_id = em.tenant_id
  AND tax.target_month = em.target_month
  AND tax.employee_id = em.employee_id
+JOIN vw_monthly_pay_slip_deduction_basis deduction_basis
+  ON deduction_basis.tenant_id = em.tenant_id
+ AND deduction_basis.target_month = em.target_month
+ AND deduction_basis.employee_id = em.employee_id
 LEFT JOIN vw_monthly_pay_slip_variable_item item
   ON item.tenant_id = em.tenant_id
  AND item.target_month = em.target_month
@@ -968,6 +1035,8 @@ GROUP BY
     tax.resident_tax,
     tax.calculation_ready,
     tax.calculation_error_code,
+    deduction_basis.variable_legal_deduction_total,
+    deduction_basis.variable_other_deduction_total,
     att.work_day_count,
     att.work_hours,
     att.overtime_hours,

@@ -36,7 +36,7 @@ class ExternalSupportLinkSettingServiceTest {
     }
 
     @Test
-    void find_shouldReturnDefaultsWhenSettingDoesNotExist() {
+    void find_shouldNotEmbedTenantSpecificDefaultsWhenSettingDoesNotExist() {
         when(repository.findByTenantIdAndSettingCodeAndDeletedAtIsNull(
                 "tenant-test",
                 ExternalSupportLinkSetting.DEFAULT_SETTING_CODE
@@ -44,8 +44,8 @@ class ExternalSupportLinkSettingServiceTest {
 
         var result = service.find();
 
-        assertThat(result.incidentReportUrl()).startsWith("https://");
-        assertThat(result.manualUrl()).startsWith("https://");
+        assertThat(result.incidentReportUrl()).isEmpty();
+        assertThat(result.manualUrl()).isEmpty();
     }
 
     @Test

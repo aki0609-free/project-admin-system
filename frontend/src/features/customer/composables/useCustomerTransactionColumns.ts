@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { SimpleTableColumnDef } from '@/shared/components/table/simple_table/types/item/types'
 import type { CustomerTransaction } from '../types/customerTypes'
 import { formatCurrency } from '@/shared/utils/CurrencyUtils'
-import { formatYearMonthDay } from '@/shared/utils/DateUtils'
+import { formatYearMonth, formatYearMonthDay } from '@/shared/utils/DateUtils'
 import { formatDayRule } from '@/shared/utils/DayRuleUtils'
 import type { DayRule } from '@/shared/types/dayRuleTypes'
 
@@ -44,8 +44,9 @@ export const useCustomerTransactionColumns = () => {
     {
       title: '対象月',
       key: 'targetMonth',
-      width: '120px',
+      width: '140px',
       filter: { type: 'text' },
+      formatter: value => formatYearMonth(String(value ?? '')),
     },
     {
       title: '締日',

@@ -11,8 +11,6 @@ public record EmployeePayrollProfileResponse(
         Long id,
         TaxCategory taxCategory,
         int taxDependentCount,
-        boolean dependentFlag,
-        boolean dependentOfOtherFlag,
         BigDecimal paidLeaveRemainingDays,
         boolean incomeTaxCalcFlag,
         boolean residentTaxCalcFlag,

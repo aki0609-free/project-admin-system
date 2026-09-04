@@ -116,9 +116,9 @@ public class EmployeePayrollItemSettingService {
             return true;
         }
         if (policy.getApplicationScope() == PayrollItemApplicationScope.ALL_EMPLOYEES) {
-            return policy.getInputSource() == PayrollItemInputSource.DAILY_REPORT;
+            return policy.getInputSource().supportsDailyReport();
         }
-        if (policy.getInputSource() == PayrollItemInputSource.TRANSACTION) {
+        if (!policy.getInputSource().supportsDailyReport()) {
             return false;
         }
         return enrollmentRepository
@@ -131,7 +131,7 @@ public class EmployeePayrollItemSettingService {
                 .reduce((first, second) -> second)
                 .map(enrollment -> effectiveInputSource(
                         policy, read(enrollment.getSettingsJson()))
-                        == PayrollItemInputSource.DAILY_REPORT)
+                        .supportsDailyReport())
                 .orElse(false);
     }
 
@@ -166,8 +166,8 @@ public class EmployeePayrollItemSettingService {
                         values = withDefaults(
                                 policy, read(enrollment.getSettingsJson()));
                     }
-                    if (effectiveInputSource(policy, values)
-                            != PayrollItemInputSource.DAILY_REPORT) return;
+                    if (!effectiveInputSource(policy, values)
+                            .supportsDailyReport()) return;
 
                     Map<String, Object> parameters = new LinkedHashMap<>();
                     parameterDefinitionRepository
@@ -230,7 +230,7 @@ public class EmployeePayrollItemSettingService {
             LocalDate targetDate
     ) {
         if (policy.getApplicationScope() == PayrollItemApplicationScope.ALL_EMPLOYEES) {
-            return policy.getInputSource() == PayrollItemInputSource.DAILY_REPORT;
+            return policy.getInputSource().supportsDailyReport();
         }
         return enrollmentRepository
                 .findAllByEmployeeIdAndBalancePolicyIdAndEffectiveFromLessThanEqualAndDeletedAtIsNullOrderByEffectiveFromAsc(
@@ -241,7 +241,7 @@ public class EmployeePayrollItemSettingService {
                 .reduce((first, second) -> second)
                 .map(item -> effectiveInputSource(
                         policy, withDefaults(policy, read(item.getSettingsJson())))
-                        == PayrollItemInputSource.DAILY_REPORT)
+                        .supportsDailyReport())
                 .orElse(false);
     }
 

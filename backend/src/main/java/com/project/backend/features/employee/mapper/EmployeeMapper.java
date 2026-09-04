@@ -1,7 +1,6 @@
 package com.project.backend.features.employee.mapper;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
@@ -22,14 +21,16 @@ import com.project.backend.features.employee.entity.EmployeePayrollProfile;
 import com.project.backend.features.employee.enums.PaymentCycle;
 import com.project.backend.features.employee.enums.SalaryType;
 import com.project.backend.features.employee.enums.TaxCategory;
-import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceSnapshot;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface EmployeeMapper {
 
-        List<EmployeeListItemResponse> toListItemResponseList(List<Employee> employees);
-
-        EmployeeListItemResponse toListItemResponse(Employee employee);
+        @Mapping(target = "contractStartDate", source = "contract.contractStartDate")
+        @Mapping(target = "contractEndDate", source = "contract.contractEndDate")
+        @Mapping(target = "id", source = "employee.id")
+        EmployeeListItemResponse toListItemResponse(
+                        Employee employee,
+                        EmployeeContract contract);
 
         @Mapping(target = "id", source = "employee.id")
         @Mapping(target = "employeeCode", source = "employee.employeeCode")
@@ -45,12 +46,6 @@ public interface EmployeeMapper {
         @Mapping(target = "email", source = "employee.email")
         @Mapping(target = "postalCode", source = "employee.postalCode")
         @Mapping(target = "address", source = "employee.address")
-        @Mapping(target = "dormitoryFlag", source = "employee.dormitoryFlag")
-        @Mapping(target = "dormitoryType", source = "employee.dormitoryType")
-        @Mapping(target = "dormitoryOpeningDays", source = "dormitoryBalance.openingQuantity")
-        @Mapping(target = "dormitoryCurrentMonthDays", source = "dormitoryBalance.accruedQuantity")
-        @Mapping(target = "dormitoryConsumedDays", source = "dormitoryBalance.consumedQuantity")
-        @Mapping(target = "dormitoryRemainingDays", source = "dormitoryBalance.remainingQuantity")
         @Mapping(target = "activeFlag", source = "employee.activeFlag")
         @Mapping(target = "payrollProfile", source = "payrollProfile")
         @Mapping(target = "contract", source = "contract")
@@ -59,7 +54,6 @@ public interface EmployeeMapper {
                         Employee employee,
                         EmployeePayrollProfile payrollProfile,
                         EmployeeContract contract,
-                        PayrollItemBalanceSnapshot dormitoryBalance,
                         java.util.List<com.project.backend.features.employee.dto.EmployeePayrollItemSettingResponse> payrollItemSettings);
 
         EmployeePayrollProfileResponse toPayrollProfileResponse(EmployeePayrollProfile profile);
@@ -70,8 +64,6 @@ public interface EmployeeMapper {
         @Mapping(target = "resignDate", ignore = true)
         @Mapping(target = "employmentStatus", ignore = true)
         @Mapping(target = "activeFlag", ignore = true)
-        @Mapping(target = "dormitoryFlag", ignore = true)
-        @Mapping(target = "dormitoryType", ignore = true)
         void updateEmployeeFromRequest(
                         EmployeeSaveRequest request,
                         @MappingTarget Employee employee);
@@ -116,8 +108,6 @@ public interface EmployeeMapper {
                                                 ? request.taxDependentCount()
                                                 : 0);
 
-                profile.setDependentFlag(Boolean.TRUE.equals(request.dependentFlag()));
-                profile.setDependentOfOtherFlag(Boolean.TRUE.equals(request.dependentOfOtherFlag()));
                 profile.setPaidLeaveRemainingDays(nvl(request.paidLeaveRemainingDays()));
 
                 profile.setIncomeTaxCalcFlag(
@@ -159,8 +149,6 @@ public interface EmployeeMapper {
                         contract.setStandardWorkingHours(BigDecimal.ZERO);
                         return;
                 }
-
-                contract.setRenewalFlag(Boolean.TRUE.equals(request.renewalFlag()));
 
                 contract.setSalaryType(
                                 request.salaryType() != null

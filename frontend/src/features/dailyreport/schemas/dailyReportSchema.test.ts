@@ -16,6 +16,7 @@ const amountItem = (overrides: Record<string, unknown> = {}) => ({
   displayOrder: 1,
   balanceTracked: false,
   balanceUnit: null,
+  advanceConsumptionAllowed: false,
   openingQuantity: 0,
   accruedQuantity: 0,
   consumedQuantity: 0,

@@ -13,7 +13,6 @@ public record EmployeeContractResponse(
         Long id,
         LocalDate contractStartDate,
         LocalDate contractEndDate,
-        boolean renewalFlag,
         SalaryType salaryType,
         PaymentCycle paymentCycle,
         BigDecimal monthlySalary,

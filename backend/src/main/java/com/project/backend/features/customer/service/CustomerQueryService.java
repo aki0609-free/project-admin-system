@@ -13,6 +13,7 @@ import com.project.backend.features.customer.dto.CustomerSiteOptionItemResponse;
 import com.project.backend.features.customer.entity.Customer;
 import com.project.backend.features.customer.entity.CustomerTransaction;
 import com.project.backend.features.customer.enums.CustomerPaymentStatus;
+import com.project.backend.features.customer.enums.CustomerContractStatus;
 import com.project.backend.features.customer.mapper.CustomerMapper;
 import com.project.backend.features.customer.repository.CustomerEmployeeRepository;
 import com.project.backend.features.customer.repository.CustomerRepository;
@@ -57,9 +58,16 @@ public class CustomerQueryService {
     }
 
     public CustomerOptionResponse findOptions() {
-        List<CustomerOptionItemResponse> customers = customerRepository
+        var activeCustomers = customerRepository
                 .findByDeletedAtIsNullOrderByIdAsc()
                 .stream()
+                .filter(customer -> customer.getContractFlag() == CustomerContractStatus.ACTIVE)
+                .toList();
+        var activeCustomerIds = activeCustomers.stream()
+                .map(Customer::getId)
+                .collect(java.util.stream.Collectors.toSet());
+
+        List<CustomerOptionItemResponse> customers = activeCustomers.stream()
                 .map(customer -> new CustomerOptionItemResponse(
                         customer.getId(),
                         customer.getName()
@@ -69,6 +77,7 @@ public class CustomerQueryService {
         List<CustomerSiteOptionItemResponse> sites = customerSiteRepository
                 .findByDeletedAtIsNullOrderByIdAsc()
                 .stream()
+                .filter(site -> activeCustomerIds.contains(site.getCustomerId()))
                 .map(site -> new CustomerSiteOptionItemResponse(
                         site.getId(),
                         site.getCustomerId(),

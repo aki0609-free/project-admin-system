@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -22,7 +21,6 @@ import com.project.backend.features.admin.document.dto.DocumentListResponse;
 import com.project.backend.features.admin.document.dto.SyncfusionFileManagerContent;
 import com.project.backend.features.admin.document.dto.SyncfusionFileManagerDetails;
 import com.project.backend.features.admin.document.dto.SyncfusionFileManagerDownload;
-import com.project.backend.features.admin.document.dto.SyncfusionFileManagerItemRequest;
 import com.project.backend.features.admin.document.dto.SyncfusionFileManagerPermission;
 import com.project.backend.features.admin.document.dto.SyncfusionFileManagerRequest;
 import com.project.backend.features.admin.document.dto.SyncfusionFileManagerResponse;
@@ -81,7 +79,7 @@ public class SyncfusionFileManagerService {
 
         String directoryPath = toRelativePath(request.path());
         List<DownloadTarget> targets = request.names().stream()
-                .map(name -> downloadTarget(request, directoryPath, name))
+                .map(name -> downloadTarget(area, directoryPath, name))
                 .toList();
 
         if (targets.size() == 1 && !targets.getFirst().directory()) {
@@ -276,8 +274,11 @@ public class SyncfusionFileManagerService {
                 ? ""
                 : directoryPath + "/";
 
-        List<SyncfusionFileManagerContent> files =
-                documentService.search(area, keyword).stream()
+        List<DocumentEntryResponse> matches = keyword.isEmpty()
+                ? documentService.listRecursively(area, directoryPath)
+                : documentService.search(area, keyword);
+
+        List<SyncfusionFileManagerContent> files = matches.stream()
                         .filter(entry -> prefix.isEmpty()
                                 || entry.path().startsWith(prefix))
                         .map(entry -> toContent(area, entry))
@@ -415,21 +416,16 @@ public class SyncfusionFileManagerService {
     }
 
     private DownloadTarget downloadTarget(
-            SyncfusionFileManagerRequest request,
+            DocumentArea area,
             String parent,
             String name
     ) {
-        boolean directory = request.data().stream()
-                .filter(item -> Objects.equals(item.name(), name))
-                .map(SyncfusionFileManagerItemRequest::isFile)
-                .filter(Objects::nonNull)
-                .map(isFile -> !isFile)
-                .findFirst()
-                .orElse(false);
+        String path = join(parent, name);
+        boolean directory = !findContent(area, path).isFile();
 
         return new DownloadTarget(
                 name,
-                join(parent, name),
+                path,
                 directory
         );
     }

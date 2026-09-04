@@ -29,10 +29,6 @@ test('business settings uses shared forms and checklist dialog', async ({ page }
   await expect(page.getByLabel('会計年度の開始月', { exact: true })).toBeVisible()
   await expect(page.getByLabel('年度終了後の猶予日数', { exact: true })).toBeVisible()
 
-  await page.getByRole('tab', { name: '寮費設定', exact: true }).click()
-  await expect(page.getByText('一人部屋', { exact: true })).toBeVisible()
-  await expect(page.getByText('複数人部屋', { exact: true })).toBeVisible()
-
   await page.getByRole('tab', { name: 'その他設定', exact: true }).click()
   await expect(page.getByLabel('インシデント報告のURL', { exact: true })).toBeVisible()
   await expect(page.getByLabel('マニュアルのURL', { exact: true })).toBeVisible()

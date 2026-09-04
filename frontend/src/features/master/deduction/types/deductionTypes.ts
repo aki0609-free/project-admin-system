@@ -44,8 +44,6 @@ export type DeductionMaster = {
   maxAmount: number | null
 
   showOnDailyStatement: boolean
-  showOnMonthlyStatement: boolean
-  carryToMonthlySettlement: boolean
   displayOrder: number | null
   enabled: boolean
   note: string
@@ -62,5 +60,3 @@ export type DeductionDetailTableRow = SimpleTableEditableRow & {
   label?: string
   [key: string]: unknown
 }
-
-export type DeductionSavePayload = DeductionMaster

@@ -67,6 +67,11 @@ public class EmployeePayrollItemTransaction extends BaseEntity {
     private BigDecimal quantity;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "transaction_purpose", nullable = false, length = 30)
+    private PayrollItemTransactionPurpose transactionPurpose =
+            PayrollItemTransactionPurpose.PAYROLL_ITEM;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "balance_effect", nullable = false, length = 20)
     private PayrollItemBalanceEffect balanceEffect = PayrollItemBalanceEffect.NONE;
 

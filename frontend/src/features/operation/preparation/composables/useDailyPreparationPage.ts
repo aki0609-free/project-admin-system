@@ -9,6 +9,7 @@ import { useBulkSaveDailyPreparationDispatchesMutation } from '../api/useBulkSav
 import type {
   DailyPreparationAssignmentBulkSaveItemRequest,
   DailyPreparationDispatchBulkSaveItemRequest,
+  DailyPreparationResponse,
 } from '../types/dailyPreparationApiTypes'
 import {
   createAssignmentRows,
@@ -19,6 +20,7 @@ import {
   type DailyPreparationDispatchTableRow,
 } from './useDailyPreparationDispatchTableConfig'
 import { useCustomerMasterStore } from '@/features/customer/store/useCustomerMasterStore'
+import { put } from '@/shared/api/http'
 
 const tomorrow = () => {
   const date = new Date()
@@ -45,6 +47,7 @@ export const useDailyPreparationPage = () => {
 
   const assignmentRows = ref<DailyPreparationAssignmentTableRow[]>([])
   const dispatchRows = ref<DailyPreparationDispatchTableRow[]>([])
+  const preparationNote = ref('')
 
   const employeesQuery = useEmployeesQuery()
   const customerStore = useCustomerMasterStore()
@@ -56,13 +59,13 @@ export const useDailyPreparationPage = () => {
 
   const preparation = computed(() => preparationQuery.preparation.value)
 
-  const ensurePreparation = async () => {
+  const ensurePreparation = async (): Promise<DailyPreparationResponse> => {
     if (preparation.value) return preparation.value
 
-    return await createPreparationMutation.mutateAsync({
+    return (await createPreparationMutation.mutateAsync({
       targetDate: targetDate.value,
-      note: null,
-    })
+      note: preparationNote.value.trim() || null,
+    })) as DailyPreparationResponse
   }
 
   const getDistanceFromSiteId = (siteId: number | null): number => {
@@ -82,8 +85,17 @@ export const useDailyPreparationPage = () => {
   watch(
     () => targetDate.value,
     async () => {
+      preparationNote.value = ''
       await customerStore.load()
       rebuildDispatchRows()
+    },
+    { immediate: true },
+  )
+
+  watch(
+    () => [preparation.value?.id, preparation.value?.note],
+    () => {
+      preparationNote.value = preparation.value?.note ?? ''
     },
     { immediate: true },
   )
@@ -237,7 +249,7 @@ export const useDailyPreparationPage = () => {
   }
 
   const saveAssignments = async () => {
-    const currentPreparation = (await ensurePreparation()) as any
+    const currentPreparation = await ensurePreparation()
 
     const items: DailyPreparationAssignmentBulkSaveItemRequest[] = assignmentRows.value
       .filter((row) => row._isNew || row._isUpdated || row._isDeleted)
@@ -252,9 +264,6 @@ export const useDailyPreparationPage = () => {
         isDeleted: row._isDeleted,
       }))
 
-    console.warn('assignmentRows=', assignmentRows.value)
-    console.warn('saveItems=', items)
-
     if (items.length === 0) return
 
     await bulkSaveAssignmentsMutation.mutateAsync({
@@ -264,7 +273,7 @@ export const useDailyPreparationPage = () => {
   }
 
   const saveDispatches = async () => {
-    const currentPreparation = (await ensurePreparation()) as any
+    const currentPreparation = await ensurePreparation()
 
     const items: DailyPreparationDispatchBulkSaveItemRequest[] = dispatchRows.value
       .filter((row) => row._isNew || row._isUpdated || row._isDeleted)
@@ -288,8 +297,16 @@ export const useDailyPreparationPage = () => {
   }
 
   const save = async () => {
+    const currentPreparation = await ensurePreparation()
     await saveAssignments()
     await saveDispatches()
+
+    if ((currentPreparation.note ?? '') !== preparationNote.value.trim()) {
+      await put(
+        `/api/operation/daily-preparations/${currentPreparation.id}/note`,
+        { note: preparationNote.value.trim() || null },
+      )
+    }
 
     await preparationQuery.refetch()
   }
@@ -297,7 +314,8 @@ export const useDailyPreparationPage = () => {
   const hasDirtyRows = computed(
     () =>
       assignmentRows.value.some((row) => row._isNew || row._isUpdated || row._isDeleted) ||
-      dispatchRows.value.some((row) => row._isNew || row._isUpdated || row._isDeleted),
+      dispatchRows.value.some((row) => row._isNew || row._isUpdated || row._isDeleted) ||
+      (preparation.value?.note ?? '') !== preparationNote.value.trim(),
   )
 
   const leftToolbarItems = computed<ToolbarItem[]>(() => [
@@ -334,6 +352,7 @@ export const useDailyPreparationPage = () => {
     employeesQuery,
     preparationQuery,
     preparation,
+    preparationNote,
 
     assignmentRows,
     dispatchRows,

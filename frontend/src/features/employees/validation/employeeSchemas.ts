@@ -22,9 +22,6 @@ export const employeeBasicSchema = z.object({
     .or(z.literal('')),
   postalCode: optionalText(20),
   address: optionalText(500),
-  // 旧API互換項目。画面の適用設定・検証は payrollItemSettings 側で行う。
-  dormitoryFlag: z.boolean(),
-  dormitoryType: z.enum(['SINGLE_ROOM', 'SHARED_ROOM']).nullable(),
   activeFlag: z.boolean(),
   payrollProfile: z.unknown(),
   contract: z.unknown(),
@@ -33,8 +30,6 @@ export const employeeBasicSchema = z.object({
 export const employeePayrollSchema = z.object({
   taxCategory: z.enum(['KOU', 'OTSU', 'HEI']),
   taxDependentCount: z.number().min(0, '扶養人数は0以上で指定してください。'),
-  dependentFlag: z.boolean(),
-  dependentOfOtherFlag: z.boolean(),
   paidLeaveRemainingDays: z.number().min(0, '有給残日数は0以上で指定してください。'),
   incomeTaxCalcFlag: z.boolean(),
   residentTaxCalcFlag: z.boolean(),
@@ -51,7 +46,6 @@ export const employeeContractSchema = z
   .object({
     contractStartDate: z.string(),
     contractEndDate: z.string(),
-    renewalFlag: z.boolean(),
     salaryType: z.enum(['MONTHLY', 'WEEKLY', 'DAILY', 'HOURLY']),
     paymentCycle: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']),
     monthlySalary: z.number().min(0, '月給は0以上で指定してください。'),

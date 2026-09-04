@@ -6,6 +6,7 @@ import EmployeeLoanTable from '../components/EmployeeLoanTable.vue'
 import EmployeeLoanEditDialog from '../components/EmployeeLoanEditDialog.vue'
 import EmployeeSavingTable from '../components/EmployeeSavingTable.vue'
 import EmployeeSavingEditDialog from '../components/EmployeeSavingEditDialog.vue'
+import EmployeeFinanceTransactionTable from '../components/EmployeeFinanceTransactionTable.vue'
 import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 
 const {
@@ -25,12 +26,15 @@ const {
   savingToolbarItems,
   saveSaving,
   deleteSaving,
+  financeTransactionsQuery,
 } = useEmployeeLoanSavingsPage()
 
 const leftToolbarItems = computed(() =>
   activeTab.value === 'loans'
     ? loanToolbarItems.value
-    : savingToolbarItems.value,
+    : activeTab.value === 'savings'
+      ? savingToolbarItems.value
+      : [],
 )
 </script>
 
@@ -52,6 +56,11 @@ const leftToolbarItems = computed(() =>
           v-else-if="active === 'savings'"
           :items="savingsQuery.savings.value"
           @row-click="savingDialog.openEdit"
+        />
+
+        <EmployeeFinanceTransactionTable
+          v-else-if="active === 'history'"
+          :items="financeTransactionsQuery.transactions.value"
         />
       </template>
     </TabLayout>

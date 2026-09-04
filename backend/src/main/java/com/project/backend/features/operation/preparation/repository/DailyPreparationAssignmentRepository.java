@@ -21,6 +21,17 @@ public interface DailyPreparationAssignmentRepository
             Long employeeId
     );
 
+    Optional<DailyPreparationAssignment> findByPreparationIdAndEmployeeIdAndDeletedAtIsNull(
+            Long preparationId,
+            Long employeeId
+    );
+
+    boolean existsByPreparationIdAndEmployeeIdAndIdNotAndDeletedAtIsNull(
+            Long preparationId,
+            Long employeeId,
+            Long id
+    );
+
     boolean existsByEmployeeIdAndDeletedAtIsNull(Long employeeId);
 
     boolean existsByCustomerIdAndDeletedAtIsNull(Long customerId);

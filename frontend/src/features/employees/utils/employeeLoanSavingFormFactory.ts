@@ -27,7 +27,7 @@ export const createEmptyEmployeeSavingForm = (): EmployeeSavingForm => ({
   id: 0,
   employeeId: null,
   percentage: 0,
-  minSalaryThreshold: 0,
+  savingCalculationBaseAmount: 0,
   currentBalance: 0,
   activeFlag: true,
 })
@@ -36,7 +36,7 @@ export const toEmployeeSavingForm = (item: EmployeeSavingResponse): EmployeeSavi
   id: item.id,
   employeeId: item.employeeId,
   percentage: item.percentage ?? 0,
-  minSalaryThreshold: item.minSalaryThreshold ?? 0,
+  savingCalculationBaseAmount: item.savingCalculationBaseAmount ?? 0,
   currentBalance: item.currentBalance ?? 0,
   activeFlag: item.activeFlag,
 })

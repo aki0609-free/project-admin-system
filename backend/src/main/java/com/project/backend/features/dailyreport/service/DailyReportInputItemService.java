@@ -330,8 +330,11 @@ public class DailyReportInputItemService {
         var balance = balanceQueryService.findAllowanceBalance(
                 request.employeeId(), item.masterId(), request.workDate(), existingId
         );
-        java.math.BigDecimal quantity = submitted != null && submitted.quantity() != null
-                ? submitted.quantity() : java.math.BigDecimal.ZERO;
+        java.math.BigDecimal quantity = resolveQuantity(
+                balance,
+                submitted == null ? null : submitted.amount(),
+                submitted == null ? null : submitted.quantity()
+        );
         validateQuantity(item, balance, quantity);
 
         boolean overridden = submitted != null
@@ -352,9 +355,11 @@ public class DailyReportInputItemService {
         var balance = balanceQueryService.findDeductionBalance(
                 request.employeeId(), item.masterId(), request.workDate(), existingId
         );
-        java.math.BigDecimal quantity = submitted != null && submitted.quantity() != null
-                ? submitted.quantity()
-                : java.math.BigDecimal.ZERO;
+        java.math.BigDecimal quantity = resolveQuantity(
+                balance,
+                submitted == null ? null : submitted.amount(),
+                submitted == null ? null : submitted.quantity()
+        );
         validateQuantity(item, balance, quantity);
 
         boolean overridden = submitted != null
@@ -376,12 +381,29 @@ public class DailyReportInputItemService {
                 && quantity.stripTrailingZeros().scale() > 0) {
             throw new IllegalArgumentException(item.name() + "の日数は整数で指定してください。");
         }
-        if (balance.tracked() && quantity.compareTo(balance.remainingQuantity()) > 0) {
+        if (balance.tracked()
+                && !balance.advanceConsumptionAllowed()
+                && quantity.compareTo(balance.remainingQuantity()) > 0) {
             throw new IllegalArgumentException(
                     item.name() + "の消化数量が残数量を超えています。remaining="
                             + balance.remainingQuantity() + ", quantity=" + quantity
             );
         }
+    }
+
+    private java.math.BigDecimal resolveQuantity(
+            com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceSnapshot balance,
+            Integer amount,
+            java.math.BigDecimal submittedQuantity
+    ) {
+        if (balance.tracked()
+                && balance.unit()
+                == com.project.backend.features.master.payrollitem.balance.BalanceUnit.AMOUNT) {
+            return java.math.BigDecimal.valueOf(amount == null ? 0 : amount);
+        }
+        return submittedQuantity == null
+                ? java.math.BigDecimal.ZERO
+                : submittedQuantity;
     }
 
     private DailyReportInputItemResponse withBalance(
@@ -419,12 +441,14 @@ public class DailyReportInputItemService {
                 .displayOrder(item.displayOrder())
                 .balanceTracked(balance.tracked())
                 .balanceUnit(balance.unit() == null ? null : balance.unit().name())
+                .advanceConsumptionAllowed(balance.advanceConsumptionAllowed())
                 .openingQuantity(balance.openingQuantity())
                 .accruedQuantity(balance.accruedQuantity())
                 .consumedQuantity(balance.consumedQuantity())
                 .remainingQuantity(balance.remainingQuantity())
                 .quantity(quantity)
-                .remainingAfterQuantity(balance.remainingQuantity().subtract(quantity))
+                .remainingAfterQuantity(
+                        balance.remainingQuantity().subtract(quantity))
                 .build();
     }
 

@@ -1,7 +1,5 @@
 export type Gender = 'MALE' | 'FEMALE' | 'OTHER'
 
-export type DormitoryType = 'SINGLE_ROOM' | 'SHARED_ROOM'
-
 export type EmploymentType =
   | 'FULL_TIME'
   | 'CONTRACT'
@@ -43,8 +41,8 @@ export type EmployeeListItemResponse = {
   employmentStatus: EmploymentStatus
   phone: string | null
   email: string | null
-  dormitoryFlag: boolean
-  dormitoryType: DormitoryType | null
+  contractStartDate: string | null
+  contractEndDate: string | null
   activeFlag: boolean
 }
 
@@ -53,8 +51,6 @@ export type EmployeePayrollProfileResponse = {
   taxCategory: TaxCategory
   taxDependentCount: number
 
-  dependentFlag: boolean
-  dependentOfOtherFlag: boolean
   paidLeaveRemainingDays: number
 
   incomeTaxCalcFlag: boolean
@@ -72,7 +68,6 @@ export type EmployeeContractResponse = {
   id: number | null
   contractStartDate: string | null
   contractEndDate: string | null
-  renewalFlag: boolean
   salaryType: SalaryType
   paymentCycle: PaymentCycle
   monthlySalary: number
@@ -83,13 +78,12 @@ export type EmployeeContractResponse = {
   note: string | null
 }
 
-export type EmployeeDetailResponse = EmployeeListItemResponse & {
+export type EmployeeDetailResponse = Omit<
+  EmployeeListItemResponse,
+  'contractStartDate' | 'contractEndDate'
+> & {
   postalCode: string | null
   address: string | null
-  dormitoryOpeningDays: number
-  dormitoryCurrentMonthDays: number
-  dormitoryConsumedDays: number
-  dormitoryRemainingDays: number
   payrollProfile: EmployeePayrollProfileResponse
   contract: EmployeeContractResponse
   payrollItemSettings: EmployeePayrollItemSetting[]
@@ -102,7 +96,7 @@ export type EmployeePayrollItemSetting = {
   enabled: boolean
   effectiveFrom: string | null
   effectiveTo: string | null
-  inputSource: 'DAILY_REPORT' | 'TRANSACTION'
+  inputSource: 'DAILY_REPORT' | 'TRANSACTION' | 'DAILY_REPORT_AND_TRANSACTION'
   balanceTracked: boolean
   balanceUnit: string
   openingQuantity: number
@@ -131,8 +125,6 @@ export type EmployeePayrollProfileSaveRequest = {
   taxCategory: TaxCategory
   taxDependentCount: number
 
-  dependentFlag: boolean
-  dependentOfOtherFlag: boolean
   paidLeaveRemainingDays: number
 
   incomeTaxCalcFlag: boolean
@@ -149,7 +141,6 @@ export type EmployeePayrollProfileSaveRequest = {
 export type EmployeeContractSaveRequest = {
   contractStartDate: string | null
   contractEndDate: string | null
-  renewalFlag: boolean
   salaryType: SalaryType
   paymentCycle: PaymentCycle
   monthlySalary: number
@@ -174,8 +165,6 @@ export type EmployeeSaveRequest = {
   email: string | null
   postalCode: string | null
   address: string | null
-  dormitoryFlag: boolean
-  dormitoryType: DormitoryType | null
   activeFlag: boolean
   payrollProfile: EmployeePayrollProfileSaveRequest
   contract: EmployeeContractSaveRequest

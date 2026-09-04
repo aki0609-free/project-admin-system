@@ -172,6 +172,7 @@ public class DocumentManagementService {
                 originalFileName
         );
         String key = keyResolver.resolve(area, relativePath);
+        requireTargetDoesNotExist(key);
 
         try (InputStream inputStream = file.getInputStream()) {
             storageService.save(

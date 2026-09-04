@@ -1,13 +1,11 @@
 package com.project.backend.features.employee.dto;
 
 import java.time.LocalDate;
-import java.math.BigDecimal;
 import java.util.List;
 
 import com.project.backend.features.employee.enums.EmploymentStatus;
 import com.project.backend.features.employee.enums.EmploymentType;
 import com.project.backend.features.employee.enums.Gender;
-import com.project.backend.features.employee.enums.DormitoryType;
 
 import lombok.Builder;
 
@@ -27,12 +25,6 @@ public record EmployeeDetailResponse(
         String email,
         String postalCode,
         String address,
-        boolean dormitoryFlag,
-        DormitoryType dormitoryType,
-        BigDecimal dormitoryOpeningDays,
-        BigDecimal dormitoryCurrentMonthDays,
-        BigDecimal dormitoryConsumedDays,
-        BigDecimal dormitoryRemainingDays,
         boolean activeFlag,
         EmployeePayrollProfileResponse payrollProfile,
         EmployeeContractResponse contract,

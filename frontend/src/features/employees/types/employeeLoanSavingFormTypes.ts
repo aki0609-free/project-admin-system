@@ -13,7 +13,7 @@ export type EmployeeSavingForm = {
   id: number
   employeeId: number | null
   percentage: number
-  minSalaryThreshold: number
+  savingCalculationBaseAmount: number
   currentBalance: number
   activeFlag: boolean
 }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.project.backend.common.closing.ClosingSettingDefaults;
 import com.project.backend.common.closing.entity.ClosingSetting;
 import com.project.backend.common.closing.repository.ClosingSettingRepository;
 import com.project.backend.common.dayrule.dto.DayRule;
@@ -42,7 +43,8 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class BusinessSettingService {
 
-    private static final String PAYROLL_SETTING_CODE = "PAYROLL";
+    private static final String PAYROLL_SETTING_CODE =
+            ClosingSettingDefaults.PAYROLL_SETTING_CODE;
 
     private final EmployeeResignationSettingRepository resignationSettingRepository;
     private final EmployeeResignationChecklistRepository checklistRepository;
@@ -129,7 +131,7 @@ public class BusinessSettingService {
                 .findFirstBySettingCodeAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(
                         PAYROLL_SETTING_CODE
                 )
-                .orElseGet(this::createDefaultClosingSetting);
+                .orElseGet(ClosingSettingDefaults::payroll);
         return toClosingResponse(setting);
     }
 
@@ -264,19 +266,6 @@ public class BusinessSettingService {
 
     private String normalizeNullable(String value) {
         return StringUtils.hasText(value) ? value.trim() : null;
-    }
-
-    private ClosingSetting createDefaultClosingSetting() {
-        ClosingSetting setting = new ClosingSetting();
-        setting.setSettingCode(PAYROLL_SETTING_CODE);
-        setting.setClosingDayType(DayRuleType.END_OF_MONTH);
-        setting.setClosingDayValue(null);
-        setting.setClosingMonthOffset(0);
-        setting.setPaymentDayType(DayRuleType.DAY_OF_MONTH);
-        setting.setPaymentDayValue(25);
-        setting.setPaymentMonthOffset(1);
-        setting.setActiveFlag(true);
-        return setting;
     }
 
     private BusinessClosingSettingResponse toClosingResponse(ClosingSetting setting) {

@@ -186,6 +186,33 @@ class DocumentManagementServiceTest {
     }
 
     @Test
+    void upload_shouldRejectExistingFileInsteadOfOverwriting() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "contract.pdf",
+                "application/pdf",
+                new byte[] {1}
+        );
+        when(storageService.exists(
+                "documents/general/contracts/contract.pdf"
+        )).thenReturn(true);
+
+        assertThatThrownBy(() -> service.upload(
+                DocumentArea.GENERAL,
+                "contracts",
+                file
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("同名");
+
+        verify(storageService, never()).save(
+                org.mockito.ArgumentMatchers.anyString(),
+                any(InputStream.class),
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyString()
+        );
+    }
+
+    @Test
     void upload_shouldRejectPathCharactersInFileName() {
         MockMultipartFile file = new MockMultipartFile(
                 "file",

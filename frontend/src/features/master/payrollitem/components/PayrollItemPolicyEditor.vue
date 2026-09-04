@@ -1,10 +1,27 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type {
   PayrollItemParameterDefinition,
   PayrollItemPolicy,
 } from '../types/payrollItemPolicyTypes'
 
 const policy = defineModel<PayrollItemPolicy>({ required: true })
+
+const balanceUnitLockedByAccrual = computed(
+  () =>
+    policy.value.accrualRuleName === 'CALENDAR_DAYS_IN_ENROLLMENT' ||
+    policy.value.accrualRuleName?.startsWith('CALENDAR_DAYS_TIMES_PARAMETER:'),
+)
+
+const balanceUnitHint = computed(() => {
+  if (policy.value.accrualRuleName === 'CALENDAR_DAYS_IN_ENROLLMENT') {
+    return '適用期間から残日数を計算するため、日数で固定されます'
+  }
+  if (policy.value.accrualRuleName?.startsWith('CALENDAR_DAYS_TIMES_PARAMETER:')) {
+    return '適用日数と単価から残高を計算するため、金額で固定されます'
+  }
+  return undefined
+})
 
 const props = defineProps<{
   canManage: boolean
@@ -63,6 +80,7 @@ const addOption = (definition: PayrollItemParameterDefinition) => {
           :items="[
             { title: '日報', value: 'DAILY_REPORT' },
             { title: '明細取引', value: 'TRANSACTION' },
+            { title: '日報＋明細取引', value: 'DAILY_REPORT_AND_TRANSACTION' },
           ]"
           :readonly="!canManage"
           variant="outlined"
@@ -86,7 +104,9 @@ const addOption = (definition: PayrollItemParameterDefinition) => {
             { title: '時間', value: 'HOURS' },
             { title: '回数', value: 'COUNT' },
           ]"
-          :readonly="!canManage"
+          :readonly="!canManage || balanceUnitLockedByAccrual"
+          :hint="balanceUnitHint"
+          persistent-hint
           variant="outlined"
         />
       </v-col>

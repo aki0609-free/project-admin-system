@@ -92,7 +92,6 @@ export function toAllowanceMaster(
 
       taxable: response.taxable,
       showOnDailyStatement: response.showOnDailyStatement,
-      showOnMonthlyStatement: response.showOnMonthlyStatement,
       displayOrder: response.displayOrder,
       enabled: response.enabled,
       note: response.note,
@@ -119,7 +118,6 @@ export function toAllowanceMaster(
 
     taxable: response.taxable ?? true,
     showOnDailyStatement: response.showOnDailyStatement ?? false,
-    showOnMonthlyStatement: response.showOnMonthlyStatement ?? true,
     displayOrder: response.displayOrder,
     enabled: response.enabled ?? true,
     note: toStringValue(response.note),
@@ -159,7 +157,6 @@ export function toAllowanceSaveRequest(
 
     taxable: payload.taxable,
     showOnDailyStatement: payload.showOnDailyStatement,
-    showOnMonthlyStatement: payload.showOnMonthlyStatement,
     displayOrder: payload.displayOrder,
     enabled: payload.enabled,
     note: toNullableString(payload.note),

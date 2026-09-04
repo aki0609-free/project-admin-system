@@ -3,11 +3,14 @@ package com.project.backend.features.master.payrollitem.balance;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.backend.app.tenant.context.TenantContext;
 import com.project.backend.features.dailyreport.repository.DailyReportAllowanceRepository;
 import com.project.backend.features.dailyreport.repository.DailyReportDeductionRepository;
@@ -24,12 +27,15 @@ public class PayrollItemBalanceQueryService {
 
     private static final String CALENDAR_DAYS_IN_ENROLLMENT =
             "CALENDAR_DAYS_IN_ENROLLMENT";
+    private static final String CALENDAR_DAYS_TIMES_PARAMETER_PREFIX =
+            "CALENDAR_DAYS_TIMES_PARAMETER:";
 
     private final PayrollItemBalancePolicyRepository policyRepository;
     private final EmployeePayrollItemEnrollmentRepository enrollmentRepository;
     private final DailyReportAllowanceRepository allowanceRepository;
     private final DailyReportDeductionRepository deductionRepository;
     private final EmployeePayrollItemTransactionRepository transactionRepository;
+    private final ObjectMapper objectMapper;
 
     public Optional<Long> findPolicyMasterId(
             PayrollItemTargetType targetType,
@@ -57,12 +63,24 @@ public class PayrollItemBalanceQueryService {
             LocalDate targetDate,
             Long excludeDailyReportId
     ) {
+        return findDeductionBalance(employeeId, deductionMasterId, targetDate,
+                excludeDailyReportId, null);
+    }
+
+    public PayrollItemBalanceSnapshot findDeductionBalance(
+            Long employeeId,
+            Long deductionMasterId,
+            LocalDate targetDate,
+            Long excludeDailyReportId,
+            Long excludeTransactionId
+    ) {
         return findBalance(
                 PayrollItemTargetType.DEDUCTION,
                 employeeId,
                 deductionMasterId,
                 targetDate,
-                excludeDailyReportId
+                excludeDailyReportId,
+                excludeTransactionId
         );
     }
 
@@ -72,12 +90,24 @@ public class PayrollItemBalanceQueryService {
             LocalDate targetDate,
             Long excludeDailyReportId
     ) {
+        return findAllowanceBalance(employeeId, allowanceMasterId, targetDate,
+                excludeDailyReportId, null);
+    }
+
+    public PayrollItemBalanceSnapshot findAllowanceBalance(
+            Long employeeId,
+            Long allowanceMasterId,
+            LocalDate targetDate,
+            Long excludeDailyReportId,
+            Long excludeTransactionId
+    ) {
         return findBalance(
                 PayrollItemTargetType.ALLOWANCE,
                 employeeId,
                 allowanceMasterId,
                 targetDate,
-                excludeDailyReportId
+                excludeDailyReportId,
+                excludeTransactionId
         );
     }
 
@@ -86,7 +116,8 @@ public class PayrollItemBalanceQueryService {
             Long employeeId,
             Long targetMasterId,
             LocalDate targetDate,
-            Long excludeDailyReportId
+            Long excludeDailyReportId,
+            Long excludeTransactionId
     ) {
         if (employeeId == null || targetMasterId == null || targetDate == null) {
             return PayrollItemBalanceSnapshot.untracked();
@@ -105,8 +136,11 @@ public class PayrollItemBalanceQueryService {
         if (!policy.isBalanceTrackingFlag()) {
             return PayrollItemBalanceSnapshot.untracked();
         }
-        if (!CALENDAR_DAYS_IN_ENROLLMENT.equals(policy.getAccrualRuleName())
-                && !"MANUAL_TRANSACTION".equals(policy.getAccrualRuleName())) {
+        String accrualRuleName = policy.getAccrualRuleName();
+        if (!CALENDAR_DAYS_IN_ENROLLMENT.equals(accrualRuleName)
+                && !"MANUAL_TRANSACTION".equals(accrualRuleName)
+                && (accrualRuleName == null || !accrualRuleName.startsWith(
+                        CALENDAR_DAYS_TIMES_PARAMETER_PREFIX))) {
             throw new IllegalStateException(
                     "未対応の残高加算Ruleです。rule=" + policy.getAccrualRuleName()
             );
@@ -150,24 +184,26 @@ public class PayrollItemBalanceQueryService {
         BigDecimal creditedBeforeMonth = sumTransactionQuantity(
                 targetType, employeeId, targetMasterId,
                 PayrollItemBalanceEffect.CREDIT,
-                enrollmentStart, monthStart.minusDays(1));
+                enrollmentStart, monthStart.minusDays(1), excludeTransactionId);
         BigDecimal creditedThroughMonth = sumTransactionQuantity(
                 targetType, employeeId, targetMasterId,
                 PayrollItemBalanceEffect.CREDIT,
-                enrollmentStart, monthEnd);
+                enrollmentStart, monthEnd, excludeTransactionId);
         BigDecimal debitedBeforeMonth = sumTransactionQuantity(
                 targetType, employeeId, targetMasterId,
                 PayrollItemBalanceEffect.DEBIT,
-                enrollmentStart, monthStart.minusDays(1));
+                enrollmentStart, monthStart.minusDays(1), excludeTransactionId);
         BigDecimal debitedThroughMonth = sumTransactionQuantity(
                 targetType, employeeId, targetMasterId,
                 PayrollItemBalanceEffect.DEBIT,
-                enrollmentStart, monthEnd);
+                enrollmentStart, monthEnd, excludeTransactionId);
 
-        BigDecimal opening = accruedThroughPreviousMonth
+        BigDecimal calculatedOpening = accruedThroughPreviousMonth
                 .add(creditedBeforeMonth)
                 .subtract(consumedBeforeMonth)
                 .subtract(debitedBeforeMonth);
+        BigDecimal opening = policy.isCarryForwardFlag()
+                ? calculatedOpening : BigDecimal.ZERO;
         BigDecimal currentAccrual = accruedThroughTargetMonth
                 .subtract(accruedThroughPreviousMonth)
                 .add(creditedThroughMonth.subtract(creditedBeforeMonth));
@@ -175,14 +211,19 @@ public class PayrollItemBalanceQueryService {
                 .subtract(consumedBeforeMonth)
                 .add(debitedThroughMonth.subtract(debitedBeforeMonth));
         BigDecimal remaining = opening.add(currentAccrual).subtract(currentConsumed);
+        if (!policy.isAdvanceConsumptionFlag()) {
+            opening = opening.max(BigDecimal.ZERO);
+            remaining = remaining.max(BigDecimal.ZERO);
+        }
 
         return new PayrollItemBalanceSnapshot(
                 true,
                 policy.getBalanceUnit(),
-                opening.max(BigDecimal.ZERO),
+                policy.isAdvanceConsumptionFlag(),
+                opening,
                 currentAccrual,
                 currentConsumed,
-                remaining.max(BigDecimal.ZERO)
+                remaining
         );
     }
 
@@ -216,14 +257,63 @@ public class PayrollItemBalanceQueryService {
         if ("MANUAL_TRANSACTION".equals(policy.getAccrualRuleName())) {
             return BigDecimal.ZERO;
         }
-        long days = enrollmentRepository
+        var enrollments = enrollmentRepository
                 .findAllByEmployeeIdAndBalancePolicyIdAndEffectiveFromLessThanEqualAndDeletedAtIsNullOrderByEffectiveFromAsc(
                         employeeId, policy.getId(), through
-                )
-                .stream()
+                );
+        if (policy.getAccrualRuleName().startsWith(
+                CALENDAR_DAYS_TIMES_PARAMETER_PREFIX)) {
+            String parameterKey = policy.getAccrualRuleName().substring(
+                    CALENDAR_DAYS_TIMES_PARAMETER_PREFIX.length());
+            if (parameterKey.isBlank()) {
+                throw new IllegalStateException(
+                        "残高加算単価のパラメーターキーが未設定です。"
+                );
+            }
+            return enrollments.stream()
+                    .map(enrollment -> BigDecimal.valueOf(
+                                    overlapDays(enrollment, through))
+                            .multiply(parameterAmount(
+                                    enrollment, parameterKey)))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+        long days = enrollments.stream()
                 .mapToLong(enrollment -> overlapDays(enrollment, through))
                 .sum();
         return BigDecimal.valueOf(days);
+    }
+
+    private BigDecimal parameterAmount(
+            EmployeePayrollItemEnrollment enrollment,
+            String parameterKey
+    ) {
+        Map<String, String> settings;
+        try {
+            settings = enrollment.getSettingsJson() == null
+                    || enrollment.getSettingsJson().isBlank()
+                    ? Map.of()
+                    : objectMapper.readValue(
+                            enrollment.getSettingsJson(),
+                            new TypeReference<Map<String, String>>() { });
+        } catch (Exception exception) {
+            throw new IllegalStateException(
+                    "従業員別手当・控除設定を読み込めません。", exception
+            );
+        }
+        String value = settings.get(parameterKey);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException(
+                    "残高加算単価が設定されていません。key=" + parameterKey
+            );
+        }
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException exception) {
+            throw new IllegalStateException(
+                    "残高加算単価が数値ではありません。key=" + parameterKey,
+                    exception
+            );
+        }
     }
 
     private BigDecimal sumTransactionQuantity(
@@ -232,7 +322,8 @@ public class PayrollItemBalanceQueryService {
             Long masterId,
             PayrollItemBalanceEffect effect,
             LocalDate from,
-            LocalDate through
+            LocalDate through,
+            Long excludeTransactionId
     ) {
         if (through.isBefore(from)) {
             return BigDecimal.ZERO;
@@ -241,7 +332,7 @@ public class PayrollItemBalanceQueryService {
                 transactionRepository.sumConfirmedQuantityByEffect(
                         TenantContext.getTenantId(), employeeId,
                         targetType.name(), masterId, effect.name(), from,
-                        through
+                        through, excludeTransactionId
                 )
         ).orElse(BigDecimal.ZERO);
     }

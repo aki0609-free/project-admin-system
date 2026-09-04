@@ -3,6 +3,7 @@ import { computed, ref, type Ref } from 'vue'
 
 import type { NoticeResponse } from '../types/dashboardTypes'
 import { formatLocalDate, moveCalendarMonth } from '../utils/dashboardDate'
+import { formatYearMonthDay } from '@/shared/utils/DateUtils'
 
 type CalendarTimestamp = {
   date: string
@@ -53,10 +54,10 @@ export const useNoticeCalendar = (
 
   const formatPeriod = (notice: NoticeResponse) => {
     if (notice.start === notice.end) {
-      return notice.start
+      return formatYearMonthDay(notice.start)
     }
 
-    return `${notice.start} ～ ${notice.end}`
+    return `${formatYearMonthDay(notice.start)} ～ ${formatYearMonthDay(notice.end)}`
   }
 
   const sourceLabel = (notice: NoticeResponse) => (notice.sourceType === 'AUTO' ? '自動' : '手動')

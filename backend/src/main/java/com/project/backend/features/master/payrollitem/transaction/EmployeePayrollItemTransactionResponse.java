@@ -14,6 +14,7 @@ public record EmployeePayrollItemTransactionResponse(
         LocalDate transactionDate,
         BigDecimal amount,
         BigDecimal quantity,
+        PayrollItemTransactionPurpose transactionPurpose,
         PayrollItemBalanceEffect balanceEffect,
         PayrollItemTransactionSource sourceType,
         String sourceReference,

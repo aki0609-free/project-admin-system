@@ -135,8 +135,6 @@ export const useEmployeeEditDialog = (
       ],
     },
     { key: 'taxDependentCount', label: '扶養人数', type: 'number' },
-    { key: 'dependentFlag', label: '扶養者あり', type: 'checkbox', width: 120 },
-    { key: 'dependentOfOtherFlag', label: '被扶養者', type: 'checkbox', width: 120 },
     { key: 'paidLeaveRemainingDays', label: '有給残日数', type: 'number' },
     { key: 'residentTaxMonthly', label: '住民税月額', type: 'number' },
     { key: 'commuteAllowanceMonthly', label: '通勤手当月額', type: 'number' },
@@ -152,10 +150,9 @@ export const useEmployeeEditDialog = (
   const contractFields: GridFormFieldDef<EmployeeContractForm>[] = [
     { key: 'contractStartDate', label: '契約開始日', type: 'date' },
     { key: 'contractEndDate', label: '契約終了日', type: 'date' },
-    { key: 'renewalFlag', label: '更新あり', type: 'checkbox', width: 120 },
     {
       key: 'salaryType',
-      label: '給与形態',
+      label: '給与計算基準',
       type: 'select',
       options: [
         { title: '月給', value: 'MONTHLY' },

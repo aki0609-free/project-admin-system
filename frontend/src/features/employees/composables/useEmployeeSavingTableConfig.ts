@@ -11,7 +11,7 @@ export type EmployeeSavingTableRow = SimpleTableEditableRow & {
   employeeCode: string
   employeeName: string
   percentage: number
-  minSalaryThreshold: number
+  savingCalculationBaseAmount: number
   currentBalance: number
   activeText: string
   raw: EmployeeSavingResponse
@@ -24,7 +24,7 @@ export const useEmployeeSavingTableConfig = (savings: Ref<EmployeeSavingResponse
       employeeCode: item.employeeCode,
       employeeName: item.employeeName,
       percentage: item.percentage,
-      minSalaryThreshold: item.minSalaryThreshold,
+      savingCalculationBaseAmount: item.savingCalculationBaseAmount,
       currentBalance: item.currentBalance,
       activeText: item.activeFlag ? '有効' : '無効',
       raw: item,
@@ -37,7 +37,7 @@ export const useEmployeeSavingTableConfig = (savings: Ref<EmployeeSavingResponse
       { title: '氏名', key: 'employeeName', width: '180px', filter: { type: 'text' } },
       { title: '貯蓄残高', key: 'currentBalance', width: '180px', filter: { type: 'text' } },
       { title: '貯蓄率%', key: 'percentage', width: '180px', filter: { type: 'text' } },
-      { title: '最低給与額', key: 'minSalaryThreshold', width: '180px', filter: { type: 'text' } },
+      { title: '積立計算基礎額', key: 'savingCalculationBaseAmount', width: '180px', filter: { type: 'text' } },
       { title: '状態', key: 'activeText', width: '100px', filter: { type: 'text' } },
     ]
 

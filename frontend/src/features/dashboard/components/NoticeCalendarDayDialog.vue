@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { NoticeResponse } from '@/features/dashboard/types/dashboardTypes'
 import AppDialog from '@/shared/ui/dialog/AppDialog.vue'
+import { formatYearMonthDay } from '@/shared/utils/DateUtils'
 
 defineProps<{
   modelValue: boolean
@@ -20,7 +21,7 @@ const emit = defineEmits<{
 <template>
   <AppDialog
     :model-value="modelValue"
-    :title="selectedDate || '日別お知らせ'"
+    :title="formatYearMonthDay(selectedDate) || '日別お知らせ'"
     size="md"
     :max-width="560"
     closable
@@ -33,7 +34,7 @@ const emit = defineEmits<{
         </div>
 
         <div class="header-title">
-          <h2 class="title-main">{{ selectedDate || '-' }}</h2>
+          <h2 class="title-main">{{ formatYearMonthDay(selectedDate) || '-' }}</h2>
           <div class="title-sub">この日のお知らせ一覧</div>
         </div>
       </div>

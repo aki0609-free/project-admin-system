@@ -221,6 +221,7 @@ export const toDailyReportForm = (
           allowance.quantity != null,
         balanceUnit:
           (allowance.balanceUnit as DailyReportAmountItemForm['balanceUnit']) ?? null,
+        advanceConsumptionAllowed: false,
         openingQuantity: 0,
         accruedQuantity: 0,
         consumedQuantity: 0,
@@ -272,6 +273,7 @@ export const toDailyReportForm = (
 
         balanceUnit:
           (deduction.balanceUnit as 'DAYS' | 'HOURS' | 'COUNT' | 'AMOUNT' | null) ?? null,
+        advanceConsumptionAllowed: false,
 
         openingQuantity: 0,
         accruedQuantity: 0,

@@ -39,7 +39,6 @@ export type AllowanceMaster = {
 
   taxable: boolean
   showOnDailyStatement: boolean
-  showOnMonthlyStatement: boolean
   displayOrder: number | null
   enabled: boolean
   note: string
@@ -56,5 +55,3 @@ export type AllowanceDetailTableRow = SimpleTableEditableRow & {
   label?: string
   [key: string]: unknown
 }
-
-export type AllowanceSavePayload = AllowanceMaster

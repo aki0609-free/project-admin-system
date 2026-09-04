@@ -48,7 +48,6 @@ public class EmployeeContractQueryService {
 
                 .contractStartDate(entity.getContractStartDate())
                 .contractEndDate(entity.getContractEndDate())
-                .renewalFlag(entity.isRenewalFlag())
 
                 .salaryType(entity.getSalaryType())
                 .paymentCycle(entity.getPaymentCycle())
@@ -75,7 +74,6 @@ public class EmployeeContractQueryService {
 
                 .contractStartDate(null)
                 .contractEndDate(null)
-                .renewalFlag(false)
 
                 .salaryType(SalaryType.MONTHLY)
                 .paymentCycle(PaymentCycle.MONTHLY)

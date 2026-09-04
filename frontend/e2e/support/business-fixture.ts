@@ -91,18 +91,10 @@ type DeductionMaster = {
   minAmount: number | null
   maxAmount: number | null
   showOnDailyStatement: boolean | null
-  showOnMonthlyStatement: boolean | null
-  carryToMonthlySettlement: boolean | null
   displayOrder: number | null
   enabled: boolean | null
   note: string | null
   policy: Record<string, unknown>
-}
-
-type DormitoryFee = {
-  dormitoryType: 'SINGLE_ROOM' | 'SHARED_ROOM'
-  dailyAmount: number
-  activeFlag: boolean
 }
 
 const json = async <T>(response: APIResponse): Promise<T> => {
@@ -394,8 +386,6 @@ export const ensureBusinessFixture = async (page: Page) => {
         minAmount: dormitoryMaster.minAmount,
         maxAmount: dormitoryMaster.maxAmount,
         showOnDailyStatement: true,
-        showOnMonthlyStatement: true,
-        carryToMonthlySettlement: true,
         displayOrder: dormitoryMaster.displayOrder ?? 110,
         enabled: true,
         note: 'Playwright固定業務データ（日次寮費）',
@@ -423,8 +413,6 @@ export const ensureBusinessFixture = async (page: Page) => {
         minAmount: mobileMaster.minAmount,
         maxAmount: mobileMaster.maxAmount,
         showOnDailyStatement: false,
-        showOnMonthlyStatement: true,
-        carryToMonthlySettlement: true,
         displayOrder: mobileMaster.displayOrder ?? 120,
         enabled: true,
         note: 'Playwright固定業務データ（明細到着時の控除取引）',
@@ -433,22 +421,6 @@ export const ensureBusinessFixture = async (page: Page) => {
           applicationScope: 'EMPLOYEE_ENROLLMENT',
         },
       },
-    }),
-  )
-
-  const dormitoryFees = await json<DormitoryFee[]>(
-    await page.request.get('/api/admin/business-settings/dormitory-fees', {
-      headers: requestHeaders,
-    }),
-  )
-  await json<DormitoryFee[]>(
-    await page.request.put('/api/admin/business-settings/dormitory-fees', {
-      headers: requestHeaders,
-      data: dormitoryFees.map(fee => ({
-        dormitoryType: fee.dormitoryType,
-        dailyAmount: fee.dormitoryType === 'SHARED_ROOM' ? 450 : fee.dailyAmount,
-        activeFlag: true,
-      })),
     }),
   )
 

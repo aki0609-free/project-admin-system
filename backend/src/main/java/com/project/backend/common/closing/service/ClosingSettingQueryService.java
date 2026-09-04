@@ -3,6 +3,7 @@ package com.project.backend.common.closing.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.project.backend.common.closing.ClosingSettingDefaults;
 import com.project.backend.common.closing.entity.ClosingSetting;
 import com.project.backend.common.closing.repository.ClosingSettingRepository;
 import com.project.backend.common.dayrule.dto.DayRule;
@@ -14,16 +15,14 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class ClosingSettingQueryService {
 
-    private static final String PAYROLL_SETTING_CODE = "PAYROLL";
-
     private final ClosingSettingRepository repository;
 
     public ClosingSetting findPayrollSetting() {
         return repository
                 .findFirstBySettingCodeAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(
-                        PAYROLL_SETTING_CODE
+                        ClosingSettingDefaults.PAYROLL_SETTING_CODE
                 )
-                .orElseThrow(() -> new RuntimeException("給与締日設定が見つかりません。"));
+                .orElseGet(ClosingSettingDefaults::payroll);
     }
 
     /**

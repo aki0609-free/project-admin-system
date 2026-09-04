@@ -43,6 +43,7 @@ const {
   billingRateLoading,
   payrollItemsLoading,
   payrollItemsError,
+  preparationDefaultsMessage,
 } = useDailyReportEditDialog(
   visible,
   toRef(props, 'dailyReport'),
@@ -64,12 +65,21 @@ const {
   >
     <TabLayout v-model="activeTab" :tabs="tabs">
       <template #default="{ active }">
-        <FormGridTab
-          v-if="active === 'basic'"
-          v-model="formModel"
-          :schema="schema"
-          :fields="fields"
-        />
+        <div v-if="active === 'basic'" class="basic-panel">
+          <v-alert
+            v-if="preparationDefaultsMessage"
+            type="info"
+            variant="tonal"
+            density="compact"
+          >
+            {{ preparationDefaultsMessage }}
+          </v-alert>
+          <FormGridTab
+            v-model="formModel"
+            :schema="schema"
+            :fields="fields"
+          />
+        </div>
 
         <div v-else-if="active === 'billing'" class="billing-panel">
           <v-alert v-if="formModel.customerSiteId == null" type="info" variant="tonal">
@@ -120,5 +130,10 @@ const {
   display: grid;
   gap: 16px;
   padding: 16px;
+}
+
+.basic-panel {
+  display: grid;
+  gap: 12px;
 }
 </style>

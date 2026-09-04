@@ -1,7 +1,7 @@
 package com.project.backend.features.admin.document.enums;
 
 public enum DocumentArea {
-    GENERAL("自由書類"),
+    GENERAL("会社書類"),
     GENERATED_REPORTS("生成帳票"),
     BACKUPS("バックアップ"),
     TEMPLATES("テンプレート"),

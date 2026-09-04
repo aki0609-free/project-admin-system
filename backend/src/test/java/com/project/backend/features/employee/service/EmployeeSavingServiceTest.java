@@ -112,7 +112,7 @@ class EmployeeSavingServiceTest {
         EmployeeSavingSaveRequest request = new EmployeeSavingSaveRequest();
         request.setEmployeeId(1L);
         request.setPercentage(new BigDecimal("10"));
-        request.setMinSalaryThreshold(new BigDecimal("180000"));
+        request.setSavingCalculationBaseAmount(new BigDecimal("180000"));
         request.setActiveFlag(active);
         return request;
     }

@@ -19,8 +19,8 @@ public class EmployeeSavingSaveRequest {
     @DecimalMax(value = "100.00", message = "積立率は100%以下で指定してください。")
     private BigDecimal percentage = BigDecimal.ZERO;
 
-    @DecimalMin(value = "0.00", message = "最低給与額は0円以上で指定してください。")
-    private BigDecimal minSalaryThreshold = BigDecimal.ZERO;
+    @DecimalMin(value = "0.00", message = "積立計算基礎額は0円以上で指定してください。")
+    private BigDecimal savingCalculationBaseAmount = BigDecimal.ZERO;
 
     private boolean activeFlag = true;
 

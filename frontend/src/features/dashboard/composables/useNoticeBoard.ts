@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import type { NoticeResponse } from '@/features/dashboard/types/dashboardTypes'
 import type { SearchPanelFieldDef } from '@/shared/components/search/types/searchPanelTypes'
 import type { ToolbarItem } from '@/shared/ui/toolbar/types'
+import { formatYearMonthDay } from '@/shared/utils/DateUtils'
 
 export type NoticeBoardFilter = {
   keyword: string
@@ -160,8 +161,8 @@ export const useNoticeBoard = (
   const getLabel = (notice: NoticeResponse) => labelMap[getType(notice)] || '情報'
 
   const formatPeriod = (notice: NoticeResponse) => {
-    if (notice.start === notice.end) return notice.start
-    return `${notice.start} ～ ${notice.end}`
+    if (notice.start === notice.end) return formatYearMonthDay(notice.start)
+    return `${formatYearMonthDay(notice.start)} ～ ${formatYearMonthDay(notice.end)}`
   }
 
   const openDetail = (notice: NoticeResponse) => {

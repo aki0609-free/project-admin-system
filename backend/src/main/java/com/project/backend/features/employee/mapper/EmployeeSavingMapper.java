@@ -28,7 +28,7 @@ public class EmployeeSavingMapper {
                 .employeeCode(employee.getEmployeeCode())
                 .employeeName(employee.getEmployeeName())
                 .percentage(entity.getPercentage())
-                .minSalaryThreshold(entity.getMinSalaryThreshold())
+                .savingCalculationBaseAmount(entity.getSavingCalculationBaseAmount())
                 .currentBalance(entity.getCurrentBalance())
                 .activeFlag(entity.isActiveFlag())
                 .approvalStatus(entity.getApprovalStatus())
@@ -43,7 +43,7 @@ public class EmployeeSavingMapper {
     ) {
         entity.setEmployee(employee);
         entity.setPercentage(nvl(request.getPercentage()));
-        entity.setMinSalaryThreshold(nvl(request.getMinSalaryThreshold()));
+        entity.setSavingCalculationBaseAmount(nvl(request.getSavingCalculationBaseAmount()));
         entity.setActiveFlag(request.isActiveFlag());
     }
 

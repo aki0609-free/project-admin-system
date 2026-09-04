@@ -4,6 +4,7 @@ import {
   ref,
   watch,
   onBeforeUnmount,
+  nextTick,
   type Ref,
 } from 'vue'
 
@@ -59,6 +60,7 @@ import {
 import { useDailyReportInputItemsPreviewMutation } from '@/features/dailyreport/api/useDailyReportInputItemsPreviewMutation'
 import { useDailyReportEstimatedPayPreviewMutation } from '@/features/dailyreport/api/useDailyReportEstimatedPayPreviewMutation'
 import { toDailyReportSaveRequest } from '@/features/dailyreport/utils/dailyReportConverters'
+import { fetchDailyReportPreparationDefaults } from '@/features/dailyreport/api/fetchDailyReportPreparationDefaults'
 
 import {
   useDailyReportBilling,
@@ -105,6 +107,22 @@ export const useDailyReportEditDialog = (
 
   const payrollItemsError =
     ref('')
+
+  const preparationDefaultsMessage =
+    ref('')
+
+  const applyingPreparationDefaults =
+    ref(false)
+
+  let preparationDefaultsSequence = 0
+
+  let appliedPreparationDefaults: {
+    employeeId: number
+    workDate: string
+    customerId: number | null
+    customerSiteId: number | null
+    workDescription: string
+  } | null = null
 
   const payrollItemsPreview =
     useDailyReportInputItemsPreviewMutation()
@@ -163,6 +181,7 @@ export const useDailyReportEditDialog = (
     financeFields,
   } = useDailyReportFormFields({
     employees,
+    workDate: computed(() => formModel.workDate),
     customerOptions,
     siteOptions,
     jobOptions,
@@ -443,6 +462,10 @@ export const useDailyReportEditDialog = (
   const resetForm = () => {
     applyingDetail.value = true
 
+    preparationDefaultsSequence += 1
+    appliedPreparationDefaults = null
+    preparationDefaultsMessage.value = ''
+
     Object.assign(
       formModel,
       createEmptyDailyReportForm(),
@@ -469,6 +492,106 @@ export const useDailyReportEditDialog = (
     calculateWorkTimes()
     recalculateEstimatedPay()
     schedulePayrollItemPreview()
+  }
+
+  const applyPreparationDefaults = async () => {
+    if (
+      !visible.value
+      || formModel.id !== 0
+      || formModel.employeeId == null
+      || !formModel.workDate.trim()
+    ) {
+      preparationDefaultsMessage.value = ''
+      return
+    }
+
+    if (appliedPreparationDefaults) {
+      const previous = appliedPreparationDefaults
+      const previousValuesAreUnchanged =
+        formModel.customerId === previous.customerId
+        && formModel.customerSiteId === previous.customerSiteId
+        && formModel.workDescription === previous.workDescription
+
+      if (
+        previous.employeeId === formModel.employeeId
+        && previous.workDate === formModel.workDate
+      ) {
+        return
+      }
+
+      if (!previousValuesAreUnchanged) {
+        appliedPreparationDefaults = null
+        preparationDefaultsMessage.value = ''
+        return
+      }
+
+      applyingDetail.value = true
+      try {
+        formModel.customerId = null
+        formModel.customerSiteId = null
+        formModel.customerName = ''
+        formModel.siteName = ''
+        formModel.workDescription = ''
+        await nextTick()
+      } finally {
+        applyingDetail.value = false
+      }
+
+      appliedPreparationDefaults = null
+      preparationDefaultsMessage.value = ''
+    }
+
+    if (
+      formModel.customerId != null
+      || formModel.customerSiteId != null
+      || formModel.workDescription.trim()
+    ) {
+      return
+    }
+
+    const employeeId = formModel.employeeId
+    const workDate = formModel.workDate
+    const sequence = ++preparationDefaultsSequence
+    const defaults = await fetchDailyReportPreparationDefaults(
+      workDate,
+      employeeId,
+    ).catch(() => null)
+
+    if (
+      sequence !== preparationDefaultsSequence
+      || employeeId !== formModel.employeeId
+      || workDate !== formModel.workDate
+    ) {
+      return
+    }
+
+    if (defaults == null || !defaults.available) {
+      preparationDefaultsMessage.value = ''
+      return
+    }
+
+    applyingPreparationDefaults.value = true
+    applyingDetail.value = true
+    try {
+      formModel.customerId = defaults.customerId
+      formModel.customerSiteId = defaults.customerSiteId
+      formModel.customerName = defaults.customerName ?? ''
+      formModel.siteName = defaults.siteName ?? ''
+      formModel.workDescription = defaults.workDescription ?? ''
+      appliedPreparationDefaults = {
+        employeeId,
+        workDate,
+        customerId: defaults.customerId,
+        customerSiteId: defaults.customerSiteId,
+        workDescription: defaults.workDescription ?? '',
+      }
+      preparationDefaultsMessage.value =
+        '翌日準備の顧客・現場・作業内容を初期値へ反映しました。実績に合わせて変更できます。'
+      await nextTick()
+    } finally {
+      applyingDetail.value = false
+      applyingPreparationDefaults.value = false
+    }
   }
 
   watch(
@@ -640,6 +763,20 @@ export const useDailyReportEditDialog = (
       if (siteId !== oldSiteId) {
         clearBillingSelection()
       }
+    },
+  )
+
+  watch(
+    () => [
+      formModel.employeeId,
+      formModel.workDate,
+      formModel.id,
+    ],
+    () => {
+      if (applyingPreparationDefaults.value) {
+        return
+      }
+      void applyPreparationDefaults()
     },
   )
 
@@ -949,6 +1086,7 @@ export const useDailyReportEditDialog = (
     billingRateLoading,
     payrollItemsLoading,
     payrollItemsError,
+    preparationDefaultsMessage,
 
     applicableSiteBillingRates:
       applicableBillingRates,

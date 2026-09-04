@@ -6,6 +6,7 @@ import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
+import { formatYearMonth } from '@/shared/utils/DateUtils'
 import type { CustomerPaymentConfirmPayload, CustomerTransaction } from '../types/customerTypes'
 
 const props = defineProps<{
@@ -130,7 +131,7 @@ const rightFooterItems = computed<ToolbarItem[]>(() => [
     :right-footer-items="rightFooterItems"
   >
     <div v-if="transaction">
-      <div>対象月：{{ transaction.targetMonth }}</div>
+      <div>対象月：{{ formatYearMonth(transaction.targetMonth) }}</div>
       <div>請求金額：{{ billingAmount.toLocaleString() }}円</div>
     </div>
 

@@ -4,6 +4,9 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +27,6 @@ import com.project.backend.features.employee.repository.EmployeeContractReposito
 import com.project.backend.features.employee.repository.EmployeePayrollProfileRepository;
 import com.project.backend.features.employee.repository.EmployeeRepository;
 import com.project.backend.features.employee.repository.EmployeeResignationChecklistRepository;
-import com.project.backend.features.master.payrollitem.balance.PayrollItemBalanceSnapshot;
 
 import lombok.RequiredArgsConstructor;
 
@@ -43,8 +45,22 @@ public class EmployeeAdminService {
 
     @Transactional(readOnly = true)
     public List<EmployeeListItemResponse> findAll() {
-        return mapper.toListItemResponseList(
-                employeeRepository.findAllByDeletedAtIsNullOrderByIdAsc());
+        List<Employee> employees = employeeRepository.findAllByDeletedAtIsNullOrderByIdAsc();
+        Map<Long, EmployeeContract> contracts = contractRepository
+                .findByEmployeeIdInAndDeletedAtIsNull(
+                        employees.stream().map(Employee::getId).toList()
+                )
+                .stream()
+                .collect(Collectors.toMap(
+                        contract -> contract.getEmployee().getId(),
+                        Function.identity()
+                ));
+        return employees.stream()
+                .map(employee -> mapper.toListItemResponse(
+                        employee,
+                        contracts.get(employee.getId())
+                ))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -214,7 +230,6 @@ public class EmployeeAdminService {
 
         return mapper.toDetailResponse(
                 employee, resolvedPayrollProfile, resolvedContract,
-                PayrollItemBalanceSnapshot.untracked(),
                 payrollItemSettingService.findAll(employee.getId())
         );
     }

@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.project.backend.features.customer.entity.Customer;
 import com.project.backend.features.customer.repository.CustomerRepository;
+import com.project.backend.features.customer.enums.CustomerContractStatus;
 import com.project.backend.features.operation.monthly.dto.CustomerBillingPeriod;
 
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class CustomerBillingTargetService {
         );
         return customerRepository.findByDeletedAtIsNullOrderByIdAsc()
                 .stream()
+                .filter(customer -> customer.getContractFlag() == CustomerContractStatus.ACTIVE)
                 .filter(customer -> candidateIds.contains(customer.getId()))
                 .map(customer -> new Target(
                         customer,

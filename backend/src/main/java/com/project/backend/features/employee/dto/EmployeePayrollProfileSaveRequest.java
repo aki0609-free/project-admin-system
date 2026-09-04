@@ -11,8 +11,6 @@ import jakarta.validation.constraints.NotNull;
 public record EmployeePayrollProfileSaveRequest(
         @NotNull TaxCategory taxCategory,
         @Min(0) Integer taxDependentCount,
-        Boolean dependentFlag,
-        Boolean dependentOfOtherFlag,
         @DecimalMin("0.0") BigDecimal paidLeaveRemainingDays,
         Boolean incomeTaxCalcFlag,
         Boolean residentTaxCalcFlag,

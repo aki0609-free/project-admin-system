@@ -14,11 +14,16 @@ SELECT
     'ALLOWANCE' AS item_type,
     dra.allowance_code AS item_code,
     dra.allowance_name AS item_name,
+    COALESCE(am.display_order, 9000) AS display_order,
     SUM(dra.amount) AS item_value
 FROM daily_report dr
 JOIN daily_report_allowances dra
   ON dra.daily_report_id = dr.id
  AND dra.deleted_at IS NULL
+LEFT JOIN allowance_masters am
+  ON am.tenant_id = dr.tenant_id
+ AND am.id = dra.allowance_master_id
+ AND am.deleted_at IS NULL
 WHERE dr.deleted_at IS NULL
   AND dr.payment_date IS NOT NULL
 GROUP BY
@@ -26,7 +31,8 @@ GROUP BY
     dr.payment_date,
     dr.employee_id,
     dra.allowance_code,
-    dra.allowance_name
+    dra.allowance_name,
+    am.display_order
 
 UNION ALL
 
@@ -37,11 +43,16 @@ SELECT
     'DEDUCTION' AS item_type,
     drd.deduction_code AS item_code,
     drd.deduction_name AS item_name,
+    COALESCE(dm.display_order, 9000) AS display_order,
     SUM(drd.amount) AS item_value
 FROM daily_report dr
 JOIN daily_report_deductions drd
   ON drd.daily_report_id = dr.id
  AND drd.deleted_at IS NULL
+LEFT JOIN deduction_masters dm
+  ON dm.tenant_id = dr.tenant_id
+ AND dm.id = drd.deduction_master_id
+ AND dm.deleted_at IS NULL
 WHERE dr.deleted_at IS NULL
   AND dr.payment_date IS NOT NULL
 GROUP BY
@@ -49,7 +60,8 @@ GROUP BY
     dr.payment_date,
     dr.employee_id,
     drd.deduction_code,
-    drd.deduction_name;
+    drd.deduction_name,
+    dm.display_order;
 
 CREATE OR REPLACE VIEW vw_daily_pay_slip_item_ranked AS
 SELECT
@@ -60,7 +72,7 @@ SELECT
             source.payment_date,
             source.employee_id,
             source.item_type
-        ORDER BY source.item_code, source.item_name
+        ORDER BY source.display_order, source.item_code, source.item_name
     ) AS item_no
 FROM vw_daily_pay_slip_item_source source;
 

@@ -8,6 +8,7 @@ import SimpleTable from '@/shared/components/table/simple_table/SimpleTable.vue'
 import type { SimpleTableColumnDef } from '@/shared/components/table/simple_table/types/item/types'
 import type { SearchPanelFieldDef } from '@/shared/components/search/types/searchPanelTypes'
 import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
+import { formatYearMonth, formatYearMonthDay } from '@/shared/utils/DateUtils'
 import type { CustomerTransaction } from '../types/customerTypes'
 
 export type CustomerTransactionReviewRow = CustomerTransaction & {
@@ -52,11 +53,26 @@ const fields: SearchPanelFieldDef<Filter>[] = [
 ]
 
 const columns: SimpleTableColumnDef<CustomerTransactionReviewRow>[] = [
-  { title: '対象月', key: 'targetMonth', width: '120px' },
+  {
+    title: '対象月',
+    key: 'targetMonth',
+    width: '140px',
+    formatter: value => formatYearMonth(String(value ?? '')),
+  },
   { title: '顧客名', key: 'customerName', width: '220px' },
   { title: '請求額', key: 'billingAmount', width: '120px' },
-  { title: '入金予定日', key: 'expectedPaymentDate', width: '140px' },
-  { title: '入金日', key: 'confirmedPaymentDate', width: '140px' },
+  {
+    title: '入金予定日',
+    key: 'expectedPaymentDate',
+    width: '160px',
+    formatter: value => formatYearMonthDay(String(value ?? '')),
+  },
+  {
+    title: '入金日',
+    key: 'confirmedPaymentDate',
+    width: '160px',
+    formatter: value => formatYearMonthDay(String(value ?? '')),
+  },
   { title: '入金額', key: 'paidAmount', width: '120px' },
   { title: '手数料', key: 'fee', width: '100px' },
   { title: '合計', key: 'totalAmount', width: '120px' },

@@ -70,10 +70,12 @@ public class Employee extends BaseEntity {
     private String address;
 
     @Column(name = "dormitory_flag", nullable = false)
+    @Deprecated(forRemoval = false)
     private boolean dormitoryFlag = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "dormitory_type", length = 30)
+    @Deprecated(forRemoval = false)
     private DormitoryType dormitoryType;
 
     @Column(name = "active_flag", nullable = false)
@@ -85,6 +87,11 @@ public class Employee extends BaseEntity {
         this.activeFlag = true;
     }
 
+    /**
+     * 旧DB列を参照する移行テスト・データ補正専用。
+     * 新しい業務処理は動的な手当・控除設定を使用する。
+     */
+    @Deprecated(forRemoval = false)
     public void updateDormitory(boolean resident, DormitoryType type) {
         if (resident && type == null) {
             throw new IllegalArgumentException("入寮ありの場合は寮タイプを選択してください。");

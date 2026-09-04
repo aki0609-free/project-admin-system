@@ -19,6 +19,7 @@ V1では承認ワークフローを導入せず、登録データは承認済み
 - 貸付残高を超える返済は登録できない。
 - 返済開始後は借入元本を変更できない。
 - 一部返済済みで残高のある貸付は削除できない。有効解除で管理する。
+- 返済開始日は予定の確認用とし、V1では開始日前の返済も運用上許可する。
 
 ### 2.2 積立
 
@@ -46,6 +47,7 @@ V1では承認ワークフローを導入せず、登録データは承認済み
 - 画面と保存APIは、残高・承認状態・承認コメントを入力として受け付けない。
 - 貯蓄率は画面・APIの両方で0%以上100%以下に制限する。
 - 一覧と編集画面にDB採番IDを業務項目として表示しない。
+- 「残高履歴」タブで貸付・貯蓄の増減、変更前後残高、根拠日報を確認できる。
 - 入力エラーは `EMPLOYEE_FINANCE_INVALID_REQUEST` と業務メッセージを返す。
 
 ### 3.1 残高更新の境界
@@ -60,7 +62,7 @@ V1では承認ワークフローを導入せず、登録データは承認済み
 現在の参考値は次の式で算出している。
 
 ```text
-最低給与額 × 積立率 ÷ 100
+積立計算基礎額 × 積立率 ÷ 100
 ```
 
 実際の月次給与額を基準にした積立計算は、給与計算・月次締め側で確定する。
@@ -79,6 +81,7 @@ backend/src/main/resources/sql/employee/finance_foundation_v1.sql
 - 有効な貸付・積立データをV1の承認済み状態へ統一
 - 有効データ検索用インデックスを追加
 - 既存データは削除しない
+- `employee_finance_transaction`を作成し、既存残高は初期残高として1回だけ登録
 
 AWS反映時は次の一括スクリプトに含まれる。
 
@@ -99,6 +102,7 @@ infrastructure/scripts/database/apply_runtime_schema_upgrade.sh
 9. 保存APIへ残高・承認情報を送信できない。
 10. 論理削除済みの有効データを残高照会・更新の対象にしない。
 11. 貯蓄率が0%未満または100%超の場合は画面・APIで拒否する。
+12. 貸付登録・元本訂正・返済・積立・取消が残高履歴へ記録される。
 
 自動テスト：
 
@@ -107,13 +111,13 @@ EmployeeLoanServiceTest
 EmployeeSavingServiceTest
 EmployeeFinanceBalanceCommandServiceTest
 EmployeeFinanceQueryServiceTest
+EmployeeFinanceTransactionServiceTest
 employee-loan-savings-ui.spec.ts
 ```
 
 ## 7. V2候補
 
 - 承認ワークフロー
-- 貸付・積立の入出金明細台帳
 - 残高調整専用画面と調整理由の監査記録
 - 給与計算結果を基準とした積立額の自動確定
 - 複数貸付を許可する場合の返済充当順序

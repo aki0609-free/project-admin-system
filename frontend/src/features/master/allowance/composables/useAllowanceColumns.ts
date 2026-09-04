@@ -60,15 +60,8 @@ export const useAllowanceColumns = () => {
 
     { title: '課税', key: 'taxable', width: '200px', type: 'checkbox', filter: { type: 'checkbox' } },
     {
-      title: '日払い表示',
+      title: '日報に表示',
       key: 'showOnDailyStatement',
-      width: '200px',
-      type: 'checkbox',
-      filter: { type: 'checkbox' },
-    },
-    {
-      title: '月次表示',
-      key: 'showOnMonthlyStatement',
       width: '200px',
       type: 'checkbox',
       filter: { type: 'checkbox' },

@@ -39,6 +39,7 @@ public interface EmployeePayrollItemTransactionRepository
               AND item.balance_effect = :balanceEffect
               AND item.status = 'CONFIRMED'
               AND item.transaction_date BETWEEN :from AND :through
+              AND (:excludeTransactionId IS NULL OR item.id <> :excludeTransactionId)
               AND item.deleted_at IS NULL
             """, nativeQuery = true)
     BigDecimal sumConfirmedQuantityByEffect(
@@ -48,6 +49,7 @@ public interface EmployeePayrollItemTransactionRepository
             @Param("masterId") Long masterId,
             @Param("balanceEffect") String balanceEffect,
             @Param("from") LocalDate from,
-            @Param("through") LocalDate through
+            @Param("through") LocalDate through,
+            @Param("excludeTransactionId") Long excludeTransactionId
     );
 }

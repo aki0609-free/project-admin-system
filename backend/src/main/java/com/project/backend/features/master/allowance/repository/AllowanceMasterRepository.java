@@ -27,7 +27,4 @@ public interface AllowanceMasterRepository extends JpaRepository<AllowanceMaster
             String tenantId,
             List<AllowanceUnit> allowanceUnits
     );
-    List<AllowanceMaster> findByTenantIdAndShowOnMonthlyStatementTrueAndEnabledTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
-            String tenantId
-    );
 }

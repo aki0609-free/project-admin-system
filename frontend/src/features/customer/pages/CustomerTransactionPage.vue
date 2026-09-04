@@ -83,19 +83,20 @@ async function handleConfirmPayment(payload: CustomerPaymentConfirmPayload) {
     :right-toolbar-items="toolbarItems"
   >
     <div class="d-flex flex-column ga-4">
-      <div class="customer-transaction-controls">
+      <v-card variant="outlined" rounded="lg" class="customer-transaction-controls">
         <v-select
           v-model="selectedCustomerId"
           :items="customerOptions"
           item-title="title"
           item-value="value"
           label="顧客"
+          variant="outlined"
           density="compact"
           hide-details
           clearable
           style="max-width: 360px"
         />
-      </div>
+      </v-card>
 
       <v-alert v-if="transactionsQuery.isError.value" type="error" variant="tonal">
         取引情報の取得に失敗しました。
@@ -129,6 +130,8 @@ async function handleConfirmPayment(payload: CustomerPaymentConfirmPayload) {
   grid-template-columns: minmax(240px, 360px) minmax(0, 1fr);
   align-items: center;
   gap: 12px;
+  padding: 16px;
+  background: #ffffff;
 }
 
 @media (max-width: 720px) {

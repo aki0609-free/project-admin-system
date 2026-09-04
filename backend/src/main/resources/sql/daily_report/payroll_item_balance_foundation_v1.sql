@@ -399,17 +399,20 @@ SET detail_view_type = 'NONE',
     updated_at = NOW(6)
 WHERE detail_view_type = '';
 
--- 既存寮費明細へ、日報に保存済みの徴収日数を移行する。
+-- 既存寮費明細は、実際に徴収した金額を残高消化量として移行する。
 UPDATE daily_report_deductions deduction_item
 JOIN daily_report report ON report.id = deduction_item.daily_report_id
 SET deduction_item.calculated_amount = deduction_item.amount,
-    deduction_item.quantity = report.dormitory_charge_days,
-    deduction_item.balance_unit = 'DAYS',
+    deduction_item.quantity = deduction_item.amount,
+    deduction_item.balance_unit = 'AMOUNT',
     deduction_item.updated_at = NOW(6)
 WHERE deduction_item.deduction_code = 'DORMITORY_FEE'
-  AND deduction_item.quantity IS NULL;
+  AND (deduction_item.quantity IS NULL
+       OR deduction_item.balance_unit IS NULL
+       OR deduction_item.balance_unit <> 'AMOUNT');
 
--- 寮費をRule基準値＋理由付き上書き可能にする。
+-- 寮費は当日に実際に徴収した金額を入力する。
+-- 当月の請求額は残高ポリシーが「適用日数×従業員別日額」で生成する。
 INSERT INTO deduction_masters (
     deduction_code, deduction_name, deduction_type, calculation_type,
     rule_name, default_amount, allow_manual_input,
@@ -418,10 +421,10 @@ INSERT INTO deduction_masters (
     carry_to_monthly_settlement, display_order, enabled, note,
     tenant_id, created_at, updated_at, deleted_at
 )
-SELECT 'DORMITORY_FEE', '寮費', 'COMPANY', 'AUTO',
-       'DORMITORY_DAILY_FEE', 0, TRUE,
+SELECT 'DORMITORY_FEE', '寮費', 'COMPANY', 'MANUAL',
+       NULL, 0, TRUE,
        'BOTH', 'NONE', TRUE, TRUE, TRUE, 110, TRUE,
-       '日次徴収・残日数繰越対象', 'default', NOW(6), NOW(6), NULL
+       '日次実徴収額を入力し、未徴収金額を翌月へ繰越', 'default', NOW(6), NOW(6), NULL
 WHERE NOT EXISTS (
     SELECT 1 FROM deduction_masters
     WHERE tenant_id = 'default' AND deduction_code = 'DORMITORY_FEE'
@@ -429,9 +432,10 @@ WHERE NOT EXISTS (
 );
 
 UPDATE deduction_masters
-SET calculation_type = 'AUTO',
-    rule_name = 'DORMITORY_DAILY_FEE',
+SET calculation_type = 'MANUAL',
+    rule_name = NULL,
     allow_manual_input = TRUE,
+    note = '日次実徴収額を入力し、未徴収金額を翌月へ繰越',
     updated_at = NOW(6)
 WHERE deduction_code = 'DORMITORY_FEE'
   AND deleted_at IS NULL;
@@ -452,8 +456,8 @@ INSERT INTO payroll_item_balance_policy (
     tenant_id, created_at, updated_at, deleted_at
 )
 SELECT 'DEDUCTION', deduction.id, deduction.deduction_code, deduction.deduction_name,
-       'DAYS', TRUE, 'DAILY_REPORT',
-       'MONTHLY', 'CALENDAR_DAYS_IN_ENROLLMENT',
+       'AMOUNT', TRUE, 'DAILY_REPORT',
+       'MONTHLY', 'CALENDAR_DAYS_TIMES_PARAMETER:dormitoryDailyAmount',
        TRUE, FALSE, TRUE,
        deduction.tenant_id, NOW(6), NOW(6), NULL
 FROM deduction_masters deduction
@@ -597,6 +601,28 @@ WHERE policy.target_type = 'DEDUCTION'
   AND enrollment.deleted_at IS NULL
   AND JSON_EXTRACT(enrollment.settings_json, '$.inputSource') IS NULL;
 
+-- 既存の従業員別設定にも、その時点の日額を保存する。
+-- 残高計算はこの有効期間付き設定を使うため、将来マスターの日額が変わっても
+-- 過去月の計算値を遡って書き換えない。
+UPDATE employee_payroll_item_enrollment enrollment
+JOIN payroll_item_balance_policy policy ON policy.id = enrollment.balance_policy_id
+JOIN dormitory_fee_setting fee
+  ON fee.tenant_id = enrollment.tenant_id
+ AND fee.dormitory_type = JSON_UNQUOTE(
+        JSON_EXTRACT(enrollment.settings_json, '$.dormitoryType')
+    )
+ AND fee.active_flag = TRUE
+ AND fee.deleted_at IS NULL
+SET enrollment.settings_json = JSON_SET(
+        COALESCE(enrollment.settings_json, JSON_OBJECT()),
+        '$.dormitoryDailyAmount', CAST(fee.daily_amount AS CHAR)
+    ),
+    enrollment.updated_at = NOW(6)
+WHERE policy.target_type = 'DEDUCTION'
+  AND policy.target_code = 'DORMITORY_FEE'
+  AND policy.deleted_at IS NULL
+  AND enrollment.deleted_at IS NULL;
+
 -- 既に入寮中の従業員は、基盤適用日から自動的に対象とする。
 INSERT INTO employee_payroll_item_enrollment (
     employee_id, balance_policy_id, effective_from, effective_to, settings_json,
@@ -604,7 +630,10 @@ INSERT INTO employee_payroll_item_enrollment (
 )
 SELECT employee.id, policy.id,
        CAST(DATE_FORMAT(CURRENT_DATE, '%Y-%m-01') AS DATE), NULL,
-       JSON_OBJECT('dormitoryType', employee.dormitory_type),
+       JSON_OBJECT(
+           'dormitoryType', employee.dormitory_type,
+           'dormitoryDailyAmount', CAST(fee.daily_amount AS CHAR)
+       ),
        employee.tenant_id, NOW(6), NOW(6), NULL
 FROM employee
 JOIN payroll_item_balance_policy policy
@@ -612,6 +641,11 @@ JOIN payroll_item_balance_policy policy
  AND policy.target_type = 'DEDUCTION'
  AND policy.target_code = 'DORMITORY_FEE'
  AND policy.deleted_at IS NULL
+JOIN dormitory_fee_setting fee
+  ON fee.tenant_id = employee.tenant_id
+ AND fee.dormitory_type = employee.dormitory_type
+ AND fee.active_flag = TRUE
+ AND fee.deleted_at IS NULL
 WHERE employee.dormitory_flag = TRUE
   AND employee.deleted_at IS NULL
   AND NOT EXISTS (
@@ -632,9 +666,9 @@ INSERT INTO deduction_masters (
     carry_to_monthly_settlement, display_order, enabled, note,
     tenant_id, created_at, updated_at, deleted_at
 )
-SELECT 'MOBILE_RENTAL', '携帯電話貸出料', 'COMPANY', 'FIXED',
-       0, TRUE, 'MONTHLY', 'NONE', FALSE, TRUE, TRUE, 120, TRUE,
-       '明細到着時に従業員別控除取引として登録', 'default', NOW(6), NOW(6), NULL
+SELECT 'MOBILE_RENTAL', '携帯電話貸出料', 'COMPANY', 'MANUAL',
+       0, TRUE, 'BOTH', 'NONE', TRUE, TRUE, TRUE, 120, TRUE,
+       '請求明細を残高へ加算し、日報で実徴収額を登録', 'default', NOW(6), NOW(6), NULL
 WHERE NOT EXISTS (
     SELECT 1 FROM deduction_masters
     WHERE tenant_id = 'default' AND deduction_code = 'MOBILE_RENTAL'
@@ -642,12 +676,14 @@ WHERE NOT EXISTS (
 );
 
 UPDATE deduction_masters
-SET deduction_unit = 'MONTHLY',
-    show_on_daily_statement = FALSE,
+SET calculation_type = 'MANUAL',
+    default_amount = 0,
+    deduction_unit = 'BOTH',
+    show_on_daily_statement = TRUE,
     show_on_monthly_statement = TRUE,
     carry_to_monthly_settlement = TRUE,
     allow_manual_input = TRUE,
-    note = '明細到着時に従業員別控除取引として登録',
+    note = '請求明細を残高へ加算し、日報で実徴収額を登録',
     updated_at = NOW(6)
 WHERE deduction_code = 'MOBILE_RENTAL'
   AND deleted_at IS NULL;
@@ -667,7 +703,7 @@ INSERT INTO payroll_item_balance_policy (
     tenant_id, created_at, updated_at, deleted_at
 )
 SELECT 'DEDUCTION', deduction.id, deduction.deduction_code, deduction.deduction_name,
-       'DAYS', FALSE, 'TRANSACTION',
+       'AMOUNT', TRUE, 'DAILY_REPORT_AND_TRANSACTION',
        'MANUAL', 'MANUAL_TRANSACTION',
        TRUE, FALSE, TRUE,
        deduction.tenant_id, NOW(6), NOW(6), NULL
@@ -677,9 +713,11 @@ WHERE deduction.deduction_code = 'MOBILE_RENTAL'
 ON DUPLICATE KEY UPDATE
     target_master_id = VALUES(target_master_id),
     display_name = VALUES(display_name),
+    balance_unit = VALUES(balance_unit),
     balance_tracking_flag = VALUES(balance_tracking_flag),
     input_source = VALUES(input_source),
     accrual_frequency = VALUES(accrual_frequency),
     accrual_rule_name = VALUES(accrual_rule_name),
+    carry_forward_flag = TRUE,
     active_flag = TRUE,
     updated_at = NOW(6);

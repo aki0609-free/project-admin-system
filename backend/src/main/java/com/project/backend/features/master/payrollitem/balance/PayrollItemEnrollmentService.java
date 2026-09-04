@@ -5,14 +5,17 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
 import com.project.backend.app.tenant.context.TenantContext;
+import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
+import com.project.backend.features.master.payrollitem.parameter.PayrollItemRuleParameterResolutionContext;
+import com.project.backend.features.master.payrollitem.parameter.PayrollItemRuleParameterResolverRegistry;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +28,7 @@ public class PayrollItemEnrollmentService {
     private final Clock clock;
     private final ObjectMapper objectMapper;
     private final PayrollItemParameterDefinitionRepository parameterDefinitionRepository;
+    private final PayrollItemRuleParameterResolverRegistry parameterResolverRegistry;
 
     @Transactional
     public void synchronize(
@@ -73,13 +77,13 @@ public class PayrollItemEnrollmentService {
             );
         }
 
-        Map<String, String> validatedParameters = enabled
-                ? validateParameters(policy, parameters)
-                : Map.of();
-
         LocalDate operationDate = effectiveFrom == null
                 ? LocalDate.now(clock)
                 : effectiveFrom;
+        Map<String, String> validatedParameters = enabled
+                ? validateParameters(
+                        employeeId, policy, parameters, operationDate)
+                : Map.of();
         var current = enrollmentRepository
                 .findFirstByEmployeeIdAndBalancePolicyIdAndEffectiveToIsNullAndDeletedAtIsNullOrderByEffectiveFromDesc(
                         employeeId, policy.getId()
@@ -171,8 +175,10 @@ public class PayrollItemEnrollmentService {
     }
 
     private Map<String, String> validateParameters(
+            Long employeeId,
             PayrollItemBalancePolicy policy,
-            Map<String, String> parameters
+            Map<String, String> parameters,
+            LocalDate effectiveFrom
     ) {
         Map<String, String> values = parameters == null
                 ? new java.util.LinkedHashMap<>()
@@ -199,7 +205,31 @@ public class PayrollItemEnrollmentService {
             }
             validateType(definition, value);
         }
+        for (PayrollItemParameterDefinition definition : definitions) {
+            if (definition.getRuleValueResolverKey() == null
+                    || definition.getRuleValueResolverKey().isBlank()) {
+                continue;
+            }
+            Object resolved = parameterResolverRegistry.resolve(
+                    definition.getRuleValueResolverKey(),
+                    new PayrollItemRuleParameterResolutionContext(
+                            employeeId, effectiveFrom, values,
+                            policy.getId(), null
+                    )
+            );
+            String resolvedValue = toParameterText(resolved);
+            validateType(definition, resolvedValue);
+            values.put(definition.getParameterKey(), resolvedValue);
+        }
         return values;
+    }
+
+    private String toParameterText(Object value) {
+        if (value == null) return null;
+        if (value instanceof java.math.BigDecimal decimal) {
+            return decimal.stripTrailingZeros().toPlainString();
+        }
+        return String.valueOf(value);
     }
 
     private void validateType(PayrollItemParameterDefinition definition, String value) {

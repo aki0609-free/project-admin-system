@@ -16,7 +16,6 @@ public record EmployeeContractQueryResponse(
         String employeeName,
         LocalDate contractStartDate,
         LocalDate contractEndDate,
-        boolean renewalFlag,
         SalaryType salaryType,
         PaymentCycle paymentCycle,
         BigDecimal monthlySalary,

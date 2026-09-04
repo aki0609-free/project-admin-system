@@ -1,6 +1,51 @@
 -- ProjectAdmin V1 業務設定（退職・締日・締め帳票）
 -- MySQL 8.x / 既存データを削除しない追加DDL
 
+-- 業務処理と管理画面が同じ給与締日を参照できるよう、未設定テナントへ
+-- 月末締め・翌月25日払いを初期配置する。管理画面から後で変更できる。
+INSERT INTO closing_setting (
+    setting_code,
+    closing_day_type,
+    closing_day_value,
+    closing_month_offset,
+    payment_day_type,
+    payment_day_value,
+    payment_month_offset,
+    active_flag,
+    tenant_id,
+    created_at,
+    updated_at,
+    deleted_at
+)
+SELECT
+    'PAYROLL',
+    'END_OF_MONTH',
+    NULL,
+    0,
+    'DAY_OF_MONTH',
+    25,
+    1,
+    TRUE,
+    tenants.tenant_id,
+    NOW(6),
+    NOW(6),
+    NULL
+FROM (
+    SELECT 'default' AS tenant_id
+    UNION
+    SELECT DISTINCT tenant_id FROM users WHERE deleted_at IS NULL
+    UNION
+    SELECT DISTINCT tenant_id FROM employee WHERE deleted_at IS NULL
+) tenants
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM closing_setting setting_row
+    WHERE setting_row.tenant_id = tenants.tenant_id
+      AND setting_row.setting_code = 'PAYROLL'
+      AND setting_row.active_flag = TRUE
+      AND setting_row.deleted_at IS NULL
+);
+
 CREATE TABLE IF NOT EXISTS employee_resignation_setting (
     id BIGINT NOT NULL AUTO_INCREMENT,
     setting_code VARCHAR(50) NOT NULL,

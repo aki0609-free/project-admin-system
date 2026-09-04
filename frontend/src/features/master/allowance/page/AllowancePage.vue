@@ -76,7 +76,6 @@ function createEmptyAllowance(): AllowanceMaster {
 
     taxable: true,
     showOnDailyStatement: false,
-    showOnMonthlyStatement: true,
     displayOrder: null,
     enabled: true,
     note: '',

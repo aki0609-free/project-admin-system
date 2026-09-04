@@ -101,8 +101,6 @@ export function toDeductionMaster(
       maxAmount: response.maxAmount,
 
       showOnDailyStatement: response.showOnDailyStatement,
-      showOnMonthlyStatement: response.showOnMonthlyStatement,
-      carryToMonthlySettlement: response.carryToMonthlySettlement,
       displayOrder: response.displayOrder,
       enabled: response.enabled,
       note: response.note,
@@ -128,8 +126,6 @@ export function toDeductionMaster(
     maxAmount: response.maxAmount,
 
     showOnDailyStatement: response.showOnDailyStatement ?? false,
-    showOnMonthlyStatement: response.showOnMonthlyStatement ?? true,
-    carryToMonthlySettlement: response.carryToMonthlySettlement ?? false,
     displayOrder: response.displayOrder,
     enabled: response.enabled ?? true,
     note: toStringValue(response.note),
@@ -168,8 +164,6 @@ export function toDeductionSaveRequest(
     maxAmount: payload.maxAmount,
 
     showOnDailyStatement: payload.showOnDailyStatement,
-    showOnMonthlyStatement: payload.showOnMonthlyStatement,
-    carryToMonthlySettlement: payload.carryToMonthlySettlement,
     displayOrder: payload.displayOrder,
     enabled: payload.enabled,
     note: toNullableString(payload.note),

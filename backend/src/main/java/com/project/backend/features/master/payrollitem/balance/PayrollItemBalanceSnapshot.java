@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public record PayrollItemBalanceSnapshot(
         boolean tracked,
         BalanceUnit unit,
+        boolean advanceConsumptionAllowed,
         BigDecimal openingQuantity,
         BigDecimal accruedQuantity,
         BigDecimal consumedQuantity,
@@ -12,7 +13,7 @@ public record PayrollItemBalanceSnapshot(
 ) {
     public static PayrollItemBalanceSnapshot untracked() {
         return new PayrollItemBalanceSnapshot(
-                false, null, BigDecimal.ZERO, BigDecimal.ZERO,
+                false, null, false, BigDecimal.ZERO, BigDecimal.ZERO,
                 BigDecimal.ZERO, BigDecimal.ZERO
         );
     }

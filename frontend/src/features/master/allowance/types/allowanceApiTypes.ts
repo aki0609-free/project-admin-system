@@ -22,7 +22,6 @@ export type AllowanceListItemResponse = {
 
   taxable: boolean | null
   showOnDailyStatement: boolean | null
-  showOnMonthlyStatement: boolean | null
   displayOrder: number | null
   enabled: boolean | null
   note: string | null
@@ -49,7 +48,6 @@ export type AllowanceSaveRequest = {
 
   taxable: boolean
   showOnDailyStatement: boolean
-  showOnMonthlyStatement: boolean
   displayOrder: number | null
   enabled: boolean
   note: string | null

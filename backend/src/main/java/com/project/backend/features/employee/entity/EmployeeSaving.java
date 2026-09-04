@@ -27,7 +27,7 @@ public class EmployeeSaving extends BaseEntity {
     private BigDecimal percentage = BigDecimal.ZERO;
 
     @Column(name = "min_salary_threshold", precision = 12, scale = 2)
-    private BigDecimal minSalaryThreshold = BigDecimal.ZERO;
+    private BigDecimal savingCalculationBaseAmount = BigDecimal.ZERO;
 
     @Column(name = "current_balance", precision = 12, scale = 2, nullable = false)
     private BigDecimal currentBalance = BigDecimal.ZERO;

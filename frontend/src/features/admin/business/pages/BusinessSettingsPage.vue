@@ -171,7 +171,7 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
 <template>
   <ListDetailPageLayout
     title="業務管理"
-    description="退職処理、給与締日、月次締め帳票、年度バックアップ、寮費、外部リンクを管理します。"
+    description="退職処理、給与締日、月次締め帳票、年度バックアップ、外部リンクを管理します。"
   >
     <v-alert
       v-if="errorMessage"
@@ -316,7 +316,7 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
                       v-model.number="item.backupRetentionYears"
                       type="number"
                       min="1"
-                      max="100"
+                      max="7"
                       placeholder="未設定"
                       suffix="年"
                       hide-details

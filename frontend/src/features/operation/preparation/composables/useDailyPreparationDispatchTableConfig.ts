@@ -61,8 +61,10 @@ export const useDailyPreparationDispatchTableConfig = (
       key: 'vehicleCount',
       width: '200px',
       editable: true,
-      type: 'text',
-      filter: { type: 'text' },
+      type: 'number',
+      min: 0,
+      step: 1,
+      filter: { type: 'number' },
     },
     {
       title: '備考',
