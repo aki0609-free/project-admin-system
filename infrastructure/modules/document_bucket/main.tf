@@ -78,6 +78,96 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
       noncurrent_days = 30
     }
   }
+
+  rule {
+    id     = "expire-company-document-noncurrent-versions"
+    status = "Enabled"
+
+    filter {
+      prefix = "documents/general/"
+    }
+
+    # 現行ファイルは削除せず、差し替え・削除前の旧版だけを1年間保持する。
+    noncurrent_version_expiration {
+      noncurrent_days = 365
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+  }
+
+  rule {
+    id     = "expire-generated-report-noncurrent-versions"
+    status = "Enabled"
+
+    filter {
+      prefix = "documents/generated-reports/"
+    }
+
+    # 確定帳票は年次バックアップへ保存する。ここでは同一キーの旧版だけを整理する。
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+  }
+
+  rule {
+    id     = "expire-template-noncurrent-versions"
+    status = "Enabled"
+
+    filter {
+      prefix = "documents/templates/"
+    }
+
+    # 誤更新から復元できるようテンプレート旧版は1年間保持する。
+    noncurrent_version_expiration {
+      noncurrent_days = 365
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+  }
+
+  rule {
+    id     = "expire-import-script-noncurrent-versions"
+    status = "Enabled"
+
+    filter {
+      prefix = "imports/scripts/"
+    }
+
+    # 実行資産の追跡・復元用に取込スクリプト旧版を1年間保持する。
+    noncurrent_version_expiration {
+      noncurrent_days = 365
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+  }
+
+  rule {
+    id     = "expire-system-backup-noncurrent-versions"
+    status = "Enabled"
+
+    filter {
+      prefix = "documents/backups/system/"
+    }
+
+    # 現行バックアップは維持し、同じキーへ再生成された場合の旧版だけを整理する。
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
+
+    expiration {
+      expired_object_delete_marker = true
+    }
+  }
 }
 
 data "aws_iam_policy_document" "this" {

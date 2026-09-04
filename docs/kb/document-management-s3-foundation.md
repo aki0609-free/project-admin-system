@@ -31,7 +31,7 @@ ProjectAdminSystem V1の管理者向け書類管理機能において、ロー�
 
 ```text
 documents/
-├── general/                    # 自由書類
+├── general/                    # 会社書類
 ├── generated-reports/         # システム生成帳票
 ├── backups/
 │   ├── reports/               # 年次帳票バックアップ
@@ -59,7 +59,7 @@ FileManager自体は`SYS_ADMIN`ロールだけが利用できる。
 
 | 領域 | 閲覧 | 検索 | 詳細 | DL | UP | フォルダ作成 | コピー | 移動 | 名称変更 | 削除 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 自由書類 | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| 会社書類 | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
 | 生成帳票 | ○ | ○ | ○ | ○ | × | × | × | × | × | × |
 | バックアップ | ○ | ○ | ○ | ○ | × | × | × | × | × | × |
 | テンプレート | ○ | ○ | ○ | ○ | × | × | × | × | × | × |
@@ -176,6 +176,8 @@ spring:
 - S3一覧はページングへ対応し、1000オブジェクトを超えても処理できる
 - APIレスポンスでは物理S3キーの`documents/{area}/`部分を隠す
 - S3 CopyObjectのコピー元キーは日本語と空白を含めてURLエンコードする
+- S3 Versioningを有効にし、誤更新・誤削除から一定期間復元できるようにする
+- 非現行Versionは領域別Lifecycleで整理し、現行ファイルと7年保存帳票は保護する
 - FileManagerの操作失敗は画面内に表示し、成功メッセージは4秒で自動的に閉じる
 - 管理画面共通のページヘッダー・余白を使用し、FileManager本体は特殊画面として維持する
 
@@ -211,6 +213,21 @@ document-management-ui.spec.ts
 - ローカル画面でフォルダ作成、名称変更、削除
 - バックアップ領域で更新系ボタンが表示されないこと
 
+### 8.1 S3 Versioningと保持期間
+
+Versioningは同じS3キーを更新・削除した場合に、直前の内容を非現行Versionとして残す機能である。書類管理画面にVersion一覧や復元UIは設けず、障害・誤操作時にAWS管理者が復元する。
+
+| 領域 | 現行ファイル | 非現行Version |
+|---|---|---:|
+| 会社書類 `documents/general/` | 自動削除しない | 365日 |
+| 生成帳票 `documents/generated-reports/` | 自動削除しない | 90日 |
+| テンプレート `documents/templates/` | 自動削除しない | 365日 |
+| 取込スクリプト `imports/scripts/` | 自動削除しない | 365日 |
+| システムバックアップ `documents/backups/system/` | 自動削除しない | 90日 |
+| 年次帳票バックアップ `documents/backups/reports/` | 2557日（7年を下回らない） | 現行期限到来後30日 |
+
+Lifecycleは現行ファイルの通常利用を妨げない。会社書類を画面で削除した場合もVersioningにより削除マーカーが付くため、保持期間内ならAWS管理者による復元が可能である。
+
 ローカル起動：
 
 ```bash
@@ -232,7 +249,7 @@ Dockerビルドでは、ライセンスキーを`ARG`や`ENV`へ設定しない�
 
 Docker上のViteビルドはSyncfusion追加後のメモリ使用量を考慮し、`NODE_OPTIONS=--max-old-space-size=4096`を設定している。
 
-### 8.1 AWS DEV実環境確認
+### 8.2 AWS DEV実環境確認
 
 2026-07-28にCloudflare Access経由のAWS DEVで確認した。
 
@@ -242,7 +259,7 @@ Docker上のViteビルドはSyncfusion追加後のメモリ使用量を考慮し
 - Actuator：`UP`
 - backend再起動回数：0
 
-自由書類で確認した操作：
+会社書類で確認した操作：
 
 1. FileManagerから検証フォルダを作成
 2. `documents/general/{検証フォルダ}/`のS3ディレクトリマーカーを確認
