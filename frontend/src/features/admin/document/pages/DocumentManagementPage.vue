@@ -194,6 +194,35 @@ const contextMenuSettings = computed<ContextMenuSettingsModel>(() => ({
     : ['SortBy', 'View', 'Refresh', '|', 'Details', 'SelectAll'],
 }))
 
+const detailsViewSettings = {
+  columnResizing: true,
+  columns: [
+    {
+      field: 'name',
+      headerText: '名前',
+      minWidth: 120,
+      template: '<span class="e-fe-text">${name}</span>',
+      customAttributes: { class: 'e-fe-grid-name' },
+    },
+    {
+      field: '_fm_modified',
+      headerText: '更新日時',
+      type: 'dateTime',
+      format: 'yyyy年M月d日 HH:mm',
+      minWidth: 150,
+      width: '210',
+    },
+    {
+      field: 'size',
+      headerText: 'サイズ',
+      minWidth: 90,
+      width: '110',
+      template: '<span class="e-fe-size">${size}</span>',
+      format: 'n2',
+    },
+  ],
+}
+
 function setAuthorizationHeader(args: BeforeSendEventArgs | BeforeDownloadEventArgs) {
   const settings = args.ajaxSettings as MutableAjaxSettings | undefined
   if (!settings) return
@@ -388,6 +417,7 @@ onBeforeUnmount(() => {
           :ajax-settings="ajaxSettings"
           :toolbar-settings="toolbarSettings"
           :context-menu-settings="contextMenuSettings"
+          :details-view-settings="detailsViewSettings"
           :navigation-pane-settings="{ visible: true, minWidth: '220px' }"
           :upload-settings="{
             autoUpload: true,
