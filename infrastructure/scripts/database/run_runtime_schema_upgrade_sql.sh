@@ -212,6 +212,67 @@ if [[ "${deduction_master_verification}" != "10:0:1:1" ]]; then
   exit 1
 fi
 
+tax_import_verification="$(
+  run_mysql "" --batch --skip-column-names --execute "
+    SELECT CONCAT(
+      (SELECT COUNT(*)
+       FROM import_target
+       WHERE tenant_id = 'default'
+         AND target_code IN (
+           'IMPORT_INCOME_TAX_TABLE',
+           'IMPORT_HEALTH_INSURANCE_RATE',
+           'IMPORT_CARE_INSURANCE_RATE',
+           'IMPORT_PENSION_INSURANCE_RATE',
+           'IMPORT_EMPLOYMENT_INSURANCE_RATE',
+           'IMPORT_CHILD_CARE_SUPPORT_FUND',
+           'IMPORT_RESIDENT_TAX'
+         )
+         AND deleted_at IS NULL),
+      ':',
+      (SELECT COUNT(*)
+       FROM import_target
+       WHERE tenant_id = 'default'
+         AND target_code IN (
+           'IMPORT_INCOME_TAX_TABLE',
+           'IMPORT_HEALTH_INSURANCE_RATE',
+           'IMPORT_CARE_INSURANCE_RATE',
+           'IMPORT_PENSION_INSURANCE_RATE',
+           'IMPORT_EMPLOYMENT_INSURANCE_RATE',
+           'IMPORT_CHILD_CARE_SUPPORT_FUND',
+           'IMPORT_RESIDENT_TAX'
+         )
+         AND active_flag = TRUE
+         AND deleted_at IS NULL),
+      ':',
+      (SELECT COUNT(*)
+       FROM import_column column_def
+       JOIN import_target target ON target.id = column_def.target_id
+       WHERE target.tenant_id = 'default'
+         AND target.target_code IN (
+           'IMPORT_INCOME_TAX_TABLE',
+           'IMPORT_HEALTH_INSURANCE_RATE',
+           'IMPORT_CARE_INSURANCE_RATE',
+           'IMPORT_PENSION_INSURANCE_RATE',
+           'IMPORT_EMPLOYMENT_INSURANCE_RATE',
+           'IMPORT_CHILD_CARE_SUPPORT_FUND',
+           'IMPORT_RESIDENT_TAX'
+         )
+         AND target.deleted_at IS NULL
+         AND column_def.deleted_at IS NULL),
+      ':',
+      (SELECT COUNT(*)
+       FROM excel_book_master
+       WHERE tenant_id = 'default'
+         AND book_code = 'EMPLOYEE_LEDGER_VERIFY')
+    );
+  "
+)"
+
+if [[ "${tax_import_verification}" != "7:6:29:0" ]]; then
+  echo "Tax import or verification-ledger cleanup failed: ${tax_import_verification}" >&2
+  exit 1
+fi
+
 closing_notice_backup_verification="$(
   run_mysql "" --batch --skip-column-names --execute "
     SELECT CONCAT(
