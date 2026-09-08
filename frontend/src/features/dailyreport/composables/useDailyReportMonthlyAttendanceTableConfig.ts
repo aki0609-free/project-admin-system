@@ -36,6 +36,9 @@ export type DailyReportMonthlyAttendanceTableRow = SimpleTableEditableRow & {
   totalWorkHours: number
   totalOvertimeHours: number
   totalNightWorkHours: number
+  totalHolidayWorkHours: number
+  paidLeaveRemainingDays: number
+  paidLeaveRemainingAfterUsedDays: number
 
   totalAllowanceAmount: number
   totalDeductionAmount: number
@@ -67,6 +70,9 @@ export const useDailyReportMonthlyAttendanceTableConfig = (
       totalWorkHours: item.totalWorkHours,
       totalOvertimeHours: item.totalOvertimeHours,
       totalNightWorkHours: item.totalNightWorkHours,
+      totalHolidayWorkHours: item.totalHolidayWorkHours,
+      paidLeaveRemainingDays: item.paidLeaveRemainingDays,
+      paidLeaveRemainingAfterUsedDays: item.paidLeaveRemainingAfterUsedDays,
 
       totalAllowanceAmount: item.totalAllowanceAmount,
       totalDeductionAmount: item.totalDeductionAmount,
@@ -89,6 +95,8 @@ export const useDailyReportMonthlyAttendanceTableConfig = (
 
       { title: '日報数', key: 'reportCount', width: '120px', filter: { type: 'text' } },
       { title: '有給日数', key: 'paidLeaveUsedDays', width: '120px', filter: { type: 'text' } },
+      { title: '有給期首残', key: 'paidLeaveRemainingDays', width: '140px', filter: { type: 'text' } },
+      { title: '有給使用後残', key: 'paidLeaveRemainingAfterUsedDays', width: '150px', filter: { type: 'text' } },
 
       {
         title: '通常時間',
@@ -107,6 +115,13 @@ export const useDailyReportMonthlyAttendanceTableConfig = (
       {
         title: '深夜時間',
         key: 'totalNightWorkHours',
+        width: '140px',
+        filter: { type: 'text' },
+        formatter: (value) => formatHours(value as string),
+      },
+      {
+        title: '休日時間',
+        key: 'totalHolidayWorkHours',
         width: '140px',
         filter: { type: 'text' },
         formatter: (value) => formatHours(value as string),

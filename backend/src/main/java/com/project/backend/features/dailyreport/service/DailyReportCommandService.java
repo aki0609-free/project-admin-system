@@ -21,6 +21,7 @@ import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.employee.repository.EmployeeRepository;
 import com.project.backend.features.employee.service.EmployeeFinanceBalanceCommandService;
+import com.project.backend.features.employee.service.EmployeePaidLeaveBalanceCommandService;
 import com.project.backend.features.employee.service.EmployeeWorkEligibilityPolicy;
 
 import lombok.RequiredArgsConstructor;
@@ -41,10 +42,12 @@ public class DailyReportCommandService {
     private final DailyReportDeductionCommandService deductionCommandService;
 
     private final EmployeeFinanceBalanceCommandService financeBalanceCommandService;
+    private final EmployeePaidLeaveBalanceCommandService paidLeaveBalanceCommandService;
     private final DailyReportEstimatedPayService estimatedPayService;
     private final DailyReportBillingRateService billingRateService;
     private final DailyReportInputItemService inputItemService;
     private final EmployeeWorkEligibilityPolicy workEligibilityPolicy;
+    private final DailyReportWorkTimeCalculator workTimeCalculator;
     private final Clock clock;
 
     public DailyReportResponse create(
@@ -65,6 +68,7 @@ public class DailyReportCommandService {
                 entity,
                 employee
         );
+        applyCalculatedWorkTimes(entity, request);
 
         customerSiteResolver.applySnapshot(entity, request);
 
@@ -100,6 +104,10 @@ public class DailyReportCommandService {
                 saved.getId(),
                 saved.getWorkDate()
         );
+        paidLeaveBalanceCommandService.applyUsageDiff(
+                employee.getId(),
+                nvl(saved.getPaidLeaveDays())
+        );
 
         return mapper.toResponse(saved);
     }
@@ -127,6 +135,9 @@ public class DailyReportCommandService {
         BigDecimal oldLoanRepaymentAmount =
                 nvl(entity.getLoanRepaymentAmount());
 
+        BigDecimal oldPaidLeaveDays =
+                nvl(entity.getPaidLeaveDays());
+
         var oldWorkDate = entity.getWorkDate();
 
         Employee employee =
@@ -139,6 +150,7 @@ public class DailyReportCommandService {
                 entity,
                 employee
         );
+        applyCalculatedWorkTimes(entity, request);
 
         customerSiteResolver.applySnapshot(entity, request);
 
@@ -186,6 +198,10 @@ public class DailyReportCommandService {
                     saved.getId(),
                     saved.getWorkDate()
             );
+            paidLeaveBalanceCommandService.applyUsageDiff(
+                    newEmployeeId,
+                    nvl(saved.getPaidLeaveDays()).subtract(oldPaidLeaveDays)
+            );
         } else {
             financeBalanceCommandService.applyDailyReportAmountDiff(
                     oldEmployeeId,
@@ -194,6 +210,10 @@ public class DailyReportCommandService {
                     saved.getId(),
                     oldWorkDate
             );
+            paidLeaveBalanceCommandService.applyUsageDiff(
+                    oldEmployeeId,
+                    oldPaidLeaveDays.negate()
+            );
 
             financeBalanceCommandService.applyDailyReportAmountDiff(
                     newEmployeeId,
@@ -201,6 +221,10 @@ public class DailyReportCommandService {
                     newLoanRepaymentAmount,
                     saved.getId(),
                     saved.getWorkDate()
+            );
+            paidLeaveBalanceCommandService.applyUsageDiff(
+                    newEmployeeId,
+                    nvl(saved.getPaidLeaveDays())
             );
         }
 
@@ -222,6 +246,10 @@ public class DailyReportCommandService {
                 nvl(entity.getLoanRepaymentAmount()).negate(),
                 entity.getId(),
                 entity.getWorkDate()
+        );
+        paidLeaveBalanceCommandService.applyUsageDiff(
+                entity.getEmployee().getId(),
+                nvl(entity.getPaidLeaveDays()).negate()
         );
 
         entity.setDeletedAt(
@@ -268,6 +296,18 @@ public class DailyReportCommandService {
     ) {
         report.setAllowanceAmount(sumAmounts(calculatedItems.allowances()));
         report.setDeductionAmount(sumAmounts(calculatedItems.deductions()));
+    }
+
+    private void applyCalculatedWorkTimes(
+            DailyReport report,
+            DailyReportSaveRequest request
+    ) {
+        DailyReportWorkTimePolicy.WorkTimes times =
+                workTimeCalculator.calculate(request);
+        report.setWorkHours(times.workHours());
+        report.setOvertimeHours(times.overtimeHours());
+        report.setNightWorkHours(times.nightWorkHours());
+        report.setHolidayWorkHours(times.holidayWorkHours());
     }
 
     private BigDecimal sumAmounts(

@@ -25,6 +25,7 @@ LEFT JOIN allowance_masters am
  AND am.id = dra.allowance_master_id
  AND am.deleted_at IS NULL
 WHERE dr.deleted_at IS NULL
+  AND dr.approval_status = 'APPROVED'
   AND dr.payment_date IS NOT NULL
 GROUP BY
     dr.tenant_id,
@@ -54,6 +55,7 @@ LEFT JOIN deduction_masters dm
  AND dm.id = drd.deduction_master_id
  AND dm.deleted_at IS NULL
 WHERE dr.deleted_at IS NULL
+  AND dr.approval_status = 'APPROVED'
   AND dr.payment_date IS NOT NULL
 GROUP BY
     dr.tenant_id,
@@ -86,40 +88,40 @@ SELECT
     COALESCE(SUM(dr.work_hours), 0) AS work_hours,
     COALESCE(SUM(dr.overtime_hours), 0) AS overtime_hours,
     COALESCE(SUM(dr.night_work_hours), 0) AS night_work_hours,
-    COALESCE(SUM(dr.estimated_gross_pay_amount - dr.allowance_amount), 0)
-        AS basic_salary,
+    COALESCE(SUM(dr.normal_pay_amount), 0) AS basic_salary,
     COALESCE(SUM(dr.allowance_amount), 0) AS allowance_total,
     COALESCE(SUM(dr.deduction_amount), 0) AS deduction_total,
-    COALESCE(SUM(dr.estimated_gross_pay_amount), 0) AS gross_amount
+    COALESCE(SUM(dr.estimated_gross_pay_amount), 0) AS gross_amount,
+    COALESCE(SUM(dr.estimated_net_pay_amount), 0) AS net_payment_amount
 FROM daily_report dr
 WHERE dr.deleted_at IS NULL
+  AND dr.approval_status = 'APPROVED'
   AND dr.payment_date IS NOT NULL
 GROUP BY dr.tenant_id, dr.payment_date, dr.employee_id;
 
 CREATE OR REPLACE VIEW vw_daily_pay_slip_latest AS
 SELECT
-    dp.tenant_id,
-    dp.payment_date,
-    dp.employee_id,
-    COALESCE(dp.employee_code, e.employee_code) AS employee_code,
-    COALESCE(dp.employee_name, e.employee_name) AS employee_name,
+    work.tenant_id,
+    work.payment_date,
+    work.employee_id,
+    e.employee_code,
+    e.employee_name,
     e.email AS recipient_email,
-    COALESCE(work.labor_period_from, dp.payment_date) AS labor_period_from,
-    COALESCE(work.labor_period_to, dp.payment_date) AS labor_period_to,
+    work.labor_period_from,
+    work.labor_period_to,
     COALESCE(work.work_hours, 0) AS work_hours,
     COALESCE(work.overtime_hours, 0) AS overtime_hours,
     COALESCE(work.night_work_hours, 0) AS night_work_hours,
-    COALESCE(work.basic_salary, dp.planned_amount, 0) AS basic_salary,
+    COALESCE(work.basic_salary, 0) AS basic_salary,
     COALESCE(work.allowance_total, 0) AS allowance_total,
     COALESCE(work.deduction_total, 0) AS deduction_total,
-    COALESCE(work.gross_amount, dp.planned_amount, 0)
-        AS gross_amount,
-    COALESCE(dp.actual_amount, 0) AS daily_payment_amount,
-    COALESCE(dp.actual_amount, 0) AS net_payment_amount,
+    COALESCE(work.gross_amount, 0) AS gross_amount,
+    COALESCE(work.net_payment_amount, 0) AS daily_payment_amount,
+    COALESCE(work.net_payment_amount, 0) AS net_payment_amount,
     COALESCE(legal_deposit.current_balance, 0) AS legal_deposit_balance,
     COALESCE(loan.current_balance, 0) AS loan_balance,
     COALESCE(saving.current_balance, 0) AS saving_balance,
-    dp.note,
+    NULL AS note,
 
     MAX(CASE WHEN item.item_type = 'ALLOWANCE' AND item.item_no = 1 THEN item.item_name END) AS allowance_item_name1,
     MAX(CASE WHEN item.item_type = 'ALLOWANCE' AND item.item_no = 1 THEN item.item_value END) AS allowance_item_value1,
@@ -162,22 +164,23 @@ SELECT
     MAX(CASE WHEN item.item_type = 'DEDUCTION' AND item.item_no = 9 THEN item.item_value END) AS deduction_item_value9,
     MAX(CASE WHEN item.item_type = 'DEDUCTION' AND item.item_no = 10 THEN item.item_name END) AS deduction_item_name10,
     MAX(CASE WHEN item.item_type = 'DEDUCTION' AND item.item_no = 10 THEN item.item_value END) AS deduction_item_value10
-FROM daily_payments dp
+FROM vw_daily_pay_slip_work_summary work
 JOIN employee e
-  ON e.tenant_id = dp.tenant_id
- AND e.id = dp.employee_id
+  ON e.tenant_id = work.tenant_id
+ AND e.id = work.employee_id
  AND e.deleted_at IS NULL
-LEFT JOIN vw_daily_pay_slip_work_summary work
-  ON work.tenant_id = dp.tenant_id
- AND work.employee_id = dp.employee_id
- AND work.payment_date = dp.payment_date
+JOIN employee_contract contract
+  ON contract.tenant_id = work.tenant_id
+ AND contract.employee_id = work.employee_id
+ AND contract.payment_cycle = 'DAILY'
+ AND contract.deleted_at IS NULL
 LEFT JOIN vw_daily_pay_slip_item_ranked item
-  ON item.tenant_id = dp.tenant_id
- AND item.payment_date = dp.payment_date
- AND item.employee_id = dp.employee_id
+  ON item.tenant_id = work.tenant_id
+ AND item.payment_date = work.payment_date
+ AND item.employee_id = work.employee_id
 LEFT JOIN vw_employee_legal_deposit_balance legal_deposit
-  ON legal_deposit.tenant_id = dp.tenant_id
- AND legal_deposit.employee_id = dp.employee_id
+  ON legal_deposit.tenant_id = work.tenant_id
+ AND legal_deposit.employee_id = work.employee_id
 LEFT JOIN (
     SELECT tenant_id, employee_id, SUM(current_balance) AS current_balance
     FROM employee_loan
@@ -185,29 +188,23 @@ LEFT JOIN (
       AND deleted_at IS NULL
     GROUP BY tenant_id, employee_id
 ) loan
-  ON loan.tenant_id = dp.tenant_id
- AND loan.employee_id = dp.employee_id
+  ON loan.tenant_id = work.tenant_id
+ AND loan.employee_id = work.employee_id
 LEFT JOIN (
     SELECT tenant_id, employee_id, SUM(current_balance) AS current_balance
     FROM employee_saving
     WHERE deleted_at IS NULL
     GROUP BY tenant_id, employee_id
 ) saving
-  ON saving.tenant_id = dp.tenant_id
- AND saving.employee_id = dp.employee_id
-WHERE dp.deleted_at IS NULL
+  ON saving.tenant_id = work.tenant_id
+ AND saving.employee_id = work.employee_id
 GROUP BY
-    dp.tenant_id,
-    dp.payment_date,
-    dp.employee_id,
-    dp.employee_code,
-    dp.employee_name,
+    work.tenant_id,
+    work.payment_date,
+    work.employee_id,
     e.employee_code,
     e.employee_name,
     e.email,
-    dp.planned_amount,
-    dp.actual_amount,
-    dp.note,
     legal_deposit.current_balance,
     loan.current_balance,
     saving.current_balance,
@@ -219,4 +216,5 @@ GROUP BY
     work.basic_salary,
     work.allowance_total,
     work.deduction_total,
-    work.gross_amount;
+    work.gross_amount,
+    work.net_payment_amount;

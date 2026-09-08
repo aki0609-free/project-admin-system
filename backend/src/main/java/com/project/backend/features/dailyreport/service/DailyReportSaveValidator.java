@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 public class DailyReportSaveValidator {
 
     private final DailyReportRepository repository;
+    private final DailyReportWorkTimeCalculator workTimeCalculator;
 
     public void validateForCreate(DailyReportSaveRequest request) {
         validate(request);
@@ -72,6 +73,27 @@ public class DailyReportSaveValidator {
         nonNegative("走行距離", request.mileage());
         nonNegative("有給日数", request.paidLeaveDays());
 
+        DailyReportWorkTimePolicy.WorkTimes calculated =
+                workTimeCalculator.calculate(request);
+        verifyCalculated("通常時間", request.workHours(), calculated.workHours());
+        verifyCalculated("残業時間", request.overtimeHours(), calculated.overtimeHours());
+        verifyCalculated("深夜時間", request.nightWorkHours(), calculated.nightWorkHours());
+        verifyCalculated("休日時間", request.holidayWorkHours(), calculated.holidayWorkHours());
+
+    }
+
+    private void verifyCalculated(
+            String label,
+            BigDecimal requested,
+            BigDecimal calculated
+    ) {
+        if (requested != null
+                && requested.subtract(calculated).abs()
+                        .compareTo(new BigDecimal("0.01")) > 0) {
+            throw new IllegalArgumentException(
+                    label + "が開始・終了・休憩から計算した値と一致しません。"
+            );
+        }
     }
 
     private void nonNegative(String label, BigDecimal value) {

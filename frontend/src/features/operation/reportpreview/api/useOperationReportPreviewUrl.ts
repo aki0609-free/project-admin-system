@@ -9,11 +9,17 @@ export const useOperationReportPreviewUrl = ({
   selectedReport,
   targetDate,
   targetMonth,
+  customerId,
+  periodFrom,
+  periodTo,
 }: {
   operationType: Ref<OperationType>
   selectedReport: Ref<OperationReportPreviewResponse | null>
   targetDate?: Ref<string | null | undefined>
   targetMonth?: Ref<string | null | undefined>
+  customerId?: Ref<number | null | undefined>
+  periodFrom?: Ref<string | null | undefined>
+  periodTo?: Ref<string | null | undefined>
 }) => {
   const previewUrl = computed(() => {
     if (!selectedReport.value) return ''
@@ -29,6 +35,18 @@ export const useOperationReportPreviewUrl = ({
 
     if (targetMonth?.value) {
       params.set('targetMonth', targetMonth.value)
+    }
+
+    if (customerId?.value) {
+      params.set('customerId', String(customerId.value))
+    }
+
+    if (periodFrom?.value) {
+      params.set('periodFrom', periodFrom.value)
+    }
+
+    if (periodTo?.value) {
+      params.set('periodTo', periodTo.value)
     }
 
     return `/api/operation/report-previews/html?${params.toString()}`

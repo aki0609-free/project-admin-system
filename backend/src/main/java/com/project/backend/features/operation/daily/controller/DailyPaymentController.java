@@ -6,12 +6,10 @@ import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
-import com.project.backend.features.operation.daily.dto.DailyPaymentBulkSaveRequest;
 import com.project.backend.features.operation.daily.dto.DailyPaymentPrintSummaryResponse;
 import com.project.backend.features.operation.daily.dto.DailyPaymentResponse;
 import com.project.backend.features.operation.daily.service.DailyPaymentService;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -35,10 +33,4 @@ public class DailyPaymentController {
         return service.getPrintSummary(paymentDate);
     }
 
-    @PostMapping("/bulk-save")
-    public List<DailyPaymentResponse> bulkSave(
-            @Valid @RequestBody DailyPaymentBulkSaveRequest request
-    ) {
-        return service.bulkSave(request);
-    }
 }

@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,18 @@ public class PayrollItemCalculationService {
             PayrollItemCalculationRequest request,
             Map<Long, Integer> manualAmounts
     ) {
+        return calculate(
+                request,
+                manualAmounts,
+                manualAmounts == null ? Set.of() : manualAmounts.keySet()
+        );
+    }
+
+    public List<PayrollItemCalculationResult> calculate(
+            PayrollItemCalculationRequest request,
+            Map<Long, Integer> submittedAmounts,
+            Set<Long> manualOverrideMasterIds
+    ) {
         if (request == null) {
             throw new IllegalArgumentException("PayrollItemCalculationRequest は必須です。");
         }
@@ -64,7 +77,8 @@ public class PayrollItemCalculationService {
                                         ? null
                                         : request.itemParameters().get(snapshot.id())
                         ),
-                        manualAmounts
+                        submittedAmounts,
+                        manualOverrideMasterIds
                 ))
                 .sorted(Comparator.comparing(
                         PayrollItemCalculationResult::displayOrder,
@@ -86,7 +100,8 @@ public class PayrollItemCalculationService {
     private PayrollItemCalculationResult calculateOne(
             PayrollItemMasterSnapshot snapshot,
             Map<String, Object> parameters,
-            Map<Long, Integer> manualAmounts
+            Map<Long, Integer> submittedAmounts,
+            Set<Long> manualOverrideMasterIds
     ) {
         PayrollItemValueResult valueResult =
                 payrollItemValueService.calculate(
@@ -94,7 +109,11 @@ public class PayrollItemCalculationService {
                                 snapshot.targetType(),
                                 snapshot.id(),
                                 snapshot.code(),
-                                resolveManualAmount(snapshot, manualAmounts),
+                                resolveManualAmount(
+                                        snapshot,
+                                        submittedAmounts,
+                                        manualOverrideMasterIds
+                                ),
                                 parameters
                         )
                 );
@@ -108,11 +127,13 @@ public class PayrollItemCalculationService {
 
         boolean manualOverride = isBaselineCalculation(valueResult.calculationType())
                 && Boolean.TRUE.equals(snapshot.allowManualInput())
-                && manualAmounts != null
-                && manualAmounts.containsKey(snapshot.id());
+                && submittedAmounts != null
+                && submittedAmounts.containsKey(snapshot.id())
+                && manualOverrideMasterIds != null
+                && manualOverrideMasterIds.contains(snapshot.id());
         BigDecimal amount = manualOverride
                 ? applyLimits(
-                        BigDecimal.valueOf(manualAmounts.get(snapshot.id())),
+                        BigDecimal.valueOf(submittedAmounts.get(snapshot.id())),
                         snapshot.minAmount(), snapshot.maxAmount()
                 )
                 : calculatedAmount;
@@ -139,11 +160,17 @@ public class PayrollItemCalculationService {
 
     private Integer resolveManualAmount(
             PayrollItemMasterSnapshot snapshot,
-            Map<Long, Integer> manualAmounts
+            Map<Long, Integer> submittedAmounts,
+            Set<Long> manualOverrideMasterIds
     ) {
         if (Boolean.TRUE.equals(snapshot.allowManualInput())) {
-            if (manualAmounts != null && manualAmounts.containsKey(snapshot.id())) {
-                return manualAmounts.get(snapshot.id());
+            boolean manualItem = "MANUAL".equals(snapshot.calculationType());
+            boolean explicitOverride = manualOverrideMasterIds != null
+                    && manualOverrideMasterIds.contains(snapshot.id());
+            if ((manualItem || explicitOverride)
+                    && submittedAmounts != null
+                    && submittedAmounts.containsKey(snapshot.id())) {
+                return submittedAmounts.get(snapshot.id());
             }
             return snapshot.defaultAmount();
         }

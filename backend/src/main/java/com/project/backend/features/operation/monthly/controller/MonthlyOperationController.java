@@ -48,7 +48,13 @@ public class MonthlyOperationController {
     public List<MonthlyClosingReportFileResponse> findReportFiles(
             @RequestParam String targetMonth,
             @RequestParam(required = false) Integer closingVersion,
-            @RequestParam String reportCode) {
-        return reportFileService.findAll(targetMonth, closingVersion, reportCode);
+            @RequestParam String reportCode,
+            @RequestParam(required = false) Long targetId) {
+        return reportFileService.findAll(
+                targetMonth,
+                closingVersion,
+                reportCode,
+                targetId
+        );
     }
 }

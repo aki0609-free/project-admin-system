@@ -33,7 +33,7 @@ SELECT
     'LEGAL',
     'MANUAL',
     NULL,
-    NULL,
+    0,
     TRUE,
     0,
     10000000,
@@ -44,20 +44,76 @@ SELECT
     TRUE,
     160,
     TRUE,
-    '日報で手入力し、月次締めで未返金残高を精算する',
+    '日次の概算初期値を提示し、必要に応じて手動変更する。月次締めで未返金残高を精算する',
     'default',
     CURRENT_TIMESTAMP(6),
     CURRENT_TIMESTAMP(6),
     NULL
 FROM (
     SELECT 'LEGAL_DEPOSIT' AS deduction_code,
-           '法定預り金' AS deduction_name
+           '法定準備金' AS deduction_name
 ) seed
 WHERE NOT EXISTS (
     SELECT 1
     FROM deduction_masters existing
     WHERE existing.tenant_id = 'default'
       AND existing.deduction_code = seed.deduction_code
+      AND existing.deleted_at IS NULL
+);
+
+-- 長期の従業員貸付とは区別する、短期の前借り。
+-- 残高の発生は従業員画面の共通取引（BALANCE_ACCRUAL）で登録し、
+-- 日報で実際に控除した金額だけ残高から消化する。
+INSERT INTO deduction_masters (
+    deduction_code,
+    deduction_name,
+    deduction_type,
+    calculation_type,
+    rule_name,
+    default_amount,
+    allow_manual_input,
+    min_amount,
+    max_amount,
+    deduction_unit,
+    detail_view_type,
+    show_on_daily_statement,
+    show_on_monthly_statement,
+    carry_to_monthly_settlement,
+    display_order,
+    enabled,
+    note,
+    tenant_id,
+    created_at,
+    updated_at,
+    deleted_at
+)
+SELECT
+    'SHORT_TERM_ADVANCE',
+    '前借り',
+    'COMPANY',
+    'MANUAL',
+    NULL,
+    0,
+    TRUE,
+    0,
+    10000000,
+    'BOTH',
+    'NONE',
+    TRUE,
+    TRUE,
+    TRUE,
+    155,
+    TRUE,
+    '短期前借り。残高発生を登録し、日報控除で返済、未返済額は翌月へ繰り越す',
+    'default',
+    CURRENT_TIMESTAMP(6),
+    CURRENT_TIMESTAMP(6),
+    NULL
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM deduction_masters existing
+    WHERE existing.tenant_id = 'default'
+      AND existing.deduction_code = 'SHORT_TERM_ADVANCE'
       AND existing.deleted_at IS NULL
 );
 
@@ -120,11 +176,11 @@ WHERE NOT EXISTS (
 
 -- 旧初期データのJava Enum非互換値を、V1の確定仕様へ補正する。
 UPDATE deduction_masters
-SET deduction_name = '法定預り金',
+SET deduction_name = '法定準備金',
     deduction_type = 'LEGAL',
     calculation_type = 'MANUAL',
     rule_name = NULL,
-    default_amount = NULL,
+    default_amount = COALESCE(default_amount, 0),
     allow_manual_input = TRUE,
     min_amount = 0,
     max_amount = 10000000,
@@ -135,11 +191,33 @@ SET deduction_name = '法定預り金',
     carry_to_monthly_settlement = TRUE,
     display_order = 160,
     enabled = TRUE,
-    note = '日報で手入力し、月次締めで未返金残高を精算する',
+    note = '日次の概算初期値を提示し、必要に応じて手動変更する。月次締めで未返金残高を精算する',
     updated_at = CURRENT_TIMESTAMP(6),
     deleted_at = NULL
 WHERE tenant_id = 'default'
   AND deduction_code = 'LEGAL_DEPOSIT';
+
+UPDATE deduction_masters
+SET deduction_name = '前借り',
+    deduction_type = 'COMPANY',
+    calculation_type = 'MANUAL',
+    rule_name = NULL,
+    default_amount = COALESCE(default_amount, 0),
+    allow_manual_input = TRUE,
+    min_amount = 0,
+    max_amount = 10000000,
+    deduction_unit = 'BOTH',
+    detail_view_type = 'NONE',
+    show_on_daily_statement = TRUE,
+    show_on_monthly_statement = TRUE,
+    carry_to_monthly_settlement = TRUE,
+    display_order = 155,
+    enabled = TRUE,
+    note = '短期前借り。残高発生を登録し、日報控除で返済、未返済額は翌月へ繰り越す',
+    updated_at = CURRENT_TIMESTAMP(6),
+    deleted_at = NULL
+WHERE tenant_id = 'default'
+  AND deduction_code = 'SHORT_TERM_ADVANCE';
 
 UPDATE deduction_masters
 SET deduction_name = 'Wi-Fi使用料',
@@ -180,6 +258,37 @@ SELECT 'DEDUCTION', deduction.id, deduction.deduction_code, deduction.deduction_
 FROM deduction_masters deduction
 WHERE deduction.tenant_id = 'default'
   AND deduction.deduction_code = 'WIFI_FEE'
+  AND deduction.deleted_at IS NULL
+ON DUPLICATE KEY UPDATE
+    target_master_id = VALUES(target_master_id),
+    display_name = VALUES(display_name),
+    application_scope = VALUES(application_scope),
+    balance_unit = VALUES(balance_unit),
+    balance_tracking_flag = VALUES(balance_tracking_flag),
+    input_source = VALUES(input_source),
+    accrual_frequency = VALUES(accrual_frequency),
+    accrual_rule_name = VALUES(accrual_rule_name),
+    carry_forward_flag = VALUES(carry_forward_flag),
+    advance_consumption_flag = VALUES(advance_consumption_flag),
+    active_flag = TRUE,
+    updated_at = CURRENT_TIMESTAMP(6),
+    deleted_at = NULL;
+
+INSERT INTO payroll_item_balance_policy (
+    target_type, target_master_id, target_code, display_name,
+    application_scope, balance_unit, balance_tracking_flag, input_source,
+    accrual_frequency, accrual_rule_name,
+    carry_forward_flag, advance_consumption_flag, active_flag,
+    tenant_id, created_at, updated_at, deleted_at
+)
+SELECT 'DEDUCTION', deduction.id, deduction.deduction_code, deduction.deduction_name,
+       'EMPLOYEE_ENROLLMENT', 'AMOUNT', TRUE, 'DAILY_REPORT_AND_TRANSACTION',
+       'MANUAL', 'MANUAL_TRANSACTION',
+       TRUE, FALSE, TRUE,
+       deduction.tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
+FROM deduction_masters deduction
+WHERE deduction.tenant_id = 'default'
+  AND deduction.deduction_code = 'SHORT_TERM_ADVANCE'
   AND deduction.deleted_at IS NULL
 ON DUPLICATE KEY UPDATE
     target_master_id = VALUES(target_master_id),

@@ -31,28 +31,45 @@ public class DailyReportQueryService {
     private final DailyReportDeductionQueryService deductionQueryService;
 
     private final EmployeePayrollProfileRepository payrollProfileRepository;
-
     public List<DailyReportResponse> findAll(
             LocalDate from,
             LocalDate to,
             Long employeeId
     ) {
+        if ((from == null) != (to == null)) {
+            throw new IllegalArgumentException(
+                    "勤務日の開始日と終了日は両方指定してください。"
+            );
+        }
+        if (from != null && from.isAfter(to)) {
+            throw new IllegalArgumentException(
+                    "勤務日の開始日は終了日以前を指定してください。"
+            );
+        }
+
         List<DailyReport> reports;
 
-        if (employeeId != null) {
+        if (from == null && employeeId == null) {
             reports = repository
-                    .findByEmployeeIdAndDeletedAtIsNullOrderByWorkDateDescIdDesc(
+                    .findAllByDeletedAtIsNullOrderByWorkDateDescPaymentDateAscIdDesc();
+        } else if (from == null) {
+            reports = repository
+                    .findByEmployeeIdAndDeletedAtIsNullOrderByWorkDateDescPaymentDateAscIdDesc(
                             employeeId
                     );
-        } else if (from != null && to != null) {
+        } else if (employeeId != null) {
             reports = repository
-                    .findByWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateDescIdDesc(
+                    .findByEmployeeIdAndWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateDescPaymentDateAscIdDesc(
+                            employeeId,
                             from,
                             to
                     );
         } else {
             reports = repository
-                    .findAllByDeletedAtIsNullOrderByWorkDateDescIdDesc();
+                    .findByWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateDescPaymentDateAscIdDesc(
+                            from,
+                            to
+                    );
         }
 
         Map<Long, BigDecimal> paidLeaveRemainingDaysMap = reports.stream()
@@ -86,9 +103,10 @@ public class DailyReportQueryService {
                             nvl(response.paidLeaveDays());
 
                     BigDecimal paidLeaveRemainingAfterUsedDays =
-                            paidLeaveRemainingDays.subtract(
-                                    paidLeaveDays
-                            );
+                            paidLeaveRemainingDays;
+
+                    BigDecimal paidLeaveRemainingBeforeUsedDays =
+                            paidLeaveRemainingDays.add(paidLeaveDays);
 
                     return DailyReportResponse.builder()
                             .id(response.id())
@@ -200,7 +218,7 @@ public class DailyReportQueryService {
                                     paidLeaveDays
                             )
                             .paidLeaveRemainingDays(
-                                    paidLeaveRemainingDays
+                                    paidLeaveRemainingBeforeUsedDays
                             )
                             .paidLeaveRemainingAfterUsedDays(
                                     paidLeaveRemainingAfterUsedDays
@@ -242,9 +260,10 @@ public class DailyReportQueryService {
                 nvl(entity.getPaidLeaveDays());
 
         BigDecimal paidLeaveRemainingAfterUsedDays =
-                paidLeaveRemainingDays.subtract(
-                        paidLeaveDays
-                );
+                paidLeaveRemainingDays;
+
+        BigDecimal paidLeaveRemainingBeforeUsedDays =
+                paidLeaveRemainingDays.add(paidLeaveDays);
 
         return DailyReportDetailResponse.builder()
                 .id(entity.getId())
@@ -397,7 +416,7 @@ public class DailyReportQueryService {
                         paidLeaveDays
                 )
                 .paidLeaveRemainingDays(
-                        paidLeaveRemainingDays
+                        paidLeaveRemainingBeforeUsedDays
                 )
                 .paidLeaveRemainingAfterUsedDays(
                         paidLeaveRemainingAfterUsedDays

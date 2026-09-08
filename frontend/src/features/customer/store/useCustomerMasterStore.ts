@@ -39,7 +39,7 @@ export const useCustomerMasterStore = defineStore('customer-master', () => {
   const customerOptions = computed(() =>
     customers.value.map((customer) => ({
       title: customer.name,
-      value: customer.id,
+      value: Number(customer.id),
     })),
   )
 
@@ -47,21 +47,25 @@ export const useCustomerMasterStore = defineStore('customer-master', () => {
     if (customerId == null) return []
 
     return sites.value
-      .filter((site) => site.customerId === customerId)
+      .filter((site) => Number(site.customerId) === Number(customerId))
       .map((site) => ({
         title: site.name,
-        value: site.id,
+        value: Number(site.id),
       }))
   }
 
   const findCustomer = (customerId: number | null) => {
     if (customerId == null) return undefined
-    return customers.value.find((customer) => customer.id === customerId)
+    return customers.value.find(
+      (customer) => Number(customer.id) === Number(customerId),
+    )
   }
 
   const findSite = (siteId: number | null) => {
     if (siteId == null) return undefined
-    return sites.value.find((site) => site.id === siteId)
+    return sites.value.find(
+      (site) => Number(site.id) === Number(siteId),
+    )
   }
 
   return {

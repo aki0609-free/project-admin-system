@@ -16,26 +16,6 @@ export type DailyPaymentResponse = {
   note: string | null
 }
 
-export type DailyPaymentBulkSaveItemRequest = {
-  id: number | null
-  employeeId: number
-
-  plannedAmount: number
-  actualAmount: number
-
-  status: DailyPaymentStatus
-  note: string | null
-
-  isNew: boolean
-  isUpdated: boolean
-  isDeleted: boolean
-}
-
-export type DailyPaymentBulkSaveRequest = {
-  paymentDate: string
-  items: DailyPaymentBulkSaveItemRequest[]
-}
-
 export type DailyPaymentDenominationResponse = {
   yen10000: number
   yen5000: number

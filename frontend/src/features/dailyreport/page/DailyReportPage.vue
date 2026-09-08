@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import SearchPanel from '@/shared/components/search/SearchPanel.vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
@@ -18,6 +18,7 @@ import { formatYearMonthDay } from '@/shared/utils/DateUtils'
 const {
   employeesQuery,
   dailyReportsQuery,
+  setReportPeriod,
   dialog,
   leftToolbarItems,
   rightToolbarItems,
@@ -35,6 +36,43 @@ const tabs = [
 
 const search = useDailyReportSearch(
   () => dailyReportsQuery.reports.value,
+)
+
+const monthRange = (dateText: string) => {
+  const [yearText, monthText] = dateText.split('-')
+  const year = Number(yearText)
+  const month = Number(monthText)
+  const lastDay = new Date(year, month, 0).getDate()
+  return {
+    from: `${yearText}-${monthText}-01`,
+    to: `${yearText}-${monthText}-${String(lastDay).padStart(2, '0')}`,
+  }
+}
+
+watch(
+  [
+    () => search.condition.workDateFrom,
+    () => search.condition.workDateTo,
+  ],
+  ([from, to]) => {
+    if (from && to) {
+      setReportPeriod(from, to)
+      return
+    }
+    if (from) {
+      const range = monthRange(from)
+      setReportPeriod(from, range.to)
+      return
+    }
+    if (to) {
+      const range = monthRange(to)
+      setReportPeriod(range.from, to)
+      return
+    }
+
+    setReportPeriod('', '')
+  },
+  { immediate: true },
 )
 
 const missingWorkDate = computed(() => search.condition.targetWorkDate)
@@ -96,11 +134,23 @@ const openCreateFromMissing = (row: { employeeId: number }) => {
     :right-toolbar-items="rightToolbarItems"
   >
     <template #search>
-      <SearchPanel
-        v-model="search.condition"
-        :fields="search.fields.value"
-        @clear="search.clear"
-      />
+      <div class="daily-report-search-panels">
+        <SearchPanel
+          v-model="search.condition"
+          title="日報一覧の検索"
+          description="従業員・勤務日・支払日で日報一覧を絞り込みます。"
+          :fields="search.reportFields.value"
+          @clear="search.clearReportFilters"
+        />
+
+        <SearchPanel
+          v-model="search.condition"
+          title="未入力者・月次勤怠の確認"
+          description="未入力者の確認日、または月次勤怠の対象月を指定します。"
+          :fields="search.attendanceFields.value"
+          @clear="search.clearAttendanceFilters"
+        />
+      </div>
     </template>
 
     <template #before-table>
@@ -158,6 +208,15 @@ const openCreateFromMissing = (row: { employeeId: number }) => {
   flex-wrap: wrap;
   gap: 8px 20px;
   align-items: center;
+}
+
+.daily-report-search-panels {
+  display: grid;
+  gap: 12px;
+}
+
+.daily-report-search-panels :deep(.search-panel) {
+  margin-bottom: 0;
 }
 
 .count-text,

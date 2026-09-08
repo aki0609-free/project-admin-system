@@ -33,6 +33,7 @@ for local_resource in \
   "sql/local/repair_deduction_master_encoding.sql" \
   "sql/local/demo_monthly_summary_fixture.sql" \
   "sql/local/demo_monthly_payroll_fixture.sql" \
+  "sql/local/demo_daily_operation_fixture.sql" \
   "sql/local/demo_customer_transaction_fixture.sql"
 do
   local_fixture="/resources/${local_resource}"

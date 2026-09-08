@@ -31,6 +31,7 @@ public record DailyReportMonthlyAttendanceResponse(
         BigDecimal totalWorkHours,
         BigDecimal totalOvertimeHours,
         BigDecimal totalNightWorkHours,
+        BigDecimal totalHolidayWorkHours,
 
         BigDecimal totalAllowanceAmount,
         BigDecimal totalDeductionAmount,

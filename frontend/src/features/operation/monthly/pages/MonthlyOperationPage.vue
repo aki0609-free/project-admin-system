@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
+import MonthFormField from '@/shared/components/form/base/components/form/MonthFormField.vue'
+import OperationTargetFilterCard from '@/features/operation/shared/components/OperationTargetFilterCard.vue'
 
 import ClosingSummaryCard from '../components/ClosingSummaryCard.vue'
 import OperationReportTab from '@/features/operation/reportpreview/components/OperationReportTab.vue'
@@ -25,17 +27,18 @@ const {
     :right-toolbar-items="rightToolbarItems"
   >
     <template #search>
-      <div class="closing-search">
-        <v-text-field
-          v-model="targetMonth"
-          type="month"
-          label="対象月"
-          variant="outlined"
-          density="compact"
-          hide-details
-          prepend-inner-icon="mdi-calendar-month"
-        />
-      </div>
+      <OperationTargetFilterCard>
+        <div class="closing-search">
+          <MonthFormField
+            v-model="targetMonth"
+            label="対象月"
+            variant="outlined"
+            density="compact"
+            hide-details
+            prepend-inner-icon="mdi-calendar-month"
+          />
+        </div>
+      </OperationTargetFilterCard>
     </template>
 
     <TabLayout
@@ -54,6 +57,7 @@ const {
           operation-type="MONTHLY"
           :target-month="targetMonth"
           :closing-version="summary?.closing?.closingVersion ?? null"
+          :excluded-report-codes="['MONTHLY_INVOICE', 'MONTHLY_ORDER_FORM']"
         />
 
       </template>

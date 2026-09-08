@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MonthlyClosingSummaryResponse } from '../types/closingApiTypes'
+import { formatYearMonth, formatYearMonthDay } from '@/shared/utils/DateUtils'
 
 defineProps<{
   summary: MonthlyClosingSummaryResponse | null
@@ -22,7 +23,7 @@ const statusLabel = (status: string | undefined) => {
   <div v-else class="summary-grid">
     <v-card variant="outlined" class="summary-card">
       <div class="label">対象月</div>
-      <div class="value">{{ summary.targetMonth }}</div>
+      <div class="value">{{ formatYearMonth(summary.targetMonth) }}</div>
     </v-card>
 
     <v-card variant="outlined" class="summary-card">
@@ -70,9 +71,9 @@ const statusLabel = (status: string | undefined) => {
     <v-card variant="outlined" class="summary-card">
       <div class="label">締め期間</div>
       <div class="value-small">
-        {{ summary.closing?.closingStartDate }}
+        {{ formatYearMonthDay(summary.closing?.closingStartDate) }}
         ～<br />
-        {{ summary.closing?.closingEndDate }}
+        {{ formatYearMonthDay(summary.closing?.closingEndDate) }}
       </div>
     </v-card>
   </div>

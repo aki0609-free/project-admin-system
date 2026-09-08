@@ -102,7 +102,9 @@ WITH labor AS (
         employee.employee_name,
         COALESCE(contract.payment_cycle, 'MONTHLY') AS payment_cycle,
         COALESCE(SUM(dr.estimated_gross_pay_amount), 0)
-            AS gross_payment_amount
+            AS gross_payment_amount,
+        COALESCE(SUM(dr.estimated_net_pay_amount), 0)
+            AS payment_amount
     FROM daily_report dr
     JOIN employee
       ON employee.tenant_id = dr.tenant_id
@@ -121,39 +123,28 @@ WITH labor AS (
         employee.employee_code,
         employee.employee_name,
         contract.payment_cycle
-), detail AS (
-    SELECT
-        labor.*,
-        COALESCE(payment.actual_amount, 0) AS payment_amount
-    FROM labor
-    LEFT JOIN daily_payments payment
-      ON payment.tenant_id = labor.tenant_id
-     AND payment.payment_date = labor.target_date
-     AND payment.employee_id = labor.employee_id
-     AND payment.status <> 'CANCELLED'
-     AND payment.deleted_at IS NULL
 )
 SELECT
-    detail.tenant_id,
-    detail.target_date,
-    DATE_FORMAT(detail.target_date, '%Y年%m月%d日') AS work_date_label,
-    detail.employee_id,
-    detail.employee_code,
-    detail.employee_name,
-    detail.payment_cycle,
-    detail.gross_payment_amount,
-    detail.payment_amount,
-    SUM(detail.gross_payment_amount) OVER (
-        PARTITION BY detail.tenant_id, detail.target_date
+    labor.tenant_id,
+    labor.target_date,
+    DATE_FORMAT(labor.target_date, '%Y年%m月%d日') AS work_date_label,
+    labor.employee_id,
+    labor.employee_code,
+    labor.employee_name,
+    labor.payment_cycle,
+    labor.gross_payment_amount,
+    labor.payment_amount,
+    SUM(labor.gross_payment_amount) OVER (
+        PARTITION BY labor.tenant_id, labor.target_date
     ) AS total_gross_payment_amount,
-    SUM(detail.payment_amount) OVER (
-        PARTITION BY detail.tenant_id, detail.target_date
+    SUM(labor.payment_amount) OVER (
+        PARTITION BY labor.tenant_id, labor.target_date
     ) AS total_payment_amount
-FROM detail;
+FROM labor;
 
 -- -----------------------------------------------------
 -- 給与支払表
--- payment_date単位に、日報計算値と確定したdaily_paymentsを統合する。
+-- payment_date単位に、承認済み日報の計算上支給可能額を集計する。
 -- -----------------------------------------------------
 CREATE OR REPLACE VIEW vw_daily_payment_preparation_preview AS
 WITH report_summary AS (
@@ -176,55 +167,28 @@ WITH report_summary AS (
       AND dr.approval_status = 'APPROVED'
       AND dr.payment_date IS NOT NULL
     GROUP BY dr.tenant_id, dr.payment_date, dr.employee_id
-), payment_keys AS (
-    SELECT tenant_id, target_date, employee_id
-    FROM report_summary
-    UNION
-    SELECT tenant_id, payment_date, employee_id
-    FROM daily_payments
-    WHERE deleted_at IS NULL
-      AND status <> 'CANCELLED'
 ), detail AS (
     SELECT
-        payment_key.tenant_id,
-        payment_key.target_date,
-        payment_key.employee_id,
-        COALESCE(payment.employee_code, employee.employee_code)
-            AS employee_code,
-        COALESCE(payment.employee_name, employee.employee_name)
-            AS employee_name,
+        report.tenant_id,
+        report.target_date,
+        report.employee_id,
+        employee.employee_code,
+        employee.employee_name,
         COALESCE(contract.payment_cycle, 'MONTHLY') AS payment_cycle,
-        COALESCE(
-            report.gross_payment_amount,
-            payment.planned_amount,
-            0
-        ) AS gross_payment_amount,
-        COALESCE(report.allowance_amount, 0) AS allowance_amount,
-        COALESCE(report.deduction_amount, 0) AS deduction_amount,
-        CASE
-            WHEN payment.id IS NOT NULL
-                THEN COALESCE(payment.actual_amount, 0)
-            ELSE COALESCE(report.estimated_net_payment_amount, 0)
-        END AS net_payment_amount
-    FROM payment_keys payment_key
+        report.gross_payment_amount,
+        report.allowance_amount,
+        report.deduction_amount,
+        report.estimated_net_payment_amount AS net_payment_amount
+    FROM report_summary report
     JOIN employee
-      ON employee.tenant_id = payment_key.tenant_id
-     AND employee.id = payment_key.employee_id
+      ON employee.tenant_id = report.tenant_id
+     AND employee.id = report.employee_id
      AND employee.deleted_at IS NULL
-    LEFT JOIN report_summary report
-      ON report.tenant_id = payment_key.tenant_id
-     AND report.target_date = payment_key.target_date
-     AND report.employee_id = payment_key.employee_id
-    LEFT JOIN daily_payments payment
-      ON payment.tenant_id = payment_key.tenant_id
-     AND payment.payment_date = payment_key.target_date
-     AND payment.employee_id = payment_key.employee_id
-     AND payment.status <> 'CANCELLED'
-     AND payment.deleted_at IS NULL
     LEFT JOIN employee_contract contract
-      ON contract.tenant_id = payment_key.tenant_id
-     AND contract.employee_id = payment_key.employee_id
+      ON contract.tenant_id = report.tenant_id
+     AND contract.employee_id = report.employee_id
      AND contract.deleted_at IS NULL
+    WHERE contract.payment_cycle = 'DAILY'
 ), totals AS (
     SELECT
         detail.*,

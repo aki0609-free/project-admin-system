@@ -192,7 +192,7 @@ const dailyReportRequest = (
   siteRoleName: '一般',
   workDescription: 'Playwright固定日報・月間集計表検証',
   startTime: '08:00',
-  endTime: '18:00',
+  endTime: '19:00',
   breakMinutes: 60,
   workHours: 8,
   overtimeHours: 2,

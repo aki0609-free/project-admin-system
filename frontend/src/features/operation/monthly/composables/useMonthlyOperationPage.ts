@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 
 import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import { formatYearMonth } from '@/shared/utils/DateUtils'
 
 import { useClosingSummaryQuery } from '../api/useClosingSummaryQuery'
 import { useCloseClosingMutation } from '../api/useCloseClosingMutation'
@@ -56,7 +57,7 @@ export const useMonthlyOperationPage = () => {
   ]
 
   const closeClosing = async () => {
-    if (!confirm(`${targetMonth.value} を締め処理しますか？`)) {
+    if (!confirm(`${formatYearMonth(targetMonth.value)}を締め処理しますか？`)) {
       return
     }
 
@@ -68,7 +69,7 @@ export const useMonthlyOperationPage = () => {
   const recloseClosing = async () => {
     if (
       !confirm(
-        `${targetMonth.value} を再締めしますか？\nVersionが1つ増えます。`,
+        `${formatYearMonth(targetMonth.value)}を再締めしますか？\nVersionが1つ増えます。`,
       )
     ) {
       return

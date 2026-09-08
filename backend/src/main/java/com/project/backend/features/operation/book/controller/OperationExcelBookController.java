@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.backend.features.operation.book.dto.OperationExcelBookResponse;
+import com.project.backend.features.operation.book.dto.OperationExcelBookSettingResponse;
 import com.project.backend.features.operation.book.dto.SpreadsheetLedgerGenerateRequest;
 import com.project.backend.features.operation.book.dto.SpreadsheetLedgerGenerateResponse;
 import com.project.backend.features.operation.book.dto.SpreadsheetLedgerSaveRequest;
@@ -21,6 +22,7 @@ import com.project.backend.features.operation.book.dto.SpreadsheetLedgerSelectio
 import com.project.backend.features.operation.book.service.SpreadsheetLedgerEditingService;
 import com.project.backend.features.operation.book.service.SpreadsheetLedgerGenerationService;
 import com.project.backend.features.operation.book.service.SpreadsheetLedgerSelectionService;
+import com.project.backend.features.admin.business.service.AnnualReportBackupSettingService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,14 @@ public class OperationExcelBookController {
     private final SpreadsheetLedgerGenerationService service;
     private final SpreadsheetLedgerEditingService editingService;
     private final SpreadsheetLedgerSelectionService selectionService;
+    private final AnnualReportBackupSettingService businessSettingService;
+
+    @GetMapping("/settings")
+    public OperationExcelBookSettingResponse findSettings() {
+        return new OperationExcelBookSettingResponse(
+                businessSettingService.find().fiscalYearStartMonth()
+        );
+    }
 
     @GetMapping
     public List<OperationExcelBookResponse> findActive() {

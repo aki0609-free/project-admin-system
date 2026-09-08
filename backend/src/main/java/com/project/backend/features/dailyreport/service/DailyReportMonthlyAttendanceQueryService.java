@@ -151,6 +151,7 @@ public List<DailyReportMonthlyAttendanceResponse> findMonthlyAttendance(
         BigDecimal totalWorkHours = sum(reports, "workHours");
         BigDecimal totalOvertimeHours = sum(reports, "overtimeHours");
         BigDecimal totalNightWorkHours = sum(reports, "nightWorkHours");
+        BigDecimal totalHolidayWorkHours = sum(reports, "holidayWorkHours");
 
         BigDecimal totalAllowanceAmount = sum(reports, "allowanceAmount");
         BigDecimal totalDeductionAmount = sum(reports, "deductionAmount");
@@ -165,21 +166,19 @@ public List<DailyReportMonthlyAttendanceResponse> findMonthlyAttendance(
                         ? payrollProfile.getPaidLeaveRemainingDays()
                         : BigDecimal.ZERO;
 
-        BigDecimal paidLeaveRemainingAfterUsedDays =
-                paidLeaveRemainingDays.subtract(paidLeaveUsedDays);
+        BigDecimal paidLeaveRemainingAfterUsedDays = paidLeaveRemainingDays;
+        BigDecimal paidLeaveOpeningDays =
+                paidLeaveRemainingDays.add(paidLeaveUsedDays);
 
         SalaryType salaryType = contract != null
                 ? contract.getSalaryType()
                 : null;
 
         BigDecimal baseSalaryAmount = resolveBaseSalaryAmount(contract);
-        BigDecimal grossSalaryAmount = calculateGrossSalaryAmount(
-                contract,
-                reports,
-                totalWorkHours,
-                totalOvertimeHours,
-                totalNightWorkHours
-        );
+        BigDecimal grossSalaryAmount = sum(reports, "normalPayAmount")
+                .add(sum(reports, "overtimePayAmount"))
+                .add(sum(reports, "nightPayAmount"))
+                .add(sum(reports, "holidayPayAmount"));
 
         BigDecimal estimatedPaymentAmount =
                 grossSalaryAmount
@@ -204,12 +203,13 @@ public List<DailyReportMonthlyAttendanceResponse> findMonthlyAttendance(
                 .reportCount(reports.size())
 
                 .paidLeaveUsedDays(paidLeaveUsedDays)
-                .paidLeaveRemainingDays(paidLeaveRemainingDays)
+                .paidLeaveRemainingDays(paidLeaveOpeningDays)
                 .paidLeaveRemainingAfterUsedDays(paidLeaveRemainingAfterUsedDays)
 
                 .totalWorkHours(totalWorkHours)
                 .totalOvertimeHours(totalOvertimeHours)
                 .totalNightWorkHours(totalNightWorkHours)
+                .totalHolidayWorkHours(totalHolidayWorkHours)
 
                 .totalAllowanceAmount(totalAllowanceAmount)
                 .totalDeductionAmount(totalDeductionAmount)
@@ -234,50 +234,6 @@ public List<DailyReportMonthlyAttendanceResponse> findMonthlyAttendance(
         };
     }
 
-    private BigDecimal calculateGrossSalaryAmount(
-            EmployeeContract contract,
-            List<DailyReport> reports,
-            BigDecimal totalWorkHours,
-            BigDecimal totalOvertimeHours,
-            BigDecimal totalNightWorkHours
-    ) {
-        if (contract == null || contract.getSalaryType() == null) {
-            return BigDecimal.ZERO;
-        }
-
-        return switch (contract.getSalaryType()) {
-            case MONTHLY -> nvl(contract.getMonthlySalary());
-
-            case WEEKLY -> nvl(contract.getWeeklyWage())
-                    .multiply(calculateWeekCount(reports));
-
-            case DAILY -> nvl(contract.getDailyWage())
-                    .multiply(BigDecimal.valueOf(reports.size()));
-
-            case HOURLY -> nvl(contract.getHourlyWage())
-                    .multiply(
-                            nvl(totalWorkHours)
-                                    .add(nvl(totalOvertimeHours))
-                                    .add(nvl(totalNightWorkHours))
-                    );
-        };
-    }
-
-    private BigDecimal calculateWeekCount(List<DailyReport> reports) {
-        @SuppressWarnings("null")
-        long workDateCount = reports.stream()
-                .map(DailyReport::getWorkDate)
-                .distinct()
-                .count();
-
-        if (workDateCount <= 0) {
-            return BigDecimal.ZERO;
-        }
-
-        return BigDecimal.valueOf(workDateCount)
-                .divide(BigDecimal.valueOf(7), 2, java.math.RoundingMode.HALF_UP);
-    }
-
     @SuppressWarnings("null")
 private BigDecimal sum(
             List<DailyReport> reports,
@@ -288,6 +244,11 @@ private BigDecimal sum(
                     case "workHours" -> report.getWorkHours();
                     case "overtimeHours" -> report.getOvertimeHours();
                     case "nightWorkHours" -> report.getNightWorkHours();
+                    case "holidayWorkHours" -> report.getHolidayWorkHours();
+                    case "normalPayAmount" -> report.getNormalPayAmount();
+                    case "overtimePayAmount" -> report.getOvertimePayAmount();
+                    case "nightPayAmount" -> report.getNightPayAmount();
+                    case "holidayPayAmount" -> report.getHolidayPayAmount();
                     case "allowanceAmount" -> report.getAllowanceAmount();
                     case "deductionAmount" -> report.getDeductionAmount();
                     case "savingAmount" -> report.getSavingAmount();

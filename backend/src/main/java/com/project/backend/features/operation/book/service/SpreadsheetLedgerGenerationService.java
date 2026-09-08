@@ -55,6 +55,7 @@ public class SpreadsheetLedgerGenerationService {
     private final ExcelBookDataSourceRowQueryService rowQueryService;
     private final SpreadsheetLedgerRendererRegistry rendererRegistry;
     private final SpreadsheetLedgerSelectionService selectionService;
+    private final SpreadsheetLedgerReadinessService readinessService;
     private final MonthlyClosingRepository closingRepository;
     private final StorageService storageService;
     private final DocumentStorageKeyResolver storageKeyResolver;
@@ -66,21 +67,19 @@ public class SpreadsheetLedgerGenerationService {
                 .findByActiveFlagTrueAndDeletedAtIsNullOrderByBookNameAsc()
                 .stream()
                 .map(master -> {
-                    SpreadsheetLedgerRenderer renderer = renderer(master);
-                    boolean usesTemplate = renderer.requiresTemplate();
-                    boolean templateConfigured = usesTemplate
-                            && templateService.find(master.getId())
-                                    .workbook() != null;
+                    var readiness = readinessService.assess(master);
                     return new OperationExcelBookResponse(
                             master.getId(),
                             master.getBookCode(),
                             master.getBookName(),
                             master.getSourceName(),
-                            usesTemplate
+                            readiness.templateRequired()
                                     ? SpreadsheetLedgerGenerationMode.TEMPLATE
                                     : SpreadsheetLedgerGenerationMode.CODE,
-                            !usesTemplate || templateConfigured,
-                            templateConfigured,
+                            readiness.generationReady(),
+                            readiness.templateConfigured(),
+                            readiness.monthlyClosingConfigured(),
+                            readiness.issues(),
                             new ExcelBookSelectionConfig(
                                     master.getSelectionMode(),
                                     master.getSelectionSourceName(),
@@ -108,6 +107,7 @@ public class SpreadsheetLedgerGenerationService {
         validateBookCode(bookCode);
         YearMonth.parse(targetMonth);
         ExcelBookMaster master = findMaster(bookCode);
+        readinessService.requireGenerationReady(master);
         if (master.getSelectionMode()
                 != com.project.backend.features.system.excelbook.enums
                 .ExcelBookSelectionMode.NONE) {
@@ -126,6 +126,7 @@ public class SpreadsheetLedgerGenerationService {
         validateBookCode(bookCode);
         YearMonth.parse(targetMonth);
         ExcelBookMaster master = findMaster(bookCode);
+        readinessService.requireGenerationReady(master);
         if (master.getSelectionMode()
                 == com.project.backend.features.system.excelbook.enums
                 .ExcelBookSelectionMode.NONE) {
@@ -182,6 +183,7 @@ public class SpreadsheetLedgerGenerationService {
         }
 
         ExcelBookMaster master = findMaster(bookCode);
+        readinessService.requireGenerationReady(master);
         if (master.getSelectionMode()
                 == com.project.backend.features.system.excelbook.enums
                 .ExcelBookSelectionMode.NONE) {

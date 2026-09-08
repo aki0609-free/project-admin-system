@@ -59,7 +59,7 @@ public class ExcelReportExporter implements ReportExporter {
         }
 
         return new FileExportResult(
-                fileNameBuilder.build(reportMaster, "xlsx"),
+                fileNameBuilder.build(reportMaster, "xlsx", rows),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 data
         );

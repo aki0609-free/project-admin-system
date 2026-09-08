@@ -156,7 +156,7 @@ const parseContentDispositionFileName = (
     }
   }
 
-  return contentDisposition.match(/filename=\"?([^\";]+)\"?/i)?.[1] ?? null
+  return contentDisposition.match(/filename="?([^";]+)"?/i)?.[1] ?? null
 }
 
 export const getBlob = async (url: string): Promise<Blob> => {

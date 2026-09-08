@@ -1,7 +1,8 @@
 export const queryKeys = {
   dailyReports: {
     all: ['daily-reports'] as const,
-    list: () => ['daily-reports', 'list'] as const,
+    list: (from: string, to: string) =>
+      ['daily-reports', 'list', from, to] as const,
     detail: (id: number) => ['daily-reports', 'detail', id] as const,
     inputItems: () => ['daily-reports', 'input-items'] as const,
     estimatedPayPreview: () => ['daily-reports', 'estimated-pay-preview'] as const,

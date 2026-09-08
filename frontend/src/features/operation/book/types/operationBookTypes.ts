@@ -6,8 +6,14 @@ export type OperationExcelBook = {
   generationMode: 'TEMPLATE' | 'CODE'
   generationReady: boolean
   templateConfigured: boolean
+  monthlyClosingConfigured: boolean
+  readinessIssues: string[]
   selection: SpreadsheetLedgerSelectionConfig
   print: SpreadsheetLedgerPrintConfig
+}
+
+export type OperationExcelBookSettings = {
+  fiscalYearStartMonth: number
 }
 
 export type SpreadsheetLedgerSelectionMode =

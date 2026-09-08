@@ -302,7 +302,7 @@ INSERT INTO deduction_masters (
 (
     13,
     'LEGAL_DEPOSIT',
-    '法定預り金',
+    '法定準備金',
     'LEGAL',
     'MANUAL',
     'DAILY',

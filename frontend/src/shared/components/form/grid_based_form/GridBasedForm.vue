@@ -1,21 +1,11 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
-import { computed } from 'vue'
-import { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
+import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
 import EditableFormCell from '../base/EditableFormCell.vue'
 
-const props = defineProps<{
+defineProps<{
   modelValue: T
   fields: GridFormFieldDef<T>[]
 }>()
-
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: T): void
-}>()
-
-const model = computed({
-  get: () => props.modelValue,
-  set: val => emit('update:modelValue', val)
-})
 </script>
 
 <template>
@@ -38,6 +28,7 @@ const model = computed({
 .grid-form {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  align-items: start;
   gap: 16px;
 }
 
@@ -45,5 +36,8 @@ const model = computed({
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  align-self: start;
+  min-width: 0;
+  width: 100%;
 }
 </style>

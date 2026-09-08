@@ -7,10 +7,13 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.project.backend.features.dailyreport.entity.DailyReport;
+import com.project.backend.features.employee.enums.ApprovalStatus;
 
 public interface DailyReportRepository extends JpaRepository<DailyReport, Long> {
 
         List<DailyReport> findAllByDeletedAtIsNullOrderByWorkDateDescIdDesc();
+
+        List<DailyReport> findAllByDeletedAtIsNullOrderByWorkDateDescPaymentDateAscIdDesc();
 
         Optional<DailyReport> findByIdAndDeletedAtIsNull(Long id);
 
@@ -18,10 +21,32 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
                         LocalDate from,
                         LocalDate to);
 
+        List<DailyReport> findByWorkDateBetweenAndApprovalStatusAndDeletedAtIsNullOrderByWorkDateDescIdDesc(
+                        LocalDate from,
+                        LocalDate to,
+                        ApprovalStatus approvalStatus);
+
+        List<DailyReport> findByWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateDescPaymentDateAscIdDesc(
+                        LocalDate from,
+                        LocalDate to);
+
         List<DailyReport> findByEmployeeIdAndDeletedAtIsNullOrderByWorkDateDescIdDesc(
                         Long employeeId);
 
+        List<DailyReport> findByEmployeeIdAndDeletedAtIsNullOrderByWorkDateDescPaymentDateAscIdDesc(
+                        Long employeeId);
+
         List<DailyReport> findByEmployeeIdAndWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateAscIdAsc(
+                        Long employeeId,
+                        LocalDate from,
+                        LocalDate to);
+
+        List<DailyReport> findByEmployeeIdAndWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateDescIdDesc(
+                        Long employeeId,
+                        LocalDate from,
+                        LocalDate to);
+
+        List<DailyReport> findByEmployeeIdAndWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateDescPaymentDateAscIdDesc(
                         Long employeeId,
                         LocalDate from,
                         LocalDate to);
@@ -53,5 +78,14 @@ public interface DailyReportRepository extends JpaRepository<DailyReport, Long> 
 
         List<DailyReport> findByPaymentDateAndDeletedAtIsNullOrderByWorkDateDescIdDesc(
                         LocalDate paymentDate);
+
+        List<DailyReport> findByPaymentDateAndApprovalStatusAndDeletedAtIsNullOrderByEmployeeEmployeeCodeAscWorkDateDescIdDesc(
+                        LocalDate paymentDate,
+                        ApprovalStatus approvalStatus);
+
+        List<DailyReport> findByPaymentDateBetweenAndApprovalStatusAndDeletedAtIsNullOrderByPaymentDateAscEmployeeEmployeeCodeAscIdAsc(
+                        LocalDate from,
+                        LocalDate to,
+                        ApprovalStatus approvalStatus);
 
 }

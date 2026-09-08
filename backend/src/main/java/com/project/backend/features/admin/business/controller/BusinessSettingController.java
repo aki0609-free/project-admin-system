@@ -20,12 +20,15 @@ import com.project.backend.features.admin.business.dto.ExternalSupportLinkSettin
 import com.project.backend.features.admin.business.dto.ExternalSupportLinkSettingSaveRequest;
 import com.project.backend.features.admin.business.dto.MonthlyClosingOutputAdminResponse;
 import com.project.backend.features.admin.business.dto.MonthlyClosingOutputSaveRequest;
+import com.project.backend.features.admin.business.dto.PayrollPolicySettingResponse;
+import com.project.backend.features.admin.business.dto.PayrollPolicySettingSaveRequest;
 import com.project.backend.features.admin.business.dto.ResignationChecklistAdminResponse;
 import com.project.backend.features.admin.business.dto.ResignationChecklistSaveRequest;
 import com.project.backend.features.admin.business.dto.ResignationMessageSaveRequest;
 import com.project.backend.features.admin.business.service.BusinessSettingService;
 import com.project.backend.features.admin.business.service.AnnualReportBackupSettingService;
 import com.project.backend.features.admin.business.service.ExternalSupportLinkSettingService;
+import com.project.backend.features.admin.business.service.PayrollPolicySettingService;
 import com.project.backend.features.operation.monthly.dto.AnnualReportBackupResult;
 import com.project.backend.features.employee.dto.EmployeeResignationMessageResponse;
 
@@ -41,6 +44,24 @@ public class BusinessSettingController {
     private final BusinessSettingService service;
     private final AnnualReportBackupSettingService annualReportBackupService;
     private final ExternalSupportLinkSettingService externalSupportLinkSettingService;
+    private final PayrollPolicySettingService payrollPolicySettingService;
+
+    @GetMapping("/payroll-policies")
+    public List<PayrollPolicySettingResponse> findPayrollPolicies() {
+        return payrollPolicySettingService.findAll();
+    }
+
+    @PostMapping("/payroll-policies")
+    public PayrollPolicySettingResponse savePayrollPolicy(
+            @Valid @RequestBody PayrollPolicySettingSaveRequest request
+    ) {
+        return payrollPolicySettingService.save(request);
+    }
+
+    @DeleteMapping("/payroll-policies/{id}")
+    public void deletePayrollPolicy(@PathVariable Long id) {
+        payrollPolicySettingService.delete(id);
+    }
 
     @GetMapping("/external-support-links")
     public ExternalSupportLinkSettingResponse findExternalSupportLinks() {

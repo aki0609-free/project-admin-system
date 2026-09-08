@@ -16,14 +16,13 @@ import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
 import com.project.backend.features.dailyreport.service.DailyReportCommandService;
 import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.entity.EmployeeContract;
+import com.project.backend.features.employee.entity.EmployeePayrollProfile;
 import com.project.backend.features.employee.enums.ApprovalStatus;
 import com.project.backend.features.employee.enums.PaymentCycle;
 import com.project.backend.features.employee.enums.SalaryType;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.employee.repository.EmployeeRepository;
-import com.project.backend.features.operation.daily.dto.DailyPaymentBulkSaveItemRequest;
-import com.project.backend.features.operation.daily.dto.DailyPaymentBulkSaveRequest;
-import com.project.backend.features.operation.daily.enums.DailyPaymentStatus;
+import com.project.backend.features.employee.repository.EmployeePayrollProfileRepository;
 import com.project.backend.features.operation.daily.service.DailyPaymentService;
 import com.project.backend.features.operation.monthly.service.MonthlySummaryService;
 import com.project.backend.features.tax.dto.ResidentTaxConfirmRequest;
@@ -45,6 +44,9 @@ class PayrollBusinessFlowContainerIntegrationTest
 
     @Autowired
     private EmployeeContractRepository contractRepository;
+
+    @Autowired
+    private EmployeePayrollProfileRepository payrollProfileRepository;
 
     @Autowired
     private DailyReportCommandService dailyReportCommandService;
@@ -70,7 +72,9 @@ class PayrollBusinessFlowContainerIntegrationTest
         );
         confirmResidentTax(employee.getId());
 
-        var report = dailyReportCommandService.create(dailyReportRequest(employee.getId()));
+        var report = dailyReportCommandService.create(
+                dailyReportRequest(employee.getId(), new BigDecimal("1.00"))
+        );
 
         assertThat(report.normalPayAmount()).isEqualByComparingTo("12000");
         assertThat(report.overtimePayAmount()).isEqualByComparingTo("3750");
@@ -86,8 +90,6 @@ class PayrollBusinessFlowContainerIntegrationTest
             assertThat(payment.plannedAmount()).isEqualByComparingTo("15750");
         });
 
-        savePaidDailyPayment(employee.getId());
-
         assertThat(residentTaxMonthlyRepository
                 .findByEmployeeIdAndFiscalYearAndMonth(employee.getId(), 2026, 8))
                 .get()
@@ -99,8 +101,18 @@ class PayrollBusinessFlowContainerIntegrationTest
         assertThat(summary.workReportCount()).isEqualTo(1);
         assertThat(summary.totalGrossAmount()).isEqualByComparingTo("15750");
         assertThat(summary.totalDeductionAmount()).isEqualByComparingTo("0");
-        assertThat(summary.totalDailyPaymentAmount()).isEqualByComparingTo("15000");
-        assertThat(summary.totalNetPaymentAmount()).isEqualByComparingTo("750");
+        assertThat(summary.totalDailyPaymentAmount()).isEqualByComparingTo("15750");
+        assertThat(summary.totalNetPaymentAmount()).isEqualByComparingTo("0");
+
+        assertPaidLeaveRemaining(employee.getId(), "9.00");
+        dailyReportCommandService.update(
+                report.id(),
+                dailyReportRequest(employee.getId(), new BigDecimal("2.00"))
+        );
+        assertPaidLeaveRemaining(employee.getId(), "8.00");
+
+        dailyReportCommandService.delete(report.id());
+        assertPaidLeaveRemaining(employee.getId(), "10.00");
     }
 
     private Employee saveEmployeeAndContract() {
@@ -116,26 +128,12 @@ class PayrollBusinessFlowContainerIntegrationTest
         contract.setHourlyWage(new BigDecimal("1500"));
         contract.setStandardWorkingHours(new BigDecimal("40"));
         contractRepository.saveAndFlush(contract);
+
+        EmployeePayrollProfile payrollProfile = new EmployeePayrollProfile();
+        payrollProfile.setEmployee(employee);
+        payrollProfile.setPaidLeaveRemainingDays(new BigDecimal("10.00"));
+        payrollProfileRepository.saveAndFlush(payrollProfile);
         return employee;
-    }
-
-    private void savePaidDailyPayment(Long employeeId) {
-        DailyPaymentBulkSaveItemRequest item = new DailyPaymentBulkSaveItemRequest();
-        item.setEmployeeId(employeeId);
-        item.setPlannedAmount(new BigDecimal("15750"));
-        item.setActualAmount(new BigDecimal("15000"));
-        item.setStatus(DailyPaymentStatus.PAID);
-        item.setNewFlag(true);
-
-        DailyPaymentBulkSaveRequest request = new DailyPaymentBulkSaveRequest();
-        request.setPaymentDate(LocalDate.of(2026, 8, 10));
-        request.setItems(List.of(item));
-
-        var saved = dailyPaymentService.bulkSave(request);
-        assertThat(saved).singleElement().satisfies(payment -> {
-            assertThat(payment.status()).isEqualTo(DailyPaymentStatus.PAID);
-            assertThat(payment.actualAmount()).isEqualByComparingTo("15000");
-        });
     }
 
     private void confirmResidentTax(Long employeeId) {
@@ -161,7 +159,18 @@ class PayrollBusinessFlowContainerIntegrationTest
                 new ResidentTaxConfirmRequest("業務フロー統合テスト", false));
     }
 
-    private DailyReportSaveRequest dailyReportRequest(Long employeeId) {
+    private void assertPaidLeaveRemaining(Long employeeId, String expected) {
+        assertThat(payrollProfileRepository
+                .findByEmployeeIdAndDeletedAtIsNull(employeeId)
+                .orElseThrow()
+                .getPaidLeaveRemainingDays())
+                .isEqualByComparingTo(expected);
+    }
+
+    private DailyReportSaveRequest dailyReportRequest(
+            Long employeeId,
+            BigDecimal paidLeaveDays
+    ) {
         return new DailyReportSaveRequest(
                 employeeId,
                 LocalDate.of(2026, 8, 10),
@@ -176,7 +185,7 @@ class PayrollBusinessFlowContainerIntegrationTest
                 null,
                 "Testcontainers固定日報",
                 LocalTime.of(8, 0),
-                LocalTime.of(18, 0),
+                LocalTime.of(19, 0),
                 60,
                 new BigDecimal("8"),
                 new BigDecimal("2"),
@@ -190,7 +199,7 @@ class PayrollBusinessFlowContainerIntegrationTest
                 0,
                 false,
                 BigDecimal.ZERO,
-                BigDecimal.ZERO,
+                paidLeaveDays,
                 ApprovalStatus.APPROVED,
                 "Testcontainers自動承認",
                 List.of(),

@@ -4,9 +4,15 @@ import type { ExcelBookMasterResponse } from '../types/excelBookTypes'
 
 export function useExcelBookMasterColumns() {
   const columns = computed<SimpleTableColumnDef<ExcelBookMasterResponse>[]>(() => [
-    { title: 'Book Code', key: 'bookCode', width: '180px', filter: { type: 'text' } },
+    { title: '台帳コード', key: 'bookCode', width: '180px', filter: { type: 'text' } },
     { title: '名称', key: 'bookName', width: '220px', filter: { type: 'text' } },
-    { title: 'Source', key: 'sourceType', width: '120px', filter: { type: 'text' } },
+    {
+      title: 'データ取得方式',
+      key: 'sourceType',
+      width: '140px',
+      filter: { type: 'text' },
+      formatter: value => value === 'SNAPSHOT' ? 'スナップショット' : String(value ?? ''),
+    },
     { title: 'レイアウト', key: 'layoutType', width: '170px', filter: { type: 'text' } },
     { title: 'データソース', key: 'dataSourceCode', width: '260px', filter: { type: 'text' } },
     {

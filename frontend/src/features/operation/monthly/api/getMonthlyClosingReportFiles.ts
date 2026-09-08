@@ -5,6 +5,7 @@ export const getMonthlyClosingReportFiles = (
   targetMonth: string,
   closingVersion: number | null,
   reportCode: string,
+  targetId: number | null = null,
 ) =>
   get<MonthlyClosingReportFileResponse[]>(
     '/api/operation/monthly/report-files',
@@ -14,6 +15,7 @@ export const getMonthlyClosingReportFiles = (
           targetMonth,
           ...(closingVersion ? { closingVersion } : {}),
           reportCode,
+          ...(targetId ? { targetId } : {}),
         },
       },
     },

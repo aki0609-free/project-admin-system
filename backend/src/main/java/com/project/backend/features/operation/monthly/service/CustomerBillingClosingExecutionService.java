@@ -8,6 +8,8 @@ import java.time.YearMonth;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.project.backend.features.operation.monthly.dto.CustomerBillingClosingResponse;
 import com.project.backend.features.operation.monthly.entity.CustomerBillingClosing;
@@ -21,6 +23,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class CustomerBillingClosingExecutionService {
+
+    private static final String SYSTEM_EXECUTOR = "SYSTEM";
 
     private final CustomerBillingClosingRepository repository;
     private final CustomerBillingTargetService targetService;
@@ -54,12 +58,19 @@ public class CustomerBillingClosingExecutionService {
                     "既に顧客請求締め済みです。再締めを実行してください。"
             );
         }
-        if (reclose && closing.getId() == null) {
-            throw new IllegalStateException("顧客請求締めデータがありません。");
+        int completedVersion = closing.getClosingVersion() == null
+                ? 0
+                : closing.getClosingVersion();
+        if (reclose && (closing.getId() == null
+                || closing.getStatus() != MonthlyClosingStatus.CLOSED
+                || completedVersion < 1)) {
+            throw new IllegalStateException(
+                    "初回の顧客請求締めが完了していません。"
+            );
         }
 
         closing = repository.save(closing);
-        int nextVersion = closing.getClosingVersion() + 1;
+        int nextVersion = completedVersion + 1;
         jobService.execute(
                 closing.getId(),
                 targetMonthText,
@@ -70,7 +81,20 @@ public class CustomerBillingClosingExecutionService {
         closing.setClosingVersion(nextVersion);
         closing.setStatus(MonthlyClosingStatus.CLOSED);
         closing.setClosedAt(Instant.now(clock));
+        closing.setClosedBy(currentUsername());
         return toResponse(repository.save(closing));
+    }
+
+    private String currentUsername() {
+        Authentication authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+        if (authentication == null
+                || authentication.getName() == null
+                || authentication.getName().isBlank()) {
+            return SYSTEM_EXECUTOR;
+        }
+        return authentication.getName();
     }
 
     private CustomerBillingClosingResponse toResponse(

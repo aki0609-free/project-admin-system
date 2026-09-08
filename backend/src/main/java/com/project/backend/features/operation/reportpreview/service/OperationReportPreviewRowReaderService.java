@@ -49,11 +49,58 @@ public class OperationReportPreviewRowReaderService {
             String targetMonth = validateTargetMonth(
                     request.targetMonth()
             );
+            boolean customerScoped = hasCustomerBillingScope(request);
+            if (customerScoped && "MONTHLY_INVOICE".equals(request.reportCode())) {
+                LocalDate periodFrom = validatePeriodDate(
+                        request.periodFrom(), "periodFrom"
+                );
+                LocalDate periodTo = validatePeriodDate(
+                        request.periodTo(), "periodTo"
+                );
+                if (periodFrom.isAfter(periodTo)) {
+                    throw new IllegalArgumentException(
+                            "periodFromはperiodTo以前の日付を指定してください。"
+                    );
+                }
+                return jdbcTemplate.queryForList("""
+                        select *
+                        from %s
+                        where tenant_id = :tenantId
+                          and customer_id = :customerId
+                          and work_date between :periodFrom and :periodTo
+                        %s
+                        """.formatted(tableName, orderBySql),
+                        Map.of(
+                                "tenantId", tenantId,
+                                "customerId", request.customerId(),
+                                "periodFrom", periodFrom,
+                                "periodTo", periodTo
+                        ));
+            }
+            if (customerScoped) {
+                return jdbcTemplate.queryForList("""
+                        select *
+                        from %s
+                        where tenant_id = :tenantId
+                          and date_format(%s, '%%Y-%%m') = :targetMonth
+                          and customer_id = :customerId
+                        %s
+                        """.formatted(
+                                tableName,
+                                filterColumnName,
+                                orderBySql
+                        ),
+                        Map.of(
+                                "tenantId", tenantId,
+                                "targetMonth", targetMonth,
+                                "customerId", request.customerId()
+                        ));
+            }
             return jdbcTemplate.queryForList("""
                     select *
                     from %s
                     where tenant_id = :tenantId
-                      and %s = :targetMonth
+                      and date_format(%s, '%%Y-%%m') = :targetMonth
                     %s
                     """.formatted(
                             tableName,
@@ -128,6 +175,40 @@ public class OperationReportPreviewRowReaderService {
                     e
             );
         }
+    }
+
+    private LocalDate validatePeriodDate(String value, String fieldName) {
+        try {
+            return LocalDate.parse(value);
+        } catch (DateTimeParseException | NullPointerException e) {
+            throw new IllegalArgumentException(
+                    fieldName + "はyyyy-MM-dd形式で指定してください。",
+                    e
+            );
+        }
+    }
+
+    /**
+     * 顧客締め帳票では顧客IDと期間を常に一組で要求する。
+     * 請求書は最新日報を期間検索し、注文書は確定履歴を対象月＋顧客で検索する。
+     */
+    private boolean hasCustomerBillingScope(
+            OperationReportPreviewHtmlRequest request
+    ) {
+        boolean anyCustomerScope = request.customerId() != null
+                || StringUtils.hasText(request.periodFrom())
+                || StringUtils.hasText(request.periodTo());
+        if (!anyCustomerScope) {
+            return false;
+        }
+        if (request.customerId() == null
+                || !StringUtils.hasText(request.periodFrom())
+                || !StringUtils.hasText(request.periodTo())) {
+            throw new IllegalArgumentException(
+                    "顧客締めプレビューにはcustomerId、periodFrom、periodToが必要です。"
+            );
+        }
+        return true;
     }
 
     private String resolveFilterColumnName(

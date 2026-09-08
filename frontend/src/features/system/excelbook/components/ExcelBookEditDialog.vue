@@ -113,7 +113,7 @@ const schema = z.object({
 const fields = computed<GridFormFieldDef<ExcelBookMasterForm>[]>(() => [
   {
     key: 'bookCode',
-    label: 'Book Code',
+    label: '台帳コード',
     type: 'text',
     gridColumn: '1 / span 2',
     disabled: !form._isNew,
@@ -126,9 +126,9 @@ const fields = computed<GridFormFieldDef<ExcelBookMasterForm>[]>(() => [
   },
   {
     key: 'sourceType',
-    label: 'Source Type',
+    label: 'データ取得方式',
     type: 'select',
-    options: [{ title: 'SNAPSHOT', value: 'SNAPSHOT' }],
+    options: [{ title: 'スナップショット', value: 'SNAPSHOT' }],
     gridColumn: '1 / span 2',
   },
   {
@@ -154,7 +154,7 @@ const fields = computed<GridFormFieldDef<ExcelBookMasterForm>[]>(() => [
   },
   {
     key: 'rendererKey',
-    label: 'Renderer Key',
+    label: '描画方式キー',
     type: 'text',
     gridColumn: '3 / span 2',
   },
@@ -279,6 +279,21 @@ watch(
   },
   { immediate: true },
 )
+
+watch(
+  () => form.selection.mode,
+  mode => {
+    form.selection.generationUnit = mode === 'NONE'
+      ? 'ONE_FILE'
+      : 'FILE_PER_SELECTION'
+    if (mode === 'NONE') {
+      form.selection.dataSourceCode = null
+      form.selection.valueColumn = null
+      form.selection.displayColumns = []
+      form.selection.allowSelectAll = false
+    }
+  },
+)
 </script>
 
 <template>
@@ -317,7 +332,6 @@ watch(
         <v-select
           v-model="form.selection.generationUnit"
           :items="[
-            { title: '1ファイルへ集約', value: 'ONE_FILE' },
             { title: '対象ごとに1ファイル', value: 'FILE_PER_SELECTION' },
           ]"
           label="生成単位"

@@ -8,6 +8,7 @@ import { configureSyncfusion } from '@/app/plugins/syncfusion'
 import { useSaveGeneratedSpreadsheetLedgerMutation } from '../api/useSaveGeneratedSpreadsheetLedgerMutation'
 import type { SpreadsheetLedgerGenerateResponse } from '../types/operationBookTypes'
 import type { SpreadsheetJsonResult } from '@/features/system/excelbook/types/excelBookTypes'
+import { formatYearMonth } from '@/shared/utils/DateUtils'
 
 import '@syncfusion/ej2-base/styles/material3.css'
 import '@syncfusion/ej2-buttons/styles/material3.css'
@@ -269,7 +270,7 @@ watch(visible, value => {
       </v-toolbar>
 
       <div v-if="result" class="generated-ledger-dialog__meta px-4 py-2">
-        <span>対象月: {{ result.targetMonth }}</span>
+        <span>対象月: {{ formatYearMonth(result.targetMonth) }}</span>
         <span>データ件数: {{ result.rowCount }}件</span>
         <span>JSONサイズ: {{ formatBytes(result.workbookBytes) }}</span>
         <span>生成時間: {{ result.generationDurationMs }} ms</span>

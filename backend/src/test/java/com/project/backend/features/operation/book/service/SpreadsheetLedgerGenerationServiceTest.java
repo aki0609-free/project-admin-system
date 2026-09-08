@@ -43,6 +43,7 @@ class SpreadsheetLedgerGenerationServiceTest {
     private ExcelBookDataSourceRowQueryService rowQueryService;
     private SpreadsheetWorkbookTemplateExpander expander;
     private MonthlyClosingRepository closingRepository;
+    private SpreadsheetLedgerReadinessService readinessService;
     private StorageService storageService;
     private SpreadsheetLedgerGenerationService service;
     private ExcelBookMaster master;
@@ -59,6 +60,7 @@ class SpreadsheetLedgerGenerationServiceTest {
         );
         expander = mock(SpreadsheetWorkbookTemplateExpander.class);
         closingRepository = mock(MonthlyClosingRepository.class);
+        readinessService = mock(SpreadsheetLedgerReadinessService.class);
         storageService = mock(StorageService.class);
 
         Clock clock = Clock.fixed(
@@ -81,6 +83,7 @@ class SpreadsheetLedgerGenerationServiceTest {
                         )
                 ),
                 mock(SpreadsheetLedgerSelectionService.class),
+                readinessService,
                 closingRepository,
                 storageService,
                 new DocumentStorageKeyResolver(
@@ -104,6 +107,16 @@ class SpreadsheetLedgerGenerationServiceTest {
         mapping.setScope("ROW");
         mapping.setDataType("STRING");
         master.addVariableMapping(mapping);
+        when(readinessService.assess(any())).thenReturn(
+                new SpreadsheetLedgerReadinessService
+                        .SpreadsheetLedgerReadiness(
+                                true,
+                                true,
+                                true,
+                                false,
+                                List.of()
+                        )
+        );
 
         JsonNode template = objectMapper.readTree(
                 """
@@ -224,6 +237,17 @@ class SpreadsheetLedgerGenerationServiceTest {
         codeGenerated.setSourceName("MONTHLY_LABOR_SOURCE");
         codeGenerated.setRendererKey(MonthlyLaborSpreadsheetRenderer.KEY);
 
+        when(readinessService.assess(codeGenerated)).thenReturn(
+                new SpreadsheetLedgerReadinessService
+                        .SpreadsheetLedgerReadiness(
+                                true,
+                                false,
+                                false,
+                                true,
+                                List.of()
+                        )
+        );
+
         when(repository
                 .findByActiveFlagTrueAndDeletedAtIsNullOrderByBookNameAsc())
                 .thenReturn(List.of(master, codeGenerated));
@@ -239,5 +263,6 @@ class SpreadsheetLedgerGenerationServiceTest {
                 .isEqualTo(SpreadsheetLedgerGenerationMode.CODE);
         assertThat(result.get(1).generationReady()).isTrue();
         assertThat(result.get(1).templateConfigured()).isFalse();
+        assertThat(result.get(1).monthlyClosingConfigured()).isTrue();
     }
 }

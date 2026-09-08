@@ -6,14 +6,16 @@ import java.time.YearMonth;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.project.backend.features.dailyreport.entity.DailyReport;
 import com.project.backend.features.dailyreport.repository.DailyReportRepository;
-import com.project.backend.features.operation.daily.entity.DailyPayment;
-import com.project.backend.features.operation.daily.repository.DailyPaymentRepository;
+import com.project.backend.features.employee.enums.ApprovalStatus;
+import com.project.backend.features.employee.enums.PaymentCycle;
+import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.operation.monthly.dto.MonthlyClosingSummaryResponse;
 import com.project.backend.features.operation.monthly.entity.MonthlyClosing;
 import com.project.backend.features.operation.monthly.mapper.MonthlyClosingMapper;
@@ -29,7 +31,7 @@ public class MonthlySummaryService {
 
     private final MonthlyClosingRepository monthlyClosingRepository;
     private final DailyReportRepository dailyReportRepository;
-    private final DailyPaymentRepository dailyPaymentRepository;
+    private final EmployeeContractRepository employeeContractRepository;
     private final MonthlyClosingMapper mapper;
 
     public MonthlyClosingSummaryResponse findSummary(String targetMonthText) {
@@ -41,15 +43,28 @@ public class MonthlySummaryService {
 
         List<DailyReport> reports =
                 dailyReportRepository
-                        .findByWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateDescIdDesc(
+                        .findByWorkDateBetweenAndApprovalStatusAndDeletedAtIsNullOrderByWorkDateDescIdDesc(
                                 monthStart,
-                                monthEnd);
+                                monthEnd,
+                                ApprovalStatus.APPROVED);
 
-        List<DailyPayment> dailyPayments =
-                dailyPaymentRepository
-                        .findByPaymentDateBetweenAndDeletedAtIsNullOrderByPaymentDateAscEmployeeCodeAscIdAsc(
+        List<DailyReport> advanceReports =
+                dailyReportRepository
+                        .findByPaymentDateBetweenAndApprovalStatusAndDeletedAtIsNullOrderByPaymentDateAscEmployeeEmployeeCodeAscIdAsc(
                                 monthStart,
-                                monthEnd);
+                                monthEnd,
+                                ApprovalStatus.APPROVED);
+
+        Set<Long> advanceEmployeeIds = advanceReports.stream()
+                .filter(report -> report.getEmployee() != null)
+                .map(report -> report.getEmployee().getId())
+                .collect(Collectors.toSet());
+        Set<Long> dailyPaymentEmployeeIds = employeeContractRepository
+                .findByEmployeeIdInAndDeletedAtIsNull(advanceEmployeeIds)
+                .stream()
+                .filter(contract -> contract.getPaymentCycle() == PaymentCycle.DAILY)
+                .map(contract -> contract.getEmployee().getId())
+                .collect(Collectors.toSet());
 
         Set<Long> employeeIds = new HashSet<>();
 
@@ -78,15 +93,13 @@ public class MonthlySummaryService {
                             .add(nvl(report.getLoanRepaymentAmount()));
         }
 
-        for (DailyPayment payment : dailyPayments) {
-            if (payment.getEmployeeId() != null) {
-                employeeIds.add(payment.getEmployeeId());
-            }
-
-            totalDailyPaymentAmount =
-                    totalDailyPaymentAmount.add(
-                            nvl(payment.getActualAmount()));
-        }
+        totalDailyPaymentAmount = advanceReports.stream()
+                .filter(report -> report.getEmployee() != null)
+                .filter(report -> dailyPaymentEmployeeIds.contains(
+                        report.getEmployee().getId()))
+                .map(DailyReport::getEstimatedNetPayAmount)
+                .map(this::nvl)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal totalNetPaymentAmount =
                 totalGrossAmount

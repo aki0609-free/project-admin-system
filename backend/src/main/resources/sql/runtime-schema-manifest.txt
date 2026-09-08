@@ -2,6 +2,7 @@
 # 依存順で記載し、パスはsrc/main/resourcesからの相対パスとする。
 sql/admin/external_support_links_v1.sql
 sql/customer/customer_contract_status_v1.sql
+sql/daily_report/payroll_policy_setting_v1.sql
 sql/daily_report/pay_component_rule_foundation_v1.sql
 sql/system/excelbook/renderer_selection_v1.sql
 sql/system/excelbook/monthly_summary_v1.sql

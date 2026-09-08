@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
+import DateFormField from '@/shared/components/form/base/components/form/DateFormField.vue'
+import OperationTargetFilterCard from '@/features/operation/shared/components/OperationTargetFilterCard.vue'
 
 import DailyPaymentSummaryCard from '../components/DailyPaymentSummaryCard.vue'
 import DailyPaymentTable from '../components/DailyPaymentTable.vue'
@@ -16,13 +18,11 @@ const {
   countText,
 
   employeeCount,
-  totalPlannedAmount,
-  totalActualAmount,
+  totalPaymentAmount,
 
   leftToolbarItems,
   rightToolbarItems,
 
-  handleCellUpdate,
 } = useDailyOperationPage()
 </script>
 
@@ -34,17 +34,18 @@ const {
     :right-toolbar-items="rightToolbarItems"
   >
     <template #search>
-      <div class="daily-payment-search">
-        <v-text-field
-          v-model="paymentDate"
-          type="date"
-          label="対象日"
-          variant="outlined"
-          density="compact"
-          hide-details
-          prepend-inner-icon="mdi-calendar"
-        />
-      </div>
+      <OperationTargetFilterCard>
+        <div class="daily-payment-search">
+          <DateFormField
+            v-model="paymentDate"
+            label="対象日"
+            variant="outlined"
+            density="compact"
+            hide-details
+            prepend-inner-icon="mdi-calendar"
+          />
+        </div>
+      </OperationTargetFilterCard>
     </template>
 
     <template #before-table>
@@ -61,14 +62,12 @@ const {
         <DailyPaymentSummaryCard
           v-if="active === 'summary'"
           :employee-count="employeeCount"
-          :total-planned-amount="totalPlannedAmount"
-          :total-actual-amount="totalActualAmount"
+          :total-payment-amount="totalPaymentAmount"
         />
 
         <DailyPaymentTable
           v-else-if="active === 'details'"
           :items="rows"
-          @update:items="handleCellUpdate"
         />
 
         <OperationReportTab

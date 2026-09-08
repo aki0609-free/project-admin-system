@@ -2,7 +2,6 @@ package com.project.backend.features.dailyreport.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
@@ -15,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.project.backend.app.tenant.context.TenantContext;
+import com.project.backend.features.admin.business.service.PayrollPolicySettingService;
+import com.project.backend.features.admin.business.service.PayrollPolicySettingService.PayrollPolicyValues;
 import com.project.backend.features.dailyreport.dto.DailyPayComponentAmounts;
 import com.project.backend.features.dailyreport.entity.DailyPayRuleSetting;
 import com.project.backend.features.dailyreport.entity.DailyReport;
@@ -38,23 +39,11 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class DailyPayComponentCalculationService {
 
-    private static final BigDecimal WEEKLY_STATUTORY_HOURS =
-            BigDecimal.valueOf(40);
-    private static final BigDecimal MONTHLY_OVERTIME_THRESHOLD =
-            BigDecimal.valueOf(60);
-    private static final BigDecimal OVERTIME_RATE =
-            new BigDecimal("1.25");
-    private static final BigDecimal OVERTIME_OVER_60_RATE =
-            new BigDecimal("1.50");
-    private static final BigDecimal NIGHT_PREMIUM_RATE =
-            new BigDecimal("0.25");
-    private static final BigDecimal HOLIDAY_RATE =
-            new BigDecimal("1.35");
-
     private final DailyPayRuleSettingRepository settingRepository;
     private final RuleExecutionService ruleExecutionService;
     private final DailyReportRepository dailyReportRepository;
     private final PayrollMoneyPolicy moneyPolicy;
+    private final PayrollPolicySettingService payrollPolicySettingService;
 
     public DailyPayComponentAmounts calculate(
             DailyReport report,
@@ -71,34 +60,44 @@ public class DailyPayComponentCalculationService {
             EmployeeContract contract,
             Long employeeId
     ) {
-        PayTimeBreakdown payTimes = resolvePayTimes(report, employeeId);
+        PayrollPolicyValues policy = payrollPolicySettingService.resolve(
+                report.getWorkDate()
+        );
+        PayTimeBreakdown payTimes = resolvePayTimes(
+                report, employeeId, policy
+        );
         Map<String, Object> parameters = parameters(
                 report,
                 contract,
                 employeeId,
-                payTimes
+                payTimes,
+                policy
         );
         Map<DailyPayComponentType, String> ruleNames = ruleNames();
 
         BigDecimal normal = calculateOne(
                 DailyPayComponentType.NORMAL_PAY,
                 ruleNames,
-                parameters
+                parameters,
+                policy
         );
         BigDecimal overtime = calculateOne(
                 DailyPayComponentType.OVERTIME_PAY,
                 ruleNames,
-                parameters
+                parameters,
+                policy
         );
         BigDecimal night = calculateOne(
                 DailyPayComponentType.NIGHT_PAY,
                 ruleNames,
-                parameters
+                parameters,
+                policy
         );
         BigDecimal holiday = calculateOne(
                 DailyPayComponentType.HOLIDAY_PAY,
                 ruleNames,
-                parameters
+                parameters,
+                policy
         );
         return new DailyPayComponentAmounts(
                 normal,
@@ -111,7 +110,8 @@ public class DailyPayComponentCalculationService {
     private BigDecimal calculateOne(
             DailyPayComponentType componentType,
             Map<DailyPayComponentType, String> ruleNames,
-            Map<String, Object> baseParameters
+            Map<String, Object> baseParameters,
+            PayrollPolicyValues policy
     ) {
         String ruleName = ruleNames.get(componentType);
 
@@ -133,7 +133,7 @@ public class DailyPayComponentCalculationService {
                             + componentType
             );
         }
-        return money(amount);
+        return money(amount, policy);
     }
 
     private Map<DailyPayComponentType, String> ruleNames() {
@@ -174,7 +174,8 @@ public class DailyPayComponentCalculationService {
             DailyReport report,
             EmployeeContract contract,
             Long employeeId,
-            PayTimeBreakdown payTimes
+            PayTimeBreakdown payTimes,
+            PayrollPolicyValues policy
     ) {
         Map<String, Object> parameters = new LinkedHashMap<>();
         put(parameters, "dailyReportId", report.getId());
@@ -193,10 +194,11 @@ public class DailyPayComponentCalculationService {
                 payTimes.overtimeWithin60Hours());
         put(parameters, "overtimeOver60Hours",
                 payTimes.overtimeOver60Hours());
-        put(parameters, "overtimeRate", OVERTIME_RATE);
-        put(parameters, "overtimeOver60Rate", OVERTIME_OVER_60_RATE);
-        put(parameters, "nightPremiumRate", NIGHT_PREMIUM_RATE);
-        put(parameters, "holidayRate", HOLIDAY_RATE);
+        put(parameters, "overtimeRate", policy.overtimeRate());
+        put(parameters, "overtimeOver60Rate",
+                policy.overtimeOverThresholdRate());
+        put(parameters, "nightPremiumRate", policy.nightPremiumRate());
+        put(parameters, "holidayRate", policy.statutoryHolidayRate());
         put(parameters, "customerId", report.getCustomerId());
         put(parameters, "customerSiteId", report.getCustomerSiteId());
         put(parameters, "jobCode", report.getJobCode());
@@ -212,9 +214,9 @@ public class DailyPayComponentCalculationService {
             put(parameters, "standardWorkingHours",
                     contract.getStandardWorkingHours());
             put(parameters, "calculationHourlyRate",
-                    calculationHourlyRate(contract));
+                    calculationHourlyRate(contract, policy));
             put(parameters, "regularPayAmount",
-                    calculationHourlyRate(contract)
+                    calculationHourlyRate(contract, policy)
                             .multiply(payTimes.regularPayHours()));
         }
         return parameters;
@@ -227,7 +229,8 @@ public class DailyPayComponentCalculationService {
      * 年平均の月所定労働時間による換算と同じ結果になる。</p>
      */
     private BigDecimal calculationHourlyRate(
-            EmployeeContract contract
+            EmployeeContract contract,
+            PayrollPolicyValues policy
     ) {
         if (contract == null || contract.getSalaryType() == null) {
             return BigDecimal.ZERO;
@@ -236,7 +239,7 @@ public class DailyPayComponentCalculationService {
         BigDecimal standardWeeklyHours =
                 nvl(contract.getStandardWorkingHours()).signum() > 0
                         ? contract.getStandardWorkingHours()
-                        : BigDecimal.valueOf(40);
+                        : policy.weeklyStatutoryHours();
 
         return switch (contract.getSalaryType()) {
             case MONTHLY -> nvl(contract.getMonthlySalary())
@@ -255,13 +258,18 @@ public class DailyPayComponentCalculationService {
                     );
             case HOURLY -> nvl(contract.getHourlyWage());
             case DAILY -> nvl(contract.getDailyWage())
-                    .divide(BigDecimal.valueOf(8), 8, RoundingMode.HALF_UP);
+                    .divide(
+                            policy.dailyStandardHours(),
+                            8,
+                            RoundingMode.HALF_UP
+                    );
         };
     }
 
     private PayTimeBreakdown resolvePayTimes(
             DailyReport report,
-            Long employeeId
+            Long employeeId,
+            PayrollPolicyValues policy
     ) {
         BigDecimal regularHours = nvl(report.getWorkHours());
         BigDecimal enteredOvertime = nvl(report.getOvertimeHours());
@@ -270,7 +278,8 @@ public class DailyPayComponentCalculationService {
                     regularHours,
                     enteredOvertime,
                     BigDecimal.ZERO,
-                    BigDecimal.ZERO
+                    BigDecimal.ZERO,
+                    policy
             );
         }
 
@@ -287,11 +296,13 @@ public class DailyPayComponentCalculationService {
 
         BigDecimal priorMonthlyOvertime = BigDecimal.ZERO;
         BigDecimal priorCurrentWeekHours = BigDecimal.ZERO;
-        LocalDate currentWeekStart = weekStart(workDate);
+        LocalDate currentWeekStart = weekStart(workDate, policy);
         Map<LocalDate, BigDecimal> weeklyHours = new LinkedHashMap<>();
 
         for (DailyReport previous : previousReports) {
-            LocalDate previousWeekStart = weekStart(previous.getWorkDate());
+            LocalDate previousWeekStart = weekStart(
+                    previous.getWorkDate(), policy
+            );
             BigDecimal weekHours = weeklyHours.getOrDefault(
                     previousWeekStart,
                     BigDecimal.ZERO
@@ -299,7 +310,8 @@ public class DailyPayComponentCalculationService {
             BigDecimal previousRegular = nvl(previous.getWorkHours());
             BigDecimal additionalWeeklyOvertime = additionalWeeklyOvertime(
                     weekHours,
-                    previousRegular
+                    previousRegular,
+                    policy
             );
             priorMonthlyOvertime = priorMonthlyOvertime
                     .add(nvl(previous.getOvertimeHours()))
@@ -320,7 +332,8 @@ public class DailyPayComponentCalculationService {
                 regularHours,
                 enteredOvertime,
                 priorCurrentWeekHours,
-                priorMonthlyOvertime
+                priorMonthlyOvertime,
+                policy
         );
     }
 
@@ -328,14 +341,16 @@ public class DailyPayComponentCalculationService {
             BigDecimal regularHours,
             BigDecimal enteredOvertime,
             BigDecimal priorWeekHours,
-            BigDecimal priorMonthlyOvertime
+            BigDecimal priorMonthlyOvertime,
+            PayrollPolicyValues policy
     ) {
         BigDecimal weeklyOvertime = additionalWeeklyOvertime(
                 priorWeekHours,
-                regularHours
+                regularHours,
+                policy
         );
         BigDecimal statutoryOvertime = enteredOvertime.add(weeklyOvertime);
-        BigDecimal remainingWithin60 = MONTHLY_OVERTIME_THRESHOLD
+        BigDecimal remainingWithin60 = policy.monthlyOvertimeThresholdHours()
                 .subtract(priorMonthlyOvertime)
                 .max(BigDecimal.ZERO);
         BigDecimal within60 = statutoryOvertime.min(remainingWithin60);
@@ -349,9 +364,10 @@ public class DailyPayComponentCalculationService {
 
     private BigDecimal additionalWeeklyOvertime(
             BigDecimal priorWeekHours,
-            BigDecimal currentRegularHours
+            BigDecimal currentRegularHours,
+            PayrollPolicyValues policy
     ) {
-        BigDecimal remainingRegular = WEEKLY_STATUTORY_HOURS
+        BigDecimal remainingRegular = policy.weeklyStatutoryHours()
                 .subtract(priorWeekHours)
                 .max(BigDecimal.ZERO);
         return currentRegularHours
@@ -360,12 +376,20 @@ public class DailyPayComponentCalculationService {
                 .min(currentRegularHours);
     }
 
-    private LocalDate weekStart(LocalDate date) {
-        return date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    private LocalDate weekStart(
+            LocalDate date,
+            PayrollPolicyValues policy
+    ) {
+        return date.with(TemporalAdjusters.previousOrSame(
+                policy.weekStartDay()
+        ));
     }
 
-    private BigDecimal money(BigDecimal value) {
-        return moneyPolicy.roundToYen(value);
+    private BigDecimal money(
+            BigDecimal value,
+            PayrollPolicyValues policy
+    ) {
+        return nvl(value).setScale(0, policy.amountRoundingMode());
     }
 
     private BigDecimal nvl(BigDecimal value) {

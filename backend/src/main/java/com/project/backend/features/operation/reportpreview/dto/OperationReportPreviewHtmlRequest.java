@@ -6,6 +6,9 @@ public record OperationReportPreviewHtmlRequest(
         OperationType operationType,
         String reportCode,
         String targetDate,
-        String targetMonth
+        String targetMonth,
+        Long customerId,
+        String periodFrom,
+        String periodTo
 ) {
 }

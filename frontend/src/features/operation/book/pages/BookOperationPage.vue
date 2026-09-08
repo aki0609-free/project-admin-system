@@ -2,7 +2,10 @@
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import { formatYearMonth } from '@/shared/utils/DateUtils'
+import OperationTargetFilterCard from '@/features/operation/shared/components/OperationTargetFilterCard.vue'
 import { useOperationExcelBooksQuery } from '../api/useOperationExcelBooksQuery'
+import { useOperationExcelBookSettingsQuery } from '../api/useOperationExcelBookSettingsQuery'
 import { useGenerateSpreadsheetLedgerMutation } from '../api/useGenerateSpreadsheetLedgerMutation'
 import { useGenerateSelectedSpreadsheetLedgersMutation } from '../api/useGenerateSelectedSpreadsheetLedgersMutation'
 import { useSpreadsheetLedgerSelectionQuery } from '../api/useSpreadsheetLedgerSelectionQuery'
@@ -15,11 +18,14 @@ const GeneratedSpreadsheetLedgerDialog = defineAsyncComponent(
   () => import('../components/GeneratedSpreadsheetLedgerDialog.vue'),
 )
 
-const FISCAL_YEAR_START_MONTH = 8
 const currentMonth = currentBusinessMonth()
 const currentYearMonth = parseYearMonth(currentMonth)
+const settingsQuery = useOperationExcelBookSettingsQuery()
+const fiscalYearStartMonth = computed(() =>
+  settingsQuery.settings.value?.fiscalYearStartMonth ?? 4,
+)
 const selectedFiscalYear = ref<number>(
-  currentYearMonth.month >= FISCAL_YEAR_START_MONTH
+  currentYearMonth.month >= fiscalYearStartMonth.value
     ? currentYearMonth.year
     : currentYearMonth.year - 1,
 )
@@ -81,7 +87,7 @@ const allSelected = computed({
 })
 const fiscalYearItems = computed(() => {
   const currentFiscalYear =
-    currentYearMonth.month >= FISCAL_YEAR_START_MONTH
+    currentYearMonth.month >= fiscalYearStartMonth.value
       ? currentYearMonth.year
       : currentYearMonth.year - 1
   return Array.from({ length: 9 }, (_, index) => {
@@ -91,12 +97,12 @@ const fiscalYearItems = computed(() => {
 })
 const fiscalMonthItems = computed(() =>
   Array.from({ length: 12 }, (_, index) => {
-    const monthOffset = FISCAL_YEAR_START_MONTH - 1 + index
+    const monthOffset = fiscalYearStartMonth.value - 1 + index
     const year = selectedFiscalYear.value + Math.floor(monthOffset / 12)
     const month = monthOffset % 12 + 1
     const value = `${year}-${String(month).padStart(2, '0')}`
     return {
-      title: `${year}年${month}月`,
+      title: `${month}月`,
       value,
     }
   }),
@@ -212,6 +218,12 @@ function displayValue(
   return String(option.displayValues[columnName] ?? '')
 }
 
+function readinessMessage(book: OperationExcelBook) {
+  return book.readinessIssues.length > 0
+    ? book.readinessIssues.join(' / ')
+    : '生成に必要な設定が揃っています。'
+}
+
 function currentBusinessMonth(): string {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Tokyo',
@@ -240,6 +252,12 @@ watch(selectedFiscalYear, () => {
     selectedMonth.value = fiscalMonthItems.value[0]?.value ?? currentMonth
   }
 })
+
+watch(fiscalYearStartMonth, startMonth => {
+  selectedFiscalYear.value = currentYearMonth.month >= startMonth
+    ? currentYearMonth.year
+    : currentYearMonth.year - 1
+})
 </script>
 
 <template>
@@ -250,26 +268,28 @@ watch(selectedFiscalYear, () => {
     :right-toolbar-items="rightToolbarItems"
   >
     <template #search>
-      <div class="book-search">
-        <v-select
-          v-model="selectedFiscalYear"
-          :items="fiscalYearItems"
-          label="年度"
-          variant="outlined"
-          density="compact"
-          hide-details
-          prepend-inner-icon="mdi-calendar-range"
-        />
-        <v-select
-          v-model="selectedMonth"
-          :items="fiscalMonthItems"
-          label="対象月"
-          variant="outlined"
-          density="compact"
-          hide-details
-          prepend-inner-icon="mdi-calendar-month"
-        />
-      </div>
+      <OperationTargetFilterCard>
+        <div class="book-search">
+          <v-select
+            v-model="selectedFiscalYear"
+            :items="fiscalYearItems"
+            label="年度"
+            variant="outlined"
+            density="compact"
+            hide-details
+            prepend-inner-icon="mdi-calendar-range"
+          />
+          <v-select
+            v-model="selectedMonth"
+            :items="fiscalMonthItems"
+            label="対象月"
+            variant="outlined"
+            density="compact"
+            hide-details
+            prepend-inner-icon="mdi-calendar-month"
+          />
+        </div>
+      </OperationTargetFilterCard>
     </template>
 
     <v-alert
@@ -305,9 +325,10 @@ watch(selectedFiscalYear, () => {
       <thead>
         <tr>
           <th>台帳名</th>
-          <th>Book Code</th>
+          <th>台帳コード</th>
           <th>データソース</th>
           <th>生成方式</th>
+          <th>月次締め</th>
           <th class="book-table__action">操作</th>
         </tr>
       </thead>
@@ -340,6 +361,21 @@ watch(selectedFiscalYear, () => {
                     : 'テンプレート'
               }}
             </v-chip>
+            <div
+              v-if="!book.generationReady"
+              class="text-caption text-error mt-1 book-table__readiness"
+            >
+              {{ readinessMessage(book) }}
+            </div>
+          </td>
+          <td>
+            <v-chip
+              size="small"
+              variant="tonal"
+              :color="book.monthlyClosingConfigured ? 'success' : 'default'"
+            >
+              {{ book.monthlyClosingConfigured ? '締め対象' : '手動生成のみ' }}
+            </v-chip>
           </td>
           <td class="book-table__action">
             <v-btn
@@ -361,7 +397,7 @@ watch(selectedFiscalYear, () => {
           </td>
         </tr>
         <tr v-if="!booksQuery.isLoading.value && booksQuery.books.value.length === 0">
-          <td colspan="5" class="text-center text-medium-emphasis py-8">
+          <td colspan="6" class="text-center text-medium-emphasis py-8">
             有効な台帳マスタがありません。
           </td>
         </tr>
@@ -388,7 +424,7 @@ watch(selectedFiscalYear, () => {
           {{ selectionBook?.bookName }}：生成対象を選択
         </v-card-title>
         <v-card-subtitle>
-          {{ targetMonth }}・選択した対象ごとに台帳ファイルを生成します。
+          {{ formatYearMonth(targetMonth) }}・選択した対象ごとに台帳ファイルを生成します。
         </v-card-subtitle>
 
         <v-card-text>
@@ -512,5 +548,10 @@ watch(selectedFiscalYear, () => {
 .book-table__action {
   width: 180px;
   text-align: right;
+}
+
+.book-table__readiness {
+  max-width: 320px;
+  white-space: normal;
 }
 </style>

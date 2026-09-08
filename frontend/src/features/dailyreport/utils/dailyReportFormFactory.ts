@@ -86,10 +86,10 @@ export const createEmptyDailyReportForm =
 export const toDailyReportForm = (
   item: DailyReportDetailResponse,
 ): DailyReportForm => ({
-  id: item.id,
+  id: Number(item.id),
 
   employeeId:
-    item.employeeId,
+    Number(item.employeeId),
 
   workDate:
     item.workDate,
@@ -98,10 +98,14 @@ export const toDailyReportForm = (
     item.paymentDate ?? '',
 
   customerId:
-    item.customerId,
+    item.customerId == null
+      ? null
+      : Number(item.customerId),
 
   customerSiteId:
-    item.customerSiteId,
+    item.customerSiteId == null
+      ? null
+      : Number(item.customerSiteId),
 
   customerName:
     item.customerName ?? '',
@@ -110,7 +114,9 @@ export const toDailyReportForm = (
     item.siteName ?? '',
 
   billingRateId:
-    item.billingRateId ?? null,
+    item.billingRateId == null
+      ? null
+      : Number(item.billingRateId),
 
   jobCode:
     item.jobCode ?? '',

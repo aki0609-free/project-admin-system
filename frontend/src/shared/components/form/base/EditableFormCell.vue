@@ -7,7 +7,7 @@ import {
   FormFieldDef,
 } from '@/shared/components/form/base/types/types'
 import { componentMap } from '@/shared/components/form/base/utils/componentMap'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, nextTick, ref } from 'vue'
 
 const props = defineProps<{
   field: FormFieldDef<T>
@@ -100,6 +100,16 @@ const updateValue = (val: unknown) => {
   }
 
   model.value[props.field.key] = val
+
+  // 日付ピッカーは入力欄の blur 後に値を反映するため、
+  // blur 時の古い必須エラーを新しい値で再評価する。
+  if (props.field.type === 'date') {
+    void nextTick(() =>
+      formContext.validateField(
+        String(props.field.key),
+      ),
+    )
+  }
 }
 
 const handleFocus = () => {

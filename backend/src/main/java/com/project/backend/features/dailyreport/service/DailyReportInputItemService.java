@@ -83,8 +83,10 @@ public class DailyReportInputItemService {
 
         DailyReportInputResponse calculated = findItems(
                 context,
-                allowanceManualAmounts(request),
-                deductionManualAmounts(request),
+                allowanceSubmittedAmounts(request),
+                deductionSubmittedAmounts(request),
+                allowanceOverrideMasterIds(request),
+                deductionOverrideMasterIds(request),
                 allowanceQuantities(request),
                 deductionQuantities(request)
         );
@@ -100,6 +102,8 @@ public class DailyReportInputItemService {
                 context,
                 allowanceManualAmounts,
                 deductionManualAmounts,
+                Set.of(),
+                Set.of(),
                 Map.of(),
                 Map.of()
         );
@@ -107,8 +111,10 @@ public class DailyReportInputItemService {
 
     private DailyReportInputResponse findItems(
             DailyReportCalculationContext context,
-            Map<Long, Integer> allowanceManualAmounts,
-            Map<Long, Integer> deductionManualAmounts,
+            Map<Long, Integer> allowanceSubmittedAmounts,
+            Map<Long, Integer> deductionSubmittedAmounts,
+            Set<Long> allowanceOverrideMasterIds,
+            Set<Long> deductionOverrideMasterIds,
             Map<Long, java.math.BigDecimal> allowanceQuantities,
             Map<Long, java.math.BigDecimal> deductionQuantities
     ) {
@@ -116,7 +122,8 @@ public class DailyReportInputItemService {
                 .allowances(
                         payrollItemDailyInputService.findAllowanceItems(
                                 context.toParameters(),
-                                allowanceManualAmounts,
+                                allowanceSubmittedAmounts,
+                                allowanceOverrideMasterIds,
                                 dailyItemParameters(
                                         context,
                                         PayrollItemTargetType.ALLOWANCE,
@@ -128,7 +135,8 @@ public class DailyReportInputItemService {
                 .deductions(
                         payrollItemDailyInputService.findDeductionItems(
                                 context.toParameters(),
-                                deductionManualAmounts,
+                                deductionSubmittedAmounts,
+                                deductionOverrideMasterIds,
                                 dailyItemParameters(
                                         context,
                                         PayrollItemTargetType.DEDUCTION,
@@ -224,7 +232,7 @@ public class DailyReportInputItemService {
         return variables;
     }
 
-    private Map<Long, Integer> allowanceManualAmounts(DailyReportSaveRequest request) {
+    private Map<Long, Integer> allowanceSubmittedAmounts(DailyReportSaveRequest request) {
         Map<Long, Integer> amounts = new LinkedHashMap<>();
         Set<Long> masterIds = new HashSet<>();
         for (DailyReportAllowanceSaveRequest item : request.allowances()) {
@@ -233,14 +241,12 @@ public class DailyReportInputItemService {
                 continue;
             }
             validateUniqueMasterId(masterIds, masterId, "手当");
-            if (Boolean.TRUE.equals(item.manualOverride())) {
-                amounts.put(masterId, item.amount() == null ? 0 : item.amount());
-            }
+            amounts.put(masterId, item.amount() == null ? 0 : item.amount());
         }
         return amounts;
     }
 
-    private Map<Long, Integer> deductionManualAmounts(DailyReportSaveRequest request) {
+    private Map<Long, Integer> deductionSubmittedAmounts(DailyReportSaveRequest request) {
         Map<Long, Integer> amounts = new LinkedHashMap<>();
         Set<Long> masterIds = new HashSet<>();
         for (DailyReportDeductionSaveRequest item : request.deductions()) {
@@ -249,11 +255,25 @@ public class DailyReportInputItemService {
                 continue;
             }
             validateUniqueMasterId(masterIds, masterId, "控除");
-            if (Boolean.TRUE.equals(item.manualOverride())) {
-                amounts.put(masterId, item.amount() == null ? 0 : item.amount());
-            }
+            amounts.put(masterId, item.amount() == null ? 0 : item.amount());
         }
         return amounts;
+    }
+
+    private Set<Long> allowanceOverrideMasterIds(DailyReportSaveRequest request) {
+        return request.allowances().stream()
+                .filter(item -> Boolean.TRUE.equals(item.manualOverride()))
+                .map(DailyReportAllowanceSaveRequest::allowanceMasterId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+
+    private Set<Long> deductionOverrideMasterIds(DailyReportSaveRequest request) {
+        return request.deductions().stream()
+                .filter(item -> Boolean.TRUE.equals(item.manualOverride()))
+                .map(DailyReportDeductionSaveRequest::deductionMasterId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
     }
 
     private Map<Long, java.math.BigDecimal> deductionQuantities(

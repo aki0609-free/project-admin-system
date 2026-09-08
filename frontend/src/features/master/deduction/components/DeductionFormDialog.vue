@@ -183,7 +183,7 @@ function validateForm(): string {
     return '固定計算では固定金額を入力してください。'
   }
   if (form.calculationType === 'MANUAL') {
-    // MANUALは入力そのものが基準金額になるため、常に手入力可として保存する。
+    // MANUALは初期金額を提示できるが、日報では実額へ変更できる。
     form.allowManualInput = true
   }
   if (form.minAmount != null && form.maxAmount != null && form.minAmount > form.maxAmount) {

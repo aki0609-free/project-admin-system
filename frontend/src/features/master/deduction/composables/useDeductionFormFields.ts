@@ -71,11 +71,11 @@ export const useDeductionFormFields = (formOptions: DeductionFormFieldOptions) =
     },
     {
       key: 'defaultAmount',
-      label: '固定金額',
+      label: '初期金額',
       type: 'number',
       tab: '計算設定',
       editable: formOptions.canManage.value,
-      visible: model => model.calculationType === 'FIXED',
+      visible: model => model.calculationType === 'MANUAL' || model.calculationType === 'FIXED',
     },
     {
       key: 'allowManualInput',

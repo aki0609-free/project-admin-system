@@ -111,6 +111,9 @@ export const useDailyReportEditDialog = (
   const preparationDefaultsMessage =
     ref('')
 
+  const saveError =
+    ref('')
+
   const applyingPreparationDefaults =
     ref(false)
 
@@ -161,6 +164,18 @@ export const useDailyReportEditDialog = (
     ),
   )
 
+  const hasActiveLoan = computed(
+    () =>
+      financeQuery.summary.value
+        ?.hasActiveLoan === true,
+  )
+
+  const hasActiveSaving = computed(
+    () =>
+      financeQuery.summary.value
+        ?.hasActiveSaving === true,
+  )
+
   const {
     billingRateLoading,
     applicableBillingRates,
@@ -186,6 +201,8 @@ export const useDailyReportEditDialog = (
     siteOptions,
     jobOptions,
     siteRoleOptions,
+    hasActiveLoan,
+    hasActiveSaving,
   })
 
   const nvl = (
@@ -459,8 +476,20 @@ export const useDailyReportEditDialog = (
       ?? ''
   }
 
+  const matchesLoadedCustomerSite = () => {
+    const loaded = dailyReport.value
+
+    return loaded != null
+      && formModel.id === loaded.id
+      && formModel.customerId
+        === loaded.customerId
+      && formModel.customerSiteId
+        === loaded.customerSiteId
+  }
+
   const resetForm = () => {
     applyingDetail.value = true
+    saveError.value = ''
 
     preparationDefaultsSequence += 1
     appliedPreparationDefaults = null
@@ -632,24 +661,30 @@ export const useDailyReportEditDialog = (
       }
 
       applyingDetail.value = true
-
-      Object.assign(
-        formModel,
-        toDailyReportForm(value),
-      )
-
-      formModel.holidayWorkHours =
-        nvl(formModel.holidayWorkHours)
-
-      formModel.billingHolidayUnitPrice =
-        nvl(
-          formModel
-            .billingHolidayUnitPrice,
+      try {
+        saveError.value = ''
+        Object.assign(
+          formModel,
+          toDailyReportForm(value),
         )
 
-      applyCustomerSnapshot()
+        formModel.holidayWorkHours =
+          nvl(formModel.holidayWorkHours)
 
-      applyingDetail.value = false
+        formModel.billingHolidayUnitPrice =
+          nvl(
+            formModel
+              .billingHolidayUnitPrice,
+          )
+
+        applyCustomerSnapshot()
+
+        // Object.assignで変更された顧客・現場のwatchが処理されるまで
+        // 詳細反映中として扱い、保存済みの現場と請求情報を消さない。
+        await nextTick()
+      } finally {
+        applyingDetail.value = false
+      }
 
       /*
        * 編集データの保存済み時間を維持する。
@@ -732,15 +767,35 @@ export const useDailyReportEditDialog = (
         return
       }
 
+      if (matchesLoadedCustomerSite()) {
+        return
+      }
+
       if (
         customerId
         !== oldCustomerId
       ) {
+        // 既存日報の初回読込では、未選択(null)から保存済み顧客へ
+        // 復元される。これは利用者による顧客変更ではないため、
+        // 保存済みの現場を初期化しない。
+        if (
+          formModel.id > 0
+          && oldCustomerId == null
+          && formModel.customerSiteId != null
+        ) {
+          return
+        }
+
         formModel.customerSiteId = null
         formModel.siteName = ''
 
         clearBillingSelection()
       }
+    },
+    {
+      // 詳細復元のObject.assign中に同期実行し、applyingDetailの
+      // ガードが外れた後で保存済み現場を消さない。
+      flush: 'sync',
     },
   )
 
@@ -760,9 +815,16 @@ export const useDailyReportEditDialog = (
         return
       }
 
+      if (matchesLoadedCustomerSite()) {
+        return
+      }
+
       if (siteId !== oldSiteId) {
         clearBillingSelection()
       }
+    },
+    {
+      flush: 'sync',
     },
   )
 
@@ -842,7 +904,9 @@ export const useDailyReportEditDialog = (
 
   watch(
     () => formModel.deductions.map(
-      item => `${item.masterId}:${item.quantity}`,
+      item => item.balanceUnit === 'AMOUNT'
+        ? `${item.masterId}:amount-managed`
+        : `${item.masterId}:${item.quantity}`,
     ),
     () => {
       if (applyingPayrollPreview.value) {
@@ -858,7 +922,9 @@ export const useDailyReportEditDialog = (
 
   watch(
     () => formModel.allowances.map(
-      item => `${item.masterId}:${item.quantity}`,
+      item => item.balanceUnit === 'AMOUNT'
+        ? `${item.masterId}:amount-managed`
+        : `${item.masterId}:${item.quantity}`,
     ),
     () => {
       if (applyingPayrollPreview.value) {
@@ -980,6 +1046,18 @@ export const useDailyReportEditDialog = (
   }
 
   const save = () => {
+    saveError.value = ''
+
+    if (
+      formModel.customerSiteId != null
+      && !formModel.jobCode.trim()
+    ) {
+      activeTab.value = 'billing'
+      saveError.value =
+        '現場に対応する職種を選択してください。顧客管理に請求単価がない場合は、先に請求単価を登録してください。'
+      return
+    }
+
     formModel.allowanceAmount =
       formModel.allowances.reduce(
         (
@@ -1087,6 +1165,10 @@ export const useDailyReportEditDialog = (
     payrollItemsLoading,
     payrollItemsError,
     preparationDefaultsMessage,
+    saveError,
+
+    hasActiveLoan,
+    hasActiveSaving,
 
     applicableSiteBillingRates:
       applicableBillingRates,

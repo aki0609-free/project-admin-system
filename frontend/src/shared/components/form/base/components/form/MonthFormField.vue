@@ -40,7 +40,7 @@ const items = computed(() => {
     variant="outlined"
     density="compact"
     hide-details
-    clearable
+    :clearable="clearable"
     @update:model-value="emit('update:modelValue', $event ?? '')"
   />
 </template>

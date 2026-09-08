@@ -35,13 +35,19 @@ public class OperationReportPreviewController {
             @RequestParam OperationType operationType,
             @RequestParam String reportCode,
             @RequestParam(required = false) String targetDate,
-            @RequestParam(required = false) String targetMonth) {
+            @RequestParam(required = false) String targetMonth,
+            @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) String periodFrom,
+            @RequestParam(required = false) String periodTo) {
 
         return htmlService.renderHtml(
                 new OperationReportPreviewHtmlRequest(
                         operationType,
                         reportCode,
                         targetDate,
-                        targetMonth));
+                        targetMonth,
+                        customerId,
+                        periodFrom,
+                        periodTo));
     }
 }

@@ -18,6 +18,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.project.backend.app.tenant.context.TenantContext;
+import com.project.backend.features.admin.business.service.PayrollPolicySettingService;
+import com.project.backend.features.admin.business.service.PayrollPolicySettingService.PayrollPolicyValues;
 import com.project.backend.features.dailyreport.entity.DailyPayRuleSetting;
 import com.project.backend.features.dailyreport.entity.DailyReport;
 import com.project.backend.features.dailyreport.enums.DailyPayComponentType;
@@ -38,17 +40,22 @@ class DailyPayComponentCalculationServiceTest {
             mock(RuleExecutionService.class);
     private final DailyReportRepository dailyReportRepository =
             mock(DailyReportRepository.class);
+    private final PayrollPolicySettingService payrollPolicySettingService =
+            mock(PayrollPolicySettingService.class);
     private final DailyPayComponentCalculationService service =
             new DailyPayComponentCalculationService(
                     repository,
                     ruleExecutionService,
                     dailyReportRepository,
-                    new PayrollMoneyPolicy()
+                    new PayrollMoneyPolicy(),
+                    payrollPolicySettingService
             );
 
     @BeforeEach
     void setUp() {
         TenantContext.setTenantId("tenant-a");
+        when(payrollPolicySettingService.resolve(any(LocalDate.class)))
+                .thenReturn(PayrollPolicyValues.defaults());
         when(dailyReportRepository
                 .findByEmployeeIdAndWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateAscIdAsc(
                         any(), any(), any()
@@ -335,6 +342,7 @@ class DailyPayComponentCalculationServiceTest {
 
     private DailyReport report() {
         DailyReport report = new DailyReport();
+        report.setWorkDate(LocalDate.of(2026, 8, 10));
         report.setWorkHours(new BigDecimal("8"));
         report.setOvertimeHours(new BigDecimal("2"));
         report.setNightWorkHours(new BigDecimal("1"));

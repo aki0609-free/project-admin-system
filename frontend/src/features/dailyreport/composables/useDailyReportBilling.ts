@@ -31,12 +31,12 @@ export const useDailyReportBilling = ({
   formModel,
 }: UseDailyReportBillingOptions) => {
   /*
-   * APIは現場ID単位。
+   * APIは顧客ID単位。取得後に選択中の現場へ絞り込む。
    */
   const billingRateQuery =
     useCustomerSiteBillingRatesQuery(
       computed(
-        () => formModel.customerSiteId,
+        () => formModel.customerId,
       ),
     )
 
@@ -81,7 +81,10 @@ export const useDailyReportBilling = ({
     CustomerSiteBillingRateResponse[]
   >(() =>
     billingRates.value.filter(
-      isApplicableOnWorkDate,
+      rate =>
+        rate.customerSiteId
+          === formModel.customerSiteId
+        && isApplicableOnWorkDate(rate),
     ),
   )
 
@@ -107,9 +110,7 @@ export const useDailyReportBilling = ({
           rate.jobName?.trim()
 
         optionMap.set(code, {
-          title: name
-            ? `${code} / ${name}`
-            : code,
+          title: name || code,
           value: code,
         })
       },
@@ -145,10 +146,29 @@ export const useDailyReportBilling = ({
           || '一般'
 
         optionMap.set(code, {
-          title: `${code} / ${name}`,
+          title: name,
           value: code,
         })
       })
+
+    const currentRoleCode =
+      formModel.siteRoleCode?.trim()
+
+    if (
+      currentRoleCode
+      && !optionMap.has(currentRoleCode)
+    ) {
+      optionMap.set(currentRoleCode, {
+        title:
+          formModel.siteRoleName?.trim()
+          || (
+            currentRoleCode === 'GENERAL'
+              ? '一般'
+              : currentRoleCode
+          ),
+        value: currentRoleCode,
+      })
+    }
 
     return [
       ...optionMap.values(),
@@ -273,6 +293,30 @@ export const useDailyReportBilling = ({
       )
   }
 
+  const reconcileBillingSelection = () => {
+    if (
+      !visible.value
+      || applyingDetail.value
+    ) {
+      return
+    }
+
+    if (
+      !formModel.jobCode
+      && jobOptions.value.length === 1
+    ) {
+      const onlyJobCode =
+        jobOptions.value[0]?.value
+
+      if (onlyJobCode) {
+        formModel.jobCode = onlyJobCode
+      }
+      return
+    }
+
+    applyBillingRatePreview()
+  }
+
   watch(
     () => formModel.jobCode,
     (
@@ -308,6 +352,9 @@ export const useDailyReportBilling = ({
       }
 
       applyBillingRatePreview()
+    },
+    {
+      flush: 'sync',
     },
   )
 
@@ -348,6 +395,9 @@ export const useDailyReportBilling = ({
 
       applyBillingRatePreview()
     },
+    {
+      flush: 'sync',
+    },
   )
 
   watch(
@@ -359,22 +409,18 @@ export const useDailyReportBilling = ({
 
       applyBillingRatePreview()
     },
+    {
+      flush: 'sync',
+    },
   )
 
   watch(
-    billingRates,
-    () => {
-      if (
-        !visible.value
-        || applyingDetail.value
-      ) {
-        return
-      }
-
-      applyBillingRatePreview()
-    },
+    applicableBillingRates,
+    reconcileBillingSelection,
     {
       deep: true,
+      immediate: true,
+      flush: 'sync',
     },
   )
 
@@ -393,5 +439,6 @@ export const useDailyReportBilling = ({
     clearBillingPreview,
     clearBillingSelection,
     applyBillingRatePreview,
+    reconcileBillingSelection,
   }
 }

@@ -36,10 +36,27 @@ public class PayrollItemDailyInputService {
             Map<Long, Map<String, Object>> itemParameters,
             Set<Long> excludedMasterIds
     ) {
+        return findAllowanceItems(
+                parameters,
+                manualAmounts,
+                manualAmounts == null ? Set.of() : manualAmounts.keySet(),
+                itemParameters,
+                excludedMasterIds
+        );
+    }
+
+    public List<DailyReportInputItemResponse> findAllowanceItems(
+            Map<String, Object> parameters,
+            Map<Long, Integer> submittedAmounts,
+            Set<Long> manualOverrideMasterIds,
+            Map<Long, Map<String, Object>> itemParameters,
+            Set<Long> excludedMasterIds
+    ) {
         return findItems(
                 PayrollItemTargetType.ALLOWANCE,
                 parameters,
-                manualAmounts,
+                submittedAmounts,
+                manualOverrideMasterIds,
                 itemParameters,
                 excludedMasterIds
         );
@@ -57,10 +74,27 @@ public class PayrollItemDailyInputService {
             Map<Long, Map<String, Object>> itemParameters,
             Set<Long> excludedMasterIds
     ) {
+        return findDeductionItems(
+                parameters,
+                manualAmounts,
+                manualAmounts == null ? Set.of() : manualAmounts.keySet(),
+                itemParameters,
+                excludedMasterIds
+        );
+    }
+
+    public List<DailyReportInputItemResponse> findDeductionItems(
+            Map<String, Object> parameters,
+            Map<Long, Integer> submittedAmounts,
+            Set<Long> manualOverrideMasterIds,
+            Map<Long, Map<String, Object>> itemParameters,
+            Set<Long> excludedMasterIds
+    ) {
         return findItems(
                 PayrollItemTargetType.DEDUCTION,
                 parameters,
-                manualAmounts,
+                submittedAmounts,
+                manualOverrideMasterIds,
                 itemParameters,
                 excludedMasterIds
         );
@@ -69,7 +103,8 @@ public class PayrollItemDailyInputService {
     private List<DailyReportInputItemResponse> findItems(
             PayrollItemTargetType targetType,
             Map<String, Object> parameters,
-            Map<Long, Integer> manualAmounts,
+            Map<Long, Integer> submittedAmounts,
+            Set<Long> manualOverrideMasterIds,
             Map<Long, Map<String, Object>> itemParameters,
             Set<Long> excludedMasterIds
     ) {
@@ -81,7 +116,8 @@ public class PayrollItemDailyInputService {
                                 itemParameters,
                                 excludedMasterIds
                 ),
-                        manualAmounts
+                        submittedAmounts,
+                        manualOverrideMasterIds
                 )
                 .stream()
                 .map(this::toDailyInputItem)

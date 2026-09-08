@@ -4,13 +4,14 @@
 
 ## 1. 目的と権限
 
-`BusinessSettingsPage.vue`は次の5タブを持つ。
+`BusinessSettingsPage.vue`は次の6タブを持つ。
 
 1. 退職時設定
 2. 締日設定
-3. 締め帳票
-4. 帳票バックアップ
-5. その他設定
+3. 給与制度設定
+4. 締め帳票
+5. 帳票バックアップ
+6. その他設定
 
 画面ルートと管理APIは`SYS_ADMIN`専用である。一方、保存された退職設定、締日、外部リンク等は、それぞれの業務画面・共通機能から参照される。
 
@@ -19,8 +20,8 @@
 ```text
 BusinessSettingsPage.vue
   -> useBusinessSettingsPage.load()
-  -> 6個のGETをPromise.allで並行実行
-     退職文言 / 退職TODO / 締日 / 締め帳票 / 帳票バックアップ / 外部リンク
+  -> 7個のGETをPromise.allで並行実行
+     退職文言 / 退職TODO / 締日 / 給与制度 / 締め帳票 / 帳票バックアップ / 外部リンク
   -> 成功した設定は個別に画面へ反映
   -> 1件でも失敗した場合は、失敗した設定名をまとめて表示
 ```
@@ -72,7 +73,24 @@ flowchart LR
 
 保存時には日指定1～31、月オフセット-12～12を検証する。画面から有効・無効は切り替えず、保存された行は常に有効となる。
 
-## 5. 締め帳票
+## 5. 給与制度設定
+
+```text
+GET/POST/DELETE payroll-policies
+  -> PayrollPolicySettingService
+  -> 適用期間の前後関係・有効設定の期間重複を検証
+  -> payroll_policy_setting
+
+日報保存・概算Preview
+  -> 勤務日に有効な給与制度設定を1件取得
+  -> 週・月累計時間を制度値で分割
+  -> 割増率等をRuleパラメーターへ設定
+  -> Rule結果を制度の丸め方法で円単位に確定
+```
+
+Rule管理は式を担当し、給与制度設定は式へ渡す数値と適用期間を担当する。締め済み履歴は変更せず、日報の再計算時は勤務日から制度を再解決する。
+
+## 6. 締め帳票
 
 ```text
 GET closing-outputs
@@ -95,7 +113,7 @@ PUT closing-outputs
 
 ただし現画面が編集するのは`REPORT`だけである。また顧客締め対象の`MONTHLY_INVOICE`と`MONTHLY_ORDER_FORM`は自社月次締めの実行計画から除外される。
 
-## 6. 年度帳票バックアップ
+## 7. 年度帳票バックアップ
 
 ### 6.1 設定
 
@@ -133,7 +151,7 @@ documents/backups/reports/{tenantId}/{fiscalYear}/{reportCode}/{targetMonth}/v{c
 
 AWS S3側にも`documents/backups/reports/`を2557日後に期限切れにするLifecycleがある。DBの保存期限とS3 Lifecycleの両方を揃えて管理する必要がある。
 
-## 7. その他設定
+## 8. その他設定
 
 管理画面でJiraインシデント報告URLとConfluenceマニュアルURLを保存する。
 
@@ -149,13 +167,14 @@ GET /api/support-links
 
 管理APIは`SYS_ADMIN`専用だが、参照APIはログイン利用者向け共通ヘッダーで使われる。Fuyo固有URLは`sql/admin/external_support_links_v1.sql`で初期配置し、Java Coreへは保持しない。DB未登録時は空URLを返し、リンクを表示しない。
 
-## 8. 主なDBテーブル
+## 9. 主なDBテーブル
 
 | テーブル | 役割 |
 |---|---|
 | `employee_resignation_setting` | 退職Dialog文言 |
 | `employee_resignation_checklist_master` | 退職TODOマスター |
 | `closing_setting` | 給与締日・支払日ルール |
+| `payroll_policy_setting` | 会社・適用期間別の給与計算制度とRule入力値 |
 | `operation_report_preview` | 月次帳票の表示・jobCode・出力形式の正本 |
 | `monthly_closing_output_definition` | 締め生成対象、順序、必須、保存年数 |
 | `annual_report_backup_setting` | 年度バックアップ設定 |
@@ -165,18 +184,20 @@ GET /api/support-links
 | `report_history` | 通常帳票履歴。年度バックアップ成功時に対象分を論理削除 |
 | `external_support_link_setting` | Jira・Confluenceリンク |
 
-## 9. 主な関連クラス
+## 10. 主な関連クラス
 
 | 層 | クラス・モジュール | 役割 |
 |---|---|---|
-| Frontend | `BusinessSettingsPage.vue` | 5タブの表示・Form |
+| Frontend | `BusinessSettingsPage.vue` | 6タブの表示・Form |
 | Frontend | `useBusinessSettingsPage.ts` | 並行読込、保存、通知、手動バックアップ |
 | Backend | `BusinessSettingController` | SYS_ADMIN管理API |
 | Backend | `BusinessSettingService` | 退職、締日、締め帳票設定 |
+| Backend | `PayrollPolicySettingService` | 期間重複検証、勤務日の制度解決、既定値補完 |
 | Backend | `AnnualReportBackupSettingService` | バックアップ設定と手動実行 |
 | Backend | `AnnualReportBackupStartupRunner` | 起動時の未処理年度追跡 |
 | Backend | `AnnualReportBackupService` | コピー、照合、履歴整理、実行記録 |
 | Backend | `ExternalSupportLinkSettingService` | URL検証・保存・既定値 |
 | Downstream | `EmployeeAdminService` | 必須退職TODOのサーバー検証 |
 | Downstream | `ClosingSettingQueryService` | 給与締日・支払日の共通参照 |
+| Downstream | `DailyPayComponentCalculationService` | 制度値を週・月時間判定と給与Ruleへ適用 |
 | Downstream | `MonthlyClosingJobService` | 設定された帳票・台帳の月次生成 |

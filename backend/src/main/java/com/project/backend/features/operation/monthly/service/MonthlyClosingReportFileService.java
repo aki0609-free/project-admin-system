@@ -26,7 +26,8 @@ public class MonthlyClosingReportFileService {
     public List<MonthlyClosingReportFileResponse> findAll(
             String targetMonth,
             Integer closingVersion,
-            String reportCode) {
+            String reportCode,
+            Long targetId) {
         if (targetMonth == null || !targetMonth.matches("\\d{4}-\\d{2}")) {
             throw new IllegalArgumentException("targetMonthはyyyy-MM形式で指定してください。");
         }
@@ -47,6 +48,7 @@ public class MonthlyClosingReportFileService {
         return files
                 .stream()
                 .filter(file -> matchesReportCode(file.getReportCode(), reportCode))
+                .filter(file -> targetId == null || targetId.equals(file.getTargetId()))
                 .map(this::toResponse)
                 .toList();
     }

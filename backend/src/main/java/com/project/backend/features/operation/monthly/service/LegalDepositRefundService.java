@@ -64,7 +64,7 @@ public class LegalDepositRefundService {
     ) {
         if (monthlyClosingId == null || period == null
                 || closingVersion == null || closingVersion < 1) {
-            throw new IllegalArgumentException("法定預り返金の締め情報が不正です。");
+            throw new IllegalArgumentException("法定準備金返金の締め情報が不正です。");
         }
 
         supersedeCurrentRefunds(monthlyClosingId);

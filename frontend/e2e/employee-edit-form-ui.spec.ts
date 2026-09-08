@@ -47,10 +47,10 @@ test('employee batch toolbar opens the shared parameter dialog on a narrow viewp
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/employee/information')
 
-  await page.getByRole('button', { name: '個別日別給与明細', exact: true }).click()
+  await page.getByRole('button', { name: '個別日次給与明細', exact: true }).click()
 
   const dialog = page.getByRole('dialog').filter({
-    has: page.getByRole('heading', { name: '個別日別給与明細', exact: true }),
+    has: page.getByRole('heading', { name: '個別日次給与明細', exact: true }),
   })
   await expect(dialog).toBeVisible()
   await expect(dialog.getByText('PRINT_DAILY_PAY_SLIP', { exact: false })).toBeVisible()

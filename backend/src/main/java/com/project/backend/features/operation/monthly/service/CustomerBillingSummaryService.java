@@ -130,6 +130,8 @@ public class CustomerBillingSummaryService {
                 .count();
         int eligibleCount = (int) customers.stream()
                 .filter(CustomerBillingTargetResponse::closingDateReached)
+                .filter(customer -> customer.closing() == null
+                        || !"CLOSED".equals(customer.closing().status()))
                 .count();
         String status = customers.isEmpty()
                 ? "TARGET_NONE"

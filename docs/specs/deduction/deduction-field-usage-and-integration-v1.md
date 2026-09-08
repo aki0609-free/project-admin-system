@@ -22,7 +22,7 @@
 | 控除単位 | `deductionUnit` / `deduction_unit` | 条件付き | `DAILY/BOTH`は日報候補抽出に使用。`MONTHLY/PAYROLL`は現行の汎用月次計算経路が未完成 |
 | 詳細参照タイプ | `detailViewType` / `detail_view_type` | 利用中 | 税・保険詳細タブと参照providerを切替 |
 | Rule名 | `ruleName` / `rule_name` | 利用中 | `AUTO`時にRule基盤を呼ぶ。DEDUCTIONまたはGENERAL Ruleのみ許可 |
-| 既定額 | `defaultAmount` / `default_amount` | 利用中 | `FIXED`時の計算値。Policyパラメーターの既定値とは別 |
+| 既定額 | `defaultAmount` / `default_amount` | 利用中 | `FIXED`の計算値、および未入力の`MANUAL`項目に提示する初期値。Policyパラメーターの既定値とは別 |
 | 手入力許可 | `allowManualInput` / `allow_manual_input` | 利用中 | `MANUAL`必須。AUTO/FIXEDの計算結果を日報で変更できるか決定 |
 | 最小額 | `minAmount` / `min_amount` | 利用中 | 自動・固定・手動変更後の下限clamp |
 | 最大額 | `maxAmount` / `max_amount` | 利用中 | 自動・固定・手動変更後の上限clamp |
@@ -36,7 +36,7 @@
 ## 3. 計算値の決まり方
 
 ```text
-MANUAL -> 入力額（未入力なら0）
+MANUAL -> 入力額（未入力ならdefaultAmount、defaultAmountも未設定なら0）
 FIXED  -> defaultAmount
 AUTO   -> ruleNameのRuleへ共通parameter + 従業員別parameterを渡す
   -> minAmount / maxAmountで補正
@@ -60,8 +60,8 @@ Ruleへは少なくとも`targetType`、`targetMasterId`、`targetCode`が追加
 | 残高単位 | `AMOUNT/DAYS/HOURS/COUNT` | 条件付き | 残高の意味・表示単位。内部の増減計算自体は数量で共通 |
 | 加算頻度 | `accrualFrequency` | 保存・表示のみ | APIには存在するが、現行残高計算は頻度を参照しない |
 | 加算Rule | `accrualRuleName` | 利用中 | `CALENDAR_DAYS_IN_ENROLLMENT`または`MANUAL_TRANSACTION`を残高計算が解釈 |
-| 残高繰越 | `carryForward` | 未連携 | 保存されるが残高Queryは参照せず、現状はEnrollment期間全体を通算する |
-| 残高超過許可 | `advanceConsumption` | 未連携 | 保存されるが超過可否判定は未実装。残高表示は0未満へ下がらない |
+| 残高繰越 | `carryForward` | 利用中 | trueは前月末残高を翌月へ繰り越す。falseは当月発生・消化だけを残高にする |
+| 残高超過許可 | `advanceConsumption` | 利用中 | falseは残高超過入力を拒否。trueは負残高を許可して後続の発生額と相殺する |
 
 `TRANSACTION`は`EMPLOYEE_ENROLLMENT`以外では保存時に拒否される。
 
@@ -126,6 +126,15 @@ Ruleは`dailyFee`を受け取って金額を計算でき、システム本体へ
 | 月次帳票 | Viewの確定結果をhistory/output tableへ保存し、給与明細等へ出力 |
 
 月次計算は`vw_monthly_pay_slip_calculation_item_source`、帳票表示は`vw_monthly_pay_slip_statement_item_source`を正とする。旧`carryToMonthlySettlement`と`showOnMonthlyStatement`は既存DB資産移行のためだけに保持する。
+
+### 7.1 Fuyoの短期前借りと法定準備金
+
+| コード | 役割 | 入力・残高 |
+|---|---|---|
+| `SHORT_TERM_ADVANCE` | 長期貸付とは別の短期前借り | 従業員別に適用。共通取引で発生額を登録し、日報控除で返済。金額残高を翌月へ繰り越す |
+| `LEGAL_DEPOSIT` | 法定準備金（互換コード） | 控除マスターの既定額を概算初期値として日報へ表示し、実際の預り額へ変更可能。月次で未返金残高を精算 |
+
+法定準備金の既定額は税額の確定計算ではない。所得税・社会保険等の確定額は月次Viewと期間付き税・保険マスターで計算する。
 
 ## 8. 詳細タブと計算の関係
 

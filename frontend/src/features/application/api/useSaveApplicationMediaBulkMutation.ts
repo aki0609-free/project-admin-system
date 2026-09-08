@@ -13,11 +13,9 @@ export const useSaveApplicationMediaBulkMutation = () => {
       postApplicationMediaBulkSave(payload),
 
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({
+      [await queryClient.invalidateQueries({
           queryKey: queryKeys.applicationMedias.all,
-        }),
-      ])
+        })]
     },
   })
 }

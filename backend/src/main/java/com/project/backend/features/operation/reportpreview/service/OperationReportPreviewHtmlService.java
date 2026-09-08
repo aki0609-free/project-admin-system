@@ -22,7 +22,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OperationReportPreviewHtmlService {
 
-        private static final String DEFAULT_TENANT_ID = "default";
         private static final Set<String> TECHNICAL_COLUMNS = Set.of(
                         "id", "tenant_id", "created_at", "updated_at",
                         "deleted_at", "execution_id", "slip_key",
@@ -44,11 +43,7 @@ public class OperationReportPreviewHtmlService {
                                 .findByPreviewIdAndActiveFlagTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
                                                 definition.getId());
 
-                String tenantId = TenantContext.getTenantId();
-
-                if (tenantId == null || tenantId.isBlank()) {
-                        tenantId = DEFAULT_TENANT_ID;
-                }
+                String tenantId = requireTenantId();
 
                 List<Map<String, Object>> rows = rowReaderService.readRows(
                                 definition,
@@ -69,6 +64,21 @@ public class OperationReportPreviewHtmlService {
                                                 "columns", effectiveColumns,
                                                 "rows", rows,
                                                 "request", request));
+        }
+
+        /**
+         * tenantIdの値としての"default"は正式なtenantとして許可する。
+         * 一方、認証/Context設定そのものが欠落したrequestをdefaultへ
+         * 暗黙変換するとtenant境界を誤るため、明示的に拒否する。
+         */
+        private String requireTenantId() {
+                String tenantId = TenantContext.getTenantId();
+                if (tenantId == null || tenantId.isBlank()) {
+                        throw new IllegalStateException(
+                                        "帳票プレビューのtenantIdを取得できません。"
+                        );
+                }
+                return tenantId;
         }
 
         private boolean requiresDedicatedTemplate(

@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import { useDailyReportsQuery } from '@/features/dailyreport/api/useDailyReportsQuery'
 import { useUpdateDailyReportMutation } from '@/features/dailyreport/api/useUpdateDailyReportMutation'
@@ -11,7 +11,17 @@ import { useCreateDailyReportMutation } from '../api/useCreateDailyRportMutation
 
 export const useDailyReportPage = () => {
   const employeesQuery = useEmployeesQuery()
-  const dailyReportsQuery = useDailyReportsQuery()
+  const reportPeriodFrom = ref('')
+  const reportPeriodTo = ref('')
+  const dailyReportsQuery = useDailyReportsQuery(
+    reportPeriodFrom,
+    reportPeriodTo,
+  )
+
+  const setReportPeriod = (from: string, to: string) => {
+    reportPeriodFrom.value = from
+    reportPeriodTo.value = to
+  }
 
   const createMutation = useCreateDailyReportMutation()
   const updateMutation = useUpdateDailyReportMutation()
@@ -71,6 +81,7 @@ export const useDailyReportPage = () => {
   return {
     employeesQuery,
     dailyReportsQuery,
+    setReportPeriod,
 
     dialog,
 

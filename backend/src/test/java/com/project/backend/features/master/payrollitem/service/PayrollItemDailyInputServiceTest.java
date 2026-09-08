@@ -26,7 +26,8 @@ class PayrollItemDailyInputServiceTest {
 
         when(calculationService.calculate(
                 org.mockito.ArgumentMatchers.any(PayrollItemCalculationRequest.class),
-                org.mockito.ArgumentMatchers.anyMap()
+                org.mockito.ArgumentMatchers.anyMap(),
+                org.mockito.ArgumentMatchers.anySet()
         )).thenReturn(List.of(
                 result(1L, "AUTO", true),
                 result(2L, "FIXED", true),

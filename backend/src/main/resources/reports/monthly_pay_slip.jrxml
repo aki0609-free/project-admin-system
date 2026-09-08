@@ -364,7 +364,7 @@
                 <staticText><reportElement style="Header" x="559" y="410" width="70" height="20"/><text><![CDATA[保険計]]></text></staticText>
                 <textField><reportElement style="CellRight" x="629" y="410" width="72" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{social_insurance_total})]]></textFieldExpression></textField>
 
-                <staticText><reportElement style="Header" x="0" y="432" width="117" height="20"/><text><![CDATA[法定預り返金額]]></text></staticText>
+                <staticText><reportElement style="Header" x="0" y="432" width="117" height="20"/><text><![CDATA[法定準備金返金額]]></text></staticText>
                 <textField><reportElement style="CellRight" x="117" y="432" width="117" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{legal_deposit_refund_amount} == null ? java.math.BigDecimal.ZERO : $F{legal_deposit_refund_amount}) + " 円"]]></textFieldExpression></textField>
                 <staticText><reportElement style="Header" x="234" y="432" width="117" height="20"/><text><![CDATA[借入金残高]]></text></staticText>
                 <textField><reportElement style="CellRight" x="351" y="432" width="117" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{loan_balance} == null ? java.math.BigDecimal.ZERO : $F{loan_balance}) + " 円"]]></textFieldExpression></textField>

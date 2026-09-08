@@ -71,3 +71,26 @@ export type ExternalSupportLinkSetting = {
   incidentReportUrl: string
   manualUrl: string
 }
+
+export type PayrollPolicySetting = {
+  id: number | null
+  effectiveFrom: string
+  effectiveTo: string | null
+  weekStartDay:
+    | 'MONDAY'
+    | 'TUESDAY'
+    | 'WEDNESDAY'
+    | 'THURSDAY'
+    | 'FRIDAY'
+    | 'SATURDAY'
+    | 'SUNDAY'
+  weeklyStatutoryHours: number
+  monthlyOvertimeThresholdHours: number
+  overtimeRate: number
+  overtimeOverThresholdRate: number
+  nightPremiumRate: number
+  statutoryHolidayRate: number
+  dailyStandardHours: number
+  amountRoundingMode: 'HALF_UP' | 'UP' | 'DOWN'
+  activeFlag: boolean
+}

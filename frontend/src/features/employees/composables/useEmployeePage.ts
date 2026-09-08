@@ -72,10 +72,10 @@ export const useEmployeePage = () => {
 
   const rightToolbarItems = computed<ToolbarItem[]>(() => [
     createBatchItem({
-      label: '個別日別給与明細',
+      label: '個別日次給与明細',
       jobCode: 'PRINT_DAILY_PAY_SLIP',
       disabled: busy.value,
-      confirmMessage: '選択した従業員の日別給与明細をプレビューしますか？',
+      confirmMessage: '選択した従業員の日次給与明細をプレビューしますか？',
       outputAction: 'preview',
       parameterDefinitions: [
         batchParams.date({

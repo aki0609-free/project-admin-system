@@ -9,6 +9,8 @@ const model = defineModel<TModel>({
 
 defineProps<{
   fields: SearchPanelFieldDef<TModel>[]
+  title?: string
+  description?: string
   clearLabel?: string
 }>()
 
@@ -19,6 +21,12 @@ const emit = defineEmits<{
 
 <template>
   <v-card variant="flat" class="search-panel">
+    <v-card-title v-if="title" class="search-panel__title">
+      {{ title }}
+    </v-card-title>
+    <v-card-subtitle v-if="description" class="search-panel__description">
+      {{ description }}
+    </v-card-subtitle>
     <v-card-text>
       <v-row dense>
         <v-col
@@ -102,6 +110,22 @@ const emit = defineEmits<{
 <style scoped>
 .search-panel {
   margin-bottom: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.search-panel__title {
+  padding: 14px 16px 2px;
+  color: #334155;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.search-panel__description {
+  padding: 2px 16px 0;
+  color: #64748b;
+  font-size: 12px;
 }
 
 .actions-col {

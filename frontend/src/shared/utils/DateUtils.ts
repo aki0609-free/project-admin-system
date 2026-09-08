@@ -92,6 +92,33 @@ export function formatDateToIso(date: Date): string {
   return `${yyyy}-${mm}-${dd}`
 }
 
+/**
+ * 指定タイムゾーン上の日付を、API入力用のyyyy-MM-ddへ変換する。
+ * toISOString()はUTC日付になるため、日本時間の午前中に前日を
+ * 初期表示してしまう画面では使用しない。
+ */
+export function formatDateInTimeZone(
+  date: Date,
+  timeZone = 'Asia/Tokyo',
+): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date)
+
+  const year = parts.find(part => part.type === 'year')?.value
+  const month = parts.find(part => part.type === 'month')?.value
+  const day = parts.find(part => part.type === 'day')?.value
+
+  if (!year || !month || !day) {
+    throw new Error('日付の生成に失敗しました。')
+  }
+
+  return `${year}-${month}-${day}`
+}
+
 export function toYearMonth(value: string | null | undefined): string | null {
   if (!value) return null
 

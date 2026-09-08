@@ -103,7 +103,7 @@ allowance_master / deduction_master
 
 | 操作 | jobCode | 利用する値 |
 |---|---|---|
-| 個別日別給与明細 | `PRINT_DAILY_PAY_SLIP` | 支払日・従業員ID |
+| 個別日次給与明細 | `PRINT_DAILY_PAY_SLIP` | 支払日・従業員ID |
 | 従業員CSV出力 | `EXPORT_EMPLOYEE_CSV` | 従業員基本・給与・契約情報 |
 | 従業員データ取込 | `IMPORT_EMPLOYEE` | 外部データ取込定義 |
 

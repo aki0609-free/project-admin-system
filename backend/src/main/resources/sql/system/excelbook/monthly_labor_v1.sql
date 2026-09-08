@@ -45,18 +45,22 @@ GROUP BY dra.tenant_id, dra.daily_report_id;
 
 CREATE OR REPLACE VIEW vw_monthly_labor_ledger_payment AS
 SELECT
-    dp.tenant_id,
-    dp.employee_id,
-    dp.payment_date,
-    COALESCE(SUM(dp.actual_amount), 0) AS advance_payment_amount,
-    GROUP_CONCAT(
-        NULLIF(dp.note, '')
-        ORDER BY dp.id
-        SEPARATOR ' / '
-    ) AS payment_note
-FROM daily_payments dp
-WHERE dp.deleted_at IS NULL
-GROUP BY dp.tenant_id, dp.employee_id, dp.payment_date;
+    dr.tenant_id,
+    dr.employee_id,
+    dr.payment_date,
+    COALESCE(SUM(dr.estimated_net_pay_amount), 0)
+        AS advance_payment_amount,
+    NULL AS payment_note
+FROM daily_report dr
+JOIN employee_contract contract
+  ON contract.tenant_id = dr.tenant_id
+ AND contract.employee_id = dr.employee_id
+ AND contract.payment_cycle = 'DAILY'
+ AND contract.deleted_at IS NULL
+WHERE dr.deleted_at IS NULL
+  AND dr.approval_status = 'APPROVED'
+  AND dr.payment_date IS NOT NULL
+GROUP BY dr.tenant_id, dr.employee_id, dr.payment_date;
 
 CREATE OR REPLACE VIEW vw_monthly_labor_ledger AS
 SELECT

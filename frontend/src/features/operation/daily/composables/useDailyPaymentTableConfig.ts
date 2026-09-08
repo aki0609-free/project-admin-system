@@ -75,27 +75,11 @@ export const useDailyPaymentTableConfig = (
       filter: { type: 'text' },
     },
     {
-      title: '予定日払い額',
+      title: '日次前払い額',
       key: 'plannedAmount',
       width: '180px',
       type: 'number',
       editable: false,
-      filter: { type: 'text' },
-    },
-    {
-      title: '実支払額',
-      key: 'actualAmount',
-      width: '180px',
-      type: 'number',
-      editable: true,
-      filter: { type: 'text' },
-    },
-    {
-      title: '備考',
-      key: 'note',
-      width: '180px',
-      type: 'text',
-      editable: true,
       filter: { type: 'text' },
     },
   ])

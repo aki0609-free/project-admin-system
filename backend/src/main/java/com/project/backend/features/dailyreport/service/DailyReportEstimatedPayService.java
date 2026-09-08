@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 public class DailyReportEstimatedPayService {
 
     private final DailyPayComponentCalculationService componentService;
+    private final DailyReportWorkTimeCalculator workTimeCalculator;
 
     public void applyEstimatedPay(
             DailyReport report,
@@ -39,14 +40,7 @@ public class DailyReportEstimatedPayService {
             EmployeeContract contract
     ) {
         DailyReportWorkTimePolicy.WorkTimes workTimes =
-                DailyReportWorkTimePolicy.resolve(
-                        request.workDate(),
-                        request.workHours(),
-                        request.overtimeHours(),
-                        request.nightWorkHours(),
-                        request.holidayWorkHours(),
-                        Boolean.TRUE.equals(request.holidayPremiumEligible())
-                );
+                workTimeCalculator.calculate(request);
         DailyReport report = new DailyReport();
         report.setWorkDate(request.workDate());
         report.setPaymentDate(request.paymentDate());

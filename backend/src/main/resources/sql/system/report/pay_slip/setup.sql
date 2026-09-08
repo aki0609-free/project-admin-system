@@ -383,7 +383,7 @@ insert into report_param (
 );
 
 -- =====================================================
--- 日払い明細
+-- 日次給与明細
 -- =====================================================
 
 insert into report_master (
@@ -417,7 +417,7 @@ insert into report_master (
     @now,
     @now,
     'DAILY_PAY_SLIP',
-    '日払い明細',
+    '日次給与明細',
     'daily_pay_slip.jrxml',
     'daily_pay_slip',
     'daily_pay_slip_input',
@@ -436,7 +436,7 @@ order by employee_code',
     'sp_daily_pay_slip_cleanup',
     'SINGLE',
     1,
-    '日払い明細_${paymentDate}',
+    '日次給与明細_${paymentDate}',
     'PDF',
     false,
     true,

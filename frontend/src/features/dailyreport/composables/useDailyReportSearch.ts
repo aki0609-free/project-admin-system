@@ -13,8 +13,6 @@ export type DailyReportSearchCondition = {
 
   targetWorkDate: string
   attendanceTargetMonth: string
-
-  keyword: string
 }
 
 export const useDailyReportSearch = (reportsGetter: () => DailyReportResponse[]) => {
@@ -29,11 +27,9 @@ export const useDailyReportSearch = (reportsGetter: () => DailyReportResponse[])
 
     targetWorkDate: '',
     attendanceTargetMonth: '',
-
-    keyword: '',
   })
 
-  const fields = computed<SearchPanelFieldDef<DailyReportSearchCondition>[]>(() => [
+  const reportFields = computed<SearchPanelFieldDef<DailyReportSearchCondition>[]>(() => [
     {
       key: 'employeeKeyword',
       label: '従業員',
@@ -70,26 +66,21 @@ export const useDailyReportSearch = (reportsGetter: () => DailyReportResponse[])
       md: 2,
       prependIcon: 'mdi-cash-check',
     },
-    {
-      key: 'keyword',
-      label: 'キーワード',
-      type: 'text',
-      md: 2,
-      prependIcon: 'mdi-magnify',
-      placeholder: '現場名・顧客名',
-    },
+  ])
+
+  const attendanceFields = computed<SearchPanelFieldDef<DailyReportSearchCondition>[]>(() => [
     {
       key: 'targetWorkDate',
       label: '未入力確認日',
       type: 'date',
-      md: 2,
+      md: 3,
       prependIcon: 'mdi-calendar-alert',
     },
     {
       key: 'attendanceTargetMonth',
       label: '勤怠対象月',
       type: 'month',
-      md: 2,
+      md: 3,
       prependIcon: 'mdi-calendar-month',
     },
   ])
@@ -128,38 +119,38 @@ export const useDailyReportSearch = (reportsGetter: () => DailyReportResponse[])
         return false
       }
 
-      if (condition.keyword) {
-        const keyword = condition.keyword.toLowerCase()
-
-        const hit =
-          report.customerName?.toLowerCase().includes(keyword) ||
-          report.siteName?.toLowerCase().includes(keyword)
-
-        if (!hit) return false
-      }
-
       return true
+    }).sort((left, right) => {
+      const workDateOrder = right.workDate.localeCompare(left.workDate)
+      if (workDateOrder !== 0) return workDateOrder
+
+      const paymentDateOrder = (left.paymentDate ?? '')
+        .localeCompare(right.paymentDate ?? '')
+      if (paymentDateOrder !== 0) return paymentDateOrder
+
+      return right.id - left.id
     }),
   )
 
-  const clear = () => {
+  const clearReportFilters = () => {
     condition.employeeKeyword = ''
-
-    condition.targetWorkDate = ''
-
     condition.workDateFrom = ''
     condition.workDateTo = ''
-
     condition.paymentDateFrom = ''
     condition.paymentDateTo = ''
+  }
 
-    condition.keyword = ''
+  const clearAttendanceFilters = () => {
+    condition.targetWorkDate = ''
+    condition.attendanceTargetMonth = ''
   }
 
   return {
     condition,
-    fields,
+    reportFields,
+    attendanceFields,
     filteredReports,
-    clear,
+    clearReportFilters,
+    clearAttendanceFilters,
   }
 }

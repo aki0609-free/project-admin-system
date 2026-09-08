@@ -2,6 +2,9 @@
 import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 import OperationReportTab from '@/features/operation/reportpreview/components/OperationReportTab.vue'
+import MonthFormField from '@/shared/components/form/base/components/form/MonthFormField.vue'
+import { formatYearMonthDay } from '@/shared/utils/DateUtils'
+import OperationTargetFilterCard from '@/features/operation/shared/components/OperationTargetFilterCard.vue'
 
 import { useCustomerBillingClosingPage } from '../composables/useCustomerBillingClosingPage'
 
@@ -10,6 +13,8 @@ const {
   activeTab,
   tabs,
   summary,
+  selectedReportCustomerId,
+  selectedReportCustomer,
   loading,
   leftToolbarItems,
   rightToolbarItems,
@@ -28,17 +33,18 @@ const money = (value: number) => `${Number(value ?? 0).toLocaleString()}円`
     :right-toolbar-items="rightToolbarItems"
   >
     <template #search>
-      <div class="month-selector">
-        <v-text-field
-          v-model="targetMonth"
-          type="month"
-          label="対象請求月"
-          variant="outlined"
-          density="compact"
-          hide-details
-          prepend-inner-icon="mdi-calendar-month"
-        />
-      </div>
+      <OperationTargetFilterCard>
+        <div class="month-selector">
+          <MonthFormField
+            v-model="targetMonth"
+            label="対象請求月"
+            variant="outlined"
+            density="compact"
+            hide-details
+            prepend-inner-icon="mdi-calendar-month"
+          />
+        </div>
+      </OperationTargetFilterCard>
     </template>
 
     <TabLayout v-model="activeTab" :tabs="tabs">
@@ -81,6 +87,12 @@ const money = (value: number) => `${Number(value ?? 0).toLocaleString()}円`
             ]"
             item-value="customerId"
           >
+            <template #[`item.periodFrom`]="{ value }">
+              {{ formatYearMonthDay(value) }}
+            </template>
+            <template #[`item.periodTo`]="{ value }">
+              {{ formatYearMonthDay(value) }}
+            </template>
             <template #[`item.subtotalAmount`]="{ value }">{{ money(value) }}</template>
             <template #[`item.taxAmount`]="{ value }">{{ money(value) }}</template>
             <template #[`item.totalAmount`]="{ value }">{{ money(value) }}</template>
@@ -117,14 +129,42 @@ const money = (value: number) => `${Number(value ?? 0).toLocaleString()}円`
           </v-data-table>
         </div>
 
-        <OperationReportTab
-          v-else
-          operation-type="MONTHLY"
-          :target-month="targetMonth"
-          :closing-version="null"
-          allow-mixed-closing-versions
-          :allowed-report-codes="['MONTHLY_INVOICE', 'MONTHLY_ORDER_FORM']"
-        />
+        <div v-else class="report-tab-content">
+          <v-alert type="info" variant="tonal">
+            簡易プレビューは選択顧客の最新データを顧客固有の締め期間で表示します。
+            本印刷はその顧客の締め処理時に保存した確定版を使用します。
+          </v-alert>
+
+          <div class="report-customer-filter">
+            <v-select
+              v-model="selectedReportCustomerId"
+              :items="summary?.customers ?? []"
+              item-title="customerName"
+              item-value="customerId"
+              label="プレビュー・印刷対象の顧客"
+              variant="outlined"
+              density="compact"
+              hide-details
+              :disabled="loading || !summary?.customers.length"
+            />
+            <div v-if="selectedReportCustomer" class="report-period">
+              集計期間:
+              {{ formatYearMonthDay(selectedReportCustomer.periodFrom) }} ～
+              {{ formatYearMonthDay(selectedReportCustomer.periodTo) }}
+            </div>
+          </div>
+
+          <OperationReportTab
+            operation-type="MONTHLY"
+            :target-month="targetMonth"
+            :customer-id="selectedReportCustomer?.customerId ?? null"
+            :period-from="selectedReportCustomer?.periodFrom ?? null"
+            :period-to="selectedReportCustomer?.periodTo ?? null"
+            :closing-version="null"
+            allow-mixed-closing-versions
+            :allowed-report-codes="['MONTHLY_INVOICE', 'MONTHLY_ORDER_FORM']"
+          />
+        </div>
       </template>
     </TabLayout>
   </ListDetailPageLayout>
@@ -133,4 +173,19 @@ const money = (value: number) => `${Number(value ?? 0).toLocaleString()}円`
 <style scoped>
 .month-selector { max-width: 220px; }
 .status-row { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; }
+.report-tab-content { display: grid; gap: 16px; }
+.report-customer-filter {
+  display: grid;
+  grid-template-columns: minmax(280px, 520px) 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+.report-period { color: #475569; font-size: 14px; }
+@media (max-width: 800px) {
+  .report-customer-filter { grid-template-columns: 1fr; }
+}
 </style>

@@ -96,10 +96,10 @@ class DailyReportInputItemServiceTest {
         when(employeeContractRepository.findByEmployeeIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(contract));
         when(payrollItemDailyInputService.findAllowanceItems(
-                anyMap(), anyMap(), anyMap(), any()))
+                anyMap(), anyMap(), any(), anyMap(), any()))
                 .thenReturn(List.of(inputItem(1L, "OVERTIME", 1200)));
         when(payrollItemDailyInputService.findDeductionItems(
-                anyMap(), anyMap(), anyMap(), any()))
+                anyMap(), anyMap(), any(), anyMap(), any()))
                 .thenReturn(List.of());
 
         var response = service.calculate(request);
@@ -112,10 +112,14 @@ class DailyReportInputItemServiceTest {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<Long, Integer>> amountsCaptor =
                 ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<java.util.Set<Long>> overridesCaptor =
+                ArgumentCaptor.forClass(java.util.Set.class);
 
         verify(payrollItemDailyInputService).findAllowanceItems(
                 parametersCaptor.capture(),
                 amountsCaptor.capture(),
+                overridesCaptor.capture(),
                 anyMap(),
                 any()
         );
@@ -127,7 +131,8 @@ class DailyReportInputItemServiceTest {
                 .containsEntry("overtimeHours", BigDecimal.valueOf(2))
                 .containsEntry("salaryType", SalaryType.HOURLY)
                 .containsEntry("hourlyWage", BigDecimal.valueOf(1500));
-        assertThat(amountsCaptor.getValue()).isEmpty();
+        assertThat(amountsCaptor.getValue()).containsEntry(1L, 500);
+        assertThat(overridesCaptor.getValue()).isEmpty();
     }
 
     @Test
@@ -154,10 +159,10 @@ class DailyReportInputItemServiceTest {
         when(employeeContractRepository.findByEmployeeIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.empty());
         when(payrollItemDailyInputService.findAllowanceItems(
-                anyMap(), anyMap(), anyMap(), any()))
+                anyMap(), anyMap(), any(), anyMap(), any()))
                 .thenReturn(List.of(inputItem(1L, "OVERTIME", 500)));
         when(payrollItemDailyInputService.findDeductionItems(
-                anyMap(), anyMap(), anyMap(), any()))
+                anyMap(), anyMap(), any(), anyMap(), any()))
                 .thenReturn(List.of());
 
         service.calculate(request);
@@ -165,12 +170,63 @@ class DailyReportInputItemServiceTest {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<Long, Integer>> amountsCaptor =
                 ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<java.util.Set<Long>> overridesCaptor =
+                ArgumentCaptor.forClass(java.util.Set.class);
         verify(payrollItemDailyInputService).findAllowanceItems(
-                anyMap(), amountsCaptor.capture(), anyMap(), any()
+                anyMap(), amountsCaptor.capture(), overridesCaptor.capture(), anyMap(), any()
         );
         assertThat(amountsCaptor.getValue()).containsExactlyEntriesOf(
                 Map.of(1L, 500)
         );
+        assertThat(overridesCaptor.getValue()).containsExactly(1L);
+    }
+
+    @Test
+    void calculate_shouldKeepChangedManualDeductionAmountWithoutOverrideFlag() {
+        DailyReportSaveRequest request = mockRequest();
+        when(request.deductions()).thenReturn(List.of(
+                new DailyReportDeductionSaveRequest(
+                        2L,
+                        "MOBILE_RENTAL",
+                        "携帯電話貸出料",
+                        0,
+                        1_000,
+                        false,
+                        null,
+                        BigDecimal.valueOf(1_000),
+                        BalanceUnit.AMOUNT.name()
+                )
+        ));
+
+        Employee employee = new Employee();
+        employee.setId(10L);
+        when(employeeRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(employee));
+        when(employeeContractRepository.findByEmployeeIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.empty());
+        when(payrollItemDailyInputService.findAllowanceItems(
+                anyMap(), anyMap(), any(), anyMap(), any()))
+                .thenReturn(List.of());
+        when(payrollItemDailyInputService.findDeductionItems(
+                anyMap(), anyMap(), any(), anyMap(), any()))
+                .thenReturn(List.of(inputItem(2L, "MOBILE_RENTAL", 1_000)));
+
+        service.calculate(request);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<Long, Integer>> amountsCaptor =
+                ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<java.util.Set<Long>> overridesCaptor =
+                ArgumentCaptor.forClass(java.util.Set.class);
+        verify(payrollItemDailyInputService).findDeductionItems(
+                anyMap(), amountsCaptor.capture(), overridesCaptor.capture(), anyMap(), any()
+        );
+        assertThat(amountsCaptor.getValue()).containsExactlyEntriesOf(
+                Map.of(2L, 1_000)
+        );
+        assertThat(overridesCaptor.getValue()).isEmpty();
     }
 
     @Test
@@ -217,10 +273,10 @@ class DailyReportInputItemServiceTest {
                 2L, Map.of("dormitoryDailyAmount", BigDecimal.valueOf(450))
         ));
         when(payrollItemDailyInputService.findAllowanceItems(
-                anyMap(), anyMap(), anyMap(), any()))
+                anyMap(), anyMap(), any(), anyMap(), any()))
                 .thenReturn(List.of());
         when(payrollItemDailyInputService.findDeductionItems(
-                anyMap(), anyMap(), anyMap(), any()))
+                anyMap(), anyMap(), any(), anyMap(), any()))
                 .thenReturn(List.of());
 
         service.calculate(request);
@@ -234,6 +290,7 @@ class DailyReportInputItemServiceTest {
         verify(payrollItemDailyInputService).findDeductionItems(
                 parametersCaptor.capture(),
                 anyMap(),
+                any(),
                 itemParametersCaptor.capture(),
                 any()
         );
@@ -269,10 +326,10 @@ class DailyReportInputItemServiceTest {
         when(employeeContractRepository.findByEmployeeIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.empty());
         when(payrollItemDailyInputService.findAllowanceItems(
-                anyMap(), anyMap(), anyMap(), any()))
+                anyMap(), anyMap(), any(), anyMap(), any()))
                 .thenReturn(List.of());
         when(payrollItemDailyInputService.findDeductionItems(
-                anyMap(), anyMap(), anyMap(), any()))
+                anyMap(), anyMap(), any(), anyMap(), any()))
                 .thenReturn(List.of(inputItem(9L, "MOBILE_RENTAL", 12_345)));
         when(balanceQueryService.findDeductionBalance(
                 10L,
@@ -325,10 +382,10 @@ class DailyReportInputItemServiceTest {
         when(employeeContractRepository.findByEmployeeIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.empty());
         when(payrollItemDailyInputService.findAllowanceItems(
-                anyMap(), anyMap(), anyMap(), any()))
+                anyMap(), anyMap(), any(), anyMap(), any()))
                 .thenReturn(List.of());
         when(payrollItemDailyInputService.findDeductionItems(
-                anyMap(), anyMap(), anyMap(), any()))
+                anyMap(), anyMap(), any(), anyMap(), any()))
                 .thenReturn(List.of(
                         inputItem(2L, "DAILY_ITEM", 300),
                         inputItem(3L, "MOBILE_RENTAL", 5000),

@@ -4,7 +4,7 @@
 -- 目的:
 --   1. 月次給与明細を「従業員 x 対象月」で1行にする。
 --   2. 日報に確定保存された可変手当・控除を、表示順で最大12枠へ展開する。
---   3. 日次支払のうち PAID の actual_amount を「前払い」として月次控除へ集計する。
+--   3. 日払いサイクル従業員の日報支給可能額を「前払い」として月次控除へ集計する。
 --   4. 月次締めストアドが、このViewをhistoryTableへスナップショットできるようにする。
 
 SET NAMES utf8mb4;
@@ -76,7 +76,24 @@ SELECT
     e.employee_code,
     e.employee_name,
     e.email AS recipient_email,
-    COALESCE(ec.monthly_salary, 0) AS basic_salary,
+    ec.payment_cycle,
+    COALESCE((
+        SELECT SUM(daily_source.normal_pay_amount)
+        FROM daily_report daily_source
+        WHERE daily_source.tenant_id = mc.tenant_id
+          AND daily_source.employee_id = e.id
+          AND daily_source.deleted_at IS NULL
+          AND daily_source.approval_status = 'APPROVED'
+          AND daily_source.work_date BETWEEN
+              COALESCE(
+                  mc.closing_start_date,
+                  DATE_FORMAT(mc.target_month, '%Y-%m-01')
+              )
+              AND COALESCE(
+                  mc.closing_end_date,
+                  LAST_DAY(mc.target_month)
+              )
+    ), 0) AS basic_salary,
     COALESCE(epp.commute_allowance_monthly, 0) AS commute_allowance_monthly,
     CASE
         WHEN epp.resident_tax_calc_flag = TRUE
@@ -91,10 +108,9 @@ JOIN employee e
  AND (e.hire_date IS NULL OR e.hire_date <= COALESCE(mc.closing_end_date, LAST_DAY(mc.target_month)))
  AND (e.resign_date IS NULL OR e.resign_date >= COALESCE(mc.closing_start_date, DATE_FORMAT(mc.target_month, '%Y-%m-01')))
 JOIN employee_contract ec
-  ON ec.tenant_id = mc.tenant_id
+ ON ec.tenant_id = mc.tenant_id
  AND ec.employee_id = e.id
  AND ec.deleted_at IS NULL
- AND ec.salary_type = 'MONTHLY'
 LEFT JOIN employee_payroll_profile epp
   ON epp.tenant_id = mc.tenant_id
  AND epp.employee_id = e.id
@@ -140,14 +156,15 @@ SELECT
     em.tenant_id,
     em.target_month,
     em.employee_id,
-    COALESCE(SUM(dp.actual_amount), 0) AS advance_payment_amount
+    COALESCE(SUM(dr.estimated_net_pay_amount), 0) AS advance_payment_amount
 FROM vw_monthly_pay_slip_employee_month em
-LEFT JOIN daily_payments dp
-  ON dp.tenant_id = em.tenant_id
- AND dp.employee_id = em.employee_id
- AND dp.deleted_at IS NULL
- AND dp.status = 'PAID'
- AND dp.payment_date BETWEEN em.period_from AND em.period_to
+LEFT JOIN daily_report dr
+  ON dr.tenant_id = em.tenant_id
+ AND dr.employee_id = em.employee_id
+ AND dr.deleted_at IS NULL
+ AND dr.approval_status = 'APPROVED'
+ AND dr.payment_date BETWEEN em.period_from AND em.period_to
+ AND em.payment_cycle = 'DAILY'
 GROUP BY
     em.tenant_id,
     em.target_month,

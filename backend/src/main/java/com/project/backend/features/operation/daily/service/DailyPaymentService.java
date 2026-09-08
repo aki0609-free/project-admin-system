@@ -1,8 +1,6 @@
 package com.project.backend.features.operation.daily.service;
 
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -16,10 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.project.backend.features.dailyreport.entity.DailyReport;
 import com.project.backend.features.dailyreport.repository.DailyReportRepository;
+import com.project.backend.features.employee.enums.ApprovalStatus;
 import com.project.backend.features.employee.enums.PaymentCycle;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
-import com.project.backend.features.operation.daily.dto.DailyPaymentBulkSaveItemRequest;
-import com.project.backend.features.operation.daily.dto.DailyPaymentBulkSaveRequest;
 import com.project.backend.features.operation.daily.dto.DailyPaymentDenominationResponse;
 import com.project.backend.features.operation.daily.dto.DailyPaymentPrintDetailResponse;
 import com.project.backend.features.operation.daily.dto.DailyPaymentPrintSummaryResponse;
@@ -27,20 +24,17 @@ import com.project.backend.features.operation.daily.dto.DailyPaymentResponse;
 import com.project.backend.features.operation.daily.entity.DailyPayment;
 import com.project.backend.features.operation.daily.enums.DailyPaymentStatus;
 import com.project.backend.features.operation.daily.mapper.DailyPaymentMapper;
-import com.project.backend.features.operation.daily.repository.DailyPaymentRepository;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class DailyPaymentService {
 
-    private final DailyPaymentRepository dailyPaymentRepository;
     private final DailyReportRepository dailyReportRepository;
     private final EmployeeContractRepository employeeContractRepository;
     private final DailyPaymentMapper mapper;
-    private final Clock clock;
 
     @Transactional(readOnly = true)
     public List<DailyPaymentResponse> findByPaymentDate(LocalDate paymentDate) {
@@ -48,14 +42,11 @@ public class DailyPaymentService {
             throw new RuntimeException("paymentDate は必須です。");
         }
 
-        Map<Long, DailyPayment> paymentMap = new LinkedHashMap<>();
-
-        dailyPaymentRepository
-                .findByPaymentDateAndDeletedAtIsNullOrderByEmployeeCodeAscIdAsc(paymentDate)
-                .forEach(payment -> paymentMap.put(payment.getEmployeeId(), payment));
-
         List<DailyReport> reports = dailyReportRepository
-                .findByPaymentDateAndDeletedAtIsNullOrderByWorkDateDescIdDesc(paymentDate);
+                .findByPaymentDateAndApprovalStatusAndDeletedAtIsNullOrderByEmployeeEmployeeCodeAscWorkDateDescIdDesc(
+                        paymentDate,
+                        ApprovalStatus.APPROVED
+                );
 
         Map<Long, List<DailyReport>> reportsByEmployee = new LinkedHashMap<>();
         for (DailyReport report : reports) {
@@ -74,18 +65,12 @@ public class DailyPaymentService {
                 .map(contract -> contract.getEmployee().getId())
                 .collect(Collectors.toSet());
 
-        reportsByEmployee.forEach((employeeId, employeeReports) -> {
-            if (dailyPaymentEmployeeIds.contains(employeeId)
-                    && !paymentMap.containsKey(employeeId)) {
-                paymentMap.put(
-                        employeeId,
-                        createGeneratedPayment(paymentDate, employeeReports)
-                );
-            }
-        });
-
-        return paymentMap.values()
+        return reportsByEmployee.entrySet()
                 .stream()
+                .filter(entry -> dailyPaymentEmployeeIds.contains(entry.getKey()))
+                .map(entry -> createGeneratedPayment(paymentDate, entry.getValue()))
+                .sorted((left, right) -> nvlText(left.getEmployeeCode())
+                        .compareTo(nvlText(right.getEmployeeCode())))
                 .map(mapper::toResponse)
                 .toList();
     }
@@ -134,113 +119,6 @@ public class DailyPaymentService {
                 .totalDenomination(calculateDenomination(totalActualAmount))
                 .details(details)
                 .build();
-    }
-
-    public List<DailyPaymentResponse> bulkSave(DailyPaymentBulkSaveRequest request) {
-        if (request == null || request.getPaymentDate() == null) {
-            throw new RuntimeException("paymentDate は必須です。");
-        }
-
-        for (DailyPaymentBulkSaveItemRequest item : request.getItems()) {
-            if (item.isDeleted()) {
-                if (item.getId() != null) {
-                    DailyPayment entity = findPayment(item.getId());
-                    entity.setDeletedAt(Instant.now(clock));
-                }
-                continue;
-            }
-
-            if (item.isNew()) {
-                createPayment(request.getPaymentDate(), item);
-                continue;
-            }
-
-            if (item.isUpdated()) {
-                if (item.getId() == null) {
-                    continue;
-                }
-
-                updatePayment(item.getId(), item);
-            }
-        }
-
-        return findByPaymentDate(request.getPaymentDate());
-    }
-
-    private DailyPayment createPayment(
-            LocalDate paymentDate,
-            DailyPaymentBulkSaveItemRequest item
-    ) {
-        requireDailyPaymentCycle(item.getEmployeeId());
-
-        DailyPayment entity = dailyPaymentRepository
-                .findByPaymentDateAndEmployeeIdAndDeletedAtIsNull(
-                        paymentDate,
-                        item.getEmployeeId()
-                )
-                .orElseGet(DailyPayment::new);
-
-        entity.setPaymentDate(paymentDate);
-        entity.setEmployeeId(item.getEmployeeId());
-
-        applyPaymentAmounts(entity, item);
-
-        return dailyPaymentRepository.save(entity);
-    }
-
-    private void requireDailyPaymentCycle(Long employeeId) {
-        if (employeeId == null) {
-            throw new IllegalArgumentException("employeeId は必須です。");
-        }
-
-        boolean dailyPaymentTarget = employeeContractRepository
-                .findByEmployeeIdAndDeletedAtIsNull(employeeId)
-                .map(contract -> contract.getPaymentCycle() == PaymentCycle.DAILY)
-                .orElse(false);
-
-        if (!dailyPaymentTarget) {
-            throw new IllegalArgumentException(
-                    "日次支払を登録できるのは、支払サイクルが日払いの従業員だけです。"
-            );
-        }
-    }
-
-    @SuppressWarnings("null")
-    private DailyPayment updatePayment(
-            Long id,
-            DailyPaymentBulkSaveItemRequest item
-    ) {
-        DailyPayment entity = findPayment(id);
-
-        applyPaymentAmounts(entity, item);
-
-        return dailyPaymentRepository.save(entity);
-    }
-
-    private void applyPaymentAmounts(
-            DailyPayment entity,
-            DailyPaymentBulkSaveItemRequest item
-    ) {
-        entity.setPlannedAmount(nvl(item.getPlannedAmount()));
-        entity.setActualAmount(nvl(item.getActualAmount()));
-
-        DailyPaymentStatus oldStatus = entity.getStatus();
-
-        entity.setStatus(
-                item.getStatus() != null
-                        ? item.getStatus()
-                        : DailyPaymentStatus.PENDING
-        );
-
-        if (entity.getStatus() == DailyPaymentStatus.PAID && oldStatus != DailyPaymentStatus.PAID) {
-            entity.setPaidAt(Instant.now(clock));
-        }
-
-        if (entity.getStatus() != DailyPaymentStatus.PAID) {
-            entity.setPaidAt(null);
-        }
-
-        entity.setNote(item.getNote());
     }
 
     private DailyPayment createGeneratedPayment(
@@ -322,12 +200,11 @@ public class DailyPaymentService {
                 .build();
     }
 
-    private DailyPayment findPayment(Long id) {
-        return dailyPaymentRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new RuntimeException("日払いデータが見つかりません。 id=" + id));
-    }
-
     private BigDecimal nvl(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
+    }
+
+    private String nvlText(String value) {
+        return value != null ? value : "";
     }
 }

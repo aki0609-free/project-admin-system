@@ -2,17 +2,20 @@ import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import {
   createResignationChecklist,
   deleteResignationChecklist,
+  deletePayrollPolicy,
   executeAnnualReportBackup,
   getAnnualReportBackupSetting,
   getClosingOutputs,
   getClosingSetting,
   getExternalSupportLinkSetting,
+  getPayrollPolicies,
   getResignationChecklist,
   getResignationMessage,
   saveClosingOutputs,
   saveClosingSetting,
   saveAnnualReportBackupSetting,
   saveExternalSupportLinkSetting,
+  savePayrollPolicy,
   saveResignationMessage,
   updateResignationChecklist,
 } from '../api/businessSettingApi'
@@ -22,6 +25,7 @@ import type {
   BusinessClosingSetting,
   ExternalSupportLinkSetting,
   MonthlyClosingOutputSetting,
+  PayrollPolicySetting,
   ResignationChecklistItem,
   ResignationChecklistSaveRequest,
   ResignationMessage,
@@ -37,10 +41,29 @@ const emptyChecklist = (): ResignationChecklistItem => ({
   activeFlag: true,
 })
 
+const localDateText = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
+const emptyPayrollPolicy = (): PayrollPolicySetting => ({
+  id: null,
+  effectiveFrom: localDateText(new Date()),
+  effectiveTo: null,
+  weekStartDay: 'MONDAY',
+  weeklyStatutoryHours: 40,
+  monthlyOvertimeThresholdHours: 60,
+  overtimeRate: 1.25,
+  overtimeOverThresholdRate: 1.5,
+  nightPremiumRate: 0.25,
+  statutoryHolidayRate: 1.35,
+  dailyStandardHours: 8,
+  amountRoundingMode: 'HALF_UP',
+  activeFlag: true,
+})
+
 export const useBusinessSettingsPage = () => {
-  const activeTab = ref<'resignation' | 'closing' | 'outputs' | 'backup' | 'other'>(
-    'resignation',
-  )
+  const activeTab = ref<
+    'resignation' | 'closing' | 'payrollPolicy' | 'outputs' | 'backup' | 'other'
+  >('resignation')
   const loading = ref(false)
   const errorMessage = ref('')
   const successMessage = ref('')
@@ -63,6 +86,7 @@ export const useBusinessSettingsPage = () => {
     incidentReportUrl: '',
     manualUrl: '',
   })
+  const payrollPolicies = ref<PayrollPolicySetting[]>([])
   const manualBackupFiscalYear = ref(new Date().getFullYear())
   const lastBackupResult = ref<AnnualReportBackupResult | null>(null)
   const checklistDialog = ref(false)
@@ -118,6 +142,11 @@ export const useBusinessSettingsPage = () => {
         getExternalSupportLinkSetting()
           .then((value) => Object.assign(externalSupportLinks, value))
           .catch(() => failures.push('その他設定')),
+        getPayrollPolicies()
+          .then((value) => {
+            payrollPolicies.value = value
+          })
+          .catch(() => failures.push('給与制度設定')),
       ])
       if (failures.length > 0) {
         throw new Error(`設定の取得に失敗しました: ${failures.join('、')}`)
@@ -229,6 +258,40 @@ export const useBusinessSettingsPage = () => {
       )
     }, 'その他設定を保存しました。')
 
+  const addPayrollPolicy = () => {
+    payrollPolicies.value.unshift(emptyPayrollPolicy())
+  }
+
+  const savePayrollPolicyRow = (item: PayrollPolicySetting) =>
+    run(async () => {
+      const saved = await savePayrollPolicy({
+        ...item,
+        effectiveTo: item.effectiveTo || null,
+        weeklyStatutoryHours: Number(item.weeklyStatutoryHours),
+        monthlyOvertimeThresholdHours: Number(item.monthlyOvertimeThresholdHours),
+        overtimeRate: Number(item.overtimeRate),
+        overtimeOverThresholdRate: Number(item.overtimeOverThresholdRate),
+        nightPremiumRate: Number(item.nightPremiumRate),
+        statutoryHolidayRate: Number(item.statutoryHolidayRate),
+        dailyStandardHours: Number(item.dailyStandardHours),
+      })
+      const index = payrollPolicies.value.indexOf(item)
+      if (index >= 0) payrollPolicies.value[index] = saved
+      payrollPolicies.value = await getPayrollPolicies()
+    }, '給与制度設定を保存しました。')
+
+  const removePayrollPolicy = (item: PayrollPolicySetting) => {
+    if (!window.confirm('この給与制度設定を削除しますか？')) return
+    if (item.id == null) {
+      payrollPolicies.value = payrollPolicies.value.filter((row) => row !== item)
+      return
+    }
+    return run(async () => {
+      await deletePayrollPolicy(item.id as number)
+      payrollPolicies.value = await getPayrollPolicies()
+    }, '給与制度設定を削除しました。')
+  }
+
   onMounted(() => {
     void load()
   })
@@ -247,6 +310,7 @@ export const useBusinessSettingsPage = () => {
     closingOutputs,
     annualReportBackup,
     externalSupportLinks,
+    payrollPolicies,
     manualBackupFiscalYear,
     lastBackupResult,
     checklistDialog,
@@ -262,5 +326,8 @@ export const useBusinessSettingsPage = () => {
     saveBackupSetting,
     executeBackup,
     saveExternalSupportLinks,
+    addPayrollPolicy,
+    savePayrollPolicyRow,
+    removePayrollPolicy,
   }
 }

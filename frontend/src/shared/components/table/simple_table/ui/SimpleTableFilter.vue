@@ -19,7 +19,7 @@
         v-else-if="col.filter?.type === 'select'"
         :model-value="tableState.filters[col.key as string]"
         @update:model-value="(val) => setFilter(col.key as string, val)"
-        :items="col.enumOptions"
+        :items="resolveFilterOptions(col)"
         item-title="title"
         item-value="value"
         :label="col.title"
@@ -28,6 +28,24 @@
         hide-details
         clearable
         class="filter-control w-100"
+      />
+
+      <!-- number -->
+      <v-text-field
+        v-else-if="col.filter?.type === 'number'"
+        :model-value="tableState.filters[col.key as string]"
+        type="number"
+        inputmode="decimal"
+        :min="col.min"
+        :max="col.max"
+        :step="col.step ?? 'any'"
+        :label="col.title"
+        density="compact"
+        variant="underlined"
+        hide-details
+        clearable
+        class="filter-control w-100"
+        @update:model-value="(val) => setFilter(col.key as string, val)"
       />
 
       <!-- checkbox -->
@@ -121,6 +139,9 @@ const gridTemplateColumns = computed(() =>
     })
     .join(' '),
 )
+
+const resolveFilterOptions = (column: SimpleTableColumnDef<T>) =>
+  Array.isArray(column.enumOptions) ? column.enumOptions : []
 
 const setFilter = (key: string, value: unknown) => {
   filterStore.setFilter(props.tableKey, key, value)

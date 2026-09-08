@@ -46,6 +46,12 @@ type UseDailyReportFormFieldsOptions = {
   siteRoleOptions:
     Ref<SelectOption<string>[]>
     | ComputedRef<SelectOption<string>[]>
+
+  hasActiveLoan: Ref<boolean>
+    | ComputedRef<boolean>
+
+  hasActiveSaving: Ref<boolean>
+    | ComputedRef<boolean>
 }
 
 export const useDailyReportFormFields = ({
@@ -55,7 +61,23 @@ export const useDailyReportFormFields = ({
   siteOptions,
   jobOptions,
   siteRoleOptions,
+  hasActiveLoan,
+  hasActiveSaving,
 }: UseDailyReportFormFieldsOptions) => {
+  const formatBillingUnit = (
+    value: unknown,
+  ): string => {
+    const labels: Record<string, string> = {
+      HOURLY: '時間単価',
+      DAILY: '日額',
+      MONTHLY: '月額',
+      FIXED: '固定額',
+    }
+
+    return labels[String(value ?? '')]
+      ?? String(value ?? '')
+  }
+
   const isEligibleOn = (
     employee: EmployeeListItemResponse,
     targetDate: string,
@@ -224,7 +246,7 @@ export const useDailyReportFormFields = ({
         GridFormFieldDef<DailyReportForm>[] = [
           {
             key: 'jobCode',
-            label: '職種',
+            label: '職種名',
             type: 'select',
             gridColumn: '1 / span 2',
             options:
@@ -232,39 +254,19 @@ export const useDailyReportFormFields = ({
           },
           {
             key: 'siteRoleCode',
-            label: '現場役職',
+            label: '現場役職名',
             type: 'select',
             gridColumn: '3 / span 2',
             options:
               siteRoleOptions.value,
           },
           {
-            key: 'jobName',
-            label: '職種名',
-            type: 'text',
-            editable: false,
-            gridColumn: '1 / span 2',
-          },
-          {
-            key: 'siteRoleName',
-            label: '現場役職名',
-            type: 'text',
-            editable: false,
-            gridColumn: '3 / span 2',
-          },
-          {
-            key: 'billingRateId',
-            label: '適用単価ID',
-            type: 'number',
-            editable: false,
-            gridColumn: '1 / span 2',
-          },
-          {
             key: 'billingUnit',
             label: '単価区分',
             type: 'text',
             editable: false,
-            gridColumn: '3 / span 2',
+            formatter: formatBillingUnit,
+            gridColumn: '1 / span 2',
           },
           {
             key:
@@ -275,7 +277,7 @@ export const useDailyReportFormFields = ({
 
             type: 'number',
             editable: false,
-            gridColumn: '1 / span 2',
+            gridColumn: '3 / span 2',
           },
           {
             key:
@@ -286,7 +288,7 @@ export const useDailyReportFormFields = ({
 
             type: 'number',
             editable: false,
-            gridColumn: '3 / span 2',
+            gridColumn: '1 / span 2',
           },
           {
             key:
@@ -297,7 +299,7 @@ export const useDailyReportFormFields = ({
 
             type: 'number',
             editable: false,
-            gridColumn: '1 / span 2',
+            gridColumn: '3 / span 2',
           },
           {
             key:
@@ -308,7 +310,7 @@ export const useDailyReportFormFields = ({
 
             type: 'number',
             editable: false,
-            gridColumn: '3 / span 2',
+            gridColumn: '1 / span 2',
           },
           {
             key:
@@ -319,7 +321,7 @@ export const useDailyReportFormFields = ({
 
             type: 'number',
             editable: false,
-            gridColumn: '1 / span 2',
+            gridColumn: '3 / span 2',
           },
         ]
 
@@ -370,6 +372,7 @@ export const useDailyReportFormFields = ({
             key: 'savingAmount',
             label: '実際貯蓄額',
             type: 'number',
+            editable: hasActiveSaving.value,
             gridColumn: '1 / span 2',
           },
           {
@@ -380,6 +383,7 @@ export const useDailyReportFormFields = ({
               '実際返済額',
 
             type: 'number',
+            editable: hasActiveLoan.value,
             gridColumn: '3 / span 2',
           },
         ]

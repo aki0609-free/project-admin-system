@@ -40,6 +40,9 @@ class OperationReportPreviewRowReaderServiceTest {
                         OperationType.DAILY,
                         "DAILY_LABOR_COST_PREVIEW",
                         "2026-08-01",
+                        null,
+                        null,
+                        null,
                         null
                 ),
                 "default"
@@ -69,11 +72,109 @@ class OperationReportPreviewRowReaderServiceTest {
                         OperationType.DAILY,
                         "DAILY_LABOR_COST_PREVIEW",
                         "2026-08-01",
+                        null,
+                        null,
+                        null,
                         null
                 ),
                 "default"
         )).isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("filter_column_name");
+    }
+
+    @Test
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    void customerInvoicePreviewUsesCustomerSpecificClosingPeriod() {
+        when(jdbcTemplate.queryForList(anyString(), anyMap()))
+                .thenReturn(List.of());
+        OperationReportPreview definition = new OperationReportPreview();
+        definition.setOperationType(OperationType.MONTHLY);
+        definition.setTableName("vw_monthly_invoice_operation_preview");
+        definition.setFilterColumnName("target_month");
+        definition.setOrderBy("customer_name, site_name, job_code");
+
+        service.readRows(
+                definition,
+                new OperationReportPreviewHtmlRequest(
+                        OperationType.MONTHLY,
+                        "MONTHLY_INVOICE",
+                        null,
+                        "2026-09",
+                        30L,
+                        "2026-08-21",
+                        "2026-09-20"
+                ),
+                "default"
+        );
+
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Map> parameters = ArgumentCaptor.forClass(Map.class);
+        verify(jdbcTemplate).queryForList(sql.capture(), parameters.capture());
+        assertThat(sql.getValue())
+                .contains("customer_id = :customerId")
+                .contains("work_date between :periodFrom and :periodTo");
+        assertThat(parameters.getValue())
+                .containsEntry("customerId", 30L)
+                .containsEntry("periodFrom", LocalDate.of(2026, 8, 21))
+                .containsEntry("periodTo", LocalDate.of(2026, 9, 20));
+    }
+
+    @Test
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    void customerOrderFormPreviewUsesTargetMonthAndCustomer() {
+        when(jdbcTemplate.queryForList(anyString(), anyMap()))
+                .thenReturn(List.of());
+        OperationReportPreview definition = new OperationReportPreview();
+        definition.setOperationType(OperationType.MONTHLY);
+        definition.setTableName("monthly_order_form_history");
+        definition.setFilterColumnName("target_month");
+
+        service.readRows(
+                definition,
+                new OperationReportPreviewHtmlRequest(
+                        OperationType.MONTHLY,
+                        "MONTHLY_ORDER_FORM",
+                        null,
+                        "2026-09",
+                        30L,
+                        "2026-08-21",
+                        "2026-09-20"
+                ),
+                "default"
+        );
+
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Map> parameters = ArgumentCaptor.forClass(Map.class);
+        verify(jdbcTemplate).queryForList(sql.capture(), parameters.capture());
+        assertThat(sql.getValue())
+                .contains("date_format(target_month, '%Y-%m') = :targetMonth")
+                .contains("customer_id = :customerId");
+        assertThat(parameters.getValue())
+                .containsEntry("targetMonth", "2026-09")
+                .containsEntry("customerId", 30L);
+    }
+
+    @Test
+    void customerScopedPreviewRejectsPartialScope() {
+        OperationReportPreview definition = new OperationReportPreview();
+        definition.setOperationType(OperationType.MONTHLY);
+        definition.setTableName("vw_monthly_invoice_operation_preview");
+        definition.setFilterColumnName("target_month");
+
+        assertThatThrownBy(() -> service.readRows(
+                definition,
+                new OperationReportPreviewHtmlRequest(
+                        OperationType.MONTHLY,
+                        "MONTHLY_INVOICE",
+                        null,
+                        "2026-09",
+                        30L,
+                        null,
+                        null
+                ),
+                "default"
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("customerId、periodFrom、periodTo");
     }
 
     private OperationReportPreview definition() {

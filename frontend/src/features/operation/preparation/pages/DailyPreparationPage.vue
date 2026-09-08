@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
+import DateFormField from '@/shared/components/form/base/components/form/DateFormField.vue'
 
 import DailyPreparationAssignmentTable from '../components/DailyPreparationAssignmentTable.vue'
 import DailyPreparationDispatchTable from '../components/DailyPreparationDispatchTable.vue'
@@ -14,12 +15,10 @@ const {
   tabs,
 
   preparation,
-  preparationNote,
   assignmentRows,
   dispatchRows,
 
   leftToolbarItems,
-  rightToolbarItems,
 
   handleAssignmentCellUpdate,
   handleDispatchCellUpdate,
@@ -31,20 +30,21 @@ const {
     title="翌日準備"
     description="翌日以降の従業員配置・現場配車・作業伝票を管理します。"
     :left-toolbar-items="leftToolbarItems"
-    :right-toolbar-items="rightToolbarItems"
   >
     <template #search>
-      <div class="preparation-search">
-        <v-text-field
-          v-model="targetDate"
-          type="date"
-          label="対象日"
-          variant="outlined"
-          density="compact"
-          hide-details
-          prepend-inner-icon="mdi-calendar"
-        />
-      </div>
+      <v-card variant="outlined" class="preparation-search-card">
+        <v-card-text class="preparation-search-card__content">
+          <DateFormField
+            v-model="targetDate"
+            class="preparation-search-control"
+            label="対象日"
+            variant="outlined"
+            density="compact"
+            hide-details
+            prepend-inner-icon="mdi-calendar"
+          />
+        </v-card-text>
+      </v-card>
     </template>
 
     <template #before-table>
@@ -52,17 +52,6 @@ const {
         <p class="count-text">
           {{ preparation ? '翌日準備あり' : '翌日準備未作成' }}
         </p>
-        <v-textarea
-          v-model="preparationNote"
-          label="全体備考（メモ）"
-          variant="outlined"
-          density="compact"
-          rows="2"
-          auto-grow
-          maxlength="1000"
-          counter
-          hide-details="auto"
-        />
       </div>
     </template>
 
@@ -94,7 +83,19 @@ const {
 </template>
 
 <style scoped>
-.preparation-search {
+.preparation-search-card {
+  width: 100%;
+  border-color: #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.preparation-search-card__content {
+  padding: 16px;
+}
+
+.preparation-search-control {
   max-width: 240px;
 }
 

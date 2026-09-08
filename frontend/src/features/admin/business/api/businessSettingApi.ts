@@ -6,6 +6,7 @@ import type {
   ExternalSupportLinkSetting,
   MonthlyClosingOutputSaveRequest,
   MonthlyClosingOutputSetting,
+  PayrollPolicySetting,
   ResignationChecklistItem,
   ResignationChecklistSaveRequest,
   ResignationMessage,
@@ -84,3 +85,15 @@ export const saveExternalSupportLinkSetting = (
   `${basePath}/external-support-links`,
   request,
 )
+
+export const getPayrollPolicies = () =>
+  get<PayrollPolicySetting[]>(`${basePath}/payroll-policies`)
+
+export const savePayrollPolicy = (request: PayrollPolicySetting) =>
+  post<PayrollPolicySetting, PayrollPolicySetting>(
+    `${basePath}/payroll-policies`,
+    request,
+  )
+
+export const deletePayrollPolicy = (id: number) =>
+  del<undefined>(`${basePath}/payroll-policies/${id}`)

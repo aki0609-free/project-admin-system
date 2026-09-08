@@ -83,6 +83,7 @@ class CustomerBillingClosingExecutionServiceTest {
         assertThat(entity.getClosingVersion()).isEqualTo(1);
         assertThat(entity.getClosedAt())
                 .isEqualTo(Instant.parse("2026-08-01T00:00:00Z"));
+        assertThat(entity.getClosedBy()).isEqualTo("SYSTEM");
     }
 
     @Test
@@ -96,5 +97,24 @@ class CustomerBillingClosingExecutionServiceTest {
                 .hasMessageContaining("注文書生成失敗");
         assertThat(entity.getStatus()).isEqualTo(MonthlyClosingStatus.OPEN);
         assertThat(entity.getClosingVersion()).isZero();
+    }
+
+    @Test
+    void reclose_shouldRejectOpenRecordWithoutCompletedVersion() {
+        assertThatThrownBy(() -> service.execute("2026-07", 30L, true))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("初回の顧客請求締めが完了していません");
+    }
+
+    @Test
+    void reclose_shouldGenerateNextVersionFromCompletedClosing() {
+        entity.setStatus(MonthlyClosingStatus.CLOSED);
+        entity.setClosingVersion(1);
+
+        service.execute("2026-07", 30L, true);
+
+        verify(jobService).execute(20L, "2026-07", 2, target);
+        assertThat(entity.getClosingVersion()).isEqualTo(2);
+        assertThat(entity.getStatus()).isEqualTo(MonthlyClosingStatus.CLOSED);
     }
 }

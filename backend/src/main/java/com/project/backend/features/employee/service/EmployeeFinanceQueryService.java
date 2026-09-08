@@ -35,6 +35,8 @@ public class EmployeeFinanceQueryService {
 
         return new EmployeeFinanceSummaryResponse(
                 employeeId,
+                loan != null,
+                saving != null,
                 loan == null ? BigDecimal.ZERO : nvl(loan.getCurrentBalance()),
                 saving == null ? BigDecimal.ZERO : nvl(saving.getCurrentBalance()),
                 loan == null ? BigDecimal.ZERO : nvl(loan.getMonthlyRepayment()),

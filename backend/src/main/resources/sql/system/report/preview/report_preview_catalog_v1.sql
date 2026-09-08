@@ -52,6 +52,7 @@ CREATE OR REPLACE VIEW vw_monthly_invoice_operation_preview AS
 SELECT
     detail.tenant_id,
     DATE_FORMAT(detail.work_date, '%Y-%m') AS target_month,
+    detail.work_date,
     detail.customer_id,
     MAX(customer.name) AS customer_name,
     detail.customer_site_id,
@@ -82,6 +83,7 @@ LEFT JOIN customers customer
 GROUP BY
     detail.tenant_id,
     DATE_FORMAT(detail.work_date, '%Y-%m'),
+    detail.work_date,
     detail.customer_id,
     detail.customer_site_id,
     detail.job_code,
@@ -94,10 +96,10 @@ INSERT INTO batch_job_definition (
     created_at, updated_at
 ) VALUES
 (
-    @tenant_id, 'PRINT_DAILY_PAY_SLIP', '日払い明細出力',
+    @tenant_id, 'PRINT_DAILY_PAY_SLIP', '日次給与明細出力',
     'REPORT', 'DAILY_PAY_SLIP',
     TRUE, FALSE, 'NONE', NULL, TRUE,
-    '日次支払日に対する全従業員の日払い明細PDFを生成する',
+    '日次支払日に対する全従業員の日次給与明細PDFを生成する',
     @now, @now
 ),
 (
@@ -134,7 +136,7 @@ INSERT INTO operation_report_preview (
 ) VALUES
 (
     @tenant_id, @now, @now,
-    'DAILY', 'DAILY_PAY_SLIP', '日払い明細',
+    'DAILY', 'DAILY_PAY_SLIP', '日次給与明細',
     'PRINT_DAILY_PAY_SLIP',
     'vw_daily_pay_slip_latest', 'payment_date', 'paymentDate',
     'daily_pay_slip.jrxml',

@@ -35,14 +35,7 @@ export const useDailyPreparationAssignmentTableConfig = (
   rows: Ref<DailyPreparationAssignmentTableRow[]>,
 ) => {
   const customerStore = useCustomerMasterStore()
-  const { customerOptions, sites } = storeToRefs(customerStore)
-
-  const allSiteOptions = computed(() =>
-    sites.value.map((site) => ({
-      title: site.name,
-      value: site.id,
-    })),
-  )
+  const { customerOptions } = storeToRefs(customerStore)
 
   const columns = computed<SimpleTableColumnDef<DailyPreparationAssignmentTableRow>[]>(() => [
     {
@@ -75,7 +68,7 @@ export const useDailyPreparationAssignmentTableConfig = (
       editable: true,
       filter: { type: 'text' },
       type: 'select',
-      enumOptions: allSiteOptions.value,
+      enumOptions: (row) => customerStore.siteOptions(row.customerId),
     },
     {
       title: '作業内容',

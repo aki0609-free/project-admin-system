@@ -13,6 +13,7 @@ import com.project.backend.features.system.excelbook.entity.ExcelBookMaster;
 import com.project.backend.features.system.excelbook.mapper.ExcelBookMasterMapper;
 import com.project.backend.features.system.excelbook.enums.ExcelBookLayoutType;
 import com.project.backend.features.system.excelbook.enums.ExcelBookSelectionMode;
+import com.project.backend.features.system.excelbook.enums.ExcelBookGenerationUnit;
 import com.project.backend.features.system.excelbook.repository.ExcelBookMasterRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -174,6 +175,12 @@ public class ExcelBookMasterCommandService {
         var selection = request.selection();
         if (selection.mode() == ExcelBookSelectionMode.NONE) {
             return;
+        }
+        if (selection.generationUnit()
+                != ExcelBookGenerationUnit.FILE_PER_SELECTION) {
+            throw new IllegalArgumentException(
+                    "V1の対象選択型は、対象ごとに1ファイルで指定してください。"
+            );
         }
         if (selection.dataSourceCode() == null
                 || selection.dataSourceCode().isBlank()) {

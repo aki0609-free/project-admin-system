@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { z } from 'zod'
 import DayRuleField from '@/shared/components/form/base/components/form/DayRuleField.vue'
+import DateFormField from '@/shared/components/form/base/components/form/DateFormField.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
@@ -27,6 +28,7 @@ const {
   closingOutputs,
   annualReportBackup,
   externalSupportLinks,
+  payrollPolicies,
   manualBackupFiscalYear,
   lastBackupResult,
   checklistDialog,
@@ -41,7 +43,26 @@ const {
   saveBackupSetting,
   executeBackup,
   saveExternalSupportLinks,
+  addPayrollPolicy,
+  savePayrollPolicyRow,
+  removePayrollPolicy,
 } = useBusinessSettingsPage()
+
+const weekDayOptions = [
+  { title: '月曜日', value: 'MONDAY' },
+  { title: '火曜日', value: 'TUESDAY' },
+  { title: '水曜日', value: 'WEDNESDAY' },
+  { title: '木曜日', value: 'THURSDAY' },
+  { title: '金曜日', value: 'FRIDAY' },
+  { title: '土曜日', value: 'SATURDAY' },
+  { title: '日曜日', value: 'SUNDAY' },
+]
+
+const roundingOptions = [
+  { title: '四捨五入', value: 'HALF_UP' },
+  { title: '切り上げ', value: 'UP' },
+  { title: '切り捨て', value: 'DOWN' },
+]
 
 const resignationMessageSchema = z.object({
   dialogTitle: z.string().min(1, '必須です'),
@@ -171,7 +192,7 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
 <template>
   <ListDetailPageLayout
     title="業務管理"
-    description="退職処理、給与締日、月次締め帳票、年度バックアップ、外部リンクを管理します。"
+    description="退職処理、給与締日、給与制度、月次締め帳票、年度バックアップ、外部リンクを管理します。"
   >
     <v-alert
       v-if="errorMessage"
@@ -195,10 +216,19 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
       {{ successMessage }}
     </v-alert>
 
-    <v-card :loading="loading" variant="outlined">
-      <v-tabs v-model="activeTab" color="primary">
+    <v-card
+      :loading="loading"
+      variant="outlined"
+      class="business-settings-card"
+    >
+      <v-tabs
+        v-model="activeTab"
+        color="primary"
+        class="settings-tabs"
+      >
         <v-tab value="resignation">退職時設定</v-tab>
         <v-tab value="closing">締日設定</v-tab>
+        <v-tab value="payrollPolicy">給与制度設定</v-tab>
         <v-tab value="outputs">締め帳票</v-tab>
         <v-tab value="backup">帳票バックアップ</v-tab>
         <v-tab value="other">その他設定</v-tab>
@@ -206,7 +236,10 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
 
       <v-divider />
 
-      <v-window v-model="activeTab">
+      <v-window
+        v-model="activeTab"
+        class="settings-window"
+      >
         <v-window-item value="resignation">
           <section class="settings-section">
             <h2>退職ダイアログの文言</h2>
@@ -272,6 +305,152 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
               <v-btn color="primary" :loading="loading" @click="saveClosing">
                 締日設定を保存
               </v-btn>
+            </div>
+          </section>
+        </v-window-item>
+
+        <v-window-item value="payrollPolicy">
+          <section class="settings-section">
+            <div class="section-heading">
+              <div>
+                <h2>会社・期間別の給与制度</h2>
+                <p>
+                  日報の勤務日に有効な設定を選び、給与Ruleへ計算条件として渡します。
+                  有効な設定の適用期間は重複できません。
+                </p>
+              </div>
+              <v-btn color="primary" variant="tonal" @click="addPayrollPolicy">
+                設定を追加
+              </v-btn>
+            </div>
+
+            <div class="policy-list">
+              <v-card
+                v-for="(item, index) in payrollPolicies"
+                :key="item.id ?? `new-${index}`"
+                variant="outlined"
+                class="policy-card"
+              >
+                <div class="policy-grid">
+                  <DateFormField
+                    v-model="item.effectiveFrom"
+                    label="適用開始日"
+                    variant="outlined"
+                    hide-details
+                  />
+                  <DateFormField
+                    v-model="item.effectiveTo"
+                    label="適用終了日（空欄は無期限）"
+                    variant="outlined"
+                    hide-details
+                    clearable
+                  />
+                  <v-select
+                    v-model="item.weekStartDay"
+                    label="週の起算曜日"
+                    :items="weekDayOptions"
+                    variant="outlined"
+                    hide-details
+                  />
+                  <v-text-field
+                    v-model.number="item.weeklyStatutoryHours"
+                    label="週法定労働時間"
+                    type="number"
+                    min="0.01"
+                    step="0.25"
+                    suffix="時間"
+                    variant="outlined"
+                    hide-details
+                  />
+                  <v-text-field
+                    v-model.number="item.monthlyOvertimeThresholdHours"
+                    label="月時間外割増切替"
+                    type="number"
+                    min="0"
+                    step="0.25"
+                    suffix="時間"
+                    variant="outlined"
+                    hide-details
+                  />
+                  <v-text-field
+                    v-model.number="item.dailyStandardHours"
+                    label="日給の基準時間"
+                    type="number"
+                    min="0.01"
+                    step="0.25"
+                    suffix="時間"
+                    variant="outlined"
+                    hide-details
+                  />
+                  <v-text-field
+                    v-model.number="item.overtimeRate"
+                    label="時間外割増率"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    suffix="倍"
+                    variant="outlined"
+                    hide-details
+                  />
+                  <v-text-field
+                    v-model.number="item.overtimeOverThresholdRate"
+                    label="月基準超過後の割増率"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    suffix="倍"
+                    variant="outlined"
+                    hide-details
+                  />
+                  <v-text-field
+                    v-model.number="item.nightPremiumRate"
+                    label="深夜加算率"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    variant="outlined"
+                    hide-details
+                  />
+                  <v-text-field
+                    v-model.number="item.statutoryHolidayRate"
+                    label="法定休日割増率"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    suffix="倍"
+                    variant="outlined"
+                    hide-details
+                  />
+                  <v-select
+                    v-model="item.amountRoundingMode"
+                    label="円未満の端数処理"
+                    :items="roundingOptions"
+                    variant="outlined"
+                    hide-details
+                  />
+                  <v-checkbox
+                    v-model="item.activeFlag"
+                    label="有効"
+                    hide-details
+                  />
+                </div>
+                <div class="policy-actions">
+                  <v-btn
+                    color="error"
+                    variant="text"
+                    @click="removePayrollPolicy(item)"
+                  >
+                    削除
+                  </v-btn>
+                  <v-btn
+                    color="primary"
+                    :loading="loading"
+                    @click="savePayrollPolicyRow(item)"
+                  >
+                    保存
+                  </v-btn>
+                </div>
+              </v-card>
             </div>
           </section>
         </v-window-item>
@@ -430,6 +609,13 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
 </template>
 
 <style scoped>
+.business-settings-card,
+.settings-tabs,
+.settings-window,
+.settings-section {
+  background: rgb(var(--v-theme-surface));
+}
+
 .settings-section h2 {
   margin: 0;
 }
@@ -476,5 +662,32 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
   grid-template-columns: minmax(220px, 1fr) auto;
   align-items: center;
   gap: 12px;
+}
+.policy-list {
+  display: grid;
+  gap: 16px;
+}
+.policy-card {
+  padding: 20px;
+}
+.policy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 16px;
+}
+.policy-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+@media (max-width: 1100px) {
+  .policy-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .policy-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

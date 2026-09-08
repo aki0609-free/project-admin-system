@@ -10,17 +10,6 @@ const props = defineProps<{
   items: DailyPaymentTableRow[]
 }>()
 
-const emit = defineEmits<{
-  (
-    e: 'update:items',
-    payload: {
-      id: number
-      field: keyof DailyPaymentTableRow
-      value: unknown
-    }
-  ): void
-}>()
-
 const {
   rows,
   columns,
@@ -37,6 +26,5 @@ const {
     :items="rows"
     :columns="columns"
     :filter-rules="filterRules"
-    @update:items="emit('update:items', $event)"
   />
 </template>

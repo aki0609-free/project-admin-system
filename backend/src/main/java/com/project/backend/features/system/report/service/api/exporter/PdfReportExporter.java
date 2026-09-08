@@ -42,7 +42,7 @@ public class PdfReportExporter implements ReportExporter {
         );
 
         return new FileExportResult(
-                fileNameBuilder.build(reportMaster, "pdf"),
+                fileNameBuilder.build(reportMaster, "pdf", rows),
                 "application/pdf",
                 data
         );

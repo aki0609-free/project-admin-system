@@ -6,10 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -19,40 +16,30 @@ import com.project.backend.features.dailyreport.repository.DailyReportRepository
 import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.enums.PaymentCycle;
+import com.project.backend.features.employee.enums.ApprovalStatus;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.operation.daily.dto.DailyPaymentResponse;
 import com.project.backend.features.operation.daily.mapper.DailyPaymentMapper;
-import com.project.backend.features.operation.daily.repository.DailyPaymentRepository;
 
 class DailyPaymentServiceTest {
 
-    private final DailyPaymentRepository paymentRepository =
-            mock(DailyPaymentRepository.class);
     private final DailyReportRepository reportRepository =
             mock(DailyReportRepository.class);
     private final EmployeeContractRepository contractRepository =
             mock(EmployeeContractRepository.class);
     private final DailyPaymentService service = new DailyPaymentService(
-            paymentRepository,
             reportRepository,
             contractRepository,
-            new DailyPaymentMapper(),
-            Clock.fixed(
-                    Instant.parse("2026-08-09T00:00:00Z"),
-                    ZoneOffset.UTC
-            )
+            new DailyPaymentMapper()
     );
 
     @Test
-    void findByPaymentDate_shouldAggregateSavedRuleResultsByEmployee() {
+    void findByPaymentDate_shouldAggregateApprovedDailyReportsByEmployee() {
         LocalDate paymentDate = LocalDate.of(2026, 8, 10);
-        when(paymentRepository
-                .findByPaymentDateAndDeletedAtIsNullOrderByEmployeeCodeAscIdAsc(
-                        paymentDate
-                )).thenReturn(List.of());
         when(reportRepository
-                .findByPaymentDateAndDeletedAtIsNullOrderByWorkDateDescIdDesc(
-                        paymentDate
+                .findByPaymentDateAndApprovalStatusAndDeletedAtIsNullOrderByEmployeeEmployeeCodeAscWorkDateDescIdDesc(
+                        paymentDate,
+                        ApprovalStatus.APPROVED
                 )).thenReturn(List.of(
                         report(10L, "E001", "富陽 太郎", "8000"),
                         report(10L, "E001", "富陽 太郎", "6500")
@@ -73,13 +60,10 @@ class DailyPaymentServiceTest {
     @Test
     void findByPaymentDate_shouldNotGeneratePaymentForMonthlyCycle() {
         LocalDate paymentDate = LocalDate.of(2026, 8, 10);
-        when(paymentRepository
-                .findByPaymentDateAndDeletedAtIsNullOrderByEmployeeCodeAscIdAsc(
-                        paymentDate
-                )).thenReturn(List.of());
         when(reportRepository
-                .findByPaymentDateAndDeletedAtIsNullOrderByWorkDateDescIdDesc(
-                        paymentDate
+                .findByPaymentDateAndApprovalStatusAndDeletedAtIsNullOrderByEmployeeEmployeeCodeAscWorkDateDescIdDesc(
+                        paymentDate,
+                        ApprovalStatus.APPROVED
                 )).thenReturn(List.of(
                         report(10L, "E001", "富陽 太郎", "8000")
                 ));

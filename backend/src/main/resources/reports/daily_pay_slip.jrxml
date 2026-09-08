@@ -212,7 +212,7 @@
                 <textField><reportElement style="CellRight" x="196" y="235" width="98" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{daily_payment_amount})]]></textFieldExpression></textField>
                 <textField><reportElement style="NetValue" x="294" y="235" width="194" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{net_payment_amount}) + " 円"]]></textFieldExpression></textField>
 
-                <staticText><reportElement style="Header" x="0" y="261" width="81" height="16"/><text><![CDATA[法定預り残高]]></text></staticText>
+                <staticText><reportElement style="Header" x="0" y="261" width="81" height="16"/><text><![CDATA[法定準備金残高]]></text></staticText>
                 <textField><reportElement style="CellRight" x="81" y="261" width="81" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{legal_deposit_balance} == null ? java.math.BigDecimal.ZERO : $F{legal_deposit_balance})]]></textFieldExpression></textField>
                 <staticText><reportElement style="Header" x="162" y="261" width="81" height="16"/><text><![CDATA[借入金残高]]></text></staticText>
                 <textField><reportElement style="CellRight" x="243" y="261" width="81" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{loan_balance} == null ? java.math.BigDecimal.ZERO : $F{loan_balance})]]></textFieldExpression></textField>

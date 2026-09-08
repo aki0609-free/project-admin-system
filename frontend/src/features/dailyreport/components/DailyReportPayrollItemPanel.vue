@@ -34,6 +34,20 @@ const balanceUnitLabel = (item: DailyReportAmountItemForm) => {
   }
 }
 
+const hasCollectibleBalance = (item: DailyReportAmountItemForm) =>
+  !item.balanceTracked ||
+  item.advanceConsumptionAllowed ||
+  item.remainingQuantity > 0
+
+const isAmountEditable = (item: DailyReportAmountItemForm) =>
+  item.editable && hasCollectibleBalance(item)
+
+const inputModeLabel = (item: DailyReportAmountItemForm) => {
+  if (!item.editable) return '自動計算・編集不可'
+  if (!hasCollectibleBalance(item)) return '確定済みの未処理残高がないため入力不可'
+  return '入力可'
+}
+
 const updateAmount = (item: DailyReportAmountItemForm, value: unknown) => {
   const parsed = Number(value ?? 0)
   item.amount = Number.isFinite(parsed) ? Math.max(0, parsed) : 0
@@ -81,7 +95,7 @@ const updateBalanceQuantity = (item: DailyReportAmountItemForm, value: unknown) 
         <div class="amount-info">
           <div class="amount-name">{{ item.name }}</div>
           <div class="amount-mode">
-            {{ item.editable ? '入力可' : '自動計算・編集不可' }}
+            {{ inputModeLabel(item) }}
           </div>
         </div>
 
@@ -95,7 +109,7 @@ const updateBalanceQuantity = (item: DailyReportAmountItemForm, value: unknown) 
           min="0"
           step="1"
           class="amount-input"
-          :readonly="!item.editable"
+          :readonly="!isAmountEditable(item)"
           @update:model-value="updateAmount(item, $event)"
         />
 

@@ -178,7 +178,7 @@ INSERT INTO employee_contract (
 ) VALUES (
     @fixture_tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL,
     @fixture_employee_id, '2026-04-01', NULL,
-    FALSE, 'HOURLY', 'MONTHLY',
+    FALSE, 'HOURLY', 'DAILY',
     0, 0, 0, 1500,
     40, 'ローカル月間集計表確認用'
 )
@@ -186,7 +186,9 @@ ON DUPLICATE KEY UPDATE
     contract_start_date = VALUES(contract_start_date),
     contract_end_date = NULL,
     salary_type = 'HOURLY',
-    payment_cycle = 'MONTHLY',
+    -- 給与計算基準（時給）と支払サイクル（日払い）は別概念。
+    -- この従業員は日次前払いの画面検証にも使用する。
+    payment_cycle = 'DAILY',
     hourly_wage = 1500,
     note = VALUES(note),
     deleted_at = NULL,
@@ -212,12 +214,13 @@ INSERT INTO employee_payroll_profile (
     0,
     TRUE, TRUE,
     TRUE, TRUE,
-    FALSE, FALSE,
+    FALSE, TRUE,
     0
 )
 ON DUPLICATE KEY UPDATE
     tax_category = 'KOU',
     resident_tax_calc_flag = TRUE,
+    daily_pay_flag = TRUE,
     deleted_at = NULL,
     updated_at = CURRENT_TIMESTAMP(6);
 

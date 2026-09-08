@@ -26,7 +26,11 @@ export type SimpleTableColumnDef<T> = {
      */
     overflow?: SimpleTableCellOverflow
 
-    enumOptions?: SelectOption[]
+    /**
+     * Select options shared by every row, or options resolved from the current row.
+     * The row resolver supports dependent selects such as customer -> site.
+     */
+    enumOptions?: SelectOption[] | ((row: T) => SelectOption[])
 
     /** Numeric editor constraints. They are also reflected in the browser input. */
     min?: number

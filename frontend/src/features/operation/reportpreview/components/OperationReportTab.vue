@@ -15,14 +15,19 @@ import type { BatchExecuteResponse } from '@/features/system/batch/types/batchAp
 import PdfPreviewDialog from '@/shared/components/pdf/PdfPreviewDialog.vue'
 import { getMonthlyClosingReportFiles } from '@/features/operation/monthly/api/getMonthlyClosingReportFiles'
 import type { MonthlyClosingReportFileResponse } from '@/features/operation/monthly/types/monthlyReportFileTypes'
+import { formatYearMonth } from '@/shared/utils/DateUtils'
 
 const props = defineProps<{
   operationType: OperationType
   targetDate?: string | null
   targetMonth?: string | null
+  customerId?: number | null
+  periodFrom?: string | null
+  periodTo?: string | null
   closingVersion?: number | null
   allowMixedClosingVersions?: boolean
   allowedReportCodes?: string[]
+  excludedReportCodes?: string[]
 }>()
 
 const dialog = ref(false)
@@ -32,10 +37,14 @@ const { reports, refetch } = useOperationReportPreviewsQuery(
   computed(() => props.operationType),
 )
 const visibleReports = computed(() => {
-  if (!props.allowedReportCodes?.length) return reports.value
-  return reports.value.filter((report) =>
-    props.allowedReportCodes?.includes(report.reportCode),
-  )
+  return reports.value.filter((report) => {
+    if (props.allowedReportCodes?.length
+      && !props.allowedReportCodes.includes(report.reportCode)) {
+      return false
+    }
+
+    return !props.excludedReportCodes?.includes(report.reportCode)
+  })
 })
 
 const { previewUrl } = useOperationReportPreviewUrl({
@@ -43,6 +52,9 @@ const { previewUrl } = useOperationReportPreviewUrl({
   selectedReport,
   targetDate: computed(() => props.targetDate),
   targetMonth: computed(() => props.targetMonth),
+  customerId: computed(() => props.customerId),
+  periodFrom: computed(() => props.periodFrom),
+  periodTo: computed(() => props.periodTo),
 })
 const htmlPreviewUrl = computed(() => {
   const outputType = selectedReport.value?.outputType
@@ -81,15 +93,16 @@ const closeDialog = () => {
 }
 
 const outputButtonLabel = computed(() => {
+  const finalized = props.operationType === 'MONTHLY'
   switch (selectedReport.value?.outputType) {
     case 'HTML_PRINT':
       return 'ブラウザ印刷'
     case 'PDF':
-      return '印刷'
+      return finalized ? '確定版を印刷' : '印刷'
     case 'CSV':
-      return 'CSV出力'
+      return finalized ? '確定版CSV出力' : 'CSV出力'
     case 'EXCEL':
-      return 'Excel出力'
+      return finalized ? '確定版Excel出力' : 'Excel出力'
     case 'EXCEL_BOOK':
       return '台帳更新'
     case 'CUSTOM':
@@ -98,6 +111,26 @@ const outputButtonLabel = computed(() => {
       return ''
   }
 })
+
+const reportListDescription = computed(() =>
+  props.operationType === 'MONTHLY'
+    ? '行をクリックすると最新データの簡易プレビューを表示します。本印刷・出力には締め時点の確定版を使用します。'
+    : '行をクリックすると現在の対象データをプレビューします。',
+)
+
+const outputTypeLabel = (outputType: string) => {
+  switch (outputType) {
+    case 'HTML_PREVIEW': return '画面プレビュー'
+    case 'HTML_PRINT': return 'ブラウザ印刷'
+    case 'PDF': return 'PDF'
+    case 'CSV': return 'CSV'
+    case 'EXCEL': return 'Excel'
+    case 'EXCEL_BOOK': return '台帳'
+    case 'CUSTOM': return '個別処理'
+    case 'NONE': return '出力なし'
+    default: return outputType
+  }
+}
 
 const outputButtonIcon = computed(() => {
   switch (selectedReport.value?.outputType) {
@@ -221,6 +254,7 @@ const openMonthlyStoredReport = async () => {
     props.targetMonth,
     props.closingVersion ?? null,
     selectedReport.value.reportCode,
+    props.customerId ?? null,
   )
 
   if (files.length === 0) {
@@ -301,7 +335,7 @@ function downloadBlob(blob: Blob, fileName: string) {
     <div class="report-header">
       <div>
         <div class="title">帳票一覧</div>
-        <div class="description">行をクリックするとプレビューを表示します。</div>
+        <div class="description">{{ reportListDescription }}</div>
       </div>
 
       <v-btn
@@ -348,7 +382,7 @@ function downloadBlob(blob: Blob, fileName: string) {
               variant="tonal"
               :color="report.outputType === 'NONE' ? 'grey' : 'primary'"
             >
-              {{ report.outputType }}
+              {{ outputTypeLabel(report.outputType) }}
             </v-chip>
           </td>
 
@@ -393,6 +427,16 @@ function downloadBlob(blob: Blob, fileName: string) {
         <v-divider />
 
         <v-card-text class="preview-body">
+          <v-alert
+            v-if="operationType === 'MONTHLY'"
+            type="info"
+            variant="tonal"
+            density="compact"
+            class="preview-version-notice"
+          >
+            この簡易プレビューは最新データです。「確定版を印刷・出力」では締め処理時に保存した内容を使用します。
+          </v-alert>
+
           <div v-if="isPreviewLoading" class="preview-state">
             <v-progress-circular indeterminate color="primary" />
             <span>プレビューを生成しています。</span>
@@ -434,7 +478,8 @@ function downloadBlob(blob: Blob, fileName: string) {
       <v-card>
         <v-card-title>保存済み帳票を選択</v-card-title>
         <v-card-subtitle>
-          {{ targetMonth }} / Version {{ closingVersion }}
+          {{ formatYearMonth(targetMonth) }} /
+          {{ closingVersion ? `Version ${closingVersion}` : '顧客ごとの最新確定版' }}
         </v-card-subtitle>
         <v-list lines="two">
           <v-list-item
@@ -549,6 +594,10 @@ function downloadBlob(blob: Blob, fileName: string) {
   flex: 1;
   padding: 0;
   background: #f8fafc;
+}
+
+.preview-version-notice {
+  margin: 12px 12px 0;
 }
 
 .preview-iframe {

@@ -31,11 +31,11 @@ ProjectAdminSystem V1の主要な画面操作を、実際のChromiumブラウザ
 12. 従業員画面から新規登録・控除設定・設定変更を行い、Rule基準額の手動変更理由を保存し、無効化した控除が新しい日報へ表示されない
 13. 顧客を画面登録し、取引管理で対象月・請求額・入金状態を確認できる
 14. 控除マスターから年度別住民税を入力・検証・確定し、月別確定値を再取得できる
-15. 日払い明細PDFを実生成・保存し、ダウンロードしたファイルのContent-Type、ファイル名、サイズ、`%PDF-`シグネチャを確認する
+15. 日次給与明細PDFを実生成・保存し、ダウンロードしたファイルのContent-Type、ファイル名、サイズ、`%PDF-`シグネチャを確認する
 16. 労務費一覧表Excelを月次履歴から実生成・保存し、ダウンロードしたファイルのContent-Type、サイズ、ZIP（XLSX）シグネチャを確認する
 17. 月間労務表を従業員個別および全選択で生成し、選択値ごとの保存先とWorkbookを確認する
 18. MANAGERは従業員情報を開けるがシステムRule管理は拒否され、OPERATORは従業員情報も拒否される
-19. 従業員画面の専用ツールバーに「個別日別給与明細」と「従業員CSV出力」が表示され、支払日・従業員・削除済み含有を指定できる
+19. 従業員画面の専用ツールバーに「個別日次給与明細」と「従業員CSV出力」が表示され、支払日・従業員・削除済み含有を指定できる
 20. 従業員CSVを帳票基盤で生成・履歴保存・ダウンロードし、UTF-8 BOM、日本語ヘッダー、固定従業員コードを確認する
 
 日次管理・台帳管理では、同一オリジンへのHTTP 5xx応答が発生していないことも確認する。
@@ -136,6 +136,7 @@ SQLは`utf8mb4`で適用し、日本語マスター名の文字化けを防止�
 sql/local/repair_deduction_master_encoding.sql
 sql/local/demo_monthly_summary_fixture.sql
 sql/local/demo_monthly_payroll_fixture.sql
+sql/local/demo_daily_operation_fixture.sql
 ```
 
 `repair_deduction_master_encoding.sql`は、過去に文字コード指定なしで作成されたローカルDBボリュームを修復するための互換SQLである。法定控除6件の名称・説明だけを正しい日本語へ更新し、金額、計算ルール、利用者が設定した業務値は変更しない。
@@ -143,6 +144,8 @@ sql/local/demo_monthly_payroll_fixture.sql
 `demo_monthly_summary_fixture.sql`は本番環境のRuntime Schema Manifestへ含めない。顧客名・現場名・社員コード・対象日をキーに既存データを再利用するため、Dockerを再起動しても同じデータを重複登録しない。
 
 `demo_monthly_payroll_fixture.sql`は、月次PDF・Excel出力に必要な月給社員、対象月、会社情報、給与締日設定をローカルだけに用意する。既存の会社・締日設定がある場合は追加せず、税率マスターへ仮データを登録しない。労務費一覧表は締め後の実運用経路に合わせ、固定Version `900001` の確定履歴から`RETRY`で再出力する。
+
+`demo_daily_operation_fixture.sql`は、日報・日次管理・日次給与明細を画面で十分に確認できるデータを用意する。稼働中の顧客3社、契約終了顧客1社、現場6件、日払い社員8名、月払い社員2名、5日分の日報50件、日払い社員8名分の確定支払を作成する。同じSQLを再実行しても件数は増えず、日報50件・日次支払8件へ戻る。
 
 画面で月間集計表を確認する場合：
 
@@ -299,8 +302,8 @@ cd /Users/tatsukiakiyama/Documents/ProjectAdmin/public-repository/backend
 - Testcontainersで初回締め・再締めのVersionと請求取引が一致する
 - 日次HTML帳票に対象日の固定業務データが表示される
 - 日単価契約を使った月間集計表が生成され、顧客・現場を含む保存済みWorkbookを画面表示できる
-- 日払い明細PDFと労務費一覧表Excelを実際に保存・取得し、ファイル形式とサイズが一致する
-- 個別日払い明細PDFは支払日と従業員IDを指定して生成できる
+- 日次給与明細PDFと労務費一覧表Excelを実際に保存・取得し、ファイル形式とサイズが一致する
+- 個別日次給与明細PDFは支払日と従業員IDを指定して生成できる
 - 従業員CSVを帳票履歴に保存・取得し、UTF-8 BOMと日本語ヘッダーを確認できる
 - 月間労務表を従業員個別・全選択で生成し、選択値ごとのWorkbookが保存される
 - CSVの生成・保存・再締めVersion保持がTestcontainersで成功する

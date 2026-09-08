@@ -1,5 +1,5 @@
 -- ProjectAdminSystem V1 / Fuyo
--- 日次の法定預り金を月次締めで返金するための履歴基盤。
+-- 日次の法定準備金を月次締めで返金するための履歴基盤。
 -- 日次の預り入金は daily_report_deductions を正本とし、
 -- 返金だけを締めVersion付き取引として保存する。
 
@@ -80,17 +80,20 @@ SET show_on_daily_statement = TRUE,
 WHERE allowance_code = 'MANAGEMENT_ALLOWANCE'
   AND deleted_at IS NULL;
 
--- 法定預り金は税計算ではなく日報上の手入力項目とする。
+-- 法定準備金は税の確定額ではない。控除マスターの概算初期値を表示し、
+-- 日報上で実際に預かる金額へ手動変更できるようにする。
 UPDATE deduction_masters
-SET calculation_type = 'MANUAL',
+SET deduction_name = '法定準備金',
+    calculation_type = 'MANUAL',
     rule_name = NULL,
-    default_amount = NULL,
+    default_amount = COALESCE(default_amount, 0),
     allow_manual_input = TRUE,
     min_amount = 0,
     deduction_unit = 'DAILY',
     show_on_daily_statement = TRUE,
     show_on_monthly_statement = FALSE,
     carry_to_monthly_settlement = TRUE,
+    note = '日次の概算初期値を提示し、必要に応じて手動変更する。月次締めで未返金残高を精算する',
     updated_at = NOW(6)
 WHERE deduction_code = 'LEGAL_DEPOSIT'
   AND tenant_id = 'default'

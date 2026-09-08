@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { get, post } from '@/shared/api/http'
 import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
+import { formatYearMonth } from '@/shared/utils/DateUtils'
 
 import type {
   CustomerBillingBulkClosing,
@@ -26,6 +27,7 @@ export const useCustomerBillingClosingPage = () => {
   const targetMonth = ref(currentMonth())
   const activeTab = ref<'customers' | 'reports'>('customers')
   const summary = ref<CustomerBillingSummary | null>(null)
+  const selectedReportCustomerId = ref<number | null>(null)
   const loading = ref(false)
   const processingCustomerIds = ref<number[]>([])
 
@@ -38,10 +40,16 @@ export const useCustomerBillingClosingPage = () => {
     if (!targetMonth.value) return
     loading.value = true
     try {
-      summary.value = await get<CustomerBillingSummary>(
+      const loaded = await get<CustomerBillingSummary>(
         '/api/operation/customer-billing/summary',
         { params: { query: { targetMonth: targetMonth.value } } },
       )
+      summary.value = loaded
+      if (!loaded.customers.some(
+        customer => customer.customerId === selectedReportCustomerId.value,
+      )) {
+        selectedReportCustomerId.value = loaded.customers[0]?.customerId ?? null
+      }
     } finally {
       loading.value = false
     }
@@ -49,7 +57,7 @@ export const useCustomerBillingClosingPage = () => {
 
   const executeAll = async () => {
     if (!confirm(
-      `${targetMonth.value} の締日到来済み・未締め顧客を一括で締めますか？\n締日前と締め済みの顧客は除外されます。`,
+      `${formatYearMonth(targetMonth.value)}の締日到来済み・未締め顧客を一括で締めますか？\n締日前と締め済みの顧客は除外されます。`,
     )) return
 
     loading.value = true
@@ -110,6 +118,12 @@ export const useCustomerBillingClosingPage = () => {
   const isCustomerLoading = (customerId: number) =>
     processingCustomerIds.value.includes(customerId)
 
+  const selectedReportCustomer = computed(() =>
+    summary.value?.customers.find(
+      customer => customer.customerId === selectedReportCustomerId.value,
+    ) ?? null,
+  )
+
   const leftToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
@@ -138,6 +152,8 @@ export const useCustomerBillingClosingPage = () => {
     activeTab,
     tabs,
     summary,
+    selectedReportCustomerId,
+    selectedReportCustomer,
     loading,
     leftToolbarItems,
     rightToolbarItems,

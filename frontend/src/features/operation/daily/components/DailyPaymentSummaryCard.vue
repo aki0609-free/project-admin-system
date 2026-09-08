@@ -1,8 +1,7 @@
 <script setup lang="ts">
 defineProps<{
   employeeCount: number
-  totalPlannedAmount: number
-  totalActualAmount: number
+  totalPaymentAmount: number
 }>()
 
 const money = (value: number) =>
@@ -17,13 +16,8 @@ const money = (value: number) =>
     </div>
 
     <div class="summary-item">
-      <div class="label">予定合計</div>
-      <div class="value">{{ money(totalPlannedAmount) }}</div>
-    </div>
-
-    <div class="summary-item highlight">
-      <div class="label">実支払合計</div>
-      <div class="value">{{ money(totalActualAmount) }}</div>
+      <div class="label">日次前払い合計</div>
+      <div class="value">{{ money(totalPaymentAmount) }}</div>
     </div>
   </div>
 </template>
@@ -31,7 +25,7 @@ const money = (value: number) =>
 <style scoped>
 .summary-card {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -54,13 +48,9 @@ const money = (value: number) =>
   color: #0f172a;
 }
 
-.highlight {
-  background: #f8fafc;
-}
-
 @media print {
   .summary-card {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .summary-item {

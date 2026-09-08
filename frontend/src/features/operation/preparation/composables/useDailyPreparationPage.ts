@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { computed, ref, watch } from 'vue'
 import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
 import { useEmployeesQuery } from '@/features/employees/api/useEmployeesQuery'
@@ -20,7 +19,6 @@ import {
   type DailyPreparationDispatchTableRow,
 } from './useDailyPreparationDispatchTableConfig'
 import { useCustomerMasterStore } from '@/features/customer/store/useCustomerMasterStore'
-import { put } from '@/shared/api/http'
 
 const tomorrow = () => {
   const date = new Date()
@@ -47,7 +45,6 @@ export const useDailyPreparationPage = () => {
 
   const assignmentRows = ref<DailyPreparationAssignmentTableRow[]>([])
   const dispatchRows = ref<DailyPreparationDispatchTableRow[]>([])
-  const preparationNote = ref('')
 
   const employeesQuery = useEmployeesQuery()
   const customerStore = useCustomerMasterStore()
@@ -64,7 +61,7 @@ export const useDailyPreparationPage = () => {
 
     return (await createPreparationMutation.mutateAsync({
       targetDate: targetDate.value,
-      note: preparationNote.value.trim() || null,
+      note: null,
     })) as DailyPreparationResponse
   }
 
@@ -85,17 +82,8 @@ export const useDailyPreparationPage = () => {
   watch(
     () => targetDate.value,
     async () => {
-      preparationNote.value = ''
       await customerStore.load()
       rebuildDispatchRows()
-    },
-    { immediate: true },
-  )
-
-  watch(
-    () => [preparation.value?.id, preparation.value?.note],
-    () => {
-      preparationNote.value = preparation.value?.note ?? ''
     },
     { immediate: true },
   )
@@ -297,16 +285,9 @@ export const useDailyPreparationPage = () => {
   }
 
   const save = async () => {
-    const currentPreparation = await ensurePreparation()
+    await ensurePreparation()
     await saveAssignments()
     await saveDispatches()
-
-    if ((currentPreparation.note ?? '') !== preparationNote.value.trim()) {
-      await put(
-        `/api/operation/daily-preparations/${currentPreparation.id}/note`,
-        { note: preparationNote.value.trim() || null },
-      )
-    }
 
     await preparationQuery.refetch()
   }
@@ -314,29 +295,17 @@ export const useDailyPreparationPage = () => {
   const hasDirtyRows = computed(
     () =>
       assignmentRows.value.some((row) => row._isNew || row._isUpdated || row._isDeleted) ||
-      dispatchRows.value.some((row) => row._isNew || row._isUpdated || row._isDeleted) ||
-      (preparation.value?.note ?? '') !== preparationNote.value.trim(),
+      dispatchRows.value.some((row) => row._isNew || row._isUpdated || row._isDeleted),
   )
 
   const leftToolbarItems = computed<ToolbarItem[]>(() => [
     {
       type: 'button',
-      label: '保存',
+      label: activeTab.value === 'assignments' ? '従業員配置保存' : '現場配車保存',
       color: 'success',
+      visible: activeTab.value !== 'reports',
       disabled: !hasDirtyRows.value,
       onClick: save,
-    },
-  ])
-
-  const rightToolbarItems = computed<ToolbarItem[]>(() => [
-    {
-      type: 'button',
-      label: '作業伝票出力',
-      color: 'secondary',
-      disabled: !preparation.value,
-      onClick: () => {
-        activeTab.value = 'reports'
-      },
     },
   ])
 
@@ -352,13 +321,11 @@ export const useDailyPreparationPage = () => {
     employeesQuery,
     preparationQuery,
     preparation,
-    preparationNote,
 
     assignmentRows,
     dispatchRows,
 
     leftToolbarItems,
-    rightToolbarItems,
 
     handleAssignmentCellUpdate,
     handleDispatchCellUpdate,

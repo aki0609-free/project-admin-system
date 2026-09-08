@@ -38,7 +38,7 @@ test('daily report HTML preview renders the fixed business data', async ({ page 
   await expect(page.getByText('帳票一覧', { exact: true })).toBeVisible()
   await expect(page.getByText('日別労務費一覧', { exact: true })).toBeVisible()
   await expect(page.getByText('給与支払表', { exact: true })).toBeVisible()
-  await expect(page.getByText('日払い明細', { exact: true })).toBeVisible()
+  await expect(page.getByText('日次給与明細', { exact: true })).toBeVisible()
 
   const previewResponsePromise = page.waitForResponse(response =>
     response.url().includes('/api/operation/report-previews/html')
@@ -56,6 +56,35 @@ test('daily report HTML preview renders the fixed business data', async ({ page 
   const previewFrame = previewDialog.frameLocator('iframe[title="帳票プレビュー"]')
   await expect(previewFrame.getByText('日別労務費一覧', { exact: true })).toBeVisible()
   await expect(previewFrame.getByText(E2E_EMPLOYEE_NAME, { exact: true })).toBeVisible()
+  expect(serverErrors, 'same-origin HTTP 5xx responses').toEqual([])
+})
+
+test('invoice and order form are shown only in customer billing reports', async ({ page }) => {
+  const serverErrors = watchServerErrors(page)
+
+  await page.goto('/operation/monthly')
+  await page.getByRole('button', { name: '帳票', exact: true }).click()
+  await expect(page.getByText('MONTHLY_PAY_SLIP', { exact: true })).toBeVisible()
+  await expect(page.getByText('MONTHLY_INVOICE', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('MONTHLY_ORDER_FORM', { exact: true })).toHaveCount(0)
+
+  await page.goto('/operation/customer-billing')
+  await page.getByRole('button', { name: '帳票一覧', exact: true }).click()
+  await expect(page.getByLabel('プレビュー・印刷対象の顧客')).toHaveValue(/.+/)
+  await expect(page.getByText('MONTHLY_INVOICE', { exact: true })).toBeVisible()
+  await expect(page.getByText('MONTHLY_ORDER_FORM', { exact: true })).toBeVisible()
+
+  const previewResponsePromise = page.waitForResponse(response => {
+    const url = new URL(response.url())
+    return url.pathname === '/api/operation/report-previews/html'
+      && url.searchParams.get('reportCode') === 'MONTHLY_INVOICE'
+      && Boolean(url.searchParams.get('customerId'))
+      && Boolean(url.searchParams.get('periodFrom'))
+      && Boolean(url.searchParams.get('periodTo'))
+  })
+  await page.getByRole('row').filter({ hasText: 'MONTHLY_INVOICE' }).click()
+  const previewResponse = await previewResponsePromise
+  expect(previewResponse.status(), await previewResponse.text()).toBe(200)
   expect(serverErrors, 'same-origin HTTP 5xx responses').toEqual([])
 })
 

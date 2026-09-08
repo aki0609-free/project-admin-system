@@ -48,6 +48,8 @@ class EmployeeFinanceQueryServiceTest {
 
         var summary = service.findSummary(1L);
 
+        assertThat(summary.hasActiveLoan()).isTrue();
+        assertThat(summary.hasActiveSaving()).isTrue();
         assertThat(summary.loanBalance()).isEqualByComparingTo("80000");
         assertThat(summary.savingBalance()).isEqualByComparingTo("15000");
         assertThat(summary.monthlyLoanRepayment()).isEqualByComparingTo("10000");
@@ -56,5 +58,22 @@ class EmployeeFinanceQueryServiceTest {
                 .findFirstByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(1L);
         verify(savingRepository)
                 .findFirstByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(1L);
+    }
+
+    @Test
+    void findSummary_shouldReportUnavailableWhenNoActiveFinanceRecordsExist() {
+        when(loanRepository
+                .findFirstByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(2L))
+                .thenReturn(Optional.empty());
+        when(savingRepository
+                .findFirstByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(2L))
+                .thenReturn(Optional.empty());
+
+        var summary = service.findSummary(2L);
+
+        assertThat(summary.hasActiveLoan()).isFalse();
+        assertThat(summary.hasActiveSaving()).isFalse();
+        assertThat(summary.loanBalance()).isZero();
+        assertThat(summary.savingBalance()).isZero();
     }
 }

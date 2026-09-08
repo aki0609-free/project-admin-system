@@ -132,6 +132,7 @@ async function handleDelete(form: ExcelBookMasterForm) {
         行を選択するとマスター設定を編集できます。テンプレート方式の台帳だけ、
         Spreadsheetテンプレートを編集できます。
         台帳の生成は「締め処理 → 台帳」から実行します。
+        月次締め対象との連携状態も、締め処理側の一覧で確認できます。
       </v-alert>
     </template>
 

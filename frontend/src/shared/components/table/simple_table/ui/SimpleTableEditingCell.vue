@@ -39,7 +39,7 @@
     <v-select
       v-else-if="isEditing && props.column.type === 'select'"
       v-model="modelValue"
-      :items="column.enumOptions"
+      :items="resolvedEnumOptions"
       item-title="title"
       item-value="value"
       density="compact"
@@ -156,11 +156,16 @@ const rawValue = computed(() => {
   return props.item[props.field]
 })
 
+const resolvedEnumOptions = computed(() => {
+  const options = props.column.enumOptions
+  return typeof options === 'function' ? options(props.item) : (options ?? [])
+})
+
 const displayValue = computed(() => {
   const val = rawValue.value
 
-  if (props.column.type === 'select' && props.column.enumOptions) {
-    const found = props.column.enumOptions.find(
+  if (props.column.type === 'select') {
+    const found = resolvedEnumOptions.value.find(
       opt => opt.value === val,
     )
     return found?.title ?? val

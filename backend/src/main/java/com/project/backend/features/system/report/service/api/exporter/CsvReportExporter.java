@@ -41,7 +41,7 @@ public class CsvReportExporter implements ReportExporter {
                 csvFileWriter.write(rows, headers);
 
         return new FileExportResult(
-                fileNameBuilder.build(reportMaster, "csv"),
+                fileNameBuilder.build(reportMaster, "csv", rows),
                 "text/csv; charset=UTF-8",
                 data
         );

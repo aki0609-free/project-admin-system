@@ -41,9 +41,13 @@ const {
   leftFooterItems,
   rightFooterItems,
   billingRateLoading,
+  applicableSiteBillingRates,
   payrollItemsLoading,
   payrollItemsError,
   preparationDefaultsMessage,
+  saveError,
+  hasActiveLoan,
+  hasActiveSaving,
 } = useDailyReportEditDialog(
   visible,
   toRef(props, 'dailyReport'),
@@ -63,6 +67,15 @@ const {
     :left-footer-items="leftFooterItems"
     :right-footer-items="rightFooterItems"
   >
+    <v-alert
+      v-if="saveError"
+      type="error"
+      variant="tonal"
+      density="compact"
+    >
+      {{ saveError }}
+    </v-alert>
+
     <TabLayout v-model="activeTab" :tabs="tabs">
       <template #default="{ active }">
         <div v-if="active === 'basic'" class="basic-panel">
@@ -94,6 +107,16 @@ const {
 
             <v-progress-linear v-if="billingRateLoading" indeterminate />
 
+            <v-alert
+              v-else-if="applicableSiteBillingRates.length === 0"
+              type="warning"
+              variant="tonal"
+              density="compact"
+            >
+              選択した現場・勤務日に有効な請求単価がありません。
+              顧客管理で請求単価を確認してください。
+            </v-alert>
+
             <FormGridTab v-model="formModel" :schema="schema" :fields="billingFields" />
           </template>
         </div>
@@ -114,12 +137,33 @@ const {
           :error="payrollItemsError"
         />
 
-        <FormGridTab
+        <div
           v-else-if="active === 'finance'"
-          v-model="formModel"
-          :schema="schema"
-          :fields="financeFields"
-        />
+          class="finance-panel"
+        >
+          <v-alert
+            v-if="formModel.employeeId == null"
+            type="info"
+            variant="tonal"
+            density="compact"
+          >
+            基本情報タブで従業員を選択してください。
+          </v-alert>
+          <v-alert
+            v-else-if="!hasActiveLoan || !hasActiveSaving"
+            type="info"
+            variant="tonal"
+            density="compact"
+          >
+            <span v-if="!hasActiveSaving">有効な貯蓄設定がないため、実際貯蓄額は入力できません。</span>
+            <span v-if="!hasActiveLoan">有効な貸付設定がないため、実際返済額は入力できません。</span>
+          </v-alert>
+          <FormGridTab
+            v-model="formModel"
+            :schema="schema"
+            :fields="financeFields"
+          />
+        </div>
       </template>
     </TabLayout>
   </AppDialog>
@@ -135,5 +179,16 @@ const {
 .basic-panel {
   display: grid;
   gap: 12px;
+}
+
+.finance-panel {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.finance-panel :deep(.v-alert__content) {
+  display: grid;
+  gap: 4px;
 }
 </style>
