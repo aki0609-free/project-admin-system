@@ -19,7 +19,7 @@
 | 健康保険 | 協会けんぽ都道府県別保険料額表PDF | 公式PDF変換・取込・給与View境界値テスト済み | 適用月と人手照合待ち |
 | 介護保険 | 協会けんぽ保険料額表PDF | 公式PDF変換・対象フラグ・給与View計算済み | 適用年齢運用と人手照合待ち |
 | 厚生年金 | 日本年金機構保険料額表PDF | 公式PDF変換・取込・給与View境界値テスト済み | 端数処理の最終確認待ち |
-| 雇用保険 | 厚生労働省料率表PDF | 3事業区分の公式PDF変換・取込・給与View計算済み | 労働保険上の事業区分確定待ち |
+| 雇用保険 | 厚生労働省料率表PDF | 3事業区分の公式PDF変換・取込・給与View計算済み | 富陽は「建設の事業」で確定 |
 | 子ども・子育て支援金 | 協会けんぽ保険料額表PDF | 公式PDF変換・取込・給与View境界値テスト済み | 適用月と人手照合待ち |
 | 標準報酬月額 | 資格取得時決定・定時決定・随時改定 | `employee_standard_remuneration`を給与Viewが参照 | 従業員別履歴の登録運用テスト待ち |
 
@@ -393,10 +393,10 @@ sql/system/import/tax_import_foundation_v1.sql
 同じDBへ複数回適用しても取込定義・カラムを重複させないことを
 Testcontainersで確認済みである。
 
-雇用保険の取込定義は、正式な労働保険事業区分が未確認のため
-`active_flag=false`で配布する。区分確認後に`--category`を
-`GENERAL`、`AGRICULTURE_FORESTRY_FISHERY`、`CONSTRUCTION`のいずれかへ
-確定し、管理者が有効化する。
+富陽の雇用保険の取込定義は、正式な労働保険事業区分を「建設の事業」として
+`--category CONSTRUCTION`、`active_flag=true`で配布する。Python変換資産自体は
+`GENERAL`、`AGRICULTURE_FORESTRY_FISHERY`、`CONSTRUCTION`の3区分に対応するため、
+他社・他事業所へ展開する場合は会社・適用期間付き設定を正本として区分を選択する。
 
 ## 12. 住民税画面入力・締め連携の検証記録
 

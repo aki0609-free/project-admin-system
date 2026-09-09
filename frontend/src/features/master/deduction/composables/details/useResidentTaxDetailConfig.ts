@@ -25,8 +25,8 @@ export const useResidentTaxDetailConfig = () => {
   )
 
   return {
-    title: '住民税詳細',
-    description: '住民税は社員別・年度別・月別の住民税マスターを参照します。',
+    title: '確定済み住民税詳細',
+    description: '正式に確定した社員別・年度別・月別の住民税額を表示します。未確定の下書きはEditorで確認します。',
     rows: computed<DeductionDetailTableRow[]>(() => []),
     columns,
     filterRules,

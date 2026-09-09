@@ -16,6 +16,7 @@ import com.project.backend.features.operation.monthly.entity.MonthlyClosing;
 import com.project.backend.features.operation.monthly.enums.MonthlyClosingStatus;
 import com.project.backend.features.operation.monthly.repository.MonthlyClosingRepository;
 import com.project.backend.features.tax.dto.*;
+import com.project.backend.features.tax.entity.ResidentTaxMonthly;
 import com.project.backend.features.tax.repository.ResidentTaxMonthlyRepository;
 import com.project.backend.testsupport.ContainerIntegrationTest;
 
@@ -81,6 +82,43 @@ class ResidentTaxEditorContainerIntegrationTest extends ContainerIntegrationTest
                 new ResidentTaxConfirmRequest("締め済み月の訂正", false)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("再締め");
+    }
+
+    @Test
+    void 住民税ゼロ円は未設定にせず月別確定値として保存する() {
+        Employee employee = employee("RT-EDITOR-003", "住民税ゼロ円検証社員");
+
+        var draft = service.saveDraft(request(employee.getId(), 2026, 0, 0));
+        service.confirm(draft.batchId(), new ResidentTaxConfirmRequest("自治体通知上ゼロ円", false));
+
+        assertThat(monthlyRepository
+                .findByEmployeeIdAndFiscalYearOrderByMonthAsc(employee.getId(), 2026))
+                .hasSize(12)
+                .allSatisfy(value -> assertThat(value.getTaxAmount()).isZero());
+    }
+
+    @Test
+    void 確定済みの同一年度月を再編集しても重複せず更新する() {
+        Employee employee = employee("RT-EDITOR-004", "住民税再編集検証社員");
+
+        var firstDraft = service.saveDraft(request(employee.getId(), 2026, 12_000, 11_000));
+        service.confirm(firstDraft.batchId(), new ResidentTaxConfirmRequest("初回登録", false));
+
+        var revisedDraft = service.saveDraft(request(employee.getId(), 2026, 13_000, 12_000));
+        var confirmed = service.confirm(
+                revisedDraft.batchId(),
+                new ResidentTaxConfirmRequest("通知内容の訂正", false));
+
+        assertThat(confirmed.status()).isEqualTo("CONFIRMED");
+        assertThat(monthlyRepository
+                .findByEmployeeIdAndFiscalYearOrderByMonthAsc(employee.getId(), 2026))
+                .hasSize(12);
+        assertThat(monthlyRepository
+                .findByEmployeeIdAndFiscalYearAndMonth(employee.getId(), 2026, 6))
+                .get().extracting(ResidentTaxMonthly::getTaxAmount).isEqualTo(13_000);
+        assertThat(monthlyRepository
+                .findByEmployeeIdAndFiscalYearAndMonth(employee.getId(), 2026, 7))
+                .get().extracting(ResidentTaxMonthly::getTaxAmount).isEqualTo(12_000);
     }
 
     private Employee employee(String code, String name) {

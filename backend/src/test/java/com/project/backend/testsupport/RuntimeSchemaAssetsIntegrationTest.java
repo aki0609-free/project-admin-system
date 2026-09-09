@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.io.ByteArrayInputStream;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -57,7 +58,7 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
         assertThat(resources)
-                .hasSize(42)
+                .hasSize(44)
                 .contains(
                         "sql/admin/external_support_links_v1.sql",
                         "sql/customer/customer_contract_status_v1.sql",
@@ -318,6 +319,14 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         )).isEqualTo(7);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
+                FROM import_target
+                WHERE target_code = 'IMPORT_EMPLOYMENT_INSURANCE_RATE'
+                  AND active_flag = TRUE
+                  AND script_args LIKE '%--category CONSTRUCTION%'
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
                 FROM import_column column_def
                 JOIN import_target target ON target.id = column_def.target_id
                 WHERE target.target_code = 'IMPORT_CARE_INSURANCE_RATE'
@@ -333,6 +342,7 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         TenantContext.setTenantId("default");
         try {
             DailyReport report = new DailyReport();
+            report.setWorkDate(LocalDate.of(2026, 8, 3));
             report.setWorkHours(new BigDecimal("8"));
             report.setOvertimeHours(new BigDecimal("2"));
             report.setNightWorkHours(BigDecimal.ONE);
@@ -526,6 +536,24 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                     ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
                 )
                 """, TEST_TENANT_ID);
+        jdbcTemplate.update("""
+                INSERT INTO daily_report (
+                    employee_id, work_date, normal_pay_amount,
+                    billing_base_unit_price, billing_overtime_unit_price,
+                    billing_night_unit_price, billing_holiday_unit_price,
+                    billing_commute_unit_price, holiday_premium_eligible,
+                    dormitory_charge_days, overtime_pay_amount,
+                    night_pay_amount, holiday_pay_amount,
+                    estimated_gross_pay_amount, estimated_net_pay_amount,
+                    vehicle_used_flag,
+                    approval_status, tenant_id, created_at, updated_at
+                ) VALUES (
+                    ?, '2026-08-03', 300000,
+                    0, 0, 0, 0, 0, FALSE,
+                    0, 0, 0, 0, 300000, 300000, FALSE,
+                    'APPROVED', ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                )
+                """, employeeId, TEST_TENANT_ID);
         jdbcTemplate.update("""
                 INSERT INTO employee_standard_remuneration (
                     employee_id, effective_from, effective_to,

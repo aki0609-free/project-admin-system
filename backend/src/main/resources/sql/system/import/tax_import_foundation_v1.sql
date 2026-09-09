@@ -47,11 +47,11 @@ INSERT INTO import_target (
 (
     'IMPORT_EMPLOYMENT_INSURANCE_RATE', '雇用保険料率取込',
     'insurance_rate_master',
-    '正式な労働保険事業区分の確認後にcategoryとactive_flagを確定する',
+    '富陽の労働保険事業区分（建設の事業）に対応する雇用保険料率を取り込む',
     'SCRIPT', 'employment_insurance_rate_2026.csv', 'PYTHON',
     'convert_employment_insurance_rate.py',
-    '--year 2026 --category GENERAL --url https://www.mhlw.go.jp/content/001692566.pdf --input ${IMPORT_WORK_DIR}/source/mhlw_employment_insurance_2026.pdf --output ${IMPORT_CSV_DIR}/employment_insurance_rate_2026.csv',
-    'UPSERT', 1, 2, 'UTF-8', ',', FALSE,
+    '--year 2026 --category CONSTRUCTION --url https://www.mhlw.go.jp/content/001692566.pdf --input ${IMPORT_WORK_DIR}/source/mhlw_employment_insurance_2026.pdf --output ${IMPORT_CSV_DIR}/employment_insurance_rate_2026.csv',
+    'UPSERT', 1, 2, 'UTF-8', ',', TRUE,
     'default', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
 ),
 (

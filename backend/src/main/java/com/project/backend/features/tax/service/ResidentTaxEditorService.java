@@ -113,10 +113,13 @@ public class ResidentTaxEditorService {
 
         for (ResidentTaxInputRow row : rows) {
             if (Objects.equals(row.getCurrentTaxAmount(), row.getTaxAmount())) continue;
-            monthlyRepository.deleteByEmployeeIdAndFiscalYearAndMonth(
-                    row.getEmployeeId(), batch.getFiscalYear(), row.getMonth());
-            if (row.getTaxAmount() != null) {
-                ResidentTaxMonthly monthly = new ResidentTaxMonthly();
+            Optional<ResidentTaxMonthly> existing = monthlyRepository
+                    .findByEmployeeIdAndFiscalYearAndMonth(
+                            row.getEmployeeId(), batch.getFiscalYear(), row.getMonth());
+            if (row.getTaxAmount() == null) {
+                existing.ifPresent(monthlyRepository::delete);
+            } else {
+                ResidentTaxMonthly monthly = existing.orElseGet(ResidentTaxMonthly::new);
                 monthly.setEmployeeId(row.getEmployeeId());
                 monthly.setFiscalYear(batch.getFiscalYear());
                 monthly.setMonth(row.getMonth());

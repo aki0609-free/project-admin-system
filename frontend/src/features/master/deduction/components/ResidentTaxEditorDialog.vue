@@ -34,6 +34,29 @@ const monthLabels: Record<number, string> = {
   7: '7月', 8: '8月', 9: '9月', 10: '10月', 11: '11月', 12: '12月',
 }
 
+const statusLabel = computed(() => {
+  switch (editor.value?.status) {
+    case 'VALIDATED': return '検証済み・確定待ち'
+    case 'CONFIRMED': return '確定済み'
+    default: return '未検証'
+  }
+})
+
+const statusColor = computed(() => {
+  switch (editor.value?.status) {
+    case 'VALIDATED': return 'warning'
+    case 'CONFIRMED': return 'success'
+    default: return 'default'
+  }
+})
+
+const draftChangeCount = computed(() => rows.value.reduce(
+  (count, employee) => count + employee.months.filter(month =>
+    month.currentTaxAmount !== month.draftTaxAmount,
+  ).length,
+  0,
+))
+
 watch(() => props.modelValue, opened => {
   if (opened) void load()
 })
@@ -133,13 +156,17 @@ async function confirmValues() {
   saving.value = true
   errorMessage.value = ''
   try {
-    await residentTaxEditorApi.confirm(editor.value.batchId, {
+    const confirmed = await residentTaxEditorApi.confirm(editor.value.batchId, {
       changeReason: changeReason.value.trim(),
       acknowledgeReclosing,
     })
+    editor.value = confirmed
+    rows.value = confirmed.employees.map(employee => ({
+      ...employee,
+      months: employee.months.map(month => ({ ...month })),
+    }))
     await queryClient.invalidateQueries({ queryKey: queryKeys.deductions.all })
     successMessage.value = '住民税を確定しました。'
-    await load()
   } catch (error) {
     errorMessage.value = toErrorMessage(error, '住民税の確定に失敗しました。')
   } finally {
@@ -159,40 +186,73 @@ function toErrorMessage(error: unknown, fallback: string): string {
 
 <template>
   <v-dialog v-model="dialog" fullscreen transition="dialog-bottom-transition">
-    <v-card>
-      <v-toolbar color="primary">
-        <v-btn icon="mdi-close" @click="dialog = false" />
-        <v-toolbar-title>年度別住民税Editor</v-toolbar-title>
-        <v-spacer />
-        <v-btn :loading="saving" @click="saveDraft">下書き保存・検証</v-btn>
-        <v-btn :disabled="editor?.status !== 'VALIDATED'" :loading="saving" @click="confirmValues">
-          確定
-        </v-btn>
-      </v-toolbar>
-
-      <v-card-text class="pa-4">
-        <div class="d-flex flex-wrap align-center ga-3 mb-4">
-          <v-number-input
-            v-model="fiscalYear"
-            label="年度（6月～翌年5月）"
-            :min="2000"
-            :max="2100"
-            control-variant="stacked"
-            style="max-width: 240px"
-          />
-          <v-chip>状態: {{ editor?.status ?? 'NONE' }}</v-chip>
-          <v-text-field
-            v-model="changeReason"
-            label="変更理由"
-            style="min-width: 360px"
-          />
+    <v-card class="resident-tax-editor">
+      <header class="editor-header px-5 py-4">
+        <div class="d-flex align-center ga-3">
+          <v-btn icon="mdi-close" variant="text" aria-label="閉じる" @click="dialog = false" />
+          <div>
+            <h1 class="text-h5 font-weight-bold">年度別住民税編集</h1>
+            <p class="text-body-2 text-medium-emphasis mt-1 mb-0">
+              6月から翌年5月までの月額を入力し、検証後に確定します。
+            </p>
+          </div>
+          <v-spacer />
+          <v-chip :color="statusColor" variant="tonal" size="large">
+            {{ statusLabel }}
+          </v-chip>
         </div>
+      </header>
+
+      <v-card-text class="pa-5">
+        <v-sheet class="editor-controls pa-4 mb-4" rounded="lg" border>
+          <div class="d-flex flex-wrap align-start ga-3">
+            <v-number-input
+              v-model="fiscalYear"
+              label="年度（6月～翌年5月）"
+              :min="2000"
+              :max="2100"
+              control-variant="stacked"
+              hide-details
+              style="max-width: 240px"
+            />
+            <v-text-field
+              v-model="changeReason"
+              label="変更理由"
+              hide-details
+              style="min-width: 360px; flex: 1"
+            />
+          </div>
+          <div class="d-flex flex-wrap justify-end align-center ga-3 mt-4">
+            <span class="text-body-2 text-medium-emphasis">
+              1. 入力 → 2. 下書き保存・検証 → 3. 確定
+            </span>
+            <v-spacer />
+            <v-btn variant="outlined" color="primary" :loading="saving" @click="saveDraft">
+              下書き保存・検証
+            </v-btn>
+            <v-btn color="primary" :disabled="editor?.status !== 'VALIDATED'" :loading="saving" @click="confirmValues">
+              確定
+            </v-btn>
+          </div>
+        </v-sheet>
 
         <v-alert v-if="errorMessage" type="error" variant="tonal" class="mb-3">
           {{ errorMessage }}
         </v-alert>
         <v-alert v-if="successMessage" type="success" variant="tonal" class="mb-3">
           {{ successMessage }}
+        </v-alert>
+        <v-alert
+          v-if="editor?.status === 'VALIDATED' && draftChangeCount > 0"
+          type="info"
+          variant="tonal"
+          class="mb-3"
+        >
+          <div class="font-weight-bold">未確定の下書きが {{ draftChangeCount }} 件あります。</div>
+          <div class="text-body-2 mt-1">
+            背面の住民税詳細は正式な確定値、このEditorは検証済みの下書き値を表示しています。
+            黄色のセルを確認して「確定」を押すと、正式な値として一覧へ反映されます。
+          </div>
         </v-alert>
         <v-alert v-if="editor?.hasClosedMonthChanges" type="warning" variant="tonal" class="mb-3">
           締め済み月の変更が含まれます。確定後に月次の再締めが必要です。
@@ -238,7 +298,7 @@ function toErrorMessage(error: unknown, fallback: string): string {
           </table>
         </div>
         <div class="text-caption mt-2">
-          黄色は現在の確定値との差分、赤枠は締め済み月です。複数セルはExcelから貼り付けできます。
+          黄色は正式な確定値との差分、赤枠は締め済み月です。複数セルはExcelから貼り付けできます。
         </div>
       </v-card-text>
     </v-card>
@@ -246,14 +306,21 @@ function toErrorMessage(error: unknown, fallback: string): string {
 </template>
 
 <style scoped>
-.resident-tax-grid { overflow: auto; max-height: calc(100vh - 260px); }
+.resident-tax-grid { overflow: auto; max-height: calc(100vh - 310px); }
+.resident-tax-editor { background: rgb(var(--v-theme-background)); }
+.editor-header {
+  background: rgb(var(--v-theme-surface));
+  border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
+}
+.editor-controls { background: rgb(var(--v-theme-surface)); }
 table { border-collapse: separate; border-spacing: 0; min-width: 1500px; width: 100%; }
 th, td { border-right: 1px solid rgb(var(--v-theme-outline-variant)); border-bottom: 1px solid rgb(var(--v-theme-outline-variant)); padding: 6px; min-width: 105px; background: rgb(var(--v-theme-surface)); }
-th { position: sticky; top: 0; z-index: 3; background: rgb(var(--v-theme-surface-variant)); }
+th { position: sticky; top: 0; z-index: 3; background: rgb(var(--v-theme-primary)); color: rgb(var(--v-theme-on-primary)); font-weight: 700; }
 .sticky { position: sticky; z-index: 2; }
 .employee-code { left: 0; min-width: 130px; }
 .employee-name { left: 130px; min-width: 180px; }
 th.sticky { z-index: 4; }
+td.sticky { background: rgb(var(--v-theme-surface)); }
 :deep(.changed .v-field) { background: rgb(var(--v-theme-warning), .18); }
 :deep(.closed .v-field) { outline: 1px solid rgb(var(--v-theme-error)); }
 </style>

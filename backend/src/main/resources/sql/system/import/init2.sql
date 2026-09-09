@@ -136,7 +136,7 @@ VALUES
     'employment_insurance_rate_2026.csv',
     'PYTHON',
     'convert_employment_insurance_rate.py',
-    '--year 2026 --input /tmp/project-admin/source/mhlw_employment_insurance_2026.pdf --output ${IMPORT_CSV_DIR}/employment_insurance_rate_2026.csv',
+    '--year 2026 --category CONSTRUCTION --input /tmp/project-admin/source/mhlw_employment_insurance_2026.pdf --output ${IMPORT_CSV_DIR}/employment_insurance_rate_2026.csv',
     'INSERT_ONLY',
     1,
     2,
@@ -262,8 +262,9 @@ WHERE target_code = 'IMPORT_PENSION_INSURANCE_RATE';
 
 UPDATE import_target
 SET
-    script_args = '--year 2026 --category GENERAL --url https://www.mhlw.go.jp/content/001692566.pdf --input /tmp/project-admin/source/mhlw_employment_insurance_2026.pdf --output ${IMPORT_CSV_DIR}/employment_insurance_rate_2026.csv',
-    description = '厚労省の雇用保険料率を取り込む。categoryは労働保険上の事業区分確認後に確定する。'
+    script_args = '--year 2026 --category CONSTRUCTION --url https://www.mhlw.go.jp/content/001692566.pdf --input /tmp/project-admin/source/mhlw_employment_insurance_2026.pdf --output ${IMPORT_CSV_DIR}/employment_insurance_rate_2026.csv',
+    description = '富陽の労働保険事業区分（建設の事業）に対応する雇用保険料率を取り込む。',
+    active_flag = TRUE
 WHERE target_code = 'IMPORT_EMPLOYMENT_INSURANCE_RATE';
 
 UPDATE import_target
