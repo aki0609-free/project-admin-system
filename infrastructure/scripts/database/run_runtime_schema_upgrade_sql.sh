@@ -268,7 +268,7 @@ tax_import_verification="$(
   "
 )"
 
-if [[ "${tax_import_verification}" != "7:6:29:0" ]]; then
+if [[ "${tax_import_verification}" != "7:7:29:0" ]]; then
   echo "Tax import or verification-ledger cleanup failed: ${tax_import_verification}" >&2
   exit 1
 fi
