@@ -55,7 +55,6 @@ export type EmployeePayrollProfileResponse = {
 
   incomeTaxCalcFlag: boolean
   residentTaxCalcFlag: boolean
-  residentTaxMonthly: number
   employmentInsuranceFlag: boolean
   socialInsuranceFlag: boolean
   healthInsuranceFlag: boolean
@@ -129,7 +128,6 @@ export type EmployeePayrollProfileSaveRequest = {
 
   incomeTaxCalcFlag: boolean
   residentTaxCalcFlag: boolean
-  residentTaxMonthly: number
   employmentInsuranceFlag: boolean
   socialInsuranceFlag: boolean
   healthInsuranceFlag: boolean

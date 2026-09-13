@@ -15,25 +15,22 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
 @Table(
         name = "monthly_closing_execution",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_monthly_closing_execution_version",
-                columnNames = {
-                        "tenant_id",
-                        "monthly_closing_id",
-                        "closing_version"
-                }
-        ),
-        indexes = @Index(
-                name = "idx_monthly_closing_execution_status",
-                columnList = "tenant_id,status,started_at"
-        )
+        indexes = {
+                @Index(
+                        name = "idx_monthly_closing_execution_status",
+                        columnList = "tenant_id,status,started_at"
+                ),
+                @Index(
+                        name = "idx_monthly_closing_execution_version",
+                        columnList = "tenant_id,monthly_closing_id,closing_version"
+                )
+        }
 )
 @Getter
 @Setter

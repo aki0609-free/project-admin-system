@@ -7,6 +7,7 @@ import java.io.ByteArrayInputStream;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -58,9 +59,10 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
         assertThat(resources)
-                .hasSize(44)
+                .hasSize(45)
                 .contains(
                         "sql/admin/external_support_links_v1.sql",
+                        "sql/application/applicant_legacy_schema_compatibility_v1.sql",
                         "sql/customer/customer_contract_status_v1.sql",
                         "sql/operation/monthly/customer_transaction_adjustment_v1.sql"
                 );
@@ -108,6 +110,14 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         )).isEqualTo(6);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'applicants'
+                  AND column_name = 'dynamic_fields'
+                  AND is_nullable = 'NO'
+                """, Integer.class)).isZero();
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
                 FROM rule_master
                 WHERE tenant_id = 'default'
                   AND rule_name IN (
@@ -143,6 +153,9 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND deleted_at IS NULL
                 """, Integer.class)).isEqualTo(4);
         assertFoundationDailyPayRulesCalculateAmounts();
+        assertDailyLaborCostSeparatesSalaryBasisAndPaymentCycle();
+        assertDailyPaymentPreparationAggregatesEveryPaymentCycle();
+        assertEmployeeCsvUsesCurrentEmployeeModel();
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM allowance_masters
@@ -284,8 +297,8 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 WHERE tenant_id = 'default'
                   AND deduction_code = 'WIFI_FEE'
                   AND calculation_type = 'MANUAL'
-                  AND deduction_unit = 'MONTHLY'
-                  AND show_on_daily_statement = FALSE
+                  AND deduction_unit = 'BOTH'
+                  AND show_on_daily_statement = TRUE
                   AND show_on_monthly_statement = TRUE
                   AND carry_to_monthly_settlement = TRUE
                   AND deleted_at IS NULL
@@ -300,8 +313,9 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND policy.target_type = 'DEDUCTION'
                   AND policy.target_code = 'WIFI_FEE'
                   AND policy.application_scope = 'EMPLOYEE_ENROLLMENT'
-                  AND policy.input_source = 'TRANSACTION'
-                  AND policy.balance_tracking_flag = FALSE
+                  AND policy.input_source = 'DAILY_REPORT_AND_TRANSACTION'
+                  AND policy.balance_tracking_flag = TRUE
+                  AND policy.carry_forward_flag = TRUE
                   AND policy.active_flag = TRUE
                   AND policy.deleted_at IS NULL
                   AND deduction.enabled = TRUE
@@ -597,6 +611,17 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                     year, min_salary, max_salary, dependents, tax_amount
                 ) VALUES (2026, 0, 999999999, 0, 10000)
                 """);
+
+        BigDecimal residentTaxWithoutConfirmedMonthlyValue = jdbcTemplate.queryForObject("""
+                SELECT resident_tax
+                FROM vw_monthly_pay_slip_employee_month
+                WHERE tenant_id = ?
+                  AND target_month = '2026-08-01'
+                  AND employee_id = ?
+                """, BigDecimal.class, TEST_TENANT_ID, employeeId);
+        assertThat(residentTaxWithoutConfirmedMonthlyValue)
+                .as("従業員給与設定の旧住民税月額はフォールバックに使用しない")
+                .isEqualByComparingTo("0");
 
         var residentTaxDraft = residentTaxEditorService.saveDraft(
                 new ResidentTaxDraftSaveRequest(
@@ -986,6 +1011,521 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
     private void assertAmount(Object actual, String expected) {
         assertThat(new BigDecimal(actual.toString()))
                 .isEqualByComparingTo(expected);
+    }
+
+    private void assertDailyPaymentPreparationAggregatesEveryPaymentCycle() {
+        LocalDate paymentDate = LocalDate.of(2026, 9, 10);
+        Long dailyEmployeeId = insertPaymentPreparationEmployee(
+                "PAY-PREP-D", "支払日次", "DAILY"
+        );
+        Long weeklyEmployeeId = insertPaymentPreparationEmployee(
+                "PAY-PREP-W", "支払週次", "WEEKLY"
+        );
+        Long monthlyEmployeeId = insertPaymentPreparationEmployee(
+                "PAY-PREP-M", "支払月次", "MONTHLY"
+        );
+
+        insertPaymentPreparationReport(
+                dailyEmployeeId, LocalDate.of(2026, 9, 10), paymentDate,
+                "6000", "0", "0", "6000"
+        );
+        insertPaymentPreparationReport(
+                weeklyEmployeeId, LocalDate.of(2026, 9, 4), paymentDate,
+                "3000", "100", "0", "3000"
+        );
+        insertPaymentPreparationReport(
+                weeklyEmployeeId, LocalDate.of(2026, 9, 9), paymentDate,
+                "3000", "200", "0", "3000"
+        );
+        insertPaymentPreparationReport(
+                monthlyEmployeeId, LocalDate.of(2026, 9, 8), paymentDate,
+                "13063", "500", "500", "12563"
+        );
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
+                SELECT *
+                FROM vw_daily_payment_preparation_preview
+                WHERE tenant_id = ?
+                  AND target_date = ?
+                ORDER BY payment_cycle_order, employee_code
+                """, TEST_TENANT_ID, paymentDate);
+
+        assertThat(rows).hasSize(3);
+        assertThat(rows).extracting(row -> row.get("payment_cycle"))
+                .containsExactly("DAILY", "WEEKLY", "MONTHLY");
+        assertAmount(rows.get(1).get("gross_payment_amount"), "6000");
+        assertAmount(rows.get(1).get("allowance_amount"), "300");
+        assertAmount(rows.getFirst().get("total_net_payment_amount"), "24563");
+
+        Map<String, Object> summary = rows.getFirst();
+        assertAmount(summary.get("bill_10000"), "1");
+        assertAmount(summary.get("bill_5000"), "2");
+        assertAmount(summary.get("bill_1000"), "4");
+        assertAmount(summary.get("coin_500"), "1");
+        assertAmount(summary.get("coin_100"), "0");
+        assertAmount(summary.get("coin_50"), "1");
+        assertAmount(summary.get("coin_10"), "1");
+        assertAmount(summary.get("coin_5"), "0");
+        assertAmount(summary.get("coin_1"), "3");
+    }
+
+    private void assertEmployeeCsvUsesCurrentEmployeeModel() {
+        Long employeeId = insertLaborCostEmployee(
+                "CSV-CURRENT-001", "CSV現行形式", "WEEKLY", "WEEKLY",
+                "0", "75000", "0"
+        );
+        jdbcTemplate.update("""
+                INSERT INTO employee_payroll_profile (
+                    employee_id, tax_category, tax_dependent_count,
+                    dependent_flag, dependent_of_other_flag,
+                    paid_leave_remaining_days,
+                    income_tax_calc_flag, resident_tax_calc_flag,
+                    resident_tax_monthly, employment_insurance_flag,
+                    social_insurance_flag, health_insurance_flag,
+                    pension_insurance_flag, care_insurance_flag,
+                    daily_pay_flag, commute_allowance_monthly,
+                    tenant_id, created_at, updated_at
+                ) VALUES (
+                    ?, 'KOU', 2, FALSE, FALSE, 12.5,
+                    TRUE, TRUE, 8500, TRUE,
+                    TRUE, TRUE, TRUE, FALSE,
+                    FALSE, 12000,
+                    ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                )
+                """, employeeId, TEST_TENANT_ID);
+
+        String executionId = "employee-csv-current-model";
+        jdbcTemplate.update("""
+                INSERT INTO employee_csv_input (
+                    execution_id, include_deleted, tenant_id,
+                    created_at, updated_at
+                ) VALUES (?, FALSE, ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6))
+                """, executionId, TEST_TENANT_ID);
+        jdbcTemplate.update("CALL sp_employee_csv_prepare(?)", executionId);
+
+        Map<String, Object> output = jdbcTemplate.queryForMap("""
+                SELECT tax_category, tax_dependent_count,
+                       paid_leave_remaining_days,
+                       contract_start_date, salary_type, payment_cycle,
+                       weekly_wage, standard_working_hours
+                FROM employee_csv_output
+                WHERE execution_id = ? AND employee_code = 'CSV-CURRENT-001'
+                """, executionId);
+        assertThat(output.get("tax_category")).isEqualTo("KOU");
+        assertThat(output.get("tax_dependent_count")).isEqualTo(2);
+        assertAmount(output.get("paid_leave_remaining_days"), "12.5");
+        assertThat(output.get("salary_type")).isEqualTo("WEEKLY");
+        assertThat(output.get("payment_cycle")).isEqualTo("WEEKLY");
+        assertAmount(output.get("weekly_wage"), "75000");
+        assertAmount(output.get("standard_working_hours"), "8");
+
+        String querySql = jdbcTemplate.queryForObject("""
+                SELECT query_sql
+                FROM report_master
+                WHERE tenant_id = 'default' AND report_code = 'EMPLOYEE_CSV'
+                """, String.class);
+        assertThat(querySql)
+                .contains("給与計算基準")
+                .contains("従業員別手当・控除設定")
+                .doesNotContain("住民税月額")
+                .doesNotContain("入寮区分")
+                .doesNotContain("寮タイプ");
+
+        jdbcTemplate.update("CALL sp_employee_csv_cleanup(?)", executionId);
+    }
+
+    private void assertDailyLaborCostSeparatesSalaryBasisAndPaymentCycle() {
+        LocalDate workDate = LocalDate.of(2026, 9, 11);
+        LocalDate monthlyPaymentDate = LocalDate.of(2026, 9, 30);
+
+        Long dailyPaidDaily = insertLaborCostEmployee(
+                "LABOR-DAILY-DAILY", "日給・日払い", "DAILY", "DAILY",
+                "12000", "0", "0"
+        );
+        Long dailyPaidMonthly = insertLaborCostEmployee(
+                "LABOR-DAILY-MONTHLY", "日給・月払い", "DAILY", "MONTHLY",
+                "14500", "0", "0"
+        );
+        Long monthlyPaidMonthly = insertLaborCostEmployee(
+                "LABOR-MONTHLY-MONTHLY", "月給・月払い", "MONTHLY", "MONTHLY",
+                "0", "0", "300000"
+        );
+        Long weeklyPaidWeekly = insertLaborCostEmployee(
+                "LABOR-WEEKLY-WEEKLY", "週給・週払い", "WEEKLY", "WEEKLY",
+                "0", "75000", "0"
+        );
+
+        insertPaymentPreparationReport(
+                dailyPaidDaily, workDate, workDate,
+                "12000", "0", "1000", "11000"
+        );
+        insertPaymentPreparationReport(
+                dailyPaidMonthly, workDate, monthlyPaymentDate,
+                "14500", "0", "1000", "13500"
+        );
+        insertPaymentPreparationReport(
+                monthlyPaidMonthly, workDate, monthlyPaymentDate,
+                "15000", "0", "3000", "12000"
+        );
+        insertPaymentPreparationReport(
+                weeklyPaidWeekly, workDate, workDate.plusDays(1),
+                "15000", "0", "3000", "12000"
+        );
+
+        List<Map<String, Object>> workDateRows = jdbcTemplate.queryForList("""
+                SELECT *
+                FROM vw_daily_labor_cost_preview
+                WHERE tenant_id = ?
+                  AND target_date = ?
+                ORDER BY employee_code
+                """, TEST_TENANT_ID, workDate);
+
+        assertThat(workDateRows).hasSize(4);
+        Map<String, Map<String, Object>> rowByCode = workDateRows.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        row -> row.get("employee_code").toString(),
+                        row -> row
+                ));
+        assertAmount(rowByCode.get("LABOR-DAILY-DAILY").get("gross_payment_amount"), "12000");
+        assertAmount(rowByCode.get("LABOR-DAILY-DAILY").get("payment_amount"), "12000");
+        assertAmount(rowByCode.get("LABOR-DAILY-MONTHLY").get("gross_payment_amount"), "14500");
+        assertAmount(rowByCode.get("LABOR-DAILY-MONTHLY").get("payment_amount"), "0");
+        assertAmount(rowByCode.get("LABOR-MONTHLY-MONTHLY").get("gross_payment_amount"), "15000");
+        assertAmount(rowByCode.get("LABOR-MONTHLY-MONTHLY").get("payment_amount"), "0");
+        assertAmount(rowByCode.get("LABOR-WEEKLY-WEEKLY").get("gross_payment_amount"), "15000");
+        assertAmount(rowByCode.get("LABOR-WEEKLY-WEEKLY").get("payment_amount"), "0");
+
+        Long dynamicAllowanceId = insertDailyStatementMaster(
+                "ALLOWANCE", "DYNAMIC_DAILY_ALLOWANCE", "動的日次手当", 1
+        );
+        Long dynamicDeductionId = insertDailyStatementMaster(
+                "DEDUCTION", "DYNAMIC_DAILY_DEDUCTION", "動的日次控除", 1
+        );
+        insertAllEmployeeDailyPolicy(
+                "ALLOWANCE", dynamicAllowanceId,
+                "DYNAMIC_DAILY_ALLOWANCE", "動的日次手当"
+        );
+        insertAllEmployeeDailyPolicy(
+                "DEDUCTION", dynamicDeductionId,
+                "DYNAMIC_DAILY_DEDUCTION", "動的日次控除"
+        );
+
+        List<Map<String, Object>> dynamicItems = jdbcTemplate.queryForList("""
+                SELECT item_code, item_value
+                FROM vw_daily_pay_slip_item_source
+                WHERE tenant_id = ?
+                  AND payment_date = ?
+                  AND employee_id = ?
+                  AND item_code IN ('DYNAMIC_DAILY_ALLOWANCE', 'DYNAMIC_DAILY_DEDUCTION')
+                ORDER BY item_code
+                """, TEST_TENANT_ID, workDate, dailyPaidDaily);
+        assertThat(dynamicItems).hasSize(2);
+        dynamicItems.forEach(row -> assertAmount(row.get("item_value"), "0"));
+
+        Map<String, Object> dailySlip = jdbcTemplate.queryForMap("""
+                SELECT payment_date_label, labor_period_from_label,
+                       allowance_item_name1, allowance_item_value1,
+                       deduction_item_name1, deduction_item_value1,
+                       deduction_total, note
+                FROM vw_daily_pay_slip_latest
+                WHERE tenant_id = ?
+                  AND payment_date = ?
+                  AND employee_id = ?
+                """, TEST_TENANT_ID, workDate, dailyPaidDaily);
+        assertThat(dailySlip.get("payment_date_label")).isEqualTo("2026年9月11日");
+        assertThat(dailySlip.get("labor_period_from_label")).isEqualTo("2026年9月11日");
+        assertThat(dailySlip.get("allowance_item_name1")).isEqualTo("動的日次手当");
+        assertAmount(dailySlip.get("allowance_item_value1"), "0");
+        assertThat(dailySlip.get("deduction_item_name1")).isEqualTo("動的日次控除");
+        assertAmount(dailySlip.get("deduction_item_value1"), "0");
+        assertAmount(dailySlip.get("deduction_total"), "1000");
+        assertThat(dailySlip.get("note")).isEqualTo("Testcontainers日次給与明細備考");
+
+        BigDecimal fallbackDeduction = jdbcTemplate.queryForObject("""
+                SELECT item_value
+                FROM vw_daily_pay_slip_item_source
+                WHERE tenant_id = ?
+                  AND payment_date = ?
+                  AND employee_id = ?
+                  AND item_code = 'OTHER_DEDUCTION'
+                """, BigDecimal.class, TEST_TENANT_ID, workDate, dailyPaidDaily);
+        assertAmount(fallbackDeduction, "1000");
+
+        Long dailyReportId = jdbcTemplate.queryForObject("""
+                SELECT id FROM daily_report
+                WHERE tenant_id = ? AND employee_id = ? AND work_date = ?
+                  AND deleted_at IS NULL
+                """, Long.class, TEST_TENANT_ID, dailyPaidDaily, workDate);
+        Map<String, Long> deductionMasterIds = new java.util.LinkedHashMap<>();
+        deductionMasterIds.put("寮費", insertDailyStatementMaster(
+                "DEDUCTION", "SLIP_DORMITORY_FEE", "寮費", 110));
+        deductionMasterIds.put("携帯電話貸出料", insertDailyStatementMaster(
+                "DEDUCTION", "SLIP_MOBILE_RENTAL", "携帯電話貸出料", 120));
+        deductionMasterIds.put("Wi-Fi使用料", insertDailyStatementMaster(
+                "DEDUCTION", "SLIP_WIFI_FEE", "Wi-Fi使用料", 130));
+        deductionMasterIds.put("法定準備金", insertDailyStatementMaster(
+                "DEDUCTION", "SLIP_LEGAL_DEPOSIT", "法定準備金", 160));
+        Map<String, Integer> expectedAmounts = Map.of(
+                "寮費", 1500,
+                "携帯電話貸出料", 1000,
+                "Wi-Fi使用料", 500,
+                "法定準備金", 700
+        );
+        deductionMasterIds.forEach((name, masterId) -> {
+            String code = switch (name) {
+                case "寮費" -> "SLIP_DORMITORY_FEE";
+                case "携帯電話貸出料" -> "SLIP_MOBILE_RENTAL";
+                case "Wi-Fi使用料" -> "SLIP_WIFI_FEE";
+                default -> "SLIP_LEGAL_DEPOSIT";
+            };
+            insertAllEmployeeDailyPolicy("DEDUCTION", masterId, code, name);
+            int amount = expectedAmounts.get(name);
+            jdbcTemplate.update("""
+                    INSERT INTO daily_report_deductions (
+                        daily_report_id, deduction_master_id,
+                        deduction_code, deduction_name,
+                        amount, calculated_amount, manual_override_flag,
+                        quantity, balance_unit,
+                        tenant_id, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, FALSE, ?, 'AMOUNT', ?,
+                              CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6))
+                    """, dailyReportId, masterId, code, name,
+                    amount, amount, amount, TEST_TENANT_ID);
+        });
+        jdbcTemplate.update("""
+                UPDATE daily_report
+                SET deduction_amount = 3700,
+                    saving_amount = 800,
+                    estimated_net_pay_amount = 7500,
+                    updated_at = CURRENT_TIMESTAMP(6)
+                WHERE id = ?
+                """, dailyReportId);
+
+        List<Map<String, Object>> configuredDeductions = jdbcTemplate.queryForList("""
+                SELECT item_name, item_value
+                FROM vw_daily_pay_slip_item_source
+                WHERE tenant_id = ? AND employee_id = ? AND payment_date = ?
+                  AND item_code IN (
+                      'SLIP_DORMITORY_FEE', 'SLIP_MOBILE_RENTAL',
+                      'SLIP_WIFI_FEE', 'SLIP_LEGAL_DEPOSIT', 'EMPLOYEE_SAVING'
+                  )
+                ORDER BY display_order, item_code
+                """, TEST_TENANT_ID, dailyPaidDaily, workDate);
+        assertThat(configuredDeductions).hasSize(5);
+        Map<String, String> expectedStatementValues = Map.of(
+                "寮費", "1500",
+                "携帯電話貸出料", "1000",
+                "Wi-Fi使用料", "500",
+                "法定準備金", "700",
+                "貯金", "800"
+        );
+        configuredDeductions.forEach(row -> assertAmount(
+                row.get("item_value"),
+                expectedStatementValues.get(row.get("item_name").toString())
+        ));
+        Map<String, Object> updatedSlip = jdbcTemplate.queryForMap("""
+                SELECT deduction_total, net_payment_amount
+                FROM vw_daily_pay_slip_latest
+                WHERE tenant_id = ? AND employee_id = ? AND payment_date = ?
+                """, TEST_TENANT_ID, dailyPaidDaily, workDate);
+        assertAmount(updatedSlip.get("deduction_total"), "4500");
+        assertAmount(updatedSlip.get("net_payment_amount"), "7500");
+
+        List<Map<String, Object>> paymentDateRows = jdbcTemplate.queryForList("""
+                SELECT *
+                FROM vw_daily_labor_cost_preview
+                WHERE tenant_id = ?
+                  AND target_date = ?
+                ORDER BY employee_code
+                """, TEST_TENANT_ID, monthlyPaymentDate);
+        assertThat(paymentDateRows).hasSize(2);
+        assertThat(paymentDateRows)
+                .allSatisfy(row -> assertAmount(row.get("gross_payment_amount"), "0"));
+        assertAmount(paymentDateRows.get(0).get("payment_amount"), "14500");
+        assertAmount(paymentDateRows.get(1).get("payment_amount"), "15000");
+    }
+
+    private Long insertDailyStatementMaster(
+            String targetType,
+            String targetCode,
+            String displayName,
+            int displayOrder
+    ) {
+        if ("ALLOWANCE".equals(targetType)) {
+            jdbcTemplate.update("""
+                    INSERT INTO allowance_masters (
+                        allowance_code, allowance_name, allowance_type,
+                        calculation_type, allowance_unit, detail_view_type,
+                        taxable, show_on_daily_statement,
+                        show_on_monthly_statement, display_order,
+                        enabled, note, tenant_id, created_at, updated_at
+                    ) VALUES (?, ?, 'COMPANY', 'MANUAL', 'DAILY', 'NONE',
+                              TRUE, TRUE, FALSE, ?, TRUE,
+                              '日次明細の動的表示テスト', ?,
+                              CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6))
+                    """, targetCode, displayName, displayOrder, TEST_TENANT_ID);
+            return jdbcTemplate.queryForObject("""
+                    SELECT id FROM allowance_masters
+                    WHERE tenant_id = ? AND allowance_code = ? AND deleted_at IS NULL
+                    """, Long.class, TEST_TENANT_ID, targetCode);
+        }
+
+        jdbcTemplate.update("""
+                INSERT INTO deduction_masters (
+                    deduction_code, deduction_name, deduction_type,
+                    calculation_type, default_amount, allow_manual_input,
+                    deduction_unit, detail_view_type,
+                    show_on_daily_statement, show_on_monthly_statement,
+                    carry_to_monthly_settlement, display_order,
+                    enabled, note, tenant_id, created_at, updated_at
+                ) VALUES (?, ?, 'COMPANY', 'MANUAL', 0, TRUE,
+                          'DAILY', 'NONE', TRUE, FALSE, FALSE, ?, TRUE,
+                          '日次明細の動的表示テスト', ?,
+                          CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6))
+                """, targetCode, displayName, displayOrder, TEST_TENANT_ID);
+        return jdbcTemplate.queryForObject("""
+                SELECT id FROM deduction_masters
+                WHERE tenant_id = ? AND deduction_code = ? AND deleted_at IS NULL
+                """, Long.class, TEST_TENANT_ID, targetCode);
+    }
+
+    private void insertAllEmployeeDailyPolicy(
+            String targetType,
+            Long targetMasterId,
+            String targetCode,
+            String displayName
+    ) {
+        jdbcTemplate.update("""
+                INSERT INTO payroll_item_balance_policy (
+                    target_type, target_master_id, target_code, display_name,
+                    application_scope, balance_unit, balance_tracking_flag,
+                    input_source, accrual_frequency, accrual_rule_name,
+                    carry_forward_flag, advance_consumption_flag, active_flag,
+                    tenant_id, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, 'ALL_EMPLOYEES', 'AMOUNT', FALSE,
+                          'DAILY_REPORT', 'MANUAL', 'NONE',
+                          FALSE, FALSE, TRUE, ?,
+                          CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6))
+                """, targetType, targetMasterId, targetCode, displayName, TEST_TENANT_ID);
+    }
+
+    private Long insertLaborCostEmployee(
+            String employeeCode,
+            String employeeName,
+            String salaryType,
+            String paymentCycle,
+            String dailyWage,
+            String weeklyWage,
+            String monthlySalary
+    ) {
+        jdbcTemplate.update("""
+                INSERT INTO employee (
+                    employee_code, employee_name, employment_type,
+                    employment_status, active_flag, dormitory_flag,
+                    tenant_id, created_at, updated_at
+                ) VALUES (
+                    ?, ?, 'FULL_TIME',
+                    'ACTIVE', TRUE, FALSE,
+                    ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                )
+                """, employeeCode, employeeName, TEST_TENANT_ID);
+        Long employeeId = jdbcTemplate.queryForObject("""
+                SELECT id FROM employee
+                WHERE tenant_id = ? AND employee_code = ?
+                """, Long.class, TEST_TENANT_ID, employeeCode);
+        assertThat(employeeId).isNotNull();
+
+        jdbcTemplate.update("""
+                INSERT INTO employee_contract (
+                    employee_id, contract_start_date, renewal_flag,
+                    salary_type, payment_cycle,
+                    monthly_salary, weekly_wage, daily_wage, hourly_wage,
+                    standard_working_hours,
+                    tenant_id, created_at, updated_at
+                ) VALUES (
+                    ?, '2026-04-01', FALSE,
+                    ?, ?,
+                    ?, ?, ?, 0,
+                    8,
+                    ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                )
+                """, employeeId, salaryType, paymentCycle,
+                monthlySalary, weeklyWage, dailyWage, TEST_TENANT_ID);
+        return employeeId;
+    }
+
+    private Long insertPaymentPreparationEmployee(
+            String employeeCode,
+            String employeeName,
+            String paymentCycle
+    ) {
+        jdbcTemplate.update("""
+                INSERT INTO employee (
+                    employee_code, employee_name, employment_type,
+                    employment_status, active_flag, dormitory_flag,
+                    tenant_id, created_at, updated_at
+                ) VALUES (
+                    ?, ?, 'FULL_TIME',
+                    'ACTIVE', TRUE, FALSE,
+                    ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                )
+                """, employeeCode, employeeName, TEST_TENANT_ID);
+        Long employeeId = jdbcTemplate.queryForObject("""
+                SELECT id FROM employee
+                WHERE tenant_id = ? AND employee_code = ?
+                """, Long.class, TEST_TENANT_ID, employeeCode);
+        assertThat(employeeId).isNotNull();
+
+        jdbcTemplate.update("""
+                INSERT INTO employee_contract (
+                    employee_id, renewal_flag, salary_type, payment_cycle,
+                    monthly_salary, weekly_wage, daily_wage, hourly_wage,
+                    standard_working_hours,
+                    tenant_id, created_at, updated_at
+                ) VALUES (
+                    ?, FALSE, 'DAILY', ?,
+                    0, 0, 12000, 0, 8,
+                    ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                )
+                """, employeeId, paymentCycle, TEST_TENANT_ID);
+        return employeeId;
+    }
+
+    private void insertPaymentPreparationReport(
+            Long employeeId,
+            LocalDate workDate,
+            LocalDate paymentDate,
+            String grossAmount,
+            String allowanceAmount,
+            String deductionAmount,
+            String netAmount
+    ) {
+        jdbcTemplate.update("""
+                INSERT INTO daily_report (
+                    employee_id, work_date, payment_date,
+                    normal_pay_amount, allowance_amount, deduction_amount,
+                    saving_amount, loan_repayment_amount,
+                    estimated_gross_pay_amount, estimated_net_pay_amount,
+                    billing_base_unit_price, billing_overtime_unit_price,
+                    billing_night_unit_price, billing_holiday_unit_price,
+                    billing_commute_unit_price, holiday_premium_eligible,
+                    dormitory_charge_days, overtime_pay_amount,
+                    night_pay_amount, holiday_pay_amount,
+                    vehicle_used_flag, work_description, approval_status,
+                    tenant_id, created_at, updated_at
+                ) VALUES (
+                    ?, ?, ?,
+                    ?, ?, ?, 0, 0, ?, ?,
+                    0, 0, 0, 0, 0, FALSE,
+                    0, 0, 0, 0,
+                    FALSE, 'Testcontainers日次給与明細備考', 'APPROVED',
+                    ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                )
+                """,
+                employeeId, workDate, paymentDate,
+                grossAmount, allowanceAmount, deductionAmount,
+                grossAmount, netAmount, TEST_TENANT_ID
+        );
     }
 
     private int countTables(String... names) {

@@ -133,22 +133,22 @@ class MonthlyClosingCommandServiceTest {
     }
 
     @Test
-    void reclose_shouldUseVersionAfterFailedAttempt() {
+    void reclose_shouldReuseVersionAfterFailedAttempt() {
         entity.setStatus(MonthlyClosingStatus.FAILED);
         entity.setClosingVersion(2);
-        when(stateService.nextVersion(10L, 2)).thenReturn(4);
+        when(stateService.nextVersion(10L, 2)).thenReturn(3);
         MonthlyClosingExecution execution = new MonthlyClosingExecution();
         execution.setId(400L);
         when(stateService.startNew(
                 10L,
-                4,
+                3,
                 "SYSTEM",
                 definitions
         )).thenReturn(execution);
 
         service.reclose("2026-07");
 
-        verify(workflowService).execute(10L, period, 4, definitions);
+        verify(workflowService).execute(10L, period, 3, definitions);
         verify(stateService).completeItems(400L);
         verify(stateService).complete(400L);
     }

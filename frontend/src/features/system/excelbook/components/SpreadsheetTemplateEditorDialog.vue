@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import {
-  SheetDirective as ESheet,
-  SheetsDirective as ESheets,
   SpreadsheetComponent as EjsSpreadsheet,
   type SpreadsheetComponent,
 } from '@syncfusion/ej2-vue-spreadsheet'
@@ -57,20 +55,29 @@ const licenseRegistered = configureSyncfusion()
 const templateQuery = useSpreadsheetTemplateQuery(masterId, queryEnabled)
 const saveMutation = useSaveSpreadsheetTemplateMutation()
 
-const loading = computed(() => templateQuery.isLoading.value)
+const loading = computed(
+  () => templateQuery.isLoading.value || templateQuery.isFetching.value,
+)
 const saving = computed(() => saveMutation.isPending.value)
 const title = computed(() =>
   props.master
     ? `Spreadsheetテンプレート：${props.master.bookName}`
     : 'Spreadsheetテンプレート',
 )
+const templateSheets = computed(() => {
+  const workbook = templateQuery.template.value?.workbook as {
+    Workbook?: { sheets?: unknown[] }
+    sheets?: unknown[]
+  } | null
+  return workbook?.Workbook?.sheets ?? workbook?.sheets
+})
 
 function spreadsheetInstance() {
   return spreadsheet.value?.ej2Instances ?? null
 }
 
 async function applyTemplate(workbook: SpreadsheetWorkbook | null) {
-  if (!spreadsheetReady.value) return
+  if (!spreadsheetReady.value || applyingTemplate.value) return
 
   const instance = spreadsheetInstance()
   if (!instance) return
@@ -78,7 +85,7 @@ async function applyTemplate(workbook: SpreadsheetWorkbook | null) {
   applyingTemplate.value = true
 
   if (workbook) {
-    instance.openFromJson({ file: workbook })
+    applyingTemplate.value = false
     return
   }
 
@@ -100,7 +107,10 @@ async function applyTemplate(workbook: SpreadsheetWorkbook | null) {
 
 async function handleCreated() {
   spreadsheetReady.value = true
-  await applyTemplate(templateQuery.template.value?.workbook ?? null)
+  await nextTick()
+  if (!templateQuery.template.value?.workbook) {
+    await applyTemplate(null)
+  }
 }
 
 function handleSpreadsheetChange() {
@@ -142,7 +152,10 @@ async function importJsonTemplate(event: Event) {
     }
     importedTemplate.value = true
     applyingTemplate.value = true
-    instance.openFromJson({ file: workbook })
+    instance.openFromJson({
+      file: workbook,
+      triggerEvent: true,
+    })
     messageType.value = 'warning'
     message.value =
       'JSONテンプレートを読み込みました。「保存」でS3へ登録してください。'
@@ -194,12 +207,23 @@ function handleClose() {
 }
 
 watch(
-  () => templateQuery.template.value?.workbook,
-  async workbook => {
-    if (visible.value && spreadsheetReady.value) {
+  [
+    visible,
+    spreadsheetReady,
+    loading,
+    () => templateQuery.template.value?.workbook,
+  ],
+  async ([isVisible, isReady, isLoading, workbook]) => {
+    if (
+      isVisible
+      && isReady
+      && !isLoading
+      && !templateQuery.isError.value
+    ) {
       await applyTemplate(workbook ?? null)
     }
   },
+  { flush: 'post' },
 )
 
 watch(visible, value => {
@@ -326,21 +350,19 @@ watch(visible, value => {
           color="primary"
         />
         <EjsSpreadsheet
-          v-if="visible"
+          v-if="visible && !loading && !templateQuery.isError.value"
+          :key="masterId ?? 'spreadsheet-template'"
           ref="spreadsheet"
           height="100%"
           locale="ja"
+          :sheets="templateSheets"
           :created="handleCreated"
           :cell-save="handleSpreadsheetChange"
           :action-complete="handleSpreadsheetChange"
           :open-complete="handleOpenComplete"
           :allow-open="excelImportEnabled"
           :open-url="openUrl"
-        >
-          <ESheets>
-            <ESheet name="TEMPLATE" />
-          </ESheets>
-        </EjsSpreadsheet>
+        />
       </div>
     </v-card>
   </v-dialog>

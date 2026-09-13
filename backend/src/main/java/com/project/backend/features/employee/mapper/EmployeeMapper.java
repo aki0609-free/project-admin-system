@@ -116,8 +116,6 @@ public interface EmployeeMapper {
                 profile.setResidentTaxCalcFlag(
                                 request.residentTaxCalcFlag() == null || request.residentTaxCalcFlag());
 
-                profile.setResidentTaxMonthly(nvl(request.residentTaxMonthly()));
-
                 profile.setEmploymentInsuranceFlag(
                                 request.employmentInsuranceFlag() == null || request.employmentInsuranceFlag());
 

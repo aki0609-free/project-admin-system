@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.project.backend.features.admin.business.dto.BusinessClosingSettingResponse;
 import com.project.backend.features.admin.business.dto.AnnualReportBackupSettingResponse;
@@ -25,10 +28,13 @@ import com.project.backend.features.admin.business.dto.PayrollPolicySettingSaveR
 import com.project.backend.features.admin.business.dto.ResignationChecklistAdminResponse;
 import com.project.backend.features.admin.business.dto.ResignationChecklistSaveRequest;
 import com.project.backend.features.admin.business.dto.ResignationMessageSaveRequest;
+import com.project.backend.features.admin.business.dto.PreviewReportSettingResponse;
+import com.project.backend.features.admin.business.dto.PreviewReportSettingSaveRequest;
 import com.project.backend.features.admin.business.service.BusinessSettingService;
 import com.project.backend.features.admin.business.service.AnnualReportBackupSettingService;
 import com.project.backend.features.admin.business.service.ExternalSupportLinkSettingService;
 import com.project.backend.features.admin.business.service.PayrollPolicySettingService;
+import com.project.backend.features.admin.business.service.PreviewReportSettingService;
 import com.project.backend.features.operation.monthly.dto.AnnualReportBackupResult;
 import com.project.backend.features.employee.dto.EmployeeResignationMessageResponse;
 
@@ -45,6 +51,25 @@ public class BusinessSettingController {
     private final AnnualReportBackupSettingService annualReportBackupService;
     private final ExternalSupportLinkSettingService externalSupportLinkSettingService;
     private final PayrollPolicySettingService payrollPolicySettingService;
+    private final PreviewReportSettingService previewReportSettingService;
+
+    @GetMapping("/preview-reports")
+    public List<PreviewReportSettingResponse> findPreviewReports() {
+        return previewReportSettingService.findAll();
+    }
+
+    @PostMapping(
+            value = "/preview-reports",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public PreviewReportSettingResponse savePreviewReport(
+            @Valid @RequestPart("definition")
+            PreviewReportSettingSaveRequest request,
+            @RequestPart(value = "template", required = false)
+            MultipartFile template
+    ) {
+        return previewReportSettingService.save(request, template);
+    }
 
     @GetMapping("/payroll-policies")
     public List<PayrollPolicySettingResponse> findPayrollPolicies() {

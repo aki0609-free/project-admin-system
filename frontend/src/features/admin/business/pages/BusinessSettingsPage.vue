@@ -29,10 +29,14 @@ const {
   annualReportBackup,
   externalSupportLinks,
   payrollPolicies,
+  previewReports,
   manualBackupFiscalYear,
   lastBackupResult,
   checklistDialog,
   editingChecklist,
+  previewReportDialog,
+  editingPreviewReport,
+  previewTemplateFile,
   saveMessage,
   openChecklistCreate,
   openChecklistEdit,
@@ -46,7 +50,32 @@ const {
   addPayrollPolicy,
   savePayrollPolicyRow,
   removePayrollPolicy,
+  openPreviewReportCreate,
+  openPreviewReportEdit,
+  savePreviewReport,
 } = useBusinessSettingsPage()
+
+const operationTypeOptions = [
+  { title: '翌日準備', value: 'PREPARATION' },
+  { title: '日次管理', value: 'DAILY' },
+  { title: '月次管理', value: 'MONTHLY' },
+  { title: '台帳', value: 'BOOK' },
+]
+
+const outputTypeOptions = [
+  { title: '画面プレビュー', value: 'HTML_PREVIEW' },
+  { title: 'ブラウザ印刷', value: 'HTML_PRINT' },
+]
+
+const operationTypeLabel = (value: string) =>
+  operationTypeOptions.find((item) => item.value === value)?.title ?? value
+
+const outputTypeLabel = (value: string) =>
+  outputTypeOptions.find((item) => item.value === value)?.title ?? value
+
+const updatePreviewTemplate = (value: File | File[] | null) => {
+  previewTemplateFile.value = Array.isArray(value) ? (value[0] ?? null) : value
+}
 
 const weekDayOptions = [
   { title: '月曜日', value: 'MONDAY' },
@@ -187,6 +216,24 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
     onClick: saveChecklist,
   },
 ])
+
+const previewReportFooterItems = computed<ToolbarItem[]>(() => [
+  {
+    type: 'button',
+    label: '閉じる',
+    intent: 'secondary',
+    onClick: () => {
+      previewReportDialog.value = false
+    },
+  },
+  {
+    type: 'button',
+    label: '保存',
+    intent: 'primary',
+    loading: loading.value,
+    onClick: savePreviewReport,
+  },
+])
 </script>
 
 <template>
@@ -230,6 +277,7 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
         <v-tab value="closing">締日設定</v-tab>
         <v-tab value="payrollPolicy">給与制度設定</v-tab>
         <v-tab value="outputs">締め帳票</v-tab>
+        <v-tab value="previewReports">プレビュー帳票</v-tab>
         <v-tab value="backup">帳票バックアップ</v-tab>
         <v-tab value="other">その他設定</v-tab>
       </v-tabs>
@@ -514,6 +562,72 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
           </section>
         </v-window-item>
 
+        <v-window-item value="previewReports">
+          <section class="settings-section">
+            <div class="section-heading">
+              <div>
+                <h2>プレビュー帳票</h2>
+                <p>
+                  参照ViewとHTMLテンプレートを紐づけます。通常の帳票管理のような表示カラム登録は不要です。
+                </p>
+              </div>
+              <v-btn color="primary" variant="tonal" @click="openPreviewReportCreate">
+                プレビュー帳票を追加
+              </v-btn>
+            </div>
+            <v-alert type="info" variant="tonal">
+              HTMLテンプレートはVersion 1へ保存します。既存定義でHTMLを選び直すと、同じVersion 1の内容を更新します。
+            </v-alert>
+            <v-table density="comfortable">
+              <thead>
+                <tr>
+                  <th>処理</th>
+                  <th>帳票</th>
+                  <th>データ元View/Table</th>
+                  <th>形式</th>
+                  <th>テンプレート</th>
+                  <th>状態</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in previewReports" :key="item.id ?? item.reportCode">
+                  <td>{{ operationTypeLabel(item.operationType) }}</td>
+                  <td>
+                    <div class="item-name">{{ item.reportName }}</div>
+                    <div class="item-description">{{ item.reportCode }}</div>
+                  </td>
+                  <td>
+                    <div>{{ item.tableName }}</div>
+                    <div class="item-description">
+                      絞込: {{ item.filterColumnName || '区分ごとの標準列' }}
+                    </div>
+                  </td>
+                  <td>{{ outputTypeLabel(item.outputType) }}</td>
+                  <td>
+                    <v-chip
+                      size="small"
+                      :color="item.templateExists ? 'success' : 'error'"
+                      variant="tonal"
+                    >
+                      {{ item.templateExists ? '登録済み' : '未登録' }} / v1
+                    </v-chip>
+                  </td>
+                  <td>{{ item.activeFlag ? '有効' : '無効' }}</td>
+                  <td class="row-actions">
+                    <v-btn size="small" variant="text" @click="openPreviewReportEdit(item)">
+                      編集
+                    </v-btn>
+                  </td>
+                </tr>
+                <tr v-if="previewReports.length === 0">
+                  <td colspan="7" class="empty-row">プレビュー帳票は登録されていません。</td>
+                </tr>
+              </tbody>
+            </v-table>
+          </section>
+        </v-window-item>
+
         <v-window-item value="backup">
           <section class="settings-section narrow">
             <h2>年度帳票バックアップ</h2>
@@ -604,6 +718,99 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
           <GridBasedForm v-model="editingChecklist" :fields="checklistFields" />
         </FormLayout>
       </AppDialog>
+
+      <AppDialog
+        v-model="previewReportDialog"
+        :title="editingPreviewReport.id == null ? 'プレビュー帳票追加' : 'プレビュー帳票編集'"
+        size="xl"
+        body-layout="stack"
+        :right-footer-items="previewReportFooterItems"
+      >
+        <v-alert type="info" variant="tonal" class="mb-4">
+          HTMLでは <code>rows</code>（Viewの行一覧）、<code>definition</code>、<code>request</code>
+          を参照できます。帳票ごとのJava Rendererや表示カラム登録は不要です。
+        </v-alert>
+        <div class="preview-report-grid">
+          <v-select
+            v-model="editingPreviewReport.operationType"
+            label="表示する処理"
+            :items="operationTypeOptions"
+            :disabled="editingPreviewReport.id != null"
+            variant="outlined"
+          />
+          <v-select
+            v-model="editingPreviewReport.outputType"
+            label="表示形式"
+            :items="outputTypeOptions"
+            variant="outlined"
+          />
+          <v-text-field
+            v-model="editingPreviewReport.reportCode"
+            label="帳票コード"
+            hint="半角英字で始まる英数字・アンダースコア"
+            persistent-hint
+            :disabled="editingPreviewReport.id != null"
+            variant="outlined"
+          />
+          <v-text-field
+            v-model="editingPreviewReport.reportName"
+            label="帳票名"
+            variant="outlined"
+          />
+          <v-text-field
+            v-model="editingPreviewReport.tableName"
+            label="データ元View/Table"
+            hint="tenant_idと対象日または対象月の列が必要です"
+            persistent-hint
+            variant="outlined"
+          />
+          <v-text-field
+            v-model="editingPreviewReport.filterColumnName"
+            label="対象日・月の絞込列"
+            placeholder="空欄なら処理区分の標準列"
+            variant="outlined"
+          />
+          <v-text-field
+            v-model="editingPreviewReport.orderBy"
+            label="並び順"
+            placeholder="例: payment_cycle_order, employee_code"
+            variant="outlined"
+          />
+          <v-text-field
+            v-model.number="editingPreviewReport.displayOrder"
+            label="表示順"
+            type="number"
+            min="1"
+            variant="outlined"
+          />
+          <v-file-input
+            accept="text/html,.html"
+            label="HTMLテンプレート"
+            :hint="editingPreviewReport.id == null ? '新規登録時は必須です' : '変更するとVersion 1を上書きします'"
+            persistent-hint
+            prepend-icon="mdi-file-code-outline"
+            variant="outlined"
+            class="preview-template-input"
+            @update:model-value="updatePreviewTemplate"
+          />
+          <div class="preview-report-flags">
+            <v-checkbox
+              v-model="editingPreviewReport.activeFlag"
+              label="有効"
+              hide-details
+            />
+            <v-chip size="small" variant="tonal">Template Version 1</v-chip>
+          </div>
+        </div>
+        <v-text-field
+          v-if="editingPreviewReport.htmlTemplateKey"
+          :model-value="editingPreviewReport.htmlTemplateKey"
+          label="保存先（自動生成）"
+          readonly
+          variant="outlined"
+          hide-details
+        />
+      </AppDialog>
     </template>
   </ListDetailPageLayout>
 </template>
@@ -680,13 +887,33 @@ const checklistFooterItems = computed<ToolbarItem[]>(() => [
   justify-content: space-between;
   margin-top: 16px;
 }
+.empty-row {
+  padding: 32px !important;
+  color: #64748b;
+  text-align: center;
+}
+.preview-report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.preview-template-input {
+  grid-column: 1 / -1;
+}
+.preview-report-flags {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  grid-column: 1 / -1;
+}
 @media (max-width: 1100px) {
   .policy-grid {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
 }
 @media (max-width: 700px) {
-  .policy-grid {
+  .policy-grid,
+  .preview-report-grid {
     grid-template-columns: 1fr;
   }
 }

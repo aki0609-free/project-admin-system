@@ -28,8 +28,12 @@ class ReceiptConfirmationSpreadsheetRendererTest {
                 template(),
                 master(),
                 List.of(
-                        row(1, 10, "顧客A", "2026-03-31", "1133464", "550", "0", "PAID"),
-                        row(2, 20, "顧客B", "2026-04-10", "0", "0", "0", "UNPAID")
+                        row(1, 10, "顧客A", "2026-02-25",
+                                "321000", "0", "0", "PAID"),
+                        row(2, 20, "顧客B", "2026-03-25",
+                                "452000", "550", "0", "PAID"),
+                        row(3, 30, "顧客C", "2026-04-25",
+                                "300000", "0", "0", "PARTIAL")
                 ),
                 "2026-02",
                 Instant.parse("2026-02-28T00:00:00Z"),
@@ -39,19 +43,33 @@ class ReceiptConfirmationSpreadsheetRendererTest {
         var sheet = result.path("Workbook").path("sheets").get(0);
         var rows = (ArrayNode) sheet.path("rows");
 
-        assertThat(rows).hasSize(8);
+        assertThat(rows).hasSize(10);
         assertThat(cell(rows.get(3), 14).path("formula").asText())
                 .isEqualTo("=SUM(K4:N4)");
         assertThat(cell(rows.get(3), 16).path("value").asDouble())
                 .isEqualTo(1d);
         assertThat(cell(rows.get(3), 17).path("value").asDouble())
                 .isEqualTo(10d);
+        assertThat(cell(rows.get(3), 9).path("value").asText())
+                .isEqualTo("2月25日");
+        assertThat(cell(rows.get(3), 8).path("format").asText())
+                .isEqualTo("#,##0\"円\"");
         assertThat(cell(rows.get(4), 0).path("value").asText())
-                .isEqualTo("2026年3月 合計");
+                .isEqualTo("2026年2月 合計");
+        assertThat(cell(rows.get(4), 9).path("style")
+                .path("backgroundColor").asText()).isEqualTo("#D9E1F2");
+        assertThat(cell(rows.get(4), 15).path("style")
+                .path("backgroundColor").asText()).isEqualTo("#D9E1F2");
         assertThat(cell(rows.get(6), 0).path("value").asText())
+                .isEqualTo("2026年3月 合計");
+        assertThat(cell(rows.get(8), 0).path("value").asText())
                 .isEqualTo("2026年4月 合計");
-        assertThat(cell(rows.get(7), 0).path("value").asText())
+        assertThat(cell(rows.get(9), 0).path("value").asText())
                 .isEqualTo("総合計");
+        assertThat(cell(rows.get(9), 9).path("style")
+                .path("backgroundColor").asText()).isEqualTo("#C9C9F5");
+        assertThat(cell(rows.get(9), 15).path("style")
+                .path("backgroundColor").asText()).isEqualTo("#C9C9F5");
         assertThat(renderer.editableAfterMonthlyClosing()).isTrue();
         assertThat(sheet.path("isProtected").asBoolean()).isTrue();
         assertThat(cell(rows.get(3), 10).path("isLocked").asBoolean())
@@ -59,7 +77,7 @@ class ReceiptConfirmationSpreadsheetRendererTest {
         assertThat(cell(rows.get(3), 8).path("isLocked").asBoolean())
                 .isTrue();
         assertThat(result.path("projectAdminMetadata")
-                .path("transactionCount").asInt()).isEqualTo(2);
+                .path("transactionCount").asInt()).isEqualTo(3);
     }
 
     private JsonNode template() {

@@ -8,6 +8,7 @@ import com.project.backend.features.customer.dto.CustomerTransactionClosingReque
 import com.project.backend.features.customer.dto.CustomerTransactionRequest;
 import com.project.backend.features.customer.entity.CustomerTransaction;
 import com.project.backend.features.customer.enums.CustomerPaymentStatus;
+import com.project.backend.features.customer.exception.CustomerTransactionAlreadySettledException;
 import com.project.backend.features.customer.mapper.CustomerTransactionMapper;
 import com.project.backend.features.customer.repository.CustomerRepository;
 import com.project.backend.features.customer.repository.CustomerTransactionRepository;
@@ -45,21 +46,56 @@ public class CustomerTransactionCommandService {
                         request.targetMonth()
                 )
                 .orElseGet(CustomerTransaction::new);
-
-        if (entity.getPaymentStatus() == CustomerPaymentStatus.PAID
-                || entity.getPaymentStatus()
-                        == CustomerPaymentStatus.OVERPAID) {
-            throw new IllegalStateException(
-                    "入金済みの取引は月次締め処理から更新できません。customerId="
-                            + request.customerId()
-                            + ", targetMonth="
-                            + request.targetMonth());
-        }
+        validateNotSettled(
+                entity,
+                request.customerId(),
+                request.targetMonth()
+        );
 
         mapper.applyFromClosing(entity, request);
         refreshPaymentStatus(entity);
 
         return repository.save(entity).getId();
+    }
+
+    /**
+     * 帳票生成より前に、顧客締めから取引を更新できるか確認する。
+     */
+    public void validateMonthlyClosingUpsertAllowed(
+            Long customerId,
+            String targetMonth
+    ) {
+        if (customerId == null || targetMonth == null || targetMonth.isBlank()) {
+            throw new IllegalArgumentException(
+                    "customerIdとtargetMonthは必須です。"
+            );
+        }
+
+        repository.findByCustomerIdAndTargetMonthAndDeletedAtIsNull(
+                customerId,
+                targetMonth
+        ).ifPresent(transaction -> validateNotSettled(
+                transaction,
+                customerId,
+                targetMonth
+        ));
+    }
+
+    private void validateNotSettled(
+            CustomerTransaction transaction,
+            Long customerId,
+            String targetMonth
+    ) {
+        boolean settled = transaction.getPaymentStatus()
+                == CustomerPaymentStatus.PAID
+                || transaction.getPaymentStatus()
+                        == CustomerPaymentStatus.OVERPAID;
+        if (settled) {
+            throw new CustomerTransactionAlreadySettledException(
+                    customerId,
+                    targetMonth
+            );
+        }
     }
 
     @SuppressWarnings("null")

@@ -47,7 +47,7 @@ public class BundledReportHtmlTemplateInitializer
             ),
             new TemplateDefinition(
                     "MONTHLY_PAY_SLIP",
-                    1,
+                    2,
                     "monthly_pay_slip.html"
             )
     );

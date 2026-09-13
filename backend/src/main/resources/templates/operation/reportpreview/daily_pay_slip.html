@@ -38,7 +38,7 @@ body {
 }
 .header {
     display: grid;
-    grid-template-columns: 1fr 220px 220px;
+    grid-template-columns: 1fr minmax(330px, auto) 210px;
     gap: 12px;
     align-items: center;
     padding-bottom: 8px;
@@ -47,6 +47,12 @@ body {
 }
 .title { font-size: 20px; font-weight: 900; letter-spacing: .12em; }
 .head-box { font-weight: 800; }
+.employee-heading {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    white-space: nowrap;
+}
 .right { text-align: right; }
 .section-title {
     margin-top: 10px;
@@ -100,30 +106,30 @@ body {
     <section class="slip" th:each="row : ${rows}">
         <div class="header">
             <div class="title">日次給与明細</div>
-            <div class="head-box">
+            <div class="head-box employee-heading">
                 <span th:text="${row['employee_code'] ?: ''}"></span>
                 <span th:text="${row['employee_name'] ?: ''}"></span>
             </div>
             <div class="head-box right">
-                支払日：<span th:text="${row['payment_date'] ?: ''}"></span>
+                支払日：<span th:text="${row['payment_date_label'] ?: ''}"></span>
             </div>
         </div>
 
         <div class="row">
             <div class="cell-label">労務期間</div>
             <div class="cell-value">
-                <span th:text="${row['labor_period_from'] ?: ''}"></span>
+                <span th:text="${row['labor_period_from_label'] ?: ''}"></span>
                 ～
-                <span th:text="${row['labor_period_to'] ?: ''}"></span>
+                <span th:text="${row['labor_period_to_label'] ?: ''}"></span>
             </div>
             <div class="cell-label">勤務時間</div>
-            <div class="cell-value right" th:text="${row['work_hours'] ?: 0} + ' h'"></div>
+            <div class="cell-value right" th:text="${row['work_hours'] ?: 0} + ' 時間'"></div>
         </div>
         <div class="row">
             <div class="cell-label">時間外</div>
-            <div class="cell-value right" th:text="${row['overtime_hours'] ?: 0} + ' h'"></div>
+            <div class="cell-value right" th:text="${row['overtime_hours'] ?: 0} + ' 時間'"></div>
             <div class="cell-label">深夜</div>
-            <div class="cell-value right" th:text="${row['night_work_hours'] ?: 0} + ' h'"></div>
+            <div class="cell-value right" th:text="${row['night_work_hours'] ?: 0} + ' 時間'"></div>
         </div>
 
         <div class="section-title">手当</div>

@@ -228,20 +228,21 @@ SET deduction_name = 'Wi-Fi使用料',
     allow_manual_input = TRUE,
     min_amount = 0,
     max_amount = 10000000,
-    deduction_unit = 'MONTHLY',
+    deduction_unit = 'BOTH',
     detail_view_type = 'NONE',
-    show_on_daily_statement = FALSE,
+    show_on_daily_statement = TRUE,
     show_on_monthly_statement = TRUE,
     carry_to_monthly_settlement = TRUE,
     display_order = 130,
     enabled = TRUE,
-    note = '締め期間内の確定済み控除取引を月次集計する',
+    note = '請求明細を残高へ加算し、日報で実徴収額を登録する。未徴収額は翌月へ繰り越す',
     updated_at = CURRENT_TIMESTAMP(6),
     deleted_at = NULL
 WHERE tenant_id = 'default'
   AND deduction_code = 'WIFI_FEE';
 
--- Wi-Fi使用料は従業員ごとに利用有無を設定し、明細到着時に共通取引画面から登録する。
+-- Wi-Fi使用料は従業員ごとに利用有無を設定し、請求明細を残高へ登録した後、
+-- 日報で実際に徴収した金額だけを控除する。携帯電話貸出料と同じ共通方式とする。
 -- 従業員画面はこのポリシーをカタログとして読み込むため、コード固有の画面実装は不要。
 INSERT INTO payroll_item_balance_policy (
     target_type, target_master_id, target_code, display_name,
@@ -251,9 +252,9 @@ INSERT INTO payroll_item_balance_policy (
     tenant_id, created_at, updated_at, deleted_at
 )
 SELECT 'DEDUCTION', deduction.id, deduction.deduction_code, deduction.deduction_name,
-       'EMPLOYEE_ENROLLMENT', 'AMOUNT', FALSE, 'TRANSACTION',
+       'EMPLOYEE_ENROLLMENT', 'AMOUNT', TRUE, 'DAILY_REPORT_AND_TRANSACTION',
        'MANUAL', 'MANUAL_TRANSACTION',
-       FALSE, FALSE, TRUE,
+       TRUE, FALSE, TRUE,
        deduction.tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
 FROM deduction_masters deduction
 WHERE deduction.tenant_id = 'default'

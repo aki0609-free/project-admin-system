@@ -102,6 +102,17 @@ public class MonthlyClosingCustomerTransactionService {
         return histories.size();
     }
 
+    public void validateSynchronizable(
+            String targetMonthText,
+            Long customerId
+    ) {
+        YearMonth.parse(targetMonthText);
+        commandService.validateMonthlyClosingUpsertAllowed(
+                customerId,
+                targetMonthText
+        );
+    }
+
     private int exactYen(MonthlyInvoiceHistory history) {
         try {
             return history.getTotalAmount()

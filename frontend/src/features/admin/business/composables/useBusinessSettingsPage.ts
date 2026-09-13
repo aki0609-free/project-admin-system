@@ -9,6 +9,7 @@ import {
   getClosingSetting,
   getExternalSupportLinkSetting,
   getPayrollPolicies,
+  getPreviewReportSettings,
   getResignationChecklist,
   getResignationMessage,
   saveClosingOutputs,
@@ -16,6 +17,7 @@ import {
   saveAnnualReportBackupSetting,
   saveExternalSupportLinkSetting,
   savePayrollPolicy,
+  savePreviewReportSetting,
   saveResignationMessage,
   updateResignationChecklist,
 } from '../api/businessSettingApi'
@@ -26,6 +28,8 @@ import type {
   ExternalSupportLinkSetting,
   MonthlyClosingOutputSetting,
   PayrollPolicySetting,
+  PreviewReportSetting,
+  PreviewReportSettingSaveRequest,
   ResignationChecklistItem,
   ResignationChecklistSaveRequest,
   ResignationMessage,
@@ -60,9 +64,33 @@ const emptyPayrollPolicy = (): PayrollPolicySetting => ({
   activeFlag: true,
 })
 
+const emptyPreviewReport = (): PreviewReportSetting => ({
+  id: null,
+  operationType: 'DAILY',
+  reportCode: '',
+  reportName: '',
+  tableName: '',
+  filterColumnName: null,
+  targetParamName: null,
+  orderBy: null,
+  displayOrder: 10,
+  outputType: 'HTML_PREVIEW',
+  activeFlag: true,
+  htmlTemplateKey: null,
+  htmlTemplateVersion: 1,
+  htmlTemplateHash: null,
+  templateExists: false,
+})
+
 export const useBusinessSettingsPage = () => {
   const activeTab = ref<
-    'resignation' | 'closing' | 'payrollPolicy' | 'outputs' | 'backup' | 'other'
+    | 'resignation'
+    | 'closing'
+    | 'payrollPolicy'
+    | 'outputs'
+    | 'previewReports'
+    | 'backup'
+    | 'other'
   >('resignation')
   const loading = ref(false)
   const errorMessage = ref('')
@@ -87,10 +115,14 @@ export const useBusinessSettingsPage = () => {
     manualUrl: '',
   })
   const payrollPolicies = ref<PayrollPolicySetting[]>([])
+  const previewReports = ref<PreviewReportSetting[]>([])
   const manualBackupFiscalYear = ref(new Date().getFullYear())
   const lastBackupResult = ref<AnnualReportBackupResult | null>(null)
   const checklistDialog = ref(false)
   const editingChecklist = reactive<ResignationChecklistItem>(emptyChecklist())
+  const previewReportDialog = ref(false)
+  const editingPreviewReport = reactive<PreviewReportSetting>(emptyPreviewReport())
+  const previewTemplateFile = ref<File | null>(null)
 
   const showSuccess = (text: string) => {
     successMessage.value = text
@@ -147,6 +179,11 @@ export const useBusinessSettingsPage = () => {
             payrollPolicies.value = value
           })
           .catch(() => failures.push('給与制度設定')),
+        getPreviewReportSettings()
+          .then((value) => {
+            previewReports.value = value
+          })
+          .catch(() => failures.push('プレビュー帳票')),
       ])
       if (failures.length > 0) {
         throw new Error(`設定の取得に失敗しました: ${failures.join('、')}`)
@@ -292,6 +329,49 @@ export const useBusinessSettingsPage = () => {
     }, '給与制度設定を削除しました。')
   }
 
+  const openPreviewReportCreate = () => {
+    Object.assign(editingPreviewReport, emptyPreviewReport())
+    previewTemplateFile.value = null
+    previewReportDialog.value = true
+  }
+
+  const openPreviewReportEdit = (item: PreviewReportSetting) => {
+    Object.assign(editingPreviewReport, item)
+    previewTemplateFile.value = null
+    previewReportDialog.value = true
+  }
+
+  const savePreviewReport = () => {
+    if (!editingPreviewReport.reportCode.trim()
+      || !editingPreviewReport.reportName.trim()
+      || !editingPreviewReport.tableName.trim()) {
+      errorMessage.value = '帳票コード、帳票名、データ元View/Tableは必須です。'
+      return
+    }
+    if (editingPreviewReport.id == null && !previewTemplateFile.value) {
+      errorMessage.value = '新規登録時はHTMLテンプレートを選択してください。'
+      return
+    }
+    return run(async () => {
+      const request: PreviewReportSettingSaveRequest = {
+        id: editingPreviewReport.id,
+        operationType: editingPreviewReport.operationType,
+        reportCode: editingPreviewReport.reportCode.trim(),
+        reportName: editingPreviewReport.reportName.trim(),
+        tableName: editingPreviewReport.tableName.trim(),
+        filterColumnName: editingPreviewReport.filterColumnName?.trim() || null,
+        targetParamName: editingPreviewReport.targetParamName?.trim() || null,
+        orderBy: editingPreviewReport.orderBy?.trim() || null,
+        displayOrder: Number(editingPreviewReport.displayOrder),
+        outputType: editingPreviewReport.outputType,
+        activeFlag: editingPreviewReport.activeFlag,
+      }
+      await savePreviewReportSetting(request, previewTemplateFile.value)
+      previewReports.value = await getPreviewReportSettings()
+      previewReportDialog.value = false
+    }, 'プレビュー帳票を保存しました。')
+  }
+
   onMounted(() => {
     void load()
   })
@@ -311,10 +391,14 @@ export const useBusinessSettingsPage = () => {
     annualReportBackup,
     externalSupportLinks,
     payrollPolicies,
+    previewReports,
     manualBackupFiscalYear,
     lastBackupResult,
     checklistDialog,
     editingChecklist,
+    previewReportDialog,
+    editingPreviewReport,
+    previewTemplateFile,
     load,
     saveMessage,
     openChecklistCreate,
@@ -329,5 +413,8 @@ export const useBusinessSettingsPage = () => {
     addPayrollPolicy,
     savePayrollPolicyRow,
     removePayrollPolicy,
+    openPreviewReportCreate,
+    openPreviewReportEdit,
+    savePreviewReport,
   }
 }

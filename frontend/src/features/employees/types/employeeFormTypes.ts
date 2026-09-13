@@ -15,7 +15,6 @@ export type EmployeePayrollProfileForm = {
 
   incomeTaxCalcFlag: boolean
   residentTaxCalcFlag: boolean
-  residentTaxMonthly: number
   employmentInsuranceFlag: boolean
   socialInsuranceFlag: boolean
   healthInsuranceFlag: boolean

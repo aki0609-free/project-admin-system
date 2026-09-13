@@ -23,14 +23,14 @@ export const useApplicantEmploymentColumns = () => {
       key: 'joinDateWithoutInsurance',
       width: '180px',
       filter: { type: 'date' },
-      formatter: (value, row) => formatYearMonthDay(value as string),
+      formatter: (value) => formatYearMonthDay(value as string),
     },
     {
       title: '退職日(社保無)',
       key: 'leaveDateWithoutInsurance',
       width: '180px',
       filter: { type: 'date' },
-      formatter: (value, row) => formatYearMonthDay(value as string),
+      formatter: (value) => formatYearMonthDay(value as string),
     },
     {
       title: '在籍期間(社保無)',
@@ -49,14 +49,14 @@ export const useApplicantEmploymentColumns = () => {
       key: 'joinDateWithInsurance',
       width: '180px',
       filter: { type: 'date' },
-      formatter: (value, row) => formatYearMonthDay(value as string),
+      formatter: (value) => formatYearMonthDay(value as string),
     },
     {
       title: '退職日(社保有)',
       key: 'leaveDateWithInsurance',
       width: '180px',
       filter: { type: 'date' },
-      formatter: (value, row) => formatYearMonthDay(value as string),
+      formatter: (value) => formatYearMonthDay(value as string),
     },
     {
       title: '在籍期間(社保有)',

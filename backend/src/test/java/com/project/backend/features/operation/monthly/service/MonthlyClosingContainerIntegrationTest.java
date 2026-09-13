@@ -131,7 +131,59 @@ class MonthlyClosingContainerIntegrationTest
         ))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Version")
-                .hasMessageContaining("既に存在");
+                .hasMessageContaining("完了済み");
+    }
+
+    @Test
+    void failedAttemptKeepsHistoryAndCanRetrySameVersion() {
+        MonthlyClosing closing = new MonthlyClosing();
+        closing.setTargetMonth(LocalDate.of(2026, 7, 1));
+        closing.setClosingStartDate(LocalDate.of(2026, 7, 1));
+        closing.setClosingEndDate(LocalDate.of(2026, 7, 31));
+        closing.setStatus(MonthlyClosingStatus.OPEN);
+        closing.setClosingVersion(0);
+        closing = closingRepository.save(closing);
+
+        List<MonthlyClosingOutputDefinition> definitions = List.of(
+                outputDefinition(
+                        MonthlyClosingOutputType.REPORT,
+                        "MONTHLY_PAY_SLIP"
+                )
+        );
+
+        MonthlyClosingExecution failed = executionStateService.startNew(
+                closing.getId(), 1, "integration-admin", definitions
+        );
+        executionStateService.fail(
+                failed.getId(),
+                new IllegalStateException("テスト用の帳票生成失敗")
+        );
+
+        assertThat(executionStateService.nextVersion(closing.getId(), 0))
+                .isEqualTo(1);
+
+        MonthlyClosingExecution retried = executionStateService.startNew(
+                closing.getId(), 1, "integration-admin", definitions
+        );
+        executionStateService.completeItems(retried.getId());
+        executionStateService.complete(retried.getId());
+
+        List<MonthlyClosingExecution> executions = executionRepository
+                .findByMonthlyClosingIdAndDeletedAtIsNullOrderByClosingVersionDesc(
+                        closing.getId()
+                );
+        assertThat(executions).hasSize(2);
+        assertThat(executions)
+                .extracting(MonthlyClosingExecution::getClosingVersion)
+                .containsOnly(1);
+        assertThat(executions)
+                .extracting(MonthlyClosingExecution::getStatus)
+                .containsExactlyInAnyOrder(
+                        MonthlyClosingExecutionStatus.FAILED,
+                        MonthlyClosingExecutionStatus.COMPLETED
+                );
+        assertThat(closingRepository.findById(closing.getId()).orElseThrow()
+                .getClosingVersion()).isEqualTo(1);
     }
 
     @Test

@@ -329,6 +329,10 @@ public class ReceiptConfirmationSpreadsheetRenderer
                     )
             );
         }
+        lockedCell(cells, 9, "",
+                detailStyle(templateRows, 9, 9, background), 1);
+        lockedCell(cells, 15, "",
+                detailStyle(templateRows, 9, 15, background), 1);
     }
 
     private void grandTotalRow(
@@ -356,6 +360,10 @@ public class ReceiptConfirmationSpreadsheetRenderer
             );
             total.put("formula", sumFormula(column, detailExcelRows));
         }
+        lockedCell(cells, 9, "",
+                detailStyle(templateRows, 13, 9, background), 1);
+        lockedCell(cells, 15, "",
+                detailStyle(templateRows, 13, 15, background), 1);
     }
 
     private ObjectNode editableMoney(
@@ -365,7 +373,7 @@ public class ReceiptConfirmationSpreadsheetRenderer
             ObjectNode style
     ) {
         ObjectNode cell = cell(cells, index, value, style, 1);
-        cell.put("format", "#,##0");
+        cell.put("format", "#,##0\"円\"");
         cell.put("isLocked", false);
         return cell;
     }
@@ -377,7 +385,7 @@ public class ReceiptConfirmationSpreadsheetRenderer
             ObjectNode style
     ) {
         ObjectNode cell = lockedCell(cells, index, value, style, 1);
-        cell.put("format", "#,##0");
+        cell.put("format", "#,##0\"円\"");
         return cell;
     }
 
@@ -530,7 +538,7 @@ public class ReceiptConfirmationSpreadsheetRenderer
     private String dateText(LocalDate date) {
         return date == null
                 ? ""
-                : date.getMonthValue() + "/" + date.getDayOfMonth();
+                : date.getMonthValue() + "月" + date.getDayOfMonth() + "日";
     }
 
     private String sumFormula(int column, List<Integer> rows) {

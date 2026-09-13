@@ -378,22 +378,24 @@ watch(fiscalYearStartMonth, startMonth => {
             </v-chip>
           </td>
           <td class="book-table__action">
-            <v-btn
-              color="primary"
-              size="small"
-              prepend-icon="mdi-table-large"
-              :loading="
-                generating && selectedBookCode === book.bookCode
-              "
-              :disabled="
-                generating
-                  || !targetMonth
-                  || !book.generationReady
-              "
-              @click="generate(book)"
-            >
-              生成・確認
-            </v-btn>
+            <div class="book-table__action-content">
+              <v-btn
+                color="primary"
+                size="small"
+                prepend-icon="mdi-table-large"
+                :loading="
+                  generating && selectedBookCode === book.bookCode
+                "
+                :disabled="
+                  generating
+                    || !targetMonth
+                    || !book.generationReady
+                "
+                @click="generate(book)"
+              >
+                生成・確認
+              </v-btn>
+            </div>
           </td>
         </tr>
         <tr v-if="!booksQuery.isLoading.value && booksQuery.books.value.length === 0">
@@ -547,7 +549,14 @@ watch(fiscalYearStartMonth, startMonth => {
 
 .book-table__action {
   width: 180px;
-  text-align: right;
+  min-width: 180px;
+  text-align: center !important;
+  white-space: nowrap;
+}
+
+.book-table__action-content {
+  display: flex;
+  justify-content: center;
 }
 
 .book-table__readiness {

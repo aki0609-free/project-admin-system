@@ -1,12 +1,12 @@
 <!-- eslint-disable @typescript-eslint/no-dynamic-delete -->
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { z } from 'zod'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
 import type { BatchParameterDefinition, ToolbarItem } from '@/shared/ui/toolbar/types'
 import AppDialog from './AppDialog.vue'
+import { buildBatchParameterSchema } from './batchParameterSchema'
 
 const props = defineProps<{
   modelValue: boolean
@@ -42,38 +42,7 @@ const fields = computed<GridFormFieldDef<Record<string, unknown>>[]>(() =>
   })) as GridFormFieldDef<Record<string, unknown>>[],
 )
 
-const schema = computed(() => {
-  const shape: Record<string, z.ZodTypeAny> = {}
-
-  for (const def of definitions.value) {
-    let rule: z.ZodTypeAny
-
-    switch (def.type) {
-      case 'number':
-        rule = z.coerce.number()
-        break
-      case 'checkbox':
-        rule = z.boolean()
-        break
-      default:
-        rule = z.string()
-        break
-    }
-
-    if (!def.required) {
-      rule = rule.optional()
-    } else if (def.type !== 'checkbox') {
-      rule = rule.refine(
-        value => value !== undefined && value !== null && String(value).trim() !== '',
-        `${def.label}は必須です`,
-      )
-    }
-
-    shape[def.key] = rule
-  }
-
-  return z.object(shape)
-})
+const schema = computed(() => buildBatchParameterSchema(definitions.value))
 
 const resetForm = () => {
   Object.keys(formModel).forEach(key => delete formModel[key])

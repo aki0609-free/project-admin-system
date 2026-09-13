@@ -14,12 +14,13 @@ test('employee basic, payroll and contract tabs use the shared form layout', asy
 
   await dialog.getByRole('button', { name: '給与・税金', exact: true }).click()
   await expect(dialog.getByLabel('税区分', { exact: true })).toBeVisible()
-  await expect(dialog.getByLabel('住民税月額', { exact: true })).toBeVisible()
+  await expect(dialog.getByLabel('住民税月額', { exact: true })).toHaveCount(0)
+  await expect(dialog.getByLabel('住民税控除', { exact: true })).toBeVisible()
   await expect(dialog.getByLabel('所得税計算', { exact: true })).toBeVisible()
 
   await dialog.getByRole('button', { name: '契約情報', exact: true }).click()
   await expect(dialog.getByLabel('契約開始日', { exact: true })).toBeVisible()
-  await expect(dialog.getByLabel('給与形態', { exact: true })).toBeVisible()
+  await expect(dialog.getByLabel('給与計算基準', { exact: true })).toBeVisible()
   await expect(dialog.getByLabel('契約メモ', { exact: true })).toBeVisible()
 
   await dialog.getByRole('button', { name: '閉じる', exact: true }).click()

@@ -1,4 +1,4 @@
-import { del, get, post, put } from '@/shared/api/http'
+import { del, get, post, postForm, put } from '@/shared/api/http'
 import type {
   AnnualReportBackupResult,
   AnnualReportBackupSetting,
@@ -7,6 +7,8 @@ import type {
   MonthlyClosingOutputSaveRequest,
   MonthlyClosingOutputSetting,
   PayrollPolicySetting,
+  PreviewReportSetting,
+  PreviewReportSettingSaveRequest,
   ResignationChecklistItem,
   ResignationChecklistSaveRequest,
   ResignationMessage,
@@ -97,3 +99,19 @@ export const savePayrollPolicy = (request: PayrollPolicySetting) =>
 
 export const deletePayrollPolicy = (id: number) =>
   del<undefined>(`${basePath}/payroll-policies/${id}`)
+
+export const getPreviewReportSettings = () =>
+  get<PreviewReportSetting[]>(`${basePath}/preview-reports`)
+
+export const savePreviewReportSetting = (
+  request: PreviewReportSettingSaveRequest,
+  template: File | null,
+) => {
+  const formData = new FormData()
+  formData.append(
+    'definition',
+    new Blob([JSON.stringify(request)], { type: 'application/json' }),
+  )
+  if (template) formData.append('template', template)
+  return postForm<PreviewReportSetting>(`${basePath}/preview-reports`, formData)
+}

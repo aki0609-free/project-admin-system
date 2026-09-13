@@ -28,7 +28,6 @@ export const createEmptyEmployeeForm = (): EmployeeForm => ({
 
     incomeTaxCalcFlag: true,
     residentTaxCalcFlag: true,
-    residentTaxMonthly: 0,
     employmentInsuranceFlag: true,
     socialInsuranceFlag: true,
     healthInsuranceFlag: true,
@@ -84,7 +83,6 @@ export const toEmployeeForm = (detail: EmployeeDetailResponse): EmployeeForm => 
 
     incomeTaxCalcFlag: detail.payrollProfile.incomeTaxCalcFlag,
     residentTaxCalcFlag: detail.payrollProfile.residentTaxCalcFlag,
-    residentTaxMonthly: detail.payrollProfile.residentTaxMonthly ?? 0,
     employmentInsuranceFlag: detail.payrollProfile.employmentInsuranceFlag,
     socialInsuranceFlag: detail.payrollProfile.socialInsuranceFlag,
     healthInsuranceFlag: detail.payrollProfile.healthInsuranceFlag,

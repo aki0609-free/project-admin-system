@@ -6,6 +6,7 @@ function applicant(overrides: Partial<ApplicantRow>): ApplicantRow {
   return {
     id: 1,
     no: 1,
+    applicationMediaId: null,
     name: '応募者',
     furiganaName: '',
     contractType: 'CONTRACT',

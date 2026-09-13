@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+ name="monthly_invoice_pattern_1" pageWidth="842" pageHeight="595" orientation="Landscape"
+ columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20"
+ whenNoDataType="NoDataSection">
+    <property name="net.sf.jasperreports.default.font.name" value="IPAexGothic"/>
+    <style name="Base" fontName="IPAexGothic" fontSize="8" pdfFontName="fonts/ipaexg.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+    <style name="Small" style="Base" fontSize="7"/>
+    <style name="Label" style="Base" fontSize="11" isBold="true"/>
+    <style name="InvoiceTitle" style="Base" fontSize="25" isBold="true"/>
+    <style name="Customer" style="Base" fontSize="16" isBold="true"/>
+    <style name="Company" style="Base" fontSize="17" isBold="true"/>
+    <style name="Amount" style="Base" fontSize="21" isBold="true"/>
+    <style name="Header" style="Base" isBold="true" hTextAlign="Center" vTextAlign="Middle" mode="Opaque" backcolor="#E2E8F0"><box><pen lineWidth="0.6"/></box></style>
+    <style name="Cell" style="Base" vTextAlign="Middle"><box><pen lineWidth="0.4"/></box></style>
+    <style name="CellCenter" style="Cell" hTextAlign="Center"/>
+    <style name="CellRight" style="Cell" hTextAlign="Right"/>
+    <style name="Total" style="CellRight" isBold="true" mode="Opaque" backcolor="#CBD5E1"/>
+    <parameter name="MONEY_FORMAT" class="java.text.DecimalFormat"><defaultValueExpression><![CDATA[new java.text.DecimalFormat("#,##0;▲#,##0")]]></defaultValueExpression></parameter>
+    <parameter name="DATE_FORMAT" class="java.text.SimpleDateFormat"><defaultValueExpression><![CDATA[new java.text.SimpleDateFormat("yyyy年M月d日")]]></defaultValueExpression></parameter>
+    <field name="invoice_history_id" class="java.lang.Long"/>
+    <field name="invoice_number" class="java.lang.String"/>
+    <field name="issue_date" class="java.sql.Date"/>
+    <field name="target_month" class="java.sql.Date"/>
+    <field name="customer_name" class="java.lang.String"/>
+    <field name="company_name" class="java.lang.String"/>
+    <field name="company_postal_code" class="java.lang.String"/>
+    <field name="company_address" class="java.lang.String"/>
+    <field name="company_phone" class="java.lang.String"/>
+    <field name="company_fax" class="java.lang.String"/>
+    <field name="qualified_invoice_issuer_number" class="java.lang.String"/>
+    <field name="bank_display_text" class="java.lang.String"/>
+    <field name="invoice_note" class="java.lang.String"/>
+    <field name="tax_rate" class="java.math.BigDecimal"/>
+    <field name="subtotal_amount" class="java.math.BigDecimal"/>
+    <field name="tax_amount" class="java.math.BigDecimal"/>
+    <field name="total_amount" class="java.math.BigDecimal"/>
+    <field name="work_date" class="java.sql.Date"/>
+    <field name="job_name" class="java.lang.String"/>
+    <field name="base_quantity" class="java.math.BigDecimal"/>
+    <field name="base_unit_price" class="java.math.BigDecimal"/>
+    <field name="base_amount" class="java.math.BigDecimal"/>
+    <field name="overtime_hours" class="java.math.BigDecimal"/>
+    <field name="overtime_unit_price" class="java.math.BigDecimal"/>
+    <field name="overtime_amount" class="java.math.BigDecimal"/>
+    <field name="night_hours" class="java.math.BigDecimal"/>
+    <field name="night_unit_price" class="java.math.BigDecimal"/>
+    <field name="night_amount" class="java.math.BigDecimal"/>
+    <field name="holiday_hours" class="java.math.BigDecimal"/>
+    <field name="holiday_unit_price" class="java.math.BigDecimal"/>
+    <field name="holiday_amount" class="java.math.BigDecimal"/>
+    <field name="commute_amount" class="java.math.BigDecimal"/>
+    <field name="line_amount" class="java.math.BigDecimal"/>
+
+    <group name="InvoiceDetail" isStartNewPage="true" isReprintHeaderOnEachPage="true">
+        <groupExpression><![CDATA[$F{invoice_history_id}]]></groupExpression>
+        <groupHeader><band height="55">
+            <textField><reportElement style="Label" x="0" y="0" width="500" height="25"/><textFieldExpression><![CDATA["1. 普通作業労務費　" + $F{customer_name}]]></textFieldExpression></textField>
+            <staticText><reportElement style="Header" x="0" y="28" width="58" height="27"/><text><![CDATA[日付]]></text></staticText>
+            <staticText><reportElement style="Header" x="58" y="28" width="120" height="27"/><text><![CDATA[職種]]></text></staticText>
+            <staticText><reportElement style="Header" x="178" y="28" width="60" height="27"/><text><![CDATA[人数]]></text></staticText>
+            <staticText><reportElement style="Header" x="238" y="28" width="75" height="27"/><text><![CDATA[作業員単価]]></text></staticText>
+            <staticText><reportElement style="Header" x="313" y="28" width="75" height="27"/><text><![CDATA[残業]]></text></staticText>
+            <staticText><reportElement style="Header" x="388" y="28" width="75" height="27"/><text><![CDATA[深夜]]></text></staticText>
+            <staticText><reportElement style="Header" x="463" y="28" width="75" height="27"/><text><![CDATA[休日]]></text></staticText>
+            <staticText><reportElement style="Header" x="538" y="28" width="75" height="27"/><text><![CDATA[通勤]]></text></staticText>
+            <staticText><reportElement style="Header" x="613" y="28" width="89" height="27"/><text><![CDATA[小計]]></text></staticText>
+            <staticText><reportElement style="Header" x="702" y="28" width="100" height="27"/><text><![CDATA[請求書番号]]></text></staticText>
+        </band></groupHeader>
+        <groupFooter><band height="24">
+            <staticText><reportElement style="Header" x="0" y="0" width="613" height="24"/><text><![CDATA[合計]]></text></staticText>
+            <textField><reportElement style="Total" x="613" y="0" width="189" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{subtotal_amount})]]></textFieldExpression></textField>
+        </band></groupFooter>
+    </group>
+    <title>
+        <band height="470" splitType="Prevent">
+            <staticText><reportElement style="Small" x="0" y="0" width="80" height="18"/><text><![CDATA[コード]]></text></staticText>
+            <textField><reportElement style="Small" x="650" y="0" width="152" height="20"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA["提出日　" + $P{DATE_FORMAT}.format($F{issue_date})]]></textFieldExpression></textField>
+            <staticText><reportElement style="InvoiceTitle" x="250" y="12" width="302" height="50"/><textElement textAlignment="Center"/><text><![CDATA[請　求　書]]></text></staticText>
+            <staticText><reportElement style="Label" x="0" y="80" width="80" height="24"/><text><![CDATA[得意先]]></text></staticText>
+            <textField><reportElement style="Customer" x="80" y="78" width="320" height="28"/><textFieldExpression><![CDATA[$F{customer_name} + "　御中"]]></textFieldExpression></textField>
+            <line><reportElement x="0" y="107" width="400" height="1"/></line>
+            <staticText><reportElement style="Label" x="0" y="145" width="80" height="25"/><text><![CDATA[金　額]]></text></staticText>
+            <textField><reportElement style="Amount" x="120" y="137" width="280" height="40"/><textFieldExpression><![CDATA["¥" + $P{MONEY_FORMAT}.format($F{total_amount}) + " -"]]></textFieldExpression></textField>
+            <line><reportElement x="0" y="180" width="400" height="1"/></line>
+            <textField isBlankWhenNull="true"><reportElement style="Small" x="80" y="182" width="320" height="30"/><textFieldExpression><![CDATA[$F{invoice_note}]]></textFieldExpression></textField>
+            <staticText><reportElement style="Label" x="0" y="230" width="80" height="24"/><text><![CDATA[振込先]]></text></staticText>
+            <textField isBlankWhenNull="true"><reportElement style="Base" x="80" y="225" width="320" height="36"/><textFieldExpression><![CDATA[$F{bank_display_text}]]></textFieldExpression></textField>
+            <textField><reportElement style="Company" x="520" y="85" width="282" height="42"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA[$F{company_name}]]></textFieldExpression></textField>
+            <textField isBlankWhenNull="true"><reportElement style="Small" x="520" y="132" width="282" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA["〒" + $F{company_postal_code} + "　" + $F{company_address}]]></textFieldExpression></textField>
+            <textField isBlankWhenNull="true"><reportElement style="Small" x="520" y="151" width="282" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA["TEL:" + $F{company_phone} + "　FAX:" + $F{company_fax}]]></textFieldExpression></textField>
+            <textField isBlankWhenNull="true"><reportElement style="Small" x="520" y="170" width="282" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA["登録番号　" + $F{qualified_invoice_issuer_number}]]></textFieldExpression></textField>
+            <textField><reportElement style="Small" x="0" y="285" width="802" height="20"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA["請求書番号　" + $F{invoice_number}]]></textFieldExpression></textField>
+            <staticText><reportElement style="Header" x="0" y="310" width="32" height="24"/><text><![CDATA[NO]]></text></staticText>
+            <staticText><reportElement style="Header" x="32" y="310" width="205" height="24"/><text><![CDATA[品名]]></text></staticText>
+            <staticText><reportElement style="Header" x="237" y="310" width="205" height="24"/><text><![CDATA[形状]]></text></staticText>
+            <staticText><reportElement style="Header" x="442" y="310" width="40" height="24"/><text><![CDATA[単位]]></text></staticText>
+            <staticText><reportElement style="Header" x="482" y="310" width="65" height="24"/><text><![CDATA[数量]]></text></staticText>
+            <staticText><reportElement style="Header" x="547" y="310" width="75" height="24"/><text><![CDATA[単価]]></text></staticText>
+            <staticText><reportElement style="Header" x="622" y="310" width="100" height="24"/><text><![CDATA[金額]]></text></staticText>
+            <staticText><reportElement style="Header" x="722" y="310" width="80" height="24"/><text><![CDATA[摘要]]></text></staticText>
+            <staticText><reportElement style="CellCenter" x="0" y="334" width="32" height="80"/><text><![CDATA[1]]></text></staticText>
+            <staticText><reportElement style="Cell" x="32" y="334" width="410" height="80"/><text><![CDATA[業務請負代金として]]></text></staticText>
+            <staticText><reportElement style="CellCenter" x="442" y="334" width="40" height="80"/><text><![CDATA[式]]></text></staticText>
+            <staticText><reportElement style="CellRight" x="482" y="334" width="65" height="80"/><text><![CDATA[1.0]]></text></staticText>
+            <staticText><reportElement style="Cell" x="547" y="334" width="75" height="80"/><text><![CDATA[]]></text></staticText>
+            <textField><reportElement style="CellRight" x="622" y="334" width="100" height="80"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{subtotal_amount})]]></textFieldExpression></textField>
+            <staticText><reportElement style="Cell" x="722" y="334" width="80" height="80"/><text><![CDATA[]]></text></staticText>
+            <staticText><reportElement style="Header" x="0" y="414" width="622" height="18"/><text><![CDATA[計]]></text></staticText>
+            <textField><reportElement style="CellRight" x="622" y="414" width="100" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{subtotal_amount})]]></textFieldExpression></textField>
+            <staticText><reportElement style="Cell" x="722" y="414" width="80" height="18"/><text><![CDATA[]]></text></staticText>
+            <staticText><reportElement style="Header" x="0" y="432" width="622" height="18"/><text><![CDATA[消費税]]></text></staticText>
+            <textField><reportElement style="CellRight" x="622" y="432" width="100" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{tax_amount})]]></textFieldExpression></textField>
+            <staticText><reportElement style="Cell" x="722" y="432" width="80" height="18"/><text><![CDATA[]]></text></staticText>
+            <staticText><reportElement style="Header" x="0" y="450" width="622" height="18"/><text><![CDATA[合計]]></text></staticText>
+            <textField><reportElement style="Total" x="622" y="450" width="100" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{total_amount})]]></textFieldExpression></textField>
+            <staticText><reportElement style="Cell" x="722" y="450" width="80" height="18"/><text><![CDATA[]]></text></staticText>
+            <break type="Page"><reportElement x="0" y="469" width="1" height="1"/></break>
+        </band>
+    </title>
+    <detail><band height="19">
+        <textField><reportElement style="CellCenter" x="0" y="0" width="58" height="19"/><textFieldExpression><![CDATA[$P{DATE_FORMAT}.format($F{work_date})]]></textFieldExpression></textField>
+        <textField isBlankWhenNull="true"><reportElement style="Cell" x="58" y="0" width="120" height="19"/><textFieldExpression><![CDATA[$F{job_name}]]></textFieldExpression></textField>
+        <textField><reportElement style="CellRight" x="178" y="0" width="60" height="19"/><textFieldExpression><![CDATA[$F{base_quantity}]]></textFieldExpression></textField>
+        <textField><reportElement style="CellRight" x="238" y="0" width="75" height="19"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{base_unit_price})]]></textFieldExpression></textField>
+        <textField><reportElement style="CellRight" x="313" y="0" width="75" height="19"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{overtime_amount})]]></textFieldExpression></textField>
+        <textField><reportElement style="CellRight" x="388" y="0" width="75" height="19"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{night_amount})]]></textFieldExpression></textField>
+        <textField><reportElement style="CellRight" x="463" y="0" width="75" height="19"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{holiday_amount})]]></textFieldExpression></textField>
+        <textField><reportElement style="CellRight" x="538" y="0" width="75" height="19"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{commute_amount})]]></textFieldExpression></textField>
+        <textField><reportElement style="CellRight" x="613" y="0" width="89" height="19"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{line_amount})]]></textFieldExpression></textField>
+        <textField><reportElement style="CellCenter" x="702" y="0" width="100" height="19"/><textFieldExpression><![CDATA[$F{invoice_number}]]></textFieldExpression></textField>
+    </band></detail>
+    <noData><band height="60"><staticText><reportElement style="Label" x="0" y="10" width="802" height="30"/><textElement textAlignment="Center"/><text><![CDATA[請求対象データがありません。]]></text></staticText></band></noData>
+</jasperReport>

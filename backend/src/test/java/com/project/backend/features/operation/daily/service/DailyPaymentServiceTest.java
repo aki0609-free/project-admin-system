@@ -19,6 +19,7 @@ import com.project.backend.features.employee.enums.PaymentCycle;
 import com.project.backend.features.employee.enums.ApprovalStatus;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
 import com.project.backend.features.operation.daily.dto.DailyPaymentResponse;
+import com.project.backend.features.operation.daily.dto.DailyPaymentPrintSummaryResponse;
 import com.project.backend.features.operation.daily.mapper.DailyPaymentMapper;
 
 class DailyPaymentServiceTest {
@@ -71,6 +72,31 @@ class DailyPaymentServiceTest {
                 .thenReturn(List.of(contract(10L, PaymentCycle.MONTHLY)));
 
         assertThat(service.findByPaymentDate(paymentDate)).isEmpty();
+    }
+
+    @Test
+    void getPrintSummary_shouldSumPerEmployeeDenominations() {
+        LocalDate paymentDate = LocalDate.of(2026, 8, 10);
+        when(reportRepository
+                .findByPaymentDateAndApprovalStatusAndDeletedAtIsNullOrderByEmployeeEmployeeCodeAscWorkDateDescIdDesc(
+                        paymentDate,
+                        ApprovalStatus.APPROVED
+                )).thenReturn(List.of(
+                        report(10L, "E001", "富陽 太郎", "6000"),
+                        report(20L, "E002", "富陽 次郎", "6000")
+                ));
+        when(contractRepository.findByEmployeeIdInAndDeletedAtIsNull(anyCollection()))
+                .thenReturn(List.of(
+                        contract(10L, PaymentCycle.DAILY),
+                        contract(20L, PaymentCycle.DAILY)
+                ));
+
+        DailyPaymentPrintSummaryResponse result = service.getPrintSummary(paymentDate);
+
+        assertThat(result.totalActualAmount()).isEqualByComparingTo("12000");
+        assertThat(result.totalDenomination().yen10000()).isZero();
+        assertThat(result.totalDenomination().yen5000()).isEqualTo(2);
+        assertThat(result.totalDenomination().yen1000()).isEqualTo(2);
     }
 
     private DailyReport report(

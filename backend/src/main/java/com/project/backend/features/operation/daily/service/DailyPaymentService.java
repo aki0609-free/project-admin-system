@@ -116,7 +116,7 @@ public class DailyPaymentService {
                 .employeeCount(details.size())
                 .totalPlannedAmount(totalPlannedAmount)
                 .totalActualAmount(totalActualAmount)
-                .totalDenomination(calculateDenomination(totalActualAmount))
+                .totalDenomination(sumDenominations(details))
                 .details(details)
                 .build();
     }
@@ -198,6 +198,32 @@ public class DailyPaymentService {
                 .yen5(yen5)
                 .yen1(yen1)
                 .build();
+    }
+
+    private DailyPaymentDenominationResponse sumDenominations(
+            List<DailyPaymentPrintDetailResponse> details
+    ) {
+        return DailyPaymentDenominationResponse.builder()
+                .yen10000(sum(details, denomination -> denomination.yen10000()))
+                .yen5000(sum(details, denomination -> denomination.yen5000()))
+                .yen1000(sum(details, denomination -> denomination.yen1000()))
+                .yen500(sum(details, denomination -> denomination.yen500()))
+                .yen100(sum(details, denomination -> denomination.yen100()))
+                .yen50(sum(details, denomination -> denomination.yen50()))
+                .yen10(sum(details, denomination -> denomination.yen10()))
+                .yen5(sum(details, denomination -> denomination.yen5()))
+                .yen1(sum(details, denomination -> denomination.yen1()))
+                .build();
+    }
+
+    private int sum(
+            List<DailyPaymentPrintDetailResponse> details,
+            java.util.function.ToIntFunction<DailyPaymentDenominationResponse> getter
+    ) {
+        return details.stream()
+                .map(DailyPaymentPrintDetailResponse::denomination)
+                .mapToInt(getter)
+                .sum();
     }
 
     private BigDecimal nvl(BigDecimal value) {

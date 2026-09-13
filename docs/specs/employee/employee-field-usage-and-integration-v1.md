@@ -46,7 +46,7 @@
 | 有給残日数 | `paid_leave_remaining_days` | 利用中 | 日報・月間勤怠の有給情報 |
 | 所得税計算 | `income_tax_calc_flag` | 利用中 | 月次給与Viewの所得税計算可否 |
 | 住民税控除 | `resident_tax_calc_flag` | 利用中 | 住民税控除可否 |
-| 住民税月額 | `resident_tax_monthly` | 利用中 | 年度別住民税明細がない場合のフォールバック |
+| 住民税月額 | `resident_tax_monthly` | 旧互換 | V1 API・画面・CSV・月次計算から削除。住民税額は控除マスターの年度別住民税Editorで管理 |
 | 雇用保険 | `employment_insurance_flag` | 利用中 | 雇用保険計算可否 |
 | 社保対象 | `social_insurance_flag` | 利用中 | 社会保険全体の対象判定 |
 | 健康保険 | `health_insurance_flag` | 利用中 | 健康保険計算可否 |
@@ -104,8 +104,11 @@ allowance_master / deduction_master
 | 操作 | jobCode | 利用する値 |
 |---|---|---|
 | 個別日次給与明細 | `PRINT_DAILY_PAY_SLIP` | 支払日・従業員ID |
-| 従業員CSV出力 | `EXPORT_EMPLOYEE_CSV` | 従業員基本・給与・契約情報 |
-| 従業員データ取込 | `IMPORT_EMPLOYEE` | 外部データ取込定義 |
+| 従業員CSV出力 | `EXPORT_EMPLOYEE_CSV` | 従業員基本・給与税金・契約・従業員別手当控除設定 |
+
+従業員CSVでは旧互換の`dormitory_flag`、`dormitory_type`を出力しない。寮費を含む従業員別設定は`employee_payroll_item_enrollment`と給与項目Policyを正本とし、「従業員別手当・控除設定」列へJSON形式で出力する。
+
+従業員データ取込はV1対象外とし、従業員管理画面には実行導線を表示しない。
 
 ## 7. 値の所有関係
 

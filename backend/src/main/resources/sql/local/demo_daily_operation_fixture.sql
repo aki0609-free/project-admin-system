@@ -2,11 +2,11 @@
 -- ローカルDocker専用：日報・日次管理・日次給与明細の総合確認fixture
 --
 -- 本番環境では適用しない。
--- E2E-DAILY-* / E2E-MONTHLY-* の従業員を正本として再作成するため、
+-- E2E-DAILY-* / E2E-WEEKLY-* / E2E-MONTHLY-* の従業員を正本として再作成するため、
 -- Docker再起動時にも同じ件数・金額で検証できる。
 
 SET @fixture_tenant_id = 'default';
-SET @fixture_payment_date = '2026-09-06';
+SET @fixture_payment_date = '2026-09-05';
 
 DROP TEMPORARY TABLE IF EXISTS tmp_daily_customers;
 CREATE TEMPORARY TABLE tmp_daily_customers (
@@ -227,8 +227,11 @@ INSERT INTO tmp_daily_employees VALUES
     ('E2E-DAILY-006', NULL, '日次検証 加藤 六郎', 'ニチジケンショウ カトウ ロクロウ', 'DAILY', 'DAILY', 14500, 0, 'EQUIP_B', 6),
     ('E2E-DAILY-007', NULL, '日次検証 木村 七郎', 'ニチジケンショウ キムラ シチロウ', 'DAILY', 'DAILY', 15000, 0, 'BUILD_A', 7),
     ('E2E-DAILY-008', NULL, '日次検証 佐藤 八郎', 'ニチジケンショウ サトウ ハチロウ', 'DAILY', 'DAILY', 15500, 0, 'CIVIL_A', 8),
+    ('E2E-WEEKLY-051', NULL, '週次検証 山本 一郎', 'シュウジケンショウ ヤマモト イチロウ', 'WEEKLY', 'DAILY', 13000, 0, 'BUILD_A', 51),
+    ('E2E-WEEKLY-052', NULL, '週次検証 吉田 二郎', 'シュウジケンショウ ヨシダ ジロウ', 'WEEKLY', 'DAILY', 13500, 0, 'CIVIL_B', 52),
     ('E2E-MONTHLY-101', NULL, '月次検証 高橋 一郎', 'ゲツジケンショウ タカハシ イチロウ', 'MONTHLY', 'MONTHLY', 0, 300000, 'EQUIP_A', 101),
-    ('E2E-MONTHLY-102', NULL, '月次検証 中村 二郎', 'ゲツジケンショウ ナカムラ ジロウ', 'MONTHLY', 'MONTHLY', 0, 320000, 'BUILD_B', 102);
+    ('E2E-MONTHLY-102', NULL, '月次検証 中村 二郎', 'ゲツジケンショウ ナカムラ ジロウ', 'MONTHLY', 'MONTHLY', 0, 320000, 'BUILD_B', 102),
+    ('E2E-MONTHLY-DAILY-103', NULL, '月次支払日給検証 鈴木 三郎', 'ゲツジシハライニッキュウケンショウ スズキ サブロウ', 'MONTHLY', 'DAILY', 14500, 0, 'CIVIL_A', 103);
 
 INSERT INTO employee (
     tenant_id, created_at, updated_at, deleted_at,
@@ -327,6 +330,21 @@ INSERT INTO tmp_daily_dates VALUES
     ('2026-09-04', 4, '08:00:00', '22:00:00', 8, 5, 1),
     ('2026-09-05', 5, '08:00:00', '17:00:00', 8, 0, 0);
 
+-- 再適用時に前回fixtureの日報明細を先に削除する。
+DELETE deduction_item
+FROM daily_report_deductions deduction_item
+JOIN daily_report report
+  ON report.id = deduction_item.daily_report_id
+JOIN tmp_daily_employees fixture
+  ON fixture.employee_id = report.employee_id;
+
+DELETE allowance_item
+FROM daily_report_allowances allowance_item
+JOIN daily_report report
+  ON report.id = allowance_item.daily_report_id
+JOIN tmp_daily_employees fixture
+  ON fixture.employee_id = report.employee_id;
+
 DELETE report
 FROM daily_report report
 JOIN tmp_daily_employees fixture
@@ -355,7 +373,11 @@ INSERT INTO daily_report (
 SELECT
     @fixture_tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL,
     employee.employee_id, date_row.work_date,
-    IF(employee.payment_cycle = 'DAILY', @fixture_payment_date, NULL),
+    IF(
+        employee.payment_cycle = 'DAILY',
+        date_row.work_date,
+        @fixture_payment_date
+    ),
     customer.customer_id, site.site_id, customer.customer_name, site.site_name,
     rate.id, 'DAILY', site.job_code, site.job_name, 'GENERAL', '一般',
     site.base_unit_price,
@@ -404,6 +426,141 @@ JOIN customer_site_billing_rates rate
  AND rate.deleted_at IS NULL
 CROSS JOIN tmp_daily_dates date_row;
 
+-- E2E-DAILY-001を、日次給与明細の控除・残高確認用従業員とする。
+-- 携帯・Wi-Fiは請求明細で残高を発生させ、日報には実際に徴収した額を保存する。
+DELETE enrollment
+FROM employee_payroll_item_enrollment enrollment
+JOIN tmp_daily_employees employee
+  ON employee.employee_id = enrollment.employee_id
+JOIN payroll_item_balance_policy policy
+  ON policy.id = enrollment.balance_policy_id
+WHERE employee.employee_code = 'E2E-DAILY-001'
+  AND policy.target_type = 'DEDUCTION'
+  AND policy.target_code IN ('DORMITORY_FEE', 'MOBILE_RENTAL', 'WIFI_FEE');
+
+INSERT INTO employee_payroll_item_enrollment (
+    employee_id, balance_policy_id, effective_from, effective_to, settings_json,
+    tenant_id, created_at, updated_at, deleted_at
+)
+SELECT employee.employee_id, policy.id, '2026-09-01', NULL,
+       CASE policy.target_code
+           WHEN 'DORMITORY_FEE' THEN JSON_OBJECT(
+               'dormitoryType', 'SHARED_ROOM',
+               'dormitoryDailyAmount', '1500',
+               'inputSource', 'DAILY_REPORT'
+           )
+           ELSE JSON_OBJECT()
+       END,
+       @fixture_tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
+FROM tmp_daily_employees employee
+JOIN payroll_item_balance_policy policy
+  ON policy.tenant_id = @fixture_tenant_id
+ AND policy.target_type = 'DEDUCTION'
+ AND policy.target_code IN ('DORMITORY_FEE', 'MOBILE_RENTAL', 'WIFI_FEE')
+ AND policy.active_flag = TRUE
+ AND policy.deleted_at IS NULL
+WHERE employee.employee_code = 'E2E-DAILY-001';
+
+DELETE transaction_item
+FROM employee_payroll_item_transaction transaction_item
+JOIN tmp_daily_employees employee
+  ON employee.employee_id = transaction_item.employee_id
+WHERE employee.employee_code = 'E2E-DAILY-001'
+  AND transaction_item.source_reference IN (
+      'E2E-MOBILE-202609-BILL',
+      'E2E-WIFI-202609-BILL'
+  );
+
+INSERT INTO employee_payroll_item_transaction (
+    employee_id, target_type, target_master_id,
+    target_code, target_name, target_month,
+    transaction_date, amount, quantity,
+    transaction_purpose, balance_effect,
+    source_type, source_reference, status, note,
+    lock_version, tenant_id, created_at, updated_at, deleted_at
+)
+SELECT employee.employee_id, 'DEDUCTION', deduction.id,
+       deduction.deduction_code, deduction.deduction_name, '2026-09-01',
+       '2026-09-01',
+       CASE deduction.deduction_code
+           WHEN 'MOBILE_RENTAL' THEN 5000
+           ELSE 2500
+       END,
+       CASE deduction.deduction_code
+           WHEN 'MOBILE_RENTAL' THEN 5000
+           ELSE 2500
+       END,
+       'BALANCE_ACCRUAL', 'CREDIT', 'MANUAL',
+       CASE deduction.deduction_code
+           WHEN 'MOBILE_RENTAL' THEN 'E2E-MOBILE-202609-BILL'
+           ELSE 'E2E-WIFI-202609-BILL'
+       END,
+       'CONFIRMED', 'ローカル日次給与明細確認用の確定請求明細',
+       0, @fixture_tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
+FROM tmp_daily_employees employee
+JOIN deduction_masters deduction
+  ON deduction.tenant_id = @fixture_tenant_id
+ AND deduction.deduction_code IN ('MOBILE_RENTAL', 'WIFI_FEE')
+ AND deduction.deleted_at IS NULL
+WHERE employee.employee_code = 'E2E-DAILY-001';
+
+INSERT INTO daily_report_deductions (
+    daily_report_id, deduction_master_id, deduction_code, deduction_name,
+    amount, calculated_amount, manual_override_flag, override_reason,
+    quantity, balance_unit,
+    tenant_id, created_at, updated_at, deleted_at
+)
+SELECT report.id, deduction.id, deduction.deduction_code, deduction.deduction_name,
+       CASE deduction.deduction_code
+           WHEN 'DORMITORY_FEE' THEN 1500
+           WHEN 'MOBILE_RENTAL' THEN 1000
+           WHEN 'WIFI_FEE' THEN 500
+           WHEN 'LEGAL_DEPOSIT' THEN 700
+       END,
+       CASE deduction.deduction_code
+           WHEN 'DORMITORY_FEE' THEN 1500
+           WHEN 'MOBILE_RENTAL' THEN 1000
+           WHEN 'WIFI_FEE' THEN 500
+           WHEN 'LEGAL_DEPOSIT' THEN 700
+       END,
+       FALSE, NULL,
+       CASE deduction.deduction_code
+           WHEN 'DORMITORY_FEE' THEN 1500
+           WHEN 'MOBILE_RENTAL' THEN 1000
+           WHEN 'WIFI_FEE' THEN 500
+           WHEN 'LEGAL_DEPOSIT' THEN 700
+       END,
+       'AMOUNT',
+       @fixture_tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
+FROM daily_report report
+JOIN tmp_daily_employees employee
+  ON employee.employee_id = report.employee_id
+JOIN deduction_masters deduction
+  ON deduction.tenant_id = @fixture_tenant_id
+ AND deduction.deduction_code IN (
+     'DORMITORY_FEE', 'MOBILE_RENTAL', 'WIFI_FEE', 'LEGAL_DEPOSIT'
+ )
+ AND deduction.deleted_at IS NULL
+WHERE employee.employee_code = 'E2E-DAILY-001'
+  AND report.work_date = '2026-09-05'
+  AND report.deleted_at IS NULL;
+
+-- 貯蓄も当日の支払額から控除される。日報合計と明細実績を同じ金額へ揃える。
+UPDATE daily_report report
+JOIN tmp_daily_employees employee
+  ON employee.employee_id = report.employee_id
+SET report.deduction_amount = 3700,
+    report.saving_amount = 800,
+    report.estimated_net_pay_amount =
+        report.estimated_gross_pay_amount
+        - 3700
+        - COALESCE(report.loan_repayment_amount, 0)
+        - 800,
+    report.updated_at = CURRENT_TIMESTAMP(6)
+WHERE employee.employee_code = 'E2E-DAILY-001'
+  AND report.work_date = '2026-09-05'
+  AND report.deleted_at IS NULL;
+
 DELETE payment
 FROM daily_payments payment
 JOIN tmp_daily_employees fixture
@@ -419,7 +576,7 @@ SELECT
     @fixture_payment_date, employee.employee_id,
     employee.employee_code, employee.employee_name,
     SUM(report.estimated_net_pay_amount),
-    SUM(report.estimated_net_pay_amount) - MOD(employee.sort_order, 3) * 500,
+    SUM(report.estimated_net_pay_amount),
     'PAID', CURRENT_TIMESTAMP(6),
     'ローカル日次給与明細確認用の確定支払'
 FROM tmp_daily_employees employee

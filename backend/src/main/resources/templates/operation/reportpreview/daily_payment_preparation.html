@@ -125,7 +125,7 @@
 
       .cash-grid {
         display: grid;
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(9, 1fr);
       }
 
       .cash-item {
@@ -154,7 +154,7 @@
       @media print {
         @page {
           size: A4 landscape;
-          margin: 10mm;
+          margin: 0;
         }
 
         body {
@@ -168,7 +168,9 @@
           max-width: none;
           border: none;
           border-radius: 0;
-          padding: 0;
+          box-sizing: border-box;
+          min-height: 100vh;
+          padding: 10mm;
         }
       }
     </style>
@@ -259,6 +261,30 @@
             <div
               class="cash-count"
               th:text="${summary == null ? 0 : summary['coin_50']} + ' 枚'"
+            ></div>
+          </div>
+
+          <div class="cash-item">
+            <div class="cash-name">10円玉</div>
+            <div
+              class="cash-count"
+              th:text="${summary == null ? 0 : summary['coin_10']} + ' 枚'"
+            ></div>
+          </div>
+
+          <div class="cash-item">
+            <div class="cash-name">5円玉</div>
+            <div
+              class="cash-count"
+              th:text="${summary == null ? 0 : summary['coin_5']} + ' 枚'"
+            ></div>
+          </div>
+
+          <div class="cash-item">
+            <div class="cash-name">1円玉</div>
+            <div
+              class="cash-count"
+              th:text="${summary == null ? 0 : summary['coin_1']} + ' 枚'"
             ></div>
           </div>
         </div>

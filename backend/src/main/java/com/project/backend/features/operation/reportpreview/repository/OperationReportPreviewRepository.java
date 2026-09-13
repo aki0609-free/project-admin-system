@@ -28,4 +28,18 @@ public interface OperationReportPreviewRepository
             findByOperationTypeAndReportCodeAndActiveFlagTrueAndDeletedAtIsNull(
                     OperationType operationType,
                     String reportCode);
+
+    List<OperationReportPreview>
+            findByTenantIdAndDeletedAtIsNullOrderByOperationTypeAscDisplayOrderAscIdAsc(
+                    String tenantId);
+
+    Optional<OperationReportPreview>
+            findByIdAndTenantIdAndDeletedAtIsNull(
+                    Long id,
+                    String tenantId);
+
+    boolean existsByTenantIdAndOperationTypeAndReportCodeAndDeletedAtIsNull(
+            String tenantId,
+            OperationType operationType,
+            String reportCode);
 }

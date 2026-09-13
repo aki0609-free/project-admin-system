@@ -743,3 +743,59 @@ ON DUPLICATE KEY UPDATE
     active_flag = VALUES(active_flag),
     output_type = VALUES(output_type),
     updated_at = VALUES(updated_at);
+
+SET @monthly_labor_preview_id = (
+    SELECT id
+    FROM operation_report_preview
+    WHERE tenant_id = @tenant_id
+      AND operation_type = 'MONTHLY'
+      AND report_code = 'MONTHLY_LABOR_COST_LIST'
+    LIMIT 1
+);
+
+DELETE FROM operation_report_preview_column
+WHERE operation_report_preview_id = @monthly_labor_preview_id;
+
+INSERT INTO operation_report_preview_column (
+    tenant_id, created_at, updated_at,
+    operation_report_preview_id,
+    preview_name, column_name, display_order, active_flag
+) VALUES
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '対象月', 'target_month', 1, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '社員コード', 'employee_code', 2, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '氏名', 'employee_name', 3, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '会社名', 'company_name', 4, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '対象期間開始日', 'period_from', 5, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '対象期間終了日', 'period_to', 6, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '支払日', 'payment_date', 7, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '出勤日数', 'work_day_count', 8, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '有休日数', 'paid_leave_days', 9, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '残業時間', 'overtime_hours', 10, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '深夜時間', 'night_work_hours', 11, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '基本給', 'basic_salary', 12, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '残業手当', 'overtime_pay_amount', 13, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '深夜手当', 'night_pay_amount', 14, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '運転手当', 'driver_allowance_amount', 15, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, 'その他手当', 'other_allowance_amount', 16, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '出張手当', 'business_trip_allowance_amount', 17, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '総支給額', 'gross_amount', 18, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '健康保険料', 'health_insurance', 19, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '子ども・子育て拠出金', 'child_care_contribution', 20, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '厚生年金保険料', 'pension_insurance', 21, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '雇用保険料', 'employment_insurance', 22, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '社会保険料合計', 'social_insurance_total', 23, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '課税対象額', 'taxable_amount', 24, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '所得税', 'income_tax', 25, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '年末調整額', 'year_end_adjustment_amount', 26, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '住民税', 'resident_tax', 27, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '寮費', 'dormitory_fee_amount', 28, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '携帯電話貸出料', 'mobile_rental_amount', 29, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, 'Wi-Fi使用料', 'wifi_fee_amount', 30, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, 'その他控除', 'other_deduction_amount', 31, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '控除合計', 'deduction_total', 32, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '前払い控除前支給額', 'net_before_advance_amount', 33, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '前払い額', 'advance_payment_amount', 34, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '貯蓄額', 'saving_amount', 35, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '差引支給額', 'net_payment_amount', 36, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '計算可否', 'calculation_ready', 37, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '計算エラー', 'calculation_error_code', 38, TRUE);

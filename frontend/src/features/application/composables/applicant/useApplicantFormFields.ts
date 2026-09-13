@@ -227,7 +227,7 @@ export const useApplicantFormFields = () => {
       label: '前職寮費',
       type: 'number',
       tab: '属性情報',
-      formatter: (value, row) => {
+      formatter: (value) => {
         return formatCurrency(value)
       },
     },

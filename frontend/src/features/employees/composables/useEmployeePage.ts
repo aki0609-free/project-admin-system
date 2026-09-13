@@ -110,21 +110,6 @@ export const useEmployeePage = () => {
         }),
       ],
     }),
-
-    createBatchItem({
-      label: '従業員データ取込',
-      jobCode: 'IMPORT_EMPLOYEE',
-      disabled: busy.value,
-      confirmMessage: '従業員データを取り込みますか？',
-      parameterDefinitions: [
-        batchParams.text({
-          key: 'targetCode',
-          label: '取込定義コード',
-          required: true,
-          defaultValue: 'IMPORT_EMPLOYEE',
-        }),
-      ],
-    }),
   ])
 
   return {

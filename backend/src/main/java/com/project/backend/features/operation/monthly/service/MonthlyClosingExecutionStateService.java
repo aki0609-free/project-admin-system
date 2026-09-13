@@ -50,16 +50,20 @@ public class MonthlyClosingExecutionStateService {
                     "締め処理の実行者は必須です。"
             );
         }
-        executionRepository
-                .findByMonthlyClosingIdAndClosingVersionAndDeletedAtIsNull(
+        boolean versionInUse = executionRepository
+                .existsByMonthlyClosingIdAndClosingVersionAndStatusInAndDeletedAtIsNull(
                         monthlyClosingId,
-                        closingVersion
-                )
-                .ifPresent(existing -> {
-                    throw new IllegalStateException(
-                            "指定Versionの締め処理は既に存在します。"
-                    );
-                });
+                        closingVersion,
+                        List.of(
+                                MonthlyClosingExecutionStatus.PROCESSING,
+                                MonthlyClosingExecutionStatus.COMPLETED
+                        )
+                );
+        if (versionInUse) {
+            throw new IllegalStateException(
+                    "指定Versionの締め処理は実行中または完了済みです。"
+            );
+        }
 
         Instant now = Instant.now(clock);
         MonthlyClosing closing = findClosing(monthlyClosingId);
@@ -171,20 +175,10 @@ public class MonthlyClosingExecutionStateService {
 
     @Transactional(readOnly = true)
     public int nextVersion(Long monthlyClosingId, Integer completedVersion) {
-        int latestExecutionVersion = executionRepository
-                .findByMonthlyClosingIdAndDeletedAtIsNullOrderByClosingVersionDesc(
-                        monthlyClosingId
-                )
-                .stream()
-                .map(MonthlyClosingExecution::getClosingVersion)
-                .filter(java.util.Objects::nonNull)
-                .mapToInt(Integer::intValue)
-                .max()
-                .orElse(0);
         int latestCompletedVersion = completedVersion != null
                 ? completedVersion
                 : 0;
-        return Math.max(latestExecutionVersion, latestCompletedVersion) + 1;
+        return latestCompletedVersion + 1;
     }
 
     private void ensureNoRequiredFailure(Long executionId) {

@@ -3,6 +3,7 @@ package com.project.backend.common.handlers;
 import java.util.List;
 
 import org.slf4j.MDC;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.project.backend.common.error.dto.ErrorResponse;
 import com.project.backend.common.error.enums.ErrorCode;
 import com.project.backend.common.exception.base.BusinessException;
+import com.project.backend.features.customer.exception.CustomerTransactionAlreadySettledException;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +25,31 @@ import static net.logstash.logback.argument.StructuredArguments.*;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @SuppressWarnings("null")
+    @ExceptionHandler(CustomerTransactionAlreadySettledException.class)
+    public ResponseEntity<ErrorResponse> handleCustomerTransactionAlreadySettled(
+            CustomerTransactionAlreadySettledException ex,
+            HttpServletRequest request
+    ) {
+        String traceId = MDC.get("traceId");
+
+        log.warn(
+                "customer transaction already settled",
+                keyValue("errorCode", "CUSTOMER_TRANSACTION_ALREADY_SETTLED"),
+                keyValue("path", request.getRequestURI()),
+                keyValue("traceId", traceId),
+                keyValue("message", ex.getMessage())
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        "CUSTOMER_TRANSACTION_ALREADY_SETTLED",
+                        ex.getMessage(),
+                        traceId
+                ));
+    }
 
     @SuppressWarnings("null")
     @ExceptionHandler(AccessDeniedException.class)

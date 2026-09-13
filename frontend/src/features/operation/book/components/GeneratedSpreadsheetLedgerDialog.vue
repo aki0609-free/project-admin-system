@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, toRaw, watch } from 'vue'
 import {
   SpreadsheetComponent as EjsSpreadsheet,
   type SpreadsheetComponent,
@@ -9,6 +9,7 @@ import { useSaveGeneratedSpreadsheetLedgerMutation } from '../api/useSaveGenerat
 import type { SpreadsheetLedgerGenerateResponse } from '../types/operationBookTypes'
 import type { SpreadsheetJsonResult } from '@/features/system/excelbook/types/excelBookTypes'
 import { formatYearMonth } from '@/shared/utils/DateUtils'
+import { prepareSpreadsheetWorkbook } from '../utils/spreadsheetWorkbookPresentation'
 
 import '@syncfusion/ej2-base/styles/material3.css'
 import '@syncfusion/ej2-buttons/styles/material3.css'
@@ -44,6 +45,10 @@ const saveMessage = ref('')
 const saveError = ref(false)
 const saveMutation = useSaveGeneratedSpreadsheetLedgerMutation()
 const saving = computed(() => saveMutation.isPending.value)
+const scrollSettings = computed(() => ({
+  enableVirtualization: true,
+  isFinite: props.result?.bookCode === 'MONTHLY_SUMMARY',
+}))
 const sheetCount = computed(() => {
   const workbook = props.result?.workbook as {
     Workbook?: { sheets?: unknown[] }
@@ -69,7 +74,7 @@ async function openWorkbook() {
   applyingWorkbook.value = true
   workbookOpenStartedAt.value = performance.now()
   instance.openFromJson({
-    file: props.result.workbook,
+    file: prepareSpreadsheetWorkbook(toRaw(props.result.workbook)),
     triggerEvent: true,
   })
 }
@@ -246,6 +251,7 @@ watch(visible, value => {
           prepend-icon="mdi-printer"
           variant="elevated"
           color="white"
+          class="mr-2"
           :disabled="!result"
           @click="printWorkbook"
         >
@@ -302,6 +308,8 @@ watch(visible, value => {
           :allow-delete="false"
           :allow-open="true"
           :allow-save="false"
+          :scroll-settings="scrollSettings"
+          :show-aggregate="false"
           :created="handleCreated"
           :open-complete="handleOpenComplete"
           :cell-save="handleSpreadsheetChange"

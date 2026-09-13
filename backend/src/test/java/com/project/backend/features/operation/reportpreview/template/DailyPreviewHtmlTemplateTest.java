@@ -37,6 +37,7 @@ class DailyPreviewHtmlTemplateTest {
                 .contains("日別労務費一覧")
                 .contains("山田太郎")
                 .contains("12,000 円")
+                .contains("background: #f8fafc")
                 .doesNotContain("th:text");
     }
 
@@ -59,7 +60,10 @@ class DailyPreviewHtmlTemplateTest {
                         Map.entry("bill_1000", 0),
                         Map.entry("coin_500", 0),
                         Map.entry("coin_100", 0),
-                        Map.entry("coin_50", 0)
+                        Map.entry("coin_50", 0),
+                        Map.entry("coin_10", 0),
+                        Map.entry("coin_5", 0),
+                        Map.entry("coin_1", 0)
                 )
         );
 
@@ -67,6 +71,9 @@ class DailyPreviewHtmlTemplateTest {
                 .contains("給与支払表")
                 .contains("山田太郎")
                 .contains("10,000 円")
+                .contains("10円玉")
+                .contains("5円玉")
+                .contains("1円玉")
                 .doesNotContain("th:text");
     }
 
@@ -75,11 +82,11 @@ class DailyPreviewHtmlTemplateTest {
         String html = render(
                 "daily_pay_slip.html",
                 Map.ofEntries(
-                        Map.entry("payment_date", "2026-08-01"),
+                        Map.entry("payment_date_label", "2026年8月1日"),
                         Map.entry("employee_code", "E001"),
                         Map.entry("employee_name", "山田太郎"),
-                        Map.entry("labor_period_from", "2026-08-01"),
-                        Map.entry("labor_period_to", "2026-08-01"),
+                        Map.entry("labor_period_from_label", "2026年8月1日"),
+                        Map.entry("labor_period_to_label", "2026年8月1日"),
                         Map.entry("work_hours", amount("8")),
                         Map.entry("overtime_hours", amount("1")),
                         Map.entry("night_work_hours", amount("0")),
@@ -98,9 +105,12 @@ class DailyPreviewHtmlTemplateTest {
         assertThat(html)
                 .contains("日次給与明細")
                 .contains("山田太郎")
+                .contains("2026年8月1日")
+                .contains("8 時間")
                 .contains("運転手当")
                 .contains("前借り")
                 .contains("9,000 円")
+                .contains("white-space: nowrap")
                 .doesNotContain("th:text");
     }
 

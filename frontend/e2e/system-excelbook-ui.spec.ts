@@ -22,7 +22,7 @@ test('excel book master uses shared dialog without changing spreadsheet entry po
 
   let dialog = page.getByRole('dialog').filter({ hasText: '台帳マスタ 新規作成' })
   await expect(dialog).toBeVisible()
-  await expect(dialog.getByLabel('Book Code', { exact: true })).toBeVisible()
+  await expect(dialog.getByLabel('台帳コード', { exact: true })).toBeVisible()
   await expect(dialog.getByLabel('データソース', { exact: true })).toBeVisible()
   await expect(
     dialog.getByRole('button', { name: 'Spreadsheetテンプレート編集', exact: true }),
@@ -30,13 +30,17 @@ test('excel book master uses shared dialog without changing spreadsheet entry po
   await dialog.getByRole('button', { name: 'キャンセル', exact: true }).click()
   await expect(dialog).toBeHidden()
 
-  const existingRow = page.getByRole('row').filter({ hasText: 'MONTHLY_LABOR' })
+  const existingRow = page
+    .getByRole('row')
+    .filter({ hasText: 'RECEIPT_CONFIRMATION' })
   await expect(existingRow).toHaveCount(1)
   await existingRow.click()
 
   dialog = page.getByRole('dialog').filter({ hasText: '台帳マスタ：' })
   await expect(dialog).toBeVisible()
-  await expect(dialog.getByLabel('Book Code', { exact: true })).toHaveValue('MONTHLY_LABOR')
+  await expect(dialog.getByLabel('台帳コード', { exact: true })).toHaveValue(
+    'RECEIPT_CONFIRMATION',
+  )
   await expect(
     dialog.getByRole('button', { name: 'Spreadsheetテンプレート編集', exact: true }),
   ).toBeEnabled()
@@ -56,4 +60,37 @@ test('excel book master uses shared dialog without changing spreadsheet entry po
 
   await dialog.getByRole('button', { name: 'キャンセル', exact: true }).click()
   await expect(dialog).toBeHidden()
+})
+
+test('receipt confirmation opens its saved spreadsheet template', async ({ page }) => {
+  await page.goto('/system/excelbook')
+
+  const receiptRow = page
+    .getByRole('row')
+    .filter({ hasText: 'RECEIPT_CONFIRMATION' })
+  await expect(receiptRow).toHaveCount(1)
+  await receiptRow.click()
+
+  const masterDialog = page
+    .getByRole('dialog')
+    .filter({ hasText: '台帳マスタ：入金確認表' })
+  await masterDialog
+    .getByRole('button', {
+      name: 'Spreadsheetテンプレート編集',
+      exact: true,
+    })
+    .click()
+
+  const templateDialog = page
+    .getByRole('dialog')
+    .filter({ hasText: 'Spreadsheetテンプレート：入金確認表' })
+  await expect(templateDialog).toBeVisible()
+  await expect(templateDialog).toContainText(
+    'Book Code: RECEIPT_CONFIRMATION',
+  )
+  await expect(templateDialog.getByText('テンプレート変数例')).toHaveCount(0)
+  await expect(templateDialog.getByText('${name}')).toHaveCount(0)
+  await expect(templateDialog.getByText('${customerName}')).toBeVisible()
+  await expect(templateDialog.getByText('対象月 合計')).toBeVisible()
+  await expect(templateDialog.getByText('総合計')).toBeVisible()
 })

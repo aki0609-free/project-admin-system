@@ -18,6 +18,7 @@ import com.project.backend.features.customer.dto.CustomerTransactionRequest;
 import com.project.backend.features.customer.entity.Customer;
 import com.project.backend.features.customer.entity.CustomerTransaction;
 import com.project.backend.features.customer.enums.CustomerPaymentStatus;
+import com.project.backend.features.customer.exception.CustomerTransactionAlreadySettledException;
 import com.project.backend.features.customer.mapper.CustomerTransactionMapper;
 import com.project.backend.features.customer.repository.CustomerRepository;
 import com.project.backend.features.customer.repository.CustomerTransactionRepository;
@@ -194,7 +195,7 @@ class CustomerTransactionCommandServiceTest {
 
         assertThatThrownBy(() -> service.upsertFromMonthlyClosing(
                 closingRequest(110_000, 91L, 2)
-        )).isInstanceOf(IllegalStateException.class)
+        )).isInstanceOf(CustomerTransactionAlreadySettledException.class)
                 .hasMessageContaining("入金済み");
         verify(repository, never()).save(entity);
     }

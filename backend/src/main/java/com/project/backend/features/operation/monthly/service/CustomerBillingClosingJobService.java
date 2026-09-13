@@ -34,6 +34,15 @@ public class CustomerBillingClosingJobService {
             Integer closingVersion,
             Target target
     ) {
+        /*
+         * 入金済み取引との競合は、外部ストレージへ帳票を書き出す前に判定する。
+         * これにより失敗時の孤立帳票ファイルを防ぐ。
+         */
+        transactionService.validateSynchronizable(
+                targetMonth,
+                target.customer().getId()
+        );
+
         OperationReportPreview invoice = previewRepository
                 .findByOperationTypeAndReportCodeAndDeletedAtIsNull(
                         OperationType.MONTHLY,

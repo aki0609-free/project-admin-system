@@ -137,7 +137,6 @@ const employeeRequest = {
     paidLeaveRemainingDays: 10,
     incomeTaxCalcFlag: true,
     residentTaxCalcFlag: true,
-    residentTaxMonthly: 0,
     employmentInsuranceFlag: true,
     socialInsuranceFlag: true,
     healthInsuranceFlag: true,

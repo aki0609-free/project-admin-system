@@ -48,7 +48,7 @@ flowchart LR
 | 深夜時間 | `nightWorkHours` / `night_work_hours` | 利用中 | 深夜割増Rule、請求・給与明細・台帳。他時間と重複可能 |
 | 休日手当対象 | `holidayPremiumEligible` / `holiday_premium_eligible` | 利用中 | 通常・残業時間を休日時間へ振替え、休日給Ruleへ渡す保存時点の判断 |
 | 休日時間 | `holidayWorkHours` / `holiday_work_hours` | 利用中 | 休日給Rule、休日請求単価、月次帳票 |
-| 作業内容 | `workDescription` / `work_description` | 利用中 | 日報表示、日別労務・帳票・業務確認 |
+| 備考 | `workDescription` / `work_description` | 利用中 | 日報表示、日次給与明細・日別労務・帳票・業務確認 |
 | 車両使用 | `vehicleUsedFlag` / `vehicle_used_flag` | 利用中 | 手当控除Rule変数、日報確認 |
 | 走行距離 | `mileage` / `mileage` | 利用中 | 通勤請求単価×距離、Rule変数、請求・台帳 |
 | 有給取得日数 | `paidLeaveDays` / `paid_leave_days` | 利用中 | 月次勤怠、月次給与明細・労務帳票。作成・更新・削除の差分を給与プロフィールの有給残へ反映 |

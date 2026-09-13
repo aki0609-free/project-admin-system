@@ -16,14 +16,48 @@ CREATE TABLE IF NOT EXISTS monthly_closing_execution (
     updated_at TIMESTAMP(6) NOT NULL,
     deleted_at TIMESTAMP(6) NULL,
     PRIMARY KEY (id),
-    CONSTRAINT uk_monthly_closing_execution_version
-        UNIQUE (tenant_id, monthly_closing_id, closing_version),
+    INDEX idx_monthly_closing_execution_version
+        (tenant_id, monthly_closing_id, closing_version),
     INDEX idx_monthly_closing_execution_status
         (tenant_id, status, started_at),
     CONSTRAINT fk_monthly_closing_execution_closing
         FOREIGN KEY (monthly_closing_id)
         REFERENCES monthly_closings (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 失敗履歴を残したまま同じ締めVersionを再実行できるようにする。
+-- Versionは成功した締めだけが消費し、実行履歴は試行単位で保持する。
+SET @drop_execution_version_unique = (
+    SELECT IF(
+        COUNT(*) > 0,
+        'ALTER TABLE monthly_closing_execution DROP INDEX uk_monthly_closing_execution_version',
+        'SELECT 1'
+    )
+    FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_closing_execution'
+      AND index_name = 'uk_monthly_closing_execution_version'
+);
+PREPARE drop_execution_version_unique_statement
+    FROM @drop_execution_version_unique;
+EXECUTE drop_execution_version_unique_statement;
+DEALLOCATE PREPARE drop_execution_version_unique_statement;
+
+SET @add_execution_version_index = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_closing_execution ADD INDEX idx_monthly_closing_execution_version (tenant_id, monthly_closing_id, closing_version)',
+        'SELECT 1'
+    )
+    FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_closing_execution'
+      AND index_name = 'idx_monthly_closing_execution_version'
+);
+PREPARE add_execution_version_index_statement
+    FROM @add_execution_version_index;
+EXECUTE add_execution_version_index_statement;
+DEALLOCATE PREPARE add_execution_version_index_statement;
 
 CREATE TABLE IF NOT EXISTS monthly_closing_output_definition (
     id BIGINT NOT NULL AUTO_INCREMENT,

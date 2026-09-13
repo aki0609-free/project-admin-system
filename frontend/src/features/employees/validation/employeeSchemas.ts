@@ -33,7 +33,6 @@ export const employeePayrollSchema = z.object({
   paidLeaveRemainingDays: z.number().min(0, '有給残日数は0以上で指定してください。'),
   incomeTaxCalcFlag: z.boolean(),
   residentTaxCalcFlag: z.boolean(),
-  residentTaxMonthly: z.number().min(0, '住民税月額は0以上で指定してください。'),
   employmentInsuranceFlag: z.boolean(),
   socialInsuranceFlag: z.boolean(),
   healthInsuranceFlag: z.boolean(),

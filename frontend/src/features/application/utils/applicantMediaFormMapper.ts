@@ -7,6 +7,7 @@ export function toApplicantPersistedRow(row: ApplicantRow): ApplicantPersistedRo
   return {
     id: row.id,
     no: row.no,
+    applicationMediaId: row.applicationMediaId,
     name: row.name,
     furiganaName: row.furiganaName,
     contractType: row.contractType,

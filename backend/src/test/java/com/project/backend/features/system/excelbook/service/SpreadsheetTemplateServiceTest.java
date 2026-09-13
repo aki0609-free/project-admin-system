@@ -102,6 +102,36 @@ class SpreadsheetTemplateServiceTest {
     }
 
     @Test
+    void find_shouldAddEditableScaffoldToLegacyReceiptTemplate()
+            throws Exception {
+        master.setBookCode("RECEIPT_CONFIRMATION");
+        JsonNode workbook = objectMapper.readTree(
+                """
+                {"Workbook":{"sheets":[{"name":"TEMPLATE","rows":[]}]}}
+                """
+        );
+        when(storageService.exists(storageKey())).thenReturn(true);
+        when(storageService.load(storageKey())).thenReturn(
+                new ByteArrayInputStream(
+                        objectMapper.writeValueAsBytes(workbook)
+                )
+        );
+
+        var result = service.find(42L);
+        JsonNode rows = result.workbook()
+                .path("Workbook").path("sheets").get(0).path("rows");
+
+        assertThat(findCell(rows.get(0), 1).path("value").asText())
+                .isEqualTo("入金確認表");
+        assertThat(findCell(rows.get(2), 15).path("value").asText())
+                .isEqualTo("備考（調整理由等）");
+        assertThat(findCell(rows.get(3), 0).path("value").asText())
+                .isEqualTo("${customerName}");
+        assertThat(findCell(rows.get(9), 9).path("style")
+                .path("backgroundColor").asText()).isEqualTo("#D9E1F2");
+    }
+
+    @Test
     void save_shouldWriteWorkbookJsonToManagedTemplateArea()
             throws Exception {
         JsonNode workbook = objectMapper.readTree(
@@ -179,6 +209,22 @@ class SpreadsheetTemplateServiceTest {
     }
 
     private String storageKey() {
-        return "documents/templates/ledgers/tenant-a/MONTHLY_LEDGER/template.json";
+        return "documents/templates/ledgers/tenant-a/"
+                + master.getBookCode()
+                + "/template.json";
+    }
+
+    private JsonNode findCell(JsonNode row, int expectedIndex) {
+        int position = 0;
+        for (JsonNode cell : row.path("cells")) {
+            int actualIndex = cell.path("index").canConvertToInt()
+                    ? cell.path("index").asInt()
+                    : position;
+            if (actualIndex == expectedIndex) {
+                return cell;
+            }
+            position++;
+        }
+        return objectMapper.createObjectNode();
     }
 }

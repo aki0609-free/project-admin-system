@@ -97,7 +97,7 @@ SELECT
     COALESCE(epp.commute_allowance_monthly, 0) AS commute_allowance_monthly,
     CASE
         WHEN epp.resident_tax_calc_flag = TRUE
-            THEN COALESCE(rtm.tax_amount, epp.resident_tax_monthly, 0)
+            THEN COALESCE(rtm.tax_amount, 0)
         ELSE 0
     END AS resident_tax
 FROM monthly_closings mc

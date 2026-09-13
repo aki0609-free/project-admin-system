@@ -80,7 +80,7 @@ export const useApplicantBasicColumns = () => {
       computed: true,
       width: '180px',
       valueGetter: (row) => calculateAgeAtDate(row.birthDate, row.joinDateWithInsurance),
-      formatter: (value, row) => !!value ? `${value}歳` : '',
+      formatter: (value) => value ? `${value}歳` : '',
     },
     {
       title: '年齢（退社時）',
@@ -89,7 +89,7 @@ export const useApplicantBasicColumns = () => {
       computed: true,
       width: '180px',
       valueGetter: (row) => calculateAgeAtDate(row.birthDate, row.leaveDateWithInsurance),
-      formatter: (value, row) => !!value ? `${value}歳` : '',
+      formatter: (value) => value ? `${value}歳` : '',
     },
     {
       title: '性別',

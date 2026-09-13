@@ -147,13 +147,9 @@
       th:each="row : ${rows}"
       th:with="
         gross=${row['gross_amount'] ?: 0},
-        allowance=${row['allowance_total'] ?: 0},
-        taxDeduction=${row['tax_deduction_total'] ?: 0},
         deduction=${row['deduction_total'] ?: 0},
-        saving=${row['saving_amount'] ?: 0},
-        loan=${row['loan_repayment_amount'] ?: 0},
-        payTotal=${gross + allowance},
-        deductionTotal=${taxDeduction + deduction + saving + loan}
+        payTotal=${gross},
+        deductionTotal=${deduction}
      "
     >
       <div class="header">
@@ -261,10 +257,10 @@
 
         <tbody>
           <tr>
-            <td>基本支給</td>
+            <td>基本給</td>
             <td
               class="right"
-              th:text="${#numbers.formatDecimal(gross, 0, 'COMMA', 0, 'POINT')} + ' 円'"
+              th:text="${#numbers.formatDecimal(row['basic_salary'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
             ></td>
             <td th:text="${row['tax_deduction_item_name_1']}"></td>
             <td
@@ -299,25 +295,6 @@
             ></td>
           </tr>
 
-          <tr>
-            <td></td>
-            <td></td>
-            <td>積立</td>
-            <td
-              class="right"
-              th:text="${#numbers.formatDecimal(saving, 0, 'COMMA', 0, 'POINT')} + ' 円'"
-            ></td>
-          </tr>
-
-          <tr>
-            <td></td>
-            <td></td>
-            <td>貸付返済</td>
-            <td
-              class="right"
-              th:text="${#numbers.formatDecimal(loan, 0, 'COMMA', 0, 'POINT')} + ' 円'"
-            ></td>
-          </tr>
         </tbody>
       </table>
     </div>

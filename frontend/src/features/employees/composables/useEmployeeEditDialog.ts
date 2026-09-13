@@ -136,7 +136,6 @@ export const useEmployeeEditDialog = (
     },
     { key: 'taxDependentCount', label: '扶養人数', type: 'number' },
     { key: 'paidLeaveRemainingDays', label: '有給残日数', type: 'number' },
-    { key: 'residentTaxMonthly', label: '住民税月額', type: 'number' },
     { key: 'commuteAllowanceMonthly', label: '通勤手当月額', type: 'number' },
     { key: 'incomeTaxCalcFlag', label: '所得税計算', type: 'checkbox', width: 120 },
     { key: 'residentTaxCalcFlag', label: '住民税控除', type: 'checkbox', width: 120 },

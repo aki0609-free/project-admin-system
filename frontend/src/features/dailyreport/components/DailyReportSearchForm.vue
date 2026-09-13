@@ -98,7 +98,7 @@ const toNumberOrNull = (value: string): number | null =>
         <input
           type="text"
           :value="condition.keyword"
-          placeholder="氏名・顧客・現場・作業内容"
+          placeholder="氏名・顧客・現場・備考"
           @input="
             emit('update-condition', {
               keyword: ($event.target as HTMLInputElement).value,

@@ -27,26 +27,141 @@ ALTER TABLE operation_report_preview
 CREATE OR REPLACE VIEW vw_monthly_pay_slip_operation_preview AS
 SELECT
     source.tenant_id,
-    DATE_FORMAT(source.target_month, '%Y-%m') AS target_month,
+    source.target_month,
+    DATE_FORMAT(source.target_month, '%Y年%c月') AS target_month_label,
     source.period_from,
     source.period_to,
+    DATE_FORMAT(source.period_from, '%Y年%c月%e日') AS period_start_label,
+    DATE_FORMAT(source.period_to, '%Y年%c月%e日') AS period_end_label,
+    CASE payroll.payment_day_type
+        WHEN 'END_OF_MONTH' THEN DATE_FORMAT(
+            LAST_DAY(DATE_ADD(
+                source.target_month,
+                INTERVAL COALESCE(payroll.payment_month_offset, 0) MONTH
+            )),
+            '%Y年%c月%e日'
+        )
+        WHEN 'DAY_OF_MONTH' THEN DATE_FORMAT(
+            DATE_ADD(
+                DATE_FORMAT(
+                    DATE_ADD(
+                        source.target_month,
+                        INTERVAL COALESCE(payroll.payment_month_offset, 0) MONTH
+                    ),
+                    '%Y-%m-01'
+                ),
+                INTERVAL (
+                    LEAST(
+                        payroll.payment_day_value,
+                        DAY(LAST_DAY(DATE_ADD(
+                            source.target_month,
+                            INTERVAL COALESCE(payroll.payment_month_offset, 0) MONTH
+                        )))
+                    ) - 1
+                ) DAY
+            ),
+            '%Y年%c月%e日'
+        )
+        ELSE NULL
+    END AS payment_date_label,
     source.employee_id,
     source.employee_code,
     source.employee_name,
     source.company_name,
     source.work_day_count,
     source.work_hours,
+    source.work_hours AS total_work_hours,
     source.overtime_hours,
+    source.overtime_hours AS total_overtime_hours,
     source.night_work_hours,
+    source.night_work_hours AS total_night_work_hours,
     source.holiday_work_hours,
     source.paid_leave_days,
     source.basic_salary,
     source.allowance_total,
     source.gross_amount,
+    source.legal_deduction_total AS tax_deduction_total,
+    source.other_deduction_total AS other_deduction_total,
     source.deduction_total,
     source.advance_payment_amount,
-    source.net_payment_amount
-FROM vw_monthly_pay_slip_latest source;
+    source.net_payment_amount,
+    source.net_payment_amount AS net_amount,
+    source.allowance_item_name_01 AS allowance_item_name_1,
+    source.allowance_item_value_01 AS allowance_item_value_1,
+    source.allowance_item_name_02 AS allowance_item_name_2,
+    source.allowance_item_value_02 AS allowance_item_value_2,
+    source.allowance_item_name_03 AS allowance_item_name_3,
+    source.allowance_item_value_03 AS allowance_item_value_3,
+    source.allowance_item_name_04 AS allowance_item_name_4,
+    source.allowance_item_value_04 AS allowance_item_value_4,
+    source.allowance_item_name_05 AS allowance_item_name_5,
+    source.allowance_item_value_05 AS allowance_item_value_5,
+    source.allowance_item_name_06 AS allowance_item_name_6,
+    source.allowance_item_value_06 AS allowance_item_value_6,
+    source.allowance_item_name_07 AS allowance_item_name_7,
+    source.allowance_item_value_07 AS allowance_item_value_7,
+    source.allowance_item_name_08 AS allowance_item_name_8,
+    source.allowance_item_value_08 AS allowance_item_value_8,
+    source.allowance_item_name_09 AS allowance_item_name_9,
+    source.allowance_item_value_09 AS allowance_item_value_9,
+    source.allowance_item_name_10 AS allowance_item_name_10,
+    source.allowance_item_value_10 AS allowance_item_value_10,
+    source.legal_item_name_01 AS tax_deduction_item_name_1,
+    source.legal_item_value_01 AS tax_deduction_item_value_1,
+    source.legal_item_name_02 AS tax_deduction_item_name_2,
+    source.legal_item_value_02 AS tax_deduction_item_value_2,
+    source.legal_item_name_03 AS tax_deduction_item_name_3,
+    source.legal_item_value_03 AS tax_deduction_item_value_3,
+    source.legal_item_name_04 AS tax_deduction_item_name_4,
+    source.legal_item_value_04 AS tax_deduction_item_value_4,
+    source.legal_item_name_05 AS tax_deduction_item_name_5,
+    source.legal_item_value_05 AS tax_deduction_item_value_5,
+    source.legal_item_name_06 AS tax_deduction_item_name_6,
+    source.legal_item_value_06 AS tax_deduction_item_value_6,
+    source.legal_item_name_07 AS tax_deduction_item_name_7,
+    source.legal_item_value_07 AS tax_deduction_item_value_7,
+    source.legal_item_name_08 AS tax_deduction_item_name_8,
+    source.legal_item_value_08 AS tax_deduction_item_value_8,
+    source.legal_item_name_09 AS tax_deduction_item_name_9,
+    source.legal_item_value_09 AS tax_deduction_item_value_9,
+    source.legal_item_name_10 AS tax_deduction_item_name_10,
+    source.legal_item_value_10 AS tax_deduction_item_value_10,
+    source.other_item_name_01 AS deduction_item_name_1,
+    source.other_item_value_01 AS deduction_item_value_1,
+    source.other_item_name_02 AS deduction_item_name_2,
+    source.other_item_value_02 AS deduction_item_value_2,
+    source.other_item_name_03 AS deduction_item_name_3,
+    source.other_item_value_03 AS deduction_item_value_3,
+    source.other_item_name_04 AS deduction_item_name_4,
+    source.other_item_value_04 AS deduction_item_value_4,
+    source.other_item_name_05 AS deduction_item_name_5,
+    source.other_item_value_05 AS deduction_item_value_5,
+    source.other_item_name_06 AS deduction_item_name_6,
+    source.other_item_value_06 AS deduction_item_value_6,
+    source.other_item_name_07 AS deduction_item_name_7,
+    source.other_item_value_07 AS deduction_item_value_7,
+    source.other_item_name_08 AS deduction_item_name_8,
+    source.other_item_value_08 AS deduction_item_value_8,
+    source.other_item_name_09 AS deduction_item_name_9,
+    source.other_item_value_09 AS deduction_item_value_9,
+    source.other_item_name_10 AS deduction_item_name_10,
+    source.other_item_value_10 AS deduction_item_value_10
+FROM vw_monthly_pay_slip_latest source
+LEFT JOIN (
+    SELECT setting.*
+    FROM closing_setting setting
+    JOIN (
+        SELECT tenant_id, MAX(id) AS setting_id
+        FROM closing_setting
+        WHERE setting_code = 'PAYROLL'
+          AND active_flag = TRUE
+          AND deleted_at IS NULL
+        GROUP BY tenant_id
+    ) selected
+      ON selected.setting_id = setting.id
+     AND selected.tenant_id = setting.tenant_id
+) payroll
+  ON payroll.tenant_id = source.tenant_id;
 
 CREATE OR REPLACE VIEW vw_monthly_invoice_operation_preview AS
 SELECT
@@ -149,7 +264,7 @@ INSERT INTO operation_report_preview (
     'PRINT_MONTHLY_PAY_SLIP',
     'vw_monthly_pay_slip_operation_preview', 'target_month', 'targetMonth',
     'monthly_pay_slip.jrxml',
-    'documents/templates/reports/html/MONTHLY_PAY_SLIP/v1/template.html', 1,
+    'documents/templates/reports/html/MONTHLY_PAY_SLIP/v2/template.html', 2,
     'employee_code', 10, TRUE, 'PDF'
 ),
 (

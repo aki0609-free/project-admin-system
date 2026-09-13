@@ -120,6 +120,8 @@ public class MonthlySummarySpreadsheetRenderer
         }
         writeDayHeaders(rows, yearMonth);
         writeDailyPay(rows, sourceRows, yearMonth);
+        removeUnusedGroupFormulas(rows, groups.size());
+        removeOutOfMonthFormulas(rows, yearMonth);
         clearCachedFormulaValues(rows);
 
         ObjectNode metadata = result.withObject(
@@ -353,6 +355,67 @@ public class MonthlySummarySpreadsheetRenderer
                         && cell.path("formula").isTextual()) {
                     cell.remove("value");
                 }
+            }
+        }
+    }
+
+    /**
+     * テンプレートは最大40組分の数式を持つ。データがない組の数式は結果に
+     * 影響しないため除去し、ブラウザでの初期計算とスクロール再描画を軽くする。
+     */
+    private void removeUnusedGroupFormulas(
+            ArrayNode rows,
+            int usedGroupCount
+    ) {
+        for (int group = usedGroupCount; group < MAX_GROUPS; group++) {
+            int firstRow = FIRST_INPUT_ROW + group * ROWS_PER_GROUP;
+            removeRowFormulas(rows, firstRow);
+            removeRowFormulas(rows, firstRow + 1);
+        }
+    }
+
+    /**
+     * 2月、4月などに存在しない日の列は計算対象から外す。
+     */
+    private void removeOutOfMonthFormulas(
+            ArrayNode rows,
+            YearMonth targetMonth
+    ) {
+        for (int day = targetMonth.lengthOfMonth() + 1;
+                day <= 31;
+                day++) {
+            int firstColumn = FIRST_DAY_COLUMN
+                    + (day - 1) * COLUMNS_PER_DAY;
+            for (JsonNode rowNode : rows) {
+                if (!(rowNode instanceof ObjectNode row)
+                        || !row.path("cells").isArray()) {
+                    continue;
+                }
+                ArrayNode cells = (ArrayNode) row.path("cells");
+                for (int offset = 0; offset < COLUMNS_PER_DAY; offset++) {
+                    ObjectNode cell = findIndexedObject(
+                            cells,
+                            firstColumn + offset
+                    );
+                    if (cell != null && cell.has("formula")) {
+                        cell.remove("formula");
+                        cell.remove("value");
+                    }
+                }
+            }
+        }
+    }
+
+    private void removeRowFormulas(ArrayNode rows, int rowIndex) {
+        ObjectNode row = findIndexedObject(rows, rowIndex);
+        if (row == null || !row.path("cells").isArray()) {
+            return;
+        }
+        for (JsonNode cellNode : row.path("cells")) {
+            if (cellNode instanceof ObjectNode cell
+                    && cell.has("formula")) {
+                cell.remove("formula");
+                cell.remove("value");
             }
         }
     }

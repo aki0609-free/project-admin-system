@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport
+    xmlns="http://jasperreports.sourceforge.net/jasperreports"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+    name="envelope_naga3"
+    pageWidth="666"
+    pageHeight="340"
+    columnWidth="626"
+    leftMargin="20"
+    rightMargin="20"
+    topMargin="20"
+    bottomMargin="20"
+    uuid="11111111-1111-1111-1111-111111111111">
+
+    <field name="customerName" class="java.lang.String"/>
+    <field name="postalCode" class="java.lang.String"/>
+    <field name="address" class="java.lang.String"/>
+    <field name="stamp" class="java.lang.String"/>
+    <field name="honorific" class="java.lang.String"/>
+
+    <detail>
+        <band height="300">
+            <textField isBlankWhenNull="true">
+                <reportElement x="110" y="55" width="470" height="28"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="IPAexGothic" size="14"/>
+                </textElement>
+                <textFieldExpression><![CDATA[
+                    ($F{postalCode} == null || $F{postalCode}.isBlank() ? "" : "〒" + $F{postalCode} + "　")
+                    + ($F{address} == null ? "" : $F{address})
+                ]]></textFieldExpression>
+            </textField>
+
+            <textField isBlankWhenNull="true">
+                <reportElement x="120" y="110" width="440" height="42"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="IPAexGothic" size="18"/>
+                </textElement>
+                <textFieldExpression><![CDATA[
+                    ($F{customerName} == null ? "" : $F{customerName})
+                    + ($F{honorific} == null || $F{honorific}.isBlank() ? "" : "　" + $F{honorific})
+                ]]></textFieldExpression>
+            </textField>
+
+            <line>
+                <reportElement x="110" y="153" width="470" height="1"/>
+            </line>
+            <line>
+                <reportElement x="110" y="158" width="470" height="1"/>
+            </line>
+
+            <textField isBlankWhenNull="true">
+                <reportElement x="70" y="205" width="125" height="38"/>
+                <box>
+                    <pen lineWidth="1.2"/>
+                </box>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font fontName="IPAexGothic" size="14" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{stamp}]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+</jasperReport>

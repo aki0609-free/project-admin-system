@@ -60,11 +60,10 @@ class MonthlyClosingExecutionStateServiceTest {
         when(closingRepository.findById(1L))
                 .thenReturn(Optional.of(closing));
         when(executionRepository
-                .findByMonthlyClosingIdAndClosingVersionAndDeletedAtIsNull(
-                        1L,
-                        2
+                .existsByMonthlyClosingIdAndClosingVersionAndStatusInAndDeletedAtIsNull(
+                        any(), any(), any()
                 ))
-                .thenReturn(Optional.empty());
+                .thenReturn(false);
         when(executionRepository.save(any()))
                 .thenAnswer(invocation -> {
                     MonthlyClosingExecution value =
@@ -179,15 +178,7 @@ class MonthlyClosingExecutionStateServiceTest {
     }
 
     @Test
-    void nextVersion_shouldSkipVersionUsedByFailedExecution() {
-        MonthlyClosingExecution failed = new MonthlyClosingExecution();
-        failed.setClosingVersion(3);
-        when(executionRepository
-                .findByMonthlyClosingIdAndDeletedAtIsNullOrderByClosingVersionDesc(
-                        1L
-                ))
-                .thenReturn(List.of(failed));
-
-        assertThat(service.nextVersion(1L, 2)).isEqualTo(4);
+    void nextVersion_shouldNotConsumeVersionUsedByFailedExecution() {
+        assertThat(service.nextVersion(1L, 2)).isEqualTo(3);
     }
 }

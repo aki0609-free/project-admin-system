@@ -23,7 +23,7 @@ export const useApplicantRecruitmentColumns = () => {
       key: 'contactDate',
       width: '180px',
       filter: { type: 'date' },
-      formatter: (value, row) => formatYearMonthDay(value as string)
+      formatter: (value) => formatYearMonthDay(value as string)
     },
     {
       title: '採用状況',

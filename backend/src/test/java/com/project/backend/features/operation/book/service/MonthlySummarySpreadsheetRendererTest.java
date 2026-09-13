@@ -82,11 +82,45 @@ class MonthlySummarySpreadsheetRendererTest {
         assertThat(cell(rows, 7, 4).path("formula").asText())
                 .isEqualTo("=DY7*E7");
         assertThat(cell(rows, 7, 4).has("value")).isFalse();
+        assertThat(cell(rows, 9, 4).has("formula")).isFalse();
+        assertThat(countFormulas(result))
+                .isLessThan(1000)
+                .isLessThan(countFormulas(template));
         assertThat(cell(rows, 90, 12).path("value").asInt())
                 .isEqualTo(30000);
         assertThat(result.path("projectAdminMetadata")
                 .path("layoutType").asText())
                 .isEqualTo("MONTHLY_SUMMARY");
+    }
+
+    @Test
+    void render_shouldRemoveFormulaForDaysOutsideTargetMonth()
+            throws Exception {
+        JsonNode result = renderer.render(
+                template,
+                master,
+                List.of(row(
+                        "DAILY",
+                        LocalDate.of(2026, 2, 3),
+                        1,
+                        0,
+                        0,
+                        0,
+                        12000,
+                        0,
+                        0,
+                        12000
+                )),
+                "2026-02",
+                Instant.parse("2026-02-28T00:00:00Z")
+        );
+
+        JsonNode rows = result.path("Workbook")
+                .path("sheets").get(0).path("rows");
+        int marchFirstUnusedColumn = 4 + 28 * 4;
+
+        assertThat(cell(rows, 7, marchFirstUnusedColumn)
+                .has("formula")).isFalse();
     }
 
     @Test
@@ -201,5 +235,15 @@ class MonthlySummarySpreadsheetRendererTest {
             }
         }
         return objectMapper.missingNode();
+    }
+
+    private int countFormulas(JsonNode node) {
+        int count = node.has("formula") ? 1 : 0;
+        if (node.isContainerNode()) {
+            for (JsonNode child : node) {
+                count += countFormulas(child);
+            }
+        }
+        return count;
     }
 }

@@ -1,7 +1,7 @@
 // src/features/application/api/useSaveApplicationMediaBulkMutation.ts
 import { useQueryClient } from '@tanstack/vue-query'
 import { useAppMutation } from '@/shared/api/useAppMutation'
-import { postApplicationMediaBulkSave } from '@/features/application/api/postApplicationMediaBulkSave' 
+import { postApplicationMediaBulkSave } from '@/features/application/api/postApplicationMediaBulkSave'
 import { queryKeys } from '@/features/application/api/queryKeys'
 import type { ApplicationMediaBulkSaveRequest } from '@/features/application/types/types'
 
@@ -13,9 +13,9 @@ export const useSaveApplicationMediaBulkMutation = () => {
       postApplicationMediaBulkSave(payload),
 
     onSuccess: async () => {
-      [await queryClient.invalidateQueries({
-          queryKey: queryKeys.applicationMedias.all,
-        })]
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.applicationMedias.all,
+      })
     },
   })
 }

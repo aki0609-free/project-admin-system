@@ -90,7 +90,7 @@ DEALLOCATE PREPARE stmt;
 
 -- -----------------------------------------------------
 -- 日別労務費一覧
--- work_date単位の最新承認済み日報を表示する。
+-- work_date単位の発生労務費と、payment_date単位の当日支払額を表示する。
 -- -----------------------------------------------------
 CREATE OR REPLACE VIEW vw_daily_labor_cost_preview AS
 WITH labor AS (
@@ -98,49 +98,115 @@ WITH labor AS (
         dr.tenant_id,
         dr.work_date AS target_date,
         dr.employee_id,
+        COALESCE(SUM(dr.estimated_gross_pay_amount), 0)
+            AS saved_gross_payment_amount
+    FROM daily_report dr
+    WHERE dr.deleted_at IS NULL
+      AND dr.approval_status = 'APPROVED'
+    GROUP BY dr.tenant_id, dr.work_date, dr.employee_id
+), payment AS (
+    SELECT
+        dr.tenant_id,
+        dr.payment_date AS target_date,
+        dr.employee_id,
+        COALESCE(SUM(dr.estimated_gross_pay_amount), 0)
+            AS scheduled_payment_amount
+    FROM daily_report dr
+    WHERE dr.deleted_at IS NULL
+      AND dr.approval_status = 'APPROVED'
+      AND dr.payment_date IS NOT NULL
+    GROUP BY dr.tenant_id, dr.payment_date, dr.employee_id
+), target_employee AS (
+    SELECT tenant_id, target_date, employee_id FROM labor
+    UNION
+    SELECT tenant_id, target_date, employee_id FROM payment
+), calculated AS (
+    SELECT
+        target.tenant_id,
+        target.target_date,
+        target.employee_id,
         employee.employee_code,
         employee.employee_name,
         COALESCE(contract.payment_cycle, 'MONTHLY') AS payment_cycle,
-        COALESCE(SUM(dr.estimated_gross_pay_amount), 0)
-            AS gross_payment_amount,
-        COALESCE(SUM(dr.estimated_net_pay_amount), 0)
-            AS payment_amount
-    FROM daily_report dr
+        COALESCE(contract.salary_type, 'DAILY') AS salary_type,
+        CASE
+            WHEN labor.employee_id IS NULL THEN 0
+            WHEN contract.salary_type = 'MONTHLY'
+                THEN ROUND(COALESCE(contract.monthly_salary, 0) / 20, 0)
+            WHEN contract.salary_type = 'WEEKLY'
+                THEN ROUND(COALESCE(contract.weekly_wage, 0) / 5, 0)
+            ELSE COALESCE(labor.saved_gross_payment_amount, 0)
+        END AS gross_payment_amount,
+        COALESCE(payment.scheduled_payment_amount, 0)
+            AS scheduled_payment_amount,
+        labor.employee_id IS NOT NULL AS has_labor
+    FROM target_employee target
     JOIN employee
-      ON employee.tenant_id = dr.tenant_id
-     AND employee.id = dr.employee_id
+      ON employee.tenant_id = target.tenant_id
+     AND employee.id = target.employee_id
      AND employee.deleted_at IS NULL
+    LEFT JOIN labor
+      ON labor.tenant_id = target.tenant_id
+     AND labor.target_date = target.target_date
+     AND labor.employee_id = target.employee_id
+    LEFT JOIN payment
+      ON payment.tenant_id = target.tenant_id
+     AND payment.target_date = target.target_date
+     AND payment.employee_id = target.employee_id
     LEFT JOIN employee_contract contract
-      ON contract.tenant_id = dr.tenant_id
-     AND contract.employee_id = dr.employee_id
-     AND contract.deleted_at IS NULL
-    WHERE dr.deleted_at IS NULL
-      AND dr.approval_status = 'APPROVED'
-    GROUP BY
-        dr.tenant_id,
-        dr.work_date,
-        dr.employee_id,
-        employee.employee_code,
-        employee.employee_name,
-        contract.payment_cycle
+      ON contract.id = (
+          SELECT candidate.id
+          FROM employee_contract candidate
+          WHERE candidate.tenant_id = target.tenant_id
+            AND candidate.employee_id = target.employee_id
+            AND candidate.deleted_at IS NULL
+            AND (
+                candidate.contract_start_date IS NULL
+                OR candidate.contract_start_date <= target.target_date
+            )
+            AND (
+                candidate.contract_end_date IS NULL
+                OR candidate.contract_end_date >= target.target_date
+            )
+          ORDER BY candidate.contract_start_date DESC, candidate.id DESC
+          LIMIT 1
+      )
+), detail AS (
+    SELECT
+        calculated.tenant_id,
+        calculated.target_date,
+        calculated.employee_id,
+        calculated.employee_code,
+        calculated.employee_name,
+        calculated.payment_cycle,
+        calculated.salary_type,
+        calculated.gross_payment_amount,
+        CASE calculated.payment_cycle
+            WHEN 'DAILY' THEN calculated.gross_payment_amount
+            ELSE calculated.scheduled_payment_amount
+        END AS payment_amount
+    FROM calculated
+    WHERE calculated.has_labor
+       OR calculated.payment_cycle <> 'DAILY'
 )
 SELECT
-    labor.tenant_id,
-    labor.target_date,
-    DATE_FORMAT(labor.target_date, '%Y年%m月%d日') AS work_date_label,
-    labor.employee_id,
-    labor.employee_code,
-    labor.employee_name,
-    labor.payment_cycle,
-    labor.gross_payment_amount,
-    labor.payment_amount,
-    SUM(labor.gross_payment_amount) OVER (
-        PARTITION BY labor.tenant_id, labor.target_date
+    detail.tenant_id,
+    detail.target_date,
+    DATE_FORMAT(detail.target_date, '%Y年%m月%d日') AS work_date_label,
+    detail.employee_id,
+    detail.employee_code,
+    detail.employee_name,
+    detail.payment_cycle,
+    detail.salary_type,
+    detail.gross_payment_amount,
+    detail.payment_amount,
+    SUM(detail.gross_payment_amount) OVER (
+        PARTITION BY detail.tenant_id, detail.target_date
     ) AS total_gross_payment_amount,
-    SUM(labor.payment_amount) OVER (
-        PARTITION BY labor.tenant_id, labor.target_date
+    SUM(detail.payment_amount) OVER (
+        PARTITION BY detail.tenant_id, detail.target_date
     ) AS total_payment_amount
-FROM labor;
+FROM detail;
 
 -- -----------------------------------------------------
 -- 給与支払表
@@ -156,9 +222,9 @@ WITH report_summary AS (
             AS gross_payment_amount,
         COALESCE(SUM(dr.allowance_amount), 0) AS allowance_amount,
         COALESCE(SUM(
-            dr.deduction_amount
-            + dr.saving_amount
-            + dr.loan_repayment_amount
+            COALESCE(dr.deduction_amount, 0)
+            + COALESCE(dr.saving_amount, 0)
+            + COALESCE(dr.loan_repayment_amount, 0)
         ), 0) AS deduction_amount,
         COALESCE(SUM(dr.estimated_net_pay_amount), 0)
             AS estimated_net_payment_amount
@@ -175,6 +241,12 @@ WITH report_summary AS (
         employee.employee_code,
         employee.employee_name,
         COALESCE(contract.payment_cycle, 'MONTHLY') AS payment_cycle,
+        CASE COALESCE(contract.payment_cycle, 'MONTHLY')
+            WHEN 'DAILY' THEN 1
+            WHEN 'WEEKLY' THEN 2
+            WHEN 'MONTHLY' THEN 3
+            ELSE 9
+        END AS payment_cycle_order,
         report.gross_payment_amount,
         report.allowance_amount,
         report.deduction_amount,
@@ -185,34 +257,53 @@ WITH report_summary AS (
      AND employee.id = report.employee_id
      AND employee.deleted_at IS NULL
     LEFT JOIN employee_contract contract
-      ON contract.tenant_id = report.tenant_id
+     ON contract.tenant_id = report.tenant_id
      AND contract.employee_id = report.employee_id
      AND contract.deleted_at IS NULL
-    WHERE contract.payment_cycle = 'DAILY'
-), totals AS (
+), denomination AS (
     SELECT
         detail.*,
+        GREATEST(FLOOR(detail.net_payment_amount), 0) AS cash_payment_amount,
         SUM(detail.net_payment_amount) OVER (
             PARTITION BY detail.tenant_id, detail.target_date
         ) AS total_net_payment_amount
     FROM detail
+), totals AS (
+    SELECT
+        denomination.*,
+        SUM(FLOOR(denomination.cash_payment_amount / 10000)) OVER (
+            PARTITION BY denomination.tenant_id, denomination.target_date
+        ) AS bill_10000,
+        SUM(FLOOR(MOD(denomination.cash_payment_amount, 10000) / 5000)) OVER (
+            PARTITION BY denomination.tenant_id, denomination.target_date
+        ) AS bill_5000,
+        SUM(FLOOR(MOD(denomination.cash_payment_amount, 5000) / 1000)) OVER (
+            PARTITION BY denomination.tenant_id, denomination.target_date
+        ) AS bill_1000,
+        SUM(FLOOR(MOD(denomination.cash_payment_amount, 1000) / 500)) OVER (
+            PARTITION BY denomination.tenant_id, denomination.target_date
+        ) AS coin_500,
+        SUM(FLOOR(MOD(denomination.cash_payment_amount, 500) / 100)) OVER (
+            PARTITION BY denomination.tenant_id, denomination.target_date
+        ) AS coin_100,
+        SUM(FLOOR(MOD(denomination.cash_payment_amount, 100) / 50)) OVER (
+            PARTITION BY denomination.tenant_id, denomination.target_date
+        ) AS coin_50,
+        SUM(FLOOR(MOD(denomination.cash_payment_amount, 50) / 10)) OVER (
+            PARTITION BY denomination.tenant_id, denomination.target_date
+        ) AS coin_10,
+        SUM(FLOOR(MOD(denomination.cash_payment_amount, 10) / 5)) OVER (
+            PARTITION BY denomination.tenant_id, denomination.target_date
+        ) AS coin_5,
+        SUM(MOD(denomination.cash_payment_amount, 5)) OVER (
+            PARTITION BY denomination.tenant_id, denomination.target_date
+        ) AS coin_1
+    FROM denomination
 )
 SELECT
     totals.*,
     DATE_FORMAT(totals.target_date, '%Y年%m月%d日')
-        AS payment_date_label,
-    FLOOR(GREATEST(totals.total_net_payment_amount, 0) / 10000)
-        AS bill_10000,
-    FLOOR(MOD(GREATEST(totals.total_net_payment_amount, 0), 10000) / 5000)
-        AS bill_5000,
-    FLOOR(MOD(GREATEST(totals.total_net_payment_amount, 0), 5000) / 1000)
-        AS bill_1000,
-    FLOOR(MOD(GREATEST(totals.total_net_payment_amount, 0), 1000) / 500)
-        AS coin_500,
-    FLOOR(MOD(GREATEST(totals.total_net_payment_amount, 0), 500) / 100)
-        AS coin_100,
-    FLOOR(MOD(GREATEST(totals.total_net_payment_amount, 0), 100) / 50)
-        AS coin_50
+        AS payment_date_label
 FROM totals;
 
 -- -----------------------------------------------------
@@ -275,7 +366,7 @@ INSERT INTO operation_report_preview (
     'documents/templates/reports/html/DAILY_PAYMENT_PREPARATION/v1/template.html',
     1,
     NULL,
-    'payment_cycle, employee_code',
+    'payment_cycle_order, employee_code',
     20,
     TRUE,
     'HTML_PRINT'

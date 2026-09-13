@@ -67,7 +67,7 @@ describe('validateEmployeeForm', () => {
 
   it('rejects a negative payroll value on the payroll tab', () => {
     const form = validForm()
-    form.payrollProfile.residentTaxMonthly = -1
+    form.payrollProfile.commuteAllowanceMonthly = -1
 
     expect(validateEmployeeForm(form)?.tab).toBe('payroll')
   })

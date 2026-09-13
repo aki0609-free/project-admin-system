@@ -94,3 +94,36 @@ export type PayrollPolicySetting = {
   amountRoundingMode: 'HALF_UP' | 'UP' | 'DOWN'
   activeFlag: boolean
 }
+
+export type PreviewReportSetting = {
+  id: number | null
+  operationType: 'PREPARATION' | 'DAILY' | 'MONTHLY' | 'BOOK'
+  reportCode: string
+  reportName: string
+  tableName: string
+  filterColumnName: string | null
+  targetParamName: string | null
+  orderBy: string | null
+  displayOrder: number
+  outputType: 'HTML_PREVIEW' | 'HTML_PRINT'
+  activeFlag: boolean
+  htmlTemplateKey: string | null
+  htmlTemplateVersion: number
+  htmlTemplateHash: string | null
+  templateExists: boolean
+}
+
+export type PreviewReportSettingSaveRequest = Pick<
+  PreviewReportSetting,
+  | 'id'
+  | 'operationType'
+  | 'reportCode'
+  | 'reportName'
+  | 'tableName'
+  | 'filterColumnName'
+  | 'targetParamName'
+  | 'orderBy'
+  | 'displayOrder'
+  | 'outputType'
+  | 'activeFlag'
+>

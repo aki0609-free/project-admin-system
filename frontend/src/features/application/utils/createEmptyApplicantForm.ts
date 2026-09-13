@@ -6,6 +6,7 @@ export function createEmptyApplicant(
   return {
     id: 0,
     no: applicationNumber,
+    applicationMediaId: null,
 
     name: '',
     furiganaName: '',

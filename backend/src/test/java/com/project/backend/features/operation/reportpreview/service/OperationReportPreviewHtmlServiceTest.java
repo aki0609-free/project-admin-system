@@ -10,14 +10,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import com.project.backend.app.tenant.context.TenantContext;
 import com.project.backend.features.operation.reportpreview.dto.OperationReportPreviewHtmlRequest;
 import com.project.backend.features.operation.reportpreview.entity.OperationReportPreview;
+import com.project.backend.features.operation.reportpreview.entity.OperationReportPreviewColumn;
 import com.project.backend.features.operation.reportpreview.enums.OperationReportOutputType;
 import com.project.backend.features.operation.reportpreview.enums.OperationType;
 import com.project.backend.features.operation.reportpreview.repository.OperationReportPreviewColumnRepository;
@@ -95,6 +99,60 @@ class OperationReportPreviewHtmlServiceTest {
         assertThatThrownBy(() -> service.renderHtml(request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("tenantIdを取得できません");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void translatesInferredMonthlyOrderFormHeadersToJapanese() {
+        OperationReportPreview definition = definition();
+        definition.setOperationType(OperationType.MONTHLY);
+        definition.setReportCode("MONTHLY_ORDER_FORM");
+        OperationReportPreviewHtmlRequest request =
+                new OperationReportPreviewHtmlRequest(
+                        OperationType.MONTHLY,
+                        "MONTHLY_ORDER_FORM",
+                        null,
+                        "2026-08",
+                        24L,
+                        "2026-08-01",
+                        "2026-08-31"
+                );
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("order_number", "ORD-1");
+        row.put("order_date", "2026-08-31");
+        row.put("contract_amount", 110_000);
+
+        when(previewService.findDefinition(
+                OperationType.MONTHLY,
+                "MONTHLY_ORDER_FORM"
+        )).thenReturn(definition);
+        when(columnRepository
+                .findByPreviewIdAndActiveFlagTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
+                        1L
+                )).thenReturn(List.of());
+        when(rowReaderService.readRows(
+                definition,
+                request,
+                "default"
+        )).thenReturn(List.of(row));
+        when(templateLoader.loadOrDefault(definition))
+                .thenReturn("<html></html>");
+        when(templateRenderer.render(anyString(), anyMap()))
+                .thenReturn("rendered");
+        TenantContext.setTenantId("default");
+
+        assertThat(service.renderHtml(request)).isEqualTo("rendered");
+
+        ArgumentCaptor<Map<String, Object>> modelCaptor =
+                ArgumentCaptor.forClass(Map.class);
+        verify(templateRenderer).render(anyString(), modelCaptor.capture());
+        List<OperationReportPreviewColumn> columns =
+                (List<OperationReportPreviewColumn>) modelCaptor
+                        .getValue()
+                        .get("columns");
+        assertThat(columns)
+                .extracting(OperationReportPreviewColumn::getPreviewName)
+                .containsExactly("注文番号", "注文日", "請負代金額");
     }
 
     private OperationReportPreview definition() {

@@ -229,7 +229,7 @@ export const useDailyReportFormFields = ({
         },
         {
           key: 'workDescription',
-          label: '作業内容',
+          label: '備考',
           type: 'textarea',
           rows: 4,
           autoGrow: true,

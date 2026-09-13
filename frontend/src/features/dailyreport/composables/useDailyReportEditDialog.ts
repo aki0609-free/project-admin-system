@@ -615,7 +615,7 @@ export const useDailyReportEditDialog = (
         workDescription: defaults.workDescription ?? '',
       }
       preparationDefaultsMessage.value =
-        '翌日準備の顧客・現場・作業内容を初期値へ反映しました。実績に合わせて変更できます。'
+        '翌日準備の顧客・現場・備考を初期値へ反映しました。実績に合わせて変更できます。'
       await nextTick()
     } finally {
       applyingDetail.value = false

@@ -15,6 +15,7 @@ export function toApplicantRow(
   return {
     id: item.id,
     no: Number(item.applicationNo) || 0,
+    applicationMediaId: item.applicationMedia?.id ?? null,
 
     name: item.name ?? '',
     furiganaName: item.furiganaName ?? '',

@@ -14,7 +14,6 @@ public record EmployeePayrollProfileSaveRequest(
         @DecimalMin("0.0") BigDecimal paidLeaveRemainingDays,
         Boolean incomeTaxCalcFlag,
         Boolean residentTaxCalcFlag,
-        @DecimalMin("0.0") BigDecimal residentTaxMonthly,
         Boolean employmentInsuranceFlag,
         Boolean socialInsuranceFlag,
         Boolean healthInsuranceFlag,

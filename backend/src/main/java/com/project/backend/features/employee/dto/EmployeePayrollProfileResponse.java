@@ -14,7 +14,6 @@ public record EmployeePayrollProfileResponse(
         BigDecimal paidLeaveRemainingDays,
         boolean incomeTaxCalcFlag,
         boolean residentTaxCalcFlag,
-        BigDecimal residentTaxMonthly,
         boolean employmentInsuranceFlag,
         boolean socialInsuranceFlag,
         boolean healthInsuranceFlag,

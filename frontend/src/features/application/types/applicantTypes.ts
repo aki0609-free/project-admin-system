@@ -30,6 +30,8 @@ export type ApplicantRetirementStatus =
 export type ApplicantPersistedRow = {
   id: number
   no: number
+  /** Existing application-media relation. Kept out of the form but sent back on update. */
+  applicationMediaId: number | null
 
   name: string
   furiganaName: string

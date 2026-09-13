@@ -65,7 +65,7 @@ export function toApplicantCreateRequest(
     },
 
     applicationMedia: {
-      id: null,
+      id: row.applicationMediaId,
       mediaName: toNullableString(row.mediaName),
       mediaArea: toNullableString(row.mediaArea),
       mediaSlots: row.mediaSlots,

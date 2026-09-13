@@ -133,9 +133,9 @@ PDF・紙はOCR誤認識の可能性があるため、無確認で給与控除�
 - 入力者、確認者、入力元`MANUAL`、変更理由、確定日時を保存する
 - 締め済み月の変更は通常保存せず、再締めが必要であることを警告する
 
-従業員給与設定の`resident_tax_monthly`は通知データがない場合の暫定フォールバック
-であり、正式な年度・月別税額の編集場所にはしない。通常運用では控除基盤の
-住民税Editorから`resident_tax_monthly`を管理する。
+従業員給与設定の`resident_tax_monthly`は旧互換列としてDBにのみ残し、V1のAPI・
+従業員画面・従業員CSV・月次計算では使用しない。住民税額は控除基盤の
+住民税Editorから年度別・従業員別・月別に管理する。
 
 少人数であっても、入力者が保存しただけで給与へ反映せず、確認・確定を独立させる。
 同一管理者が両方を行えるV1運用でも、操作時刻と操作種別は分けて記録する。
@@ -219,9 +219,12 @@ documents/imports/tax/resident/{fiscalYear}/{executionId}/
 
 ```text
 1. resident_tax_monthlyの対象年度・対象月
-2. employee_payroll_profile.resident_tax_monthly
-3. 0円
+2. 確定値がなければ0円
 ```
+
+`employee_payroll_profile.resident_tax_calc_flag`が対象外の場合は、年度別確定値が
+存在しても0円とする。旧`employee_payroll_profile.resident_tax_monthly`への
+フォールバックは行わない。
 
 ## 5. アップロード＋Python前処理
 

@@ -10,6 +10,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 
 import com.project.backend.common.error.dto.ErrorResponse;
 import com.project.backend.common.error.enums.ErrorCode;
+import com.project.backend.features.customer.exception.CustomerTransactionAlreadySettledException;
 
 class GlobalExceptionHandlerTest {
 
@@ -59,5 +60,30 @@ class GlobalExceptionHandlerTest {
                 .isEqualTo(ErrorCode.VALIDATION_ERROR.getCode());
         assertThat(response.getBody().getMessage())
                 .contains("コード生成台帳");
+    }
+
+    @Test
+    void handleCustomerTransactionAlreadySettled_shouldReturnConflict() {
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        MockHttpServletRequest request = new MockHttpServletRequest(
+                "POST",
+                "/api/operation/customer-billing/close"
+        );
+
+        ResponseEntity<ErrorResponse> response =
+                handler.handleCustomerTransactionAlreadySettled(
+                        new CustomerTransactionAlreadySettledException(
+                                7L,
+                                "2026-08"
+                        ),
+                        request
+                );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode())
+                .isEqualTo("CUSTOMER_TRANSACTION_ALREADY_SETTLED");
+        assertThat(response.getBody().getMessage())
+                .contains("入金済みの取引が存在するため顧客締めできません");
     }
 }
