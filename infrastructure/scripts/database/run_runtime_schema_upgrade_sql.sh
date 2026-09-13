@@ -198,8 +198,8 @@ deduction_master_verification="$(
        WHERE tenant_id = 'default'
          AND deduction_code = 'WIFI_FEE'
          AND calculation_type = 'MANUAL'
-         AND deduction_unit = 'MONTHLY'
-         AND show_on_daily_statement = FALSE
+         AND deduction_unit = 'BOTH'
+         AND show_on_daily_statement = TRUE
          AND show_on_monthly_statement = TRUE
          AND carry_to_monthly_settlement = TRUE
          AND deleted_at IS NULL)
