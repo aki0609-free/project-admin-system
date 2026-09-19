@@ -1,25 +1,17 @@
 import { computed, ref } from 'vue'
 
 import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
-import { formatYearMonth } from '@/shared/utils/DateUtils'
+import {
+  businessMonthWithOffset,
+  formatYearMonth,
+} from '@/shared/utils/DateUtils'
 
 import { useClosingSummaryQuery } from '../api/useClosingSummaryQuery'
 import { useCloseClosingMutation } from '../api/useCloseClosingMutation'
 import { useRecloseClosingMutation } from '../api/useRecloseClosingMutation'
 
-const currentMonth = () => {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Tokyo',
-    year: 'numeric',
-    month: '2-digit',
-  }).formatToParts(new Date())
-  const year = parts.find(part => part.type === 'year')?.value
-  const month = parts.find(part => part.type === 'month')?.value
-  return `${year}-${month}`
-}
-
 export const useMonthlyOperationPage = () => {
-  const targetMonth = ref(currentMonth())
+  const targetMonth = ref(businessMonthWithOffset(-1))
 
   const activeTab = ref<'summary' | 'reports'>('summary')
 

@@ -2,7 +2,10 @@
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
-import { formatYearMonth } from '@/shared/utils/DateUtils'
+import {
+  businessMonthWithOffset,
+  formatYearMonth,
+} from '@/shared/utils/DateUtils'
 import OperationTargetFilterCard from '@/features/operation/shared/components/OperationTargetFilterCard.vue'
 import { useOperationExcelBooksQuery } from '../api/useOperationExcelBooksQuery'
 import { useOperationExcelBookSettingsQuery } from '../api/useOperationExcelBookSettingsQuery'
@@ -225,14 +228,7 @@ function readinessMessage(book: OperationExcelBook) {
 }
 
 function currentBusinessMonth(): string {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Tokyo',
-    year: 'numeric',
-    month: '2-digit',
-  }).formatToParts(new Date())
-  const year = parts.find(part => part.type === 'year')?.value
-  const month = parts.find(part => part.type === 'month')?.value
-  return `${year}-${month}`
+  return businessMonthWithOffset(-1)
 }
 
 function parseYearMonth(value: string) {

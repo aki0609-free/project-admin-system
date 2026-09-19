@@ -106,7 +106,9 @@ export const dailyReportSchema = z.object({
   deductions: z.array(dailyReportAmountItemSchema),
 
   vehicleUsedFlag: z.boolean(),
+  vehicleArrangementType: z.enum(['NONE', 'COMPANY', 'EMPLOYEE', 'PASSENGER']),
   mileage: z.number().min(0),
+  passengerCount: z.number().int().min(0),
 
   paidLeaveDays: z.number().min(0),
   paidLeaveRemainingDays: z.number().min(0),

@@ -38,6 +38,8 @@ public class DailyPreparationMapper {
                 .customerSiteId(entity.getCustomerSiteId())
                 .customerName(entity.getCustomerName())
                 .siteName(entity.getSiteName())
+                .vehicleArrangementType(entity.getVehicleArrangementType())
+                .passengerCount(entity.getPassengerCount())
                 .workDescription(entity.getWorkDescription())
                 .build();
     }
@@ -54,6 +56,7 @@ public class DailyPreparationMapper {
                 .siteName(entity.getSiteName())
                 .distanceFromCompanyKm(entity.getDistanceFromCompanyKm())
                 .vehicleCount(entity.getVehicleCount())
+                .otherAmount(entity.getOtherAmount())
                 .note(entity.getNote())
                 .build();
     }

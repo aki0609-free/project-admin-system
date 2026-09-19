@@ -30,7 +30,7 @@ export const useCustomerMasterStore = defineStore('customer-master', () => {
   }
 
   /**
-   * 顧客・現場の更新後に、日報と翌日準備が使う選択肢を再同期する。
+   * 顧客・現場の更新後に、日報と現場配置・配車が使う選択肢を再同期する。
    */
   const refresh = async () => {
     await load(true)

@@ -125,6 +125,9 @@ export const useDailyReportEditDialog = (
     customerId: number | null
     customerSiteId: number | null
     workDescription: string
+    vehicleArrangementType: DailyReportForm['vehicleArrangementType']
+    mileage: number
+    passengerCount: number
   } | null = null
 
   const payrollItemsPreview =
@@ -540,6 +543,9 @@ export const useDailyReportEditDialog = (
         formModel.customerId === previous.customerId
         && formModel.customerSiteId === previous.customerSiteId
         && formModel.workDescription === previous.workDescription
+        && formModel.vehicleArrangementType === previous.vehicleArrangementType
+        && formModel.mileage === previous.mileage
+        && formModel.passengerCount === previous.passengerCount
 
       if (
         previous.employeeId === formModel.employeeId
@@ -561,6 +567,10 @@ export const useDailyReportEditDialog = (
         formModel.customerName = ''
         formModel.siteName = ''
         formModel.workDescription = ''
+        formModel.vehicleArrangementType = 'NONE'
+        formModel.vehicleUsedFlag = false
+        formModel.mileage = 0
+        formModel.passengerCount = 0
         await nextTick()
       } finally {
         applyingDetail.value = false
@@ -607,15 +617,24 @@ export const useDailyReportEditDialog = (
       formModel.customerName = defaults.customerName ?? ''
       formModel.siteName = defaults.siteName ?? ''
       formModel.workDescription = defaults.workDescription ?? ''
+      formModel.vehicleArrangementType = defaults.vehicleArrangementType ?? 'NONE'
+      formModel.vehicleUsedFlag = formModel.vehicleArrangementType !== 'NONE'
+      formModel.mileage = defaults.mileage ?? 0
+      formModel.passengerCount = formModel.vehicleArrangementType === 'EMPLOYEE'
+        ? defaults.passengerCount ?? 0
+        : 0
       appliedPreparationDefaults = {
         employeeId,
         workDate,
         customerId: defaults.customerId,
         customerSiteId: defaults.customerSiteId,
         workDescription: defaults.workDescription ?? '',
+        vehicleArrangementType: formModel.vehicleArrangementType,
+        mileage: formModel.mileage,
+        passengerCount: formModel.passengerCount,
       }
       preparationDefaultsMessage.value =
-        '翌日準備の顧客・現場・備考を初期値へ反映しました。実績に合わせて変更できます。'
+        '現場配置・配車の顧客・現場・車両手配・備考を反映しました。顧客・現場の変更は「現場配置・配車」から行ってください。'
       await nextTick()
     } finally {
       applyingDetail.value = false
@@ -829,6 +848,19 @@ export const useDailyReportEditDialog = (
   )
 
   watch(
+    () => formModel.vehicleArrangementType,
+    arrangementType => {
+      formModel.vehicleUsedFlag = arrangementType !== 'NONE'
+      if (arrangementType !== 'EMPLOYEE') {
+        formModel.passengerCount = 0
+      }
+      if (arrangementType === 'NONE') {
+        formModel.mileage = 0
+      }
+    },
+  )
+
+  watch(
     () => [
       formModel.employeeId,
       formModel.workDate,
@@ -896,7 +928,9 @@ export const useDailyReportEditDialog = (
       formModel.nightWorkHours,
       formModel.holidayWorkHours,
       formModel.vehicleUsedFlag,
+      formModel.vehicleArrangementType,
       formModel.mileage,
+      formModel.passengerCount,
       formModel.paidLeaveDays,
     ],
     schedulePayrollItemPreview,

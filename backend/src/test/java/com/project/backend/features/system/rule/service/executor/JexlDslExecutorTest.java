@@ -55,4 +55,42 @@ class JexlDslExecutorTest {
                 ))
                 .isInstanceOf(RuntimeException.class);
     }
+
+    @Test
+    void execute_shouldCalculateDriverAllowanceOnlyForEmployeeArrangement() {
+        RuleMaster rule = new RuleMaster();
+        rule.setRuleName("DAILY_DRIVER_ALLOWANCE");
+        rule.setDslText("vehicleArrangementType == 'EMPLOYEE' ? "
+                + "mileage * distanceUnitPrice + passengerCount * passengerUnitPrice : 0");
+
+        Object employeeResult = executor.execute(
+                RuleExecutionContext.builder()
+                        .rule(rule)
+                        .facts(Map.of(
+                                "vehicleArrangementType", "EMPLOYEE",
+                                "mileage", new BigDecimal("10"),
+                                "distanceUnitPrice", new BigDecimal("15"),
+                                "passengerCount", 2,
+                                "passengerUnitPrice", new BigDecimal("200")
+                        ))
+                        .parameters(Map.of())
+                        .build()
+        );
+        Object companyResult = executor.execute(
+                RuleExecutionContext.builder()
+                        .rule(rule)
+                        .facts(Map.of(
+                                "vehicleArrangementType", "COMPANY",
+                                "mileage", new BigDecimal("10"),
+                                "distanceUnitPrice", new BigDecimal("15"),
+                                "passengerCount", 0,
+                                "passengerUnitPrice", new BigDecimal("200")
+                        ))
+                        .parameters(Map.of())
+                        .build()
+        );
+
+        assertThat(employeeResult).isEqualTo(new BigDecimal("550"));
+        assertThat(companyResult).isEqualTo(0);
+    }
 }

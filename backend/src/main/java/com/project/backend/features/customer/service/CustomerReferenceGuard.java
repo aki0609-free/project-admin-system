@@ -26,7 +26,7 @@ public class CustomerReferenceGuard {
         }
         if (assignmentRepository.existsByCustomerIdAndDeletedAtIsNull(customerId)
                 || dispatchRepository.existsByCustomerIdAndDeletedAtIsNull(customerId)) {
-            throw referenced("翌日準備");
+            throw referenced("現場配置・配車");
         }
         if (transactionRepository.existsByCustomerIdAndDeletedAtIsNull(customerId)) {
             throw referenced("取引情報");
@@ -42,7 +42,7 @@ public class CustomerReferenceGuard {
         }
         if (assignmentRepository.existsByCustomerSiteIdAndDeletedAtIsNull(customerSiteId)
                 || dispatchRepository.existsByCustomerSiteIdAndDeletedAtIsNull(customerSiteId)) {
-            throw siteReferenced("翌日準備");
+            throw siteReferenced("現場配置・配車");
         }
     }
 

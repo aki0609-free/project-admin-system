@@ -59,11 +59,12 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
         assertThat(resources)
-                .hasSize(45)
+                .hasSize(46)
                 .contains(
                         "sql/admin/external_support_links_v1.sql",
                         "sql/application/applicant_legacy_schema_compatibility_v1.sql",
                         "sql/customer/customer_contract_status_v1.sql",
+                        "sql/daily_report/vehicle_arrangement_foundation_v1.sql",
                         "sql/operation/monthly/customer_transaction_adjustment_v1.sql"
                 );
         RuntimeSchemaAssetInstaller.apply(mysqlContainer, resources);
@@ -108,6 +109,20 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 "sp_daily_work_order_prepare",
                 "sp_monthly_order_form_snapshot"
         )).isEqualTo(6);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'daily_preparation_dispatches'
+                  AND column_name = 'other_amount'
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'monthly_invoice_history_detail'
+                  AND column_name = 'other_amount'
+                """, Integer.class)).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM information_schema.columns
@@ -297,10 +312,11 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 WHERE tenant_id = 'default'
                   AND deduction_code = 'WIFI_FEE'
                   AND calculation_type = 'MANUAL'
-                  AND deduction_unit = 'BOTH'
+                  AND default_amount = 1000
+                  AND deduction_unit = 'DAILY'
                   AND show_on_daily_statement = TRUE
-                  AND show_on_monthly_statement = TRUE
-                  AND carry_to_monthly_settlement = TRUE
+                  AND show_on_monthly_statement = FALSE
+                  AND carry_to_monthly_settlement = FALSE
                   AND deleted_at IS NULL
                 """, Integer.class)).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject("""
@@ -313,9 +329,9 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND policy.target_type = 'DEDUCTION'
                   AND policy.target_code = 'WIFI_FEE'
                   AND policy.application_scope = 'EMPLOYEE_ENROLLMENT'
-                  AND policy.input_source = 'DAILY_REPORT_AND_TRANSACTION'
-                  AND policy.balance_tracking_flag = TRUE
-                  AND policy.carry_forward_flag = TRUE
+                  AND policy.input_source = 'DAILY_REPORT'
+                  AND policy.balance_tracking_flag = FALSE
+                  AND policy.carry_forward_flag = FALSE
                   AND policy.active_flag = TRUE
                   AND policy.deleted_at IS NULL
                   AND deduction.enabled = TRUE
@@ -1142,6 +1158,11 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 "LABOR-DAILY-DAILY", "日給・日払い", "DAILY", "DAILY",
                 "12000", "0", "0"
         );
+        jdbcTemplate.update("""
+                UPDATE employee
+                SET postal_code = '123-4567', address = '東京都千代田区テスト1-2-3'
+                WHERE id = ? AND tenant_id = ?
+                """, dailyPaidDaily, TEST_TENANT_ID);
         Long dailyPaidMonthly = insertLaborCostEmployee(
                 "LABOR-DAILY-MONTHLY", "日給・月払い", "DAILY", "MONTHLY",
                 "14500", "0", "0"
@@ -1209,6 +1230,28 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 "DEDUCTION", dynamicDeductionId,
                 "DYNAMIC_DAILY_DEDUCTION", "動的日次控除"
         );
+        jdbcTemplate.update("""
+                UPDATE payroll_item_balance_policy
+                SET balance_tracking_flag = TRUE,
+                    accrual_rule_name = 'MANUAL_TRANSACTION',
+                    carry_forward_flag = TRUE
+                WHERE tenant_id = ? AND target_type = 'DEDUCTION'
+                  AND target_code = 'DYNAMIC_DAILY_DEDUCTION'
+                """, TEST_TENANT_ID);
+        jdbcTemplate.update("""
+                INSERT INTO employee_payroll_item_transaction (
+                    employee_id, target_type, target_master_id,
+                    target_code, target_name, target_month, transaction_date,
+                    amount, quantity, transaction_purpose, balance_effect,
+                    source_type, source_reference, status, lock_version,
+                    tenant_id, created_at, updated_at
+                ) VALUES (?, 'DEDUCTION', ?, 'DYNAMIC_DAILY_DEDUCTION',
+                          '動的日次控除', ?, ?, 5000, 5000,
+                          'BALANCE_ACCRUAL', 'CREDIT', 'MANUAL',
+                          'daily-slip-balance-test', 'CONFIRMED', 0, ?,
+                          CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6))
+                """, dailyPaidDaily, dynamicDeductionId,
+                workDate.withDayOfMonth(1), workDate, TEST_TENANT_ID);
 
         List<Map<String, Object>> dynamicItems = jdbcTemplate.queryForList("""
                 SELECT item_code, item_value
@@ -1223,7 +1266,8 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         dynamicItems.forEach(row -> assertAmount(row.get("item_value"), "0"));
 
         Map<String, Object> dailySlip = jdbcTemplate.queryForMap("""
-                SELECT payment_date_label, labor_period_from_label,
+                SELECT payment_date_label, labor_period_from_label, employee_address,
+                       work_hours_label, overtime_hours_label,
                        allowance_item_name1, allowance_item_value1,
                        deduction_item_name1, deduction_item_value1,
                        deduction_total, note
@@ -1234,12 +1278,39 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 """, TEST_TENANT_ID, workDate, dailyPaidDaily);
         assertThat(dailySlip.get("payment_date_label")).isEqualTo("2026年9月11日");
         assertThat(dailySlip.get("labor_period_from_label")).isEqualTo("2026年9月11日");
+        assertThat(dailySlip.get("employee_address"))
+                .isEqualTo("〒123-4567 東京都千代田区テスト1-2-3");
+        assertThat(dailySlip.get("work_hours_label")).isEqualTo("8時間");
+        assertThat(dailySlip.get("overtime_hours_label")).isEqualTo("0分");
         assertThat(dailySlip.get("allowance_item_name1")).isEqualTo("動的日次手当");
         assertAmount(dailySlip.get("allowance_item_value1"), "0");
-        assertThat(dailySlip.get("deduction_item_name1")).isEqualTo("動的日次控除");
+        assertThat(dailySlip.get("deduction_item_name1"))
+                .isEqualTo("動的日次控除（残高：5,000円）");
         assertAmount(dailySlip.get("deduction_item_value1"), "0");
         assertAmount(dailySlip.get("deduction_total"), "1000");
         assertThat(dailySlip.get("note")).isEqualTo("Testcontainers日次給与明細備考");
+
+        String slipExecutionId = "daily-slip-review-001";
+        jdbcTemplate.update("""
+                INSERT INTO daily_pay_slip_input (
+                    tenant_id, created_at, updated_at,
+                    execution_id, payment_date, employee_id
+                ) VALUES (?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), ?, ?, ?)
+                """, TEST_TENANT_ID, slipExecutionId, workDate, dailyPaidDaily);
+        jdbcTemplate.update("CALL sp_daily_pay_slip_prepare(?)", slipExecutionId);
+        Map<String, Object> preparedSlip = jdbcTemplate.queryForMap("""
+                SELECT employee_address, work_hours_label,
+                       legal_deposit_balance, loan_balance, saving_balance
+                FROM daily_pay_slip_output
+                WHERE execution_id = ?
+                """, slipExecutionId);
+        assertThat(preparedSlip.get("employee_address"))
+                .isEqualTo("〒123-4567 東京都千代田区テスト1-2-3");
+        assertThat(preparedSlip.get("work_hours_label")).isEqualTo("8時間");
+        assertThat(preparedSlip).containsKeys(
+                "legal_deposit_balance", "loan_balance", "saving_balance"
+        );
+        jdbcTemplate.update("CALL sp_daily_pay_slip_cleanup(?)", slipExecutionId);
 
         BigDecimal fallbackDeduction = jdbcTemplate.queryForObject("""
                 SELECT item_value
@@ -1511,13 +1582,14 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                     billing_commute_unit_price, holiday_premium_eligible,
                     dormitory_charge_days, overtime_pay_amount,
                     night_pay_amount, holiday_pay_amount,
+                    work_hours,
                     vehicle_used_flag, work_description, approval_status,
                     tenant_id, created_at, updated_at
                 ) VALUES (
                     ?, ?, ?,
                     ?, ?, ?, 0, 0, ?, ?,
                     0, 0, 0, 0, 0, FALSE,
-                    0, 0, 0, 0,
+                    0, 0, 0, 0, 8,
                     FALSE, 'Testcontainers日次給与明細備考', 'APPROVED',
                     ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
                 )

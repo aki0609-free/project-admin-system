@@ -237,7 +237,8 @@ INSERT INTO employee (
     tenant_id, created_at, updated_at, deleted_at,
     employee_code, employee_name, employee_name_kana,
     birth_date, hire_date, employment_type, employment_status,
-    phone, email, dormitory_flag, dormitory_type, active_flag
+    phone, email, postal_code, address,
+    dormitory_flag, dormitory_type, active_flag
 )
 SELECT
     @fixture_tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL,
@@ -245,12 +246,16 @@ SELECT
     DATE_ADD('1985-01-01', INTERVAL fixture.sort_order DAY), '2026-04-01',
     'FULL_TIME', 'ACTIVE', '090-5555-0000',
     CONCAT(LOWER(fixture.employee_code), '@example.invalid'),
+    CONCAT('100-', LPAD(fixture.sort_order, 4, '0')),
+    CONCAT('東京都千代田区日次検証', fixture.sort_order, '-1'),
     MOD(fixture.sort_order, 3) = 0,
     IF(MOD(fixture.sort_order, 3) = 0, 'SHARED_ROOM', NULL), TRUE
 FROM tmp_daily_employees fixture
 ON DUPLICATE KEY UPDATE
     employee_name = VALUES(employee_name),
     employee_name_kana = VALUES(employee_name_kana),
+    postal_code = VALUES(postal_code),
+    address = VALUES(address),
     employment_status = 'ACTIVE',
     active_flag = TRUE,
     deleted_at = NULL,
@@ -427,7 +432,7 @@ JOIN customer_site_billing_rates rate
 CROSS JOIN tmp_daily_dates date_row;
 
 -- E2E-DAILY-001を、日次給与明細の控除・残高確認用従業員とする。
--- 携帯・Wi-Fiは請求明細で残高を発生させ、日報には実際に徴収した額を保存する。
+-- 携帯は請求明細で残高を発生させる。Wi-Fiは残高を持たず日報へ手入力する。
 DELETE enrollment
 FROM employee_payroll_item_enrollment enrollment
 JOIN tmp_daily_employees employee
@@ -482,25 +487,16 @@ INSERT INTO employee_payroll_item_transaction (
 SELECT employee.employee_id, 'DEDUCTION', deduction.id,
        deduction.deduction_code, deduction.deduction_name, '2026-09-01',
        '2026-09-01',
-       CASE deduction.deduction_code
-           WHEN 'MOBILE_RENTAL' THEN 5000
-           ELSE 2500
-       END,
-       CASE deduction.deduction_code
-           WHEN 'MOBILE_RENTAL' THEN 5000
-           ELSE 2500
-       END,
+       5000,
+       5000,
        'BALANCE_ACCRUAL', 'CREDIT', 'MANUAL',
-       CASE deduction.deduction_code
-           WHEN 'MOBILE_RENTAL' THEN 'E2E-MOBILE-202609-BILL'
-           ELSE 'E2E-WIFI-202609-BILL'
-       END,
+       'E2E-MOBILE-202609-BILL',
        'CONFIRMED', 'ローカル日次給与明細確認用の確定請求明細',
        0, @fixture_tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
 FROM tmp_daily_employees employee
 JOIN deduction_masters deduction
   ON deduction.tenant_id = @fixture_tenant_id
- AND deduction.deduction_code IN ('MOBILE_RENTAL', 'WIFI_FEE')
+ AND deduction.deduction_code = 'MOBILE_RENTAL'
  AND deduction.deleted_at IS NULL
 WHERE employee.employee_code = 'E2E-DAILY-001';
 
@@ -514,20 +510,20 @@ SELECT report.id, deduction.id, deduction.deduction_code, deduction.deduction_na
        CASE deduction.deduction_code
            WHEN 'DORMITORY_FEE' THEN 1500
            WHEN 'MOBILE_RENTAL' THEN 1000
-           WHEN 'WIFI_FEE' THEN 500
+           WHEN 'WIFI_FEE' THEN 1000
            WHEN 'LEGAL_DEPOSIT' THEN 700
        END,
        CASE deduction.deduction_code
            WHEN 'DORMITORY_FEE' THEN 1500
            WHEN 'MOBILE_RENTAL' THEN 1000
-           WHEN 'WIFI_FEE' THEN 500
+           WHEN 'WIFI_FEE' THEN 1000
            WHEN 'LEGAL_DEPOSIT' THEN 700
        END,
        FALSE, NULL,
        CASE deduction.deduction_code
            WHEN 'DORMITORY_FEE' THEN 1500
            WHEN 'MOBILE_RENTAL' THEN 1000
-           WHEN 'WIFI_FEE' THEN 500
+           WHEN 'WIFI_FEE' THEN 1000
            WHEN 'LEGAL_DEPOSIT' THEN 700
        END,
        'AMOUNT',
@@ -549,11 +545,11 @@ WHERE employee.employee_code = 'E2E-DAILY-001'
 UPDATE daily_report report
 JOIN tmp_daily_employees employee
   ON employee.employee_id = report.employee_id
-SET report.deduction_amount = 3700,
+SET report.deduction_amount = 4200,
     report.saving_amount = 800,
     report.estimated_net_pay_amount =
         report.estimated_gross_pay_amount
-        - 3700
+        - 4200
         - COALESCE(report.loan_repayment_amount, 0)
         - 800,
     report.updated_at = CURRENT_TIMESTAMP(6)

@@ -21,6 +21,8 @@ import com.project.backend.features.customer.repository.CustomerRepository;
 import com.project.backend.features.customer.repository.CustomerSiteRepository;
 import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.repository.EmployeeRepository;
+import com.project.backend.features.dailyreport.repository.DailyReportRepository;
+import com.project.backend.features.dailyreport.service.DailyReportBillingRateService;
 import com.project.backend.features.operation.preparation.dto.DailyPreparationAssignmentBulkSaveItemRequest;
 import com.project.backend.features.operation.preparation.dto.DailyPreparationAssignmentBulkSaveRequest;
 import com.project.backend.features.operation.preparation.dto.DailyPreparationAssignmentSaveRequest;
@@ -60,6 +62,8 @@ class DailyPreparationServiceTest {
                 employeeRepository,
                 customerRepository,
                 siteRepository,
+                mock(DailyReportRepository.class),
+                mock(DailyReportBillingRateService.class),
                 new DailyPreparationMapper(),
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );

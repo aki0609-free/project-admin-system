@@ -34,6 +34,7 @@ export type Customer = {
   representativeName: string
   phone: string
   jobType: string
+  distanceBillingUnitPrice: number
   contractFlag: CustomerContractStatus
   invoiceType: CustomerInvoiceType
   closingDayRule: DayRule | null

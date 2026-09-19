@@ -7,6 +7,7 @@ import type {
 import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
 import type { EmployeeListItemResponse } from '@/features/employees/types/employeeApiTypes'
 import type { DailyPreparationAssignmentResponse } from '../types/dailyPreparationApiTypes'
+import type { VehicleArrangementType } from '../types/dailyPreparationApiTypes'
 import { useCustomerMasterStore } from '@/features/customer/store/useCustomerMasterStore'
 
 export type DailyPreparationAssignmentTableRow = SimpleTableEditableRow & {
@@ -21,6 +22,9 @@ export type DailyPreparationAssignmentTableRow = SimpleTableEditableRow & {
   customerSiteId: number | null
   customerName: string
   siteName: string
+
+  vehicleArrangementType: VehicleArrangementType
+  passengerCount: number
 
   workDescription: string
 
@@ -71,6 +75,30 @@ export const useDailyPreparationAssignmentTableConfig = (
       enumOptions: (row) => customerStore.siteOptions(row.customerId),
     },
     {
+      title: '車両手配',
+      key: 'vehicleArrangementType',
+      width: '240px',
+      editable: true,
+      type: 'select',
+      enumOptions: [
+        { title: '車両なし', value: 'NONE' },
+        { title: '会社手配（顧客請求）', value: 'COMPANY' },
+        { title: '社員手配・運転者（顧客請求＋運転手当）', value: 'EMPLOYEE' },
+        { title: '同乗者（請求・運転手当なし）', value: 'PASSENGER' },
+      ],
+      filter: { type: 'select' },
+    },
+    {
+      title: '同乗者数',
+      key: 'passengerCount',
+      width: '160px',
+      editable: true,
+      type: 'number',
+      min: 0,
+      step: 1,
+      filter: { type: 'number' },
+    },
+    {
       title: '作業内容',
       key: 'workDescription',
       width: '200px',
@@ -116,6 +144,9 @@ export const createAssignmentRows = (
       customerSiteId: assignment?.customerSiteId ?? null,
       customerName: assignment?.customerName ?? '',
       siteName: assignment?.siteName ?? '',
+
+      vehicleArrangementType: assignment?.vehicleArrangementType ?? 'NONE',
+      passengerCount: assignment?.passengerCount ?? 0,
 
       workDescription: assignment?.workDescription ?? '',
 

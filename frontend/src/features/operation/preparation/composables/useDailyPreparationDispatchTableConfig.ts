@@ -19,6 +19,7 @@ export type DailyPreparationDispatchTableRow = SimpleTableEditableRow & {
   distanceFromCompanyKm: number
 
   vehicleCount: number
+  otherAmount: number
   note: string
 
   _isNew: boolean
@@ -52,17 +53,28 @@ export const useDailyPreparationDispatchTableConfig = (
       title: '距離km',
       key: 'distanceFromCompanyKm',
       width: '200px',
-      editable: false,
+      editable: true,
       type: 'number',
-      filter: { type: 'text' },
+      min: 0,
+      step: 1,
+      filter: { type: 'number' },
     },
     {
-      title: '配車台数',
+      title: '会社手配台数（計画）',
       key: 'vehicleCount',
       width: '200px',
       editable: true,
       type: 'number',
       min: 0,
+      step: 1,
+      filter: { type: 'number' },
+    },
+    {
+      title: 'その他金額',
+      key: 'otherAmount',
+      width: '180px',
+      editable: true,
+      type: 'number',
       step: 1,
       filter: { type: 'number' },
     },
@@ -141,6 +153,7 @@ export const createDispatchRowsFromAssignments = (
       distanceFromCompanyKm: distance ?? 0,
 
       vehicleCount: current?.vehicleCount ?? dispatch?.vehicleCount ?? 0,
+      otherAmount: current?.otherAmount ?? dispatch?.otherAmount ?? 0,
       note: current?.note ?? dispatch?.note ?? '',
 
       _isNew: current?._isNew ?? false,

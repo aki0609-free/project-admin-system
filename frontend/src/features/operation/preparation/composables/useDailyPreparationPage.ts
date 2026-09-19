@@ -19,12 +19,7 @@ import {
   type DailyPreparationDispatchTableRow,
 } from './useDailyPreparationDispatchTableConfig'
 import { useCustomerMasterStore } from '@/features/customer/store/useCustomerMasterStore'
-
-const tomorrow = () => {
-  const date = new Date()
-  date.setDate(date.getDate() + 1)
-  return date.toISOString().slice(0, 10)
-}
+import { businessDateWithOffset } from '@/shared/utils/DateUtils'
 
 const toNullableNumber = (value: unknown): number | null => {
   if (value == null || value === '') return null
@@ -35,12 +30,49 @@ const toNullableNumber = (value: unknown): number | null => {
 
 const hasAssignmentValue = (row: DailyPreparationAssignmentTableRow) =>
   row.customerId != null || row.customerSiteId != null || row.workDescription.trim() !== ''
+  || row.vehicleArrangementType !== 'NONE' || row.passengerCount > 0
 
 const hasDispatchValue = (row: DailyPreparationDispatchTableRow) =>
   row.customerId != null && row.customerSiteId != null
 
+export const buildAssignmentSaveItems = (
+  rows: DailyPreparationAssignmentTableRow[],
+): DailyPreparationAssignmentBulkSaveItemRequest[] =>
+  rows
+    .filter((row) => row._isNew || row._isUpdated || row._isDeleted)
+    .map((row) => ({
+      id: row.assignmentId,
+      employeeId: row.employeeId,
+      customerId: row.customerId,
+      customerSiteId: row.customerSiteId,
+      vehicleArrangementType: row.vehicleArrangementType,
+      passengerCount: row.vehicleArrangementType === 'EMPLOYEE' ? row.passengerCount : 0,
+      workDescription: row.workDescription.trim() || null,
+      isNew: row._isNew,
+      isUpdated: row._isUpdated,
+      isDeleted: row._isDeleted,
+    }))
+
+export const buildDispatchSaveItems = (
+  rows: DailyPreparationDispatchTableRow[],
+): DailyPreparationDispatchBulkSaveItemRequest[] =>
+  rows
+    .filter((row) => row._isNew || row._isUpdated || row._isDeleted)
+    .map((row) => ({
+      id: row.dispatchId,
+      customerId: row.customerId,
+      customerSiteId: row.customerSiteId,
+      distanceFromCompanyKm: row.distanceFromCompanyKm,
+      vehicleCount: row.vehicleCount,
+      otherAmount: row.otherAmount,
+      note: row.note.trim() || null,
+      isNew: row._isNew,
+      isUpdated: row._isUpdated,
+      isDeleted: row._isDeleted,
+    }))
+
 export const useDailyPreparationPage = () => {
-  const targetDate = ref(tomorrow())
+  const targetDate = ref(businessDateWithOffset(-1))
   const activeTab = ref<'assignments' | 'dispatches' | 'reports'>('assignments')
 
   const assignmentRows = ref<DailyPreparationAssignmentTableRow[]>([])
@@ -205,6 +237,21 @@ export const useDailyPreparationPage = () => {
       return
     }
 
+    if (field === 'vehicleArrangementType') {
+      row.vehicleArrangementType = String(value ?? 'NONE') as DailyPreparationAssignmentTableRow['vehicleArrangementType']
+      if (row.vehicleArrangementType !== 'EMPLOYEE') row.passengerCount = 0
+      markAssignmentRowState(row)
+      return
+    }
+
+    if (field === 'passengerCount') {
+      row.passengerCount = row.vehicleArrangementType === 'EMPLOYEE'
+        ? Math.max(0, Number(value ?? 0))
+        : 0
+      markAssignmentRowState(row)
+      return
+    }
+
     ;(row[field] as unknown) = value
 
     markAssignmentRowState(row)
@@ -229,6 +276,18 @@ export const useDailyPreparationPage = () => {
       return
     }
 
+    if (field === 'distanceFromCompanyKm') {
+      row.distanceFromCompanyKm = Math.max(0, Number(value ?? 0))
+      markDispatchRowState(row)
+      return
+    }
+
+    if (field === 'otherAmount') {
+      row.otherAmount = Number(value ?? 0)
+      markDispatchRowState(row)
+      return
+    }
+
     if (field === 'note') {
       row.note = String(value ?? '')
       markDispatchRowState(row)
@@ -236,22 +295,10 @@ export const useDailyPreparationPage = () => {
     }
   }
 
-  const saveAssignments = async () => {
-    const currentPreparation = await ensurePreparation()
-
-    const items: DailyPreparationAssignmentBulkSaveItemRequest[] = assignmentRows.value
-      .filter((row) => row._isNew || row._isUpdated || row._isDeleted)
-      .map((row) => ({
-        id: row.assignmentId,
-        employeeId: row.employeeId,
-        customerId: row.customerId,
-        customerSiteId: row.customerSiteId,
-        workDescription: row.workDescription.trim() || null,
-        isNew: row._isNew,
-        isUpdated: row._isUpdated,
-        isDeleted: row._isDeleted,
-      }))
-
+  const saveAssignments = async (
+    currentPreparation: DailyPreparationResponse,
+    items: DailyPreparationAssignmentBulkSaveItemRequest[],
+  ) => {
     if (items.length === 0) return
 
     await bulkSaveAssignmentsMutation.mutateAsync({
@@ -260,22 +307,10 @@ export const useDailyPreparationPage = () => {
     })
   }
 
-  const saveDispatches = async () => {
-    const currentPreparation = await ensurePreparation()
-
-    const items: DailyPreparationDispatchBulkSaveItemRequest[] = dispatchRows.value
-      .filter((row) => row._isNew || row._isUpdated || row._isDeleted)
-      .map((row) => ({
-        id: row.dispatchId,
-        customerId: row.customerId,
-        customerSiteId: row.customerSiteId,
-        vehicleCount: row.vehicleCount,
-        note: row.note.trim() || null,
-        isNew: row._isNew,
-        isUpdated: row._isUpdated,
-        isDeleted: row._isDeleted,
-      }))
-
+  const saveDispatches = async (
+    currentPreparation: DailyPreparationResponse,
+    items: DailyPreparationDispatchBulkSaveItemRequest[],
+  ) => {
     if (items.length === 0) return
 
     await bulkSaveDispatchesMutation.mutateAsync({
@@ -285,9 +320,17 @@ export const useDailyPreparationPage = () => {
   }
 
   const save = async () => {
-    await ensurePreparation()
-    await saveAssignments()
-    await saveDispatches()
+    // 初回作成の再取得で編集中の行が置き換わっても失われないよう、
+    // ヘッダー作成より先に保存内容を固定する。
+    const assignmentItems = buildAssignmentSaveItems(assignmentRows.value)
+    const dispatchItems = buildDispatchSaveItems(dispatchRows.value)
+
+    if (assignmentItems.length === 0 && dispatchItems.length === 0) return
+
+    // 初回保存でも配置ヘッダーは一度だけ作成し、同じIDを後続処理へ渡す。
+    const currentPreparation = await ensurePreparation()
+    await saveAssignments(currentPreparation, assignmentItems)
+    await saveDispatches(currentPreparation, dispatchItems)
 
     await preparationQuery.refetch()
   }

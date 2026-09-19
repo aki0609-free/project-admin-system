@@ -1,5 +1,9 @@
 app:
   report:
+    init:
+      # Localではソースの帳票変更を再起動時に保存領域へ同期する。
+      # AWS等では未指定(false)のため、書類管理で登録したテンプレートを保護する。
+      overwrite-existing: true
     preview:
       schema-init:
         enabled: true

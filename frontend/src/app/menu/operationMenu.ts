@@ -11,16 +11,16 @@ export const operationMenu: MenuItem = {
   icon: 'mdi-calendar-star',
   children: [
     {
-      title: '日報入力',
-      to: '/operation/daily-reports',
-      component: DailyReportPage,
+      title: '現場配置・配車',
+      to: '/operation/daily/preparation',
+      component: DailyPreparationPage,
       resource: 'operation',
       action: 'view',
     },
     {
-      title: '翌日準備',
-      to: '/operation/daily/preparation',
-      component: DailyPreparationPage,
+      title: '日報入力',
+      to: '/operation/daily-reports',
+      component: DailyReportPage,
       resource: 'operation',
       action: 'view',
     },

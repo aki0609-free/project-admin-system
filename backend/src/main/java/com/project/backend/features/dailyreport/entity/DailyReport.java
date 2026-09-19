@@ -8,6 +8,7 @@ import com.project.backend.app.base.entity.BaseEntity;
 import com.project.backend.features.customer.enums.CustomerBillingUnit;
 import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.enums.ApprovalStatus;
+import com.project.backend.features.dailyreport.enums.VehicleArrangementType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -299,12 +300,19 @@ public class DailyReport extends BaseEntity {
     )
     private boolean vehicleUsedFlag = false;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vehicle_arrangement_type", nullable = false, length = 20)
+    private VehicleArrangementType vehicleArrangementType = VehicleArrangementType.NONE;
+
     @Column(
             name = "mileage",
             precision = 8,
             scale = 2
     )
     private BigDecimal mileage = BigDecimal.ZERO;
+
+    @Column(name = "passenger_count", nullable = false)
+    private Integer passengerCount = 0;
 
     @Column(
             name = "paid_leave_days",

@@ -1,5 +1,7 @@
 package com.project.backend.features.operation.preparation.dto;
 
+import com.project.backend.features.dailyreport.enums.VehicleArrangementType;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Getter;
@@ -16,6 +18,10 @@ public class DailyPreparationAssignmentBulkSaveItemRequest {
     private Long customerId;
 
     private Long customerSiteId;
+
+    private VehicleArrangementType vehicleArrangementType;
+
+    private Integer passengerCount;
 
     private String workDescription;
 

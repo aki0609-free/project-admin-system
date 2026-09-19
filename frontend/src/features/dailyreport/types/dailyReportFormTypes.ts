@@ -1,6 +1,7 @@
 import type {
   ApprovalStatus,
   CustomerBillingUnit,
+  VehicleArrangementType,
 } from '@/features/dailyreport/types/dailyReportApiTypes'
 
 import type {
@@ -81,7 +82,9 @@ export type DailyReportForm = {
   deductions: DailyReportAmountItemForm[]
 
   vehicleUsedFlag: boolean
+  vehicleArrangementType: VehicleArrangementType
   mileage: number
+  passengerCount: number
 
   paidLeaveDays: number
   paidLeaveRemainingDays: number

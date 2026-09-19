@@ -27,8 +27,8 @@ const {
 
 <template>
   <ListDetailPageLayout
-    title="翌日準備"
-    description="翌日以降の従業員配置・現場配車・作業伝票を管理します。"
+    title="現場配置・配車"
+    description="対象日の従業員配置・現場配車・作業伝票を管理します。"
     :left-toolbar-items="leftToolbarItems"
   >
     <template #search>
@@ -50,7 +50,7 @@ const {
     <template #before-table>
       <div class="preparation-summary">
         <p class="count-text">
-          {{ preparation ? '翌日準備あり' : '翌日準備未作成' }}
+          {{ preparation ? '現場配置・配車あり' : '現場配置・配車未作成' }}
         </p>
       </div>
     </template>

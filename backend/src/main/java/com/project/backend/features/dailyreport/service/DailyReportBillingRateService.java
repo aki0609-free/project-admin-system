@@ -5,8 +5,10 @@ import java.math.BigDecimal;
 import org.springframework.stereotype.Service;
 
 import com.project.backend.features.customer.entity.CustomerSiteBillingRate;
+import com.project.backend.features.customer.repository.CustomerRepository;
 import com.project.backend.features.customer.service.CustomerSiteBillingRateQueryService;
 import com.project.backend.features.dailyreport.entity.DailyReport;
+import com.project.backend.features.dailyreport.enums.VehicleArrangementType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,6 +20,7 @@ public class DailyReportBillingRateService {
     private static final String DEFAULT_SITE_ROLE_NAME = "一般";
 
     private final CustomerSiteBillingRateQueryService billingRateQueryService;
+    private final CustomerRepository customerRepository;
 
     public void applyBillingRate(DailyReport dailyReport) {
         if (dailyReport == null) {
@@ -100,7 +103,7 @@ public class DailyReportBillingRateService {
         );
 
         dailyReport.setBillingCommuteUnitPrice(
-                nvl(rate.getCommuteUnitPrice())
+                resolveDistanceBillingUnitPrice(dailyReport)
         );
     }
 
@@ -148,6 +151,19 @@ public class DailyReportBillingRateService {
 
     public String defaultSiteRoleName() {
         return DEFAULT_SITE_ROLE_NAME;
+    }
+
+    private BigDecimal resolveDistanceBillingUnitPrice(DailyReport dailyReport) {
+        VehicleArrangementType arrangementType = dailyReport.getVehicleArrangementType();
+        if (arrangementType == null
+                || arrangementType == VehicleArrangementType.NONE
+                || arrangementType == VehicleArrangementType.PASSENGER
+                || dailyReport.getCustomerId() == null) {
+            return BigDecimal.ZERO;
+        }
+        return customerRepository.findByIdAndDeletedAtIsNull(dailyReport.getCustomerId())
+                .map(customer -> nvl(customer.getDistanceBillingUnitPrice()))
+                .orElse(BigDecimal.ZERO);
     }
 
     private BigDecimal nvl(

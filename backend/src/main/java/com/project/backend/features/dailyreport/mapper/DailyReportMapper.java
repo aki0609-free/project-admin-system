@@ -148,12 +148,21 @@ public interface DailyReportMapper {
                         : 0
         );
 
+        var arrangementType = request.vehicleArrangementType() != null
+                ? request.vehicleArrangementType()
+                : (Boolean.TRUE.equals(request.vehicleUsedFlag())
+                        ? com.project.backend.features.dailyreport.enums.VehicleArrangementType.EMPLOYEE
+                        : com.project.backend.features.dailyreport.enums.VehicleArrangementType.NONE);
+        entity.setVehicleArrangementType(arrangementType);
         entity.setVehicleUsedFlag(
-                Boolean.TRUE.equals(request.vehicleUsedFlag())
+                arrangementType != com.project.backend.features.dailyreport.enums.VehicleArrangementType.NONE
         );
 
         entity.setMileage(
                 nvl(request.mileage())
+        );
+        entity.setPassengerCount(
+                request.passengerCount() != null ? request.passengerCount() : 0
         );
 
         entity.setPaidLeaveDays(

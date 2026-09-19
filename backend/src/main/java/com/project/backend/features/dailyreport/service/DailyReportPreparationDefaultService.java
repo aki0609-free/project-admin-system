@@ -9,7 +9,9 @@ import com.project.backend.features.dailyreport.dto.DailyReportPreparationDefaul
 import com.project.backend.features.operation.preparation.entity.DailyPreparation;
 import com.project.backend.features.operation.preparation.entity.DailyPreparationAssignment;
 import com.project.backend.features.operation.preparation.repository.DailyPreparationAssignmentRepository;
+import com.project.backend.features.operation.preparation.repository.DailyPreparationDispatchRepository;
 import com.project.backend.features.operation.preparation.repository.DailyPreparationRepository;
+import com.project.backend.features.customer.repository.CustomerSiteRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +22,8 @@ public class DailyReportPreparationDefaultService {
 
     private final DailyPreparationRepository preparationRepository;
     private final DailyPreparationAssignmentRepository assignmentRepository;
+    private final DailyPreparationDispatchRepository dispatchRepository;
+    private final CustomerSiteRepository customerSiteRepository;
 
     public DailyReportPreparationDefaultResponse find(
             LocalDate workDate,
@@ -46,6 +50,24 @@ public class DailyReportPreparationDefaultService {
             return DailyReportPreparationDefaultResponse.unavailable();
         }
 
+        var distance = assignment.getCustomerSiteId() == null
+                ? java.math.BigDecimal.ZERO
+                : dispatchRepository
+                        .findByPreparationIdAndCustomerSiteIdAndDeletedAtIsNull(
+                                preparation.getId(),
+                                assignment.getCustomerSiteId())
+                        .map(dispatch -> java.math.BigDecimal.valueOf(
+                                dispatch.getDistanceFromCompanyKm() != null
+                                        ? dispatch.getDistanceFromCompanyKm()
+                                        : 0))
+                        .orElseGet(() -> customerSiteRepository
+                                .findByIdAndDeletedAtIsNull(assignment.getCustomerSiteId())
+                                .map(site -> java.math.BigDecimal.valueOf(
+                                        site.getDistanceFromCompanyKm() != null
+                                                ? site.getDistanceFromCompanyKm()
+                                                : 0))
+                                .orElse(java.math.BigDecimal.ZERO));
+
         return new DailyReportPreparationDefaultResponse(
                 true,
                 preparation.getId(),
@@ -54,7 +76,10 @@ public class DailyReportPreparationDefaultService {
                 assignment.getCustomerSiteId(),
                 assignment.getCustomerName(),
                 assignment.getSiteName(),
-                assignment.getWorkDescription()
+                assignment.getWorkDescription(),
+                assignment.getVehicleArrangementType(),
+                distance,
+                assignment.getPassengerCount()
         );
     }
 }

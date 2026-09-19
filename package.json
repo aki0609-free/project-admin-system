@@ -27,6 +27,12 @@
     "docker:logs:frontend": "docker compose logs -f frontend",
     "docker:stop": "docker compose down",
     "docker:build": "docker compose up --build",
+    "reports:workspace:init": "node report-design/scripts/report-workspace.mjs init",
+    "reports:workspace:status": "node report-design/scripts/report-workspace.mjs status",
+    "reports:workspace:check": "node report-design/scripts/report-workspace.mjs sync --dry-run",
+    "reports:workspace:sync": "node report-design/scripts/report-workspace.mjs sync",
+    "reports:deploy:local": "bash report-design/scripts/deploy-local.sh",
+    "reports:deploy:aws": "bash report-design/scripts/deploy-aws.sh",
     "test:e2e": "cd frontend && npm run test:e2e"
   },
   "keywords": [],

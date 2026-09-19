@@ -1,5 +1,8 @@
 package com.project.backend.features.dailyreport.dto;
 
+import java.math.BigDecimal;
+import com.project.backend.features.dailyreport.enums.VehicleArrangementType;
+
 public record DailyReportPreparationDefaultResponse(
         boolean available,
         Long preparationId,
@@ -8,7 +11,10 @@ public record DailyReportPreparationDefaultResponse(
         Long customerSiteId,
         String customerName,
         String siteName,
-        String workDescription
+        String workDescription,
+        VehicleArrangementType vehicleArrangementType,
+        BigDecimal mileage,
+        Integer passengerCount
 ) {
 
     public static DailyReportPreparationDefaultResponse unavailable() {
@@ -20,7 +26,10 @@ public record DailyReportPreparationDefaultResponse(
                 null,
                 null,
                 null,
-                null
+                null,
+                VehicleArrangementType.NONE,
+                BigDecimal.ZERO,
+                0
         );
     }
 }

@@ -5,7 +5,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_root="$(cd "${script_dir}/../../.." && pwd)"
 terraform_dir="${project_root}/infrastructure/environments/dev"
 remote_runner="${script_dir}/run_runtime_schema_upgrade_sql.sh"
-schema_manifest="${project_root}/backend/src/main/resources/sql/runtime-schema-manifest.txt"
+schema_manifest="${RUNTIME_SCHEMA_MANIFEST:-${project_root}/backend/src/main/resources/sql/runtime-schema-manifest.txt}"
 sql_files=()
 
 while IFS= read -r resource_path || [[ -n "${resource_path}" ]]; do

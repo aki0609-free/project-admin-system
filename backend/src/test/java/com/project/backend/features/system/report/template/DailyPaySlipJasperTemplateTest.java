@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
@@ -55,6 +57,12 @@ class DailyPaySlipJasperTemplateTest {
 
         byte[] pdf = JasperExportManager.exportReportToPdf(print);
         assertThat(pdf).startsWith("%PDF".getBytes()).hasSizeGreaterThan(8_000);
+        try (PDDocument document = PDDocument.load(pdf)) {
+            String text = new PDFTextStripper().getText(document);
+            assertThat(text)
+                    .contains("〒123-4567 東京都千代田区テスト1-2-3")
+                    .doesNotContain("加算計");
+        }
 
         Path output = Path.of(
                 "build", "reports", "jasper", "daily_pay_slip-sample.pdf"
@@ -72,17 +80,24 @@ class DailyPaySlipJasperTemplateTest {
         row.put("payment_date", Date.valueOf(paymentDate));
         row.put("employee_code", employeeCode);
         row.put("employee_name", employeeName);
+        row.put("employee_address", "〒123-4567 東京都千代田区テスト1-2-3");
         row.put("labor_period_from", Date.valueOf(paymentDate.minusDays(1)));
         row.put("labor_period_to", Date.valueOf(paymentDate));
         row.put("work_hours", amount("8"));
         row.put("overtime_hours", amount("1.5"));
         row.put("night_work_hours", amount("0"));
+        row.put("work_hours_label", "8時間");
+        row.put("overtime_hours_label", "1時間30分");
+        row.put("night_work_hours_label", "0分");
         row.put("basic_salary", amount("10000"));
         row.put("allowance_total", amount("1500"));
         row.put("deduction_total", amount("500"));
         row.put("gross_amount", amount("11500"));
         row.put("daily_payment_amount", amount("11000"));
         row.put("net_payment_amount", amount("11000"));
+        row.put("legal_deposit_balance", amount("5000"));
+        row.put("loan_balance", amount("20000"));
+        row.put("saving_balance", amount("30000"));
         row.put("note", "月次給与から前払い額として精算");
 
         putItems(
@@ -94,8 +109,11 @@ class DailyPaySlipJasperTemplateTest {
         putItems(
                 row,
                 "deduction",
-                List.of("法定預り額"),
-                List.of(amount("500"))
+                List.of(
+                        "法定準備金（残高：5,000円）",
+                        "貯金（累計額：30,000円）"
+                ),
+                List.of(amount("500"), amount("0"))
         );
         return row;
     }

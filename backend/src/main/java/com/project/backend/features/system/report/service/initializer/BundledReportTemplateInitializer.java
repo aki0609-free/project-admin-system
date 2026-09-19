@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -44,6 +45,9 @@ public class BundledReportTemplateInitializer implements ApplicationRunner {
     private final StorageService storageService;
     private final ReportTemplateKeyBuilder keyBuilder;
 
+    @Value("${app.report.init.overwrite-existing:false}")
+    private boolean overwriteExisting;
+
     @Override
     public void run(ApplicationArguments args) {
         for (String fileName : BUNDLED_TEMPLATES) {
@@ -54,7 +58,7 @@ public class BundledReportTemplateInitializer implements ApplicationRunner {
     private void initializeIfMissing(String fileName) {
         String storageKey = keyBuilder.build(fileName);
 
-        if (storageService.exists(storageKey)) {
+        if (storageService.exists(storageKey) && !overwriteExisting) {
             log.info(
                     "Bundled report template already exists. key={}",
                     storageKey
@@ -81,7 +85,8 @@ public class BundledReportTemplateInitializer implements ApplicationRunner {
                     contentType(fileName)
             );
             log.info(
-                    "Bundled report template initialized. key={}",
+                    "Bundled report template {}. key={}",
+                    overwriteExisting ? "synchronized" : "initialized",
                     storageKey
             );
         } catch (Exception e) {

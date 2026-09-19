@@ -16,6 +16,13 @@ export const useCustomerFormFields = () => {
 
     { key: 'jobType', label: '職種', type: 'text', tab: '契約・請求' },
     {
+      key: 'distanceBillingUnitPrice',
+      label: '顧客距離請求単価（円/km）',
+      type: 'number',
+      tab: '契約・請求',
+      required: true,
+    },
+    {
       key: 'contractFlag',
       label: '契約状態',
       type: 'select',

@@ -1,6 +1,7 @@
 package com.project.backend.features.operation.preparation.entity;
 
 import com.project.backend.app.base.entity.BaseEntity;
+import com.project.backend.features.dailyreport.enums.VehicleArrangementType;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -44,6 +45,13 @@ public class DailyPreparationAssignment extends BaseEntity {
 
     @Column(name = "site_name", length = 255)
     private String siteName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vehicle_arrangement_type", nullable = false, length = 20)
+    private VehicleArrangementType vehicleArrangementType = VehicleArrangementType.NONE;
+
+    @Column(name = "passenger_count", nullable = false)
+    private Integer passengerCount = 0;
 
     @Column(name = "work_description", length = 1000)
     private String workDescription;

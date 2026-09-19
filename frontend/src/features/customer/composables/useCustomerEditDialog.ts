@@ -26,6 +26,7 @@ function createEmptyCustomer(): Customer {
     representativeName: '',
     phone: '',
     jobType: '',
+    distanceBillingUnitPrice: 30,
     contractFlag: 'ACTIVE',
     invoiceType: 'PATTERN_1',
     closingDayRule: null,

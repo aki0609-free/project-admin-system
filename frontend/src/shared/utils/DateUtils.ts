@@ -119,6 +119,31 @@ export function formatDateInTimeZone(
   return `${year}-${month}-${day}`
 }
 
+/**
+ * 業務画面の初期日付を指定日数だけ移動して返す。
+ *
+ * Date#setDate は実行環境のローカルタイムゾーンに依存するため、
+ * 基準時刻そのものを日単位で移動してから業務タイムゾーンの日付へ変換する。
+ */
+export function businessDateWithOffset(
+  dayOffset: number,
+  now = new Date(),
+  timeZone = 'Asia/Tokyo',
+): string {
+  const shifted = new Date(
+    now.getTime() + dayOffset * 24 * 60 * 60 * 1000,
+  )
+  return formatDateInTimeZone(shifted, timeZone)
+}
+
+export function businessMonthWithOffset(
+  dayOffset: number,
+  now = new Date(),
+  timeZone = 'Asia/Tokyo',
+): string {
+  return businessDateWithOffset(dayOffset, now, timeZone).slice(0, 7)
+}
+
 export function toYearMonth(value: string | null | undefined): string | null {
   if (!value) return null
 

@@ -214,7 +214,14 @@ public class DailyReportInputItemService {
         putIfNotNull(variables, "nightWorkHours", workTimes.nightWorkHours());
         putIfNotNull(variables, "holidayWorkHours", workTimes.holidayWorkHours());
         putIfNotNull(variables, "vehicleUsedFlag", request.vehicleUsedFlag());
+        putIfNotNull(variables, "vehicleArrangementType",
+                request.vehicleArrangementType() != null
+                        ? request.vehicleArrangementType().name()
+                        : Boolean.TRUE.equals(request.vehicleUsedFlag())
+                                ? "EMPLOYEE"
+                                : "NONE");
         putIfNotNull(variables, "mileage", request.mileage());
+        putIfNotNull(variables, "passengerCount", request.passengerCount());
         putIfNotNull(variables, "paidLeaveDays", request.paidLeaveDays());
         if (contract != null) {
             putIfNotNull(variables, "salaryType", contract.getSalaryType());

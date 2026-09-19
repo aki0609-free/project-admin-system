@@ -1,4 +1,5 @@
 export type DailyPreparationStatus = 'OPEN' | 'COMPLETED'
+export type VehicleArrangementType = 'NONE' | 'COMPANY' | 'EMPLOYEE' | 'PASSENGER'
 
 export type DailyPreparationAssignmentResponse = {
   id: number
@@ -12,6 +13,9 @@ export type DailyPreparationAssignmentResponse = {
   customerSiteId: number | null
   customerName: string | null
   siteName: string | null
+
+  vehicleArrangementType: VehicleArrangementType
+  passengerCount: number
 
   workDescription: string | null
 }
@@ -27,6 +31,7 @@ export type DailyPreparationDispatchResponse = {
 
   distanceFromCompanyKm: number | null
   vehicleCount: number
+  otherAmount: number
 
   note: string | null
 }
@@ -51,6 +56,8 @@ export type DailyPreparationAssignmentSaveRequest = {
   employeeId: number
   customerId: number | null
   customerSiteId: number | null
+  vehicleArrangementType: VehicleArrangementType
+  passengerCount: number
   workDescription: string | null
 }
 
@@ -59,6 +66,8 @@ export type DailyPreparationAssignmentBulkSaveItemRequest = {
   employeeId: number
   customerId: number | null
   customerSiteId: number | null
+  vehicleArrangementType: VehicleArrangementType
+  passengerCount: number
   workDescription: string | null
   isNew: boolean
   isUpdated: boolean
@@ -76,7 +85,9 @@ export type DailyPreparationDispatchBulkSaveItemRequest = {
   customerId: number | null
   customerSiteId: number | null
 
+  distanceFromCompanyKm: number
   vehicleCount: number
+  otherAmount: number
   note: string | null
 
   isNew: boolean

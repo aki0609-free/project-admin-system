@@ -53,6 +53,7 @@
 | 代表者名 | `representativeName` | `representative_name` | 画面内利用 | 顧客一覧・編集では利用。現行帳票SQL等からの参照は確認できない |
 | 電話番号 | `phone` | `phone` | 画面内利用 | 顧客一覧・編集では利用。現行の帳票・メール等への連携は確認できない |
 | 職種 | `jobType` | `job_type` | 保存のみ | 顧客一覧には表示するが、請求単価の職種コードや日報の職種とは連動していない |
+| 顧客距離請求単価 | `distanceBillingUnitPrice` | `distance_billing_unit_price` | 利用中 | 会社手配・社員手配の日報で、走行距離に掛ける顧客別単価。初期値は30円/km |
 | 契約状態 | `contractFlag` | `contract_flag` | 保存・表示 | `ACTIVE`（契約中）/ `INACTIVE`（未契約）/ `ENDED`（契約終了）の選択式。処理可否の判定には使わない |
 | 請求書パターン | `invoiceType` | `invoice_type` | 利用中 | `PATTERN_1`〜`3`を請求書帳票コードへ解決し、顧客ごとの請求書レイアウトを選択 |
 | 締日 | `closingDayRule` | 下記3カラム | 利用中 | 顧客の請求対象期間、締日通知、取引への締日スナップショットを生成 |
@@ -156,7 +157,7 @@ customer_sites
 | 残業単価 | `overtimeUnitPrice` | `overtime_unit_price` | 利用中 | 残業時間×残業単価 |
 | 深夜単価 | `nightUnitPrice` | `night_unit_price` | 利用中 | 深夜時間×深夜単価 |
 | 休日単価 | `holidayUnitPrice` | `holiday_unit_price` | 利用中 | 休日労働時間×休日単価 |
-| 通勤単価 | `commuteUnitPrice` | `commute_unit_price` | 利用中 | 日報走行距離×通勤単価 |
+| 旧通勤単価 | `commuteUnitPrice` | `commute_unit_price` | 互換保持 | V1画面からは除外。距離請求には顧客マスターの`distance_billing_unit_price`を使う |
 | 適用開始日 | `effectiveFrom` | `effective_from` | 利用中 | 勤務日に適用できる単価の期間判定、期間重複防止 |
 | 適用終了日 | `effectiveTo` | `effective_to` | 利用中 | 勤務日に適用できる単価の期間判定。`NULL`は終了日なし |
 | 有効 | `activeFlag` | `active_flag` | 利用中 | `true`の単価だけを日報保存時の候補にする |

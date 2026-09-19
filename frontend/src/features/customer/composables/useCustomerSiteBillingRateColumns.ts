@@ -231,20 +231,6 @@ export const useCustomerBillingRateColumns = (
       formatter: formatNullableCurrency,
     },
     {
-      title: '通勤単価',
-      key: 'commuteUnitPrice',
-      width: '130px',
-      type: 'number',
-      editable: true,
-      min: 0,
-      step: 1,
-      suffix: '円',
-      filter: {
-        type: 'text',
-      },
-      formatter: formatNullableCurrency,
-    },
-    {
       title: '適用開始日',
       key: 'effectiveFrom',
       width: '140px',

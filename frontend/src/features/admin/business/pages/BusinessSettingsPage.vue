@@ -56,7 +56,7 @@ const {
 } = useBusinessSettingsPage()
 
 const operationTypeOptions = [
-  { title: '翌日準備', value: 'PREPARATION' },
+  { title: '現場配置・配車', value: 'PREPARATION' },
   { title: '日次管理', value: 'DAILY' },
   { title: '月次管理', value: 'MONTHLY' },
   { title: '台帳', value: 'BOOK' },

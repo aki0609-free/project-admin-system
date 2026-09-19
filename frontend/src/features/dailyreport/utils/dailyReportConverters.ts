@@ -115,14 +115,20 @@ export const toDailyReportSaveRequest = (
       ),
 
     vehicleUsedFlag:
-      Boolean(
-        form.vehicleUsedFlag,
-      ),
+      form.vehicleArrangementType !== 'NONE',
+
+    vehicleArrangementType:
+      form.vehicleArrangementType,
 
     mileage:
       Number(
         form.mileage ?? 0,
       ),
+
+    passengerCount:
+      form.vehicleArrangementType === 'EMPLOYEE'
+        ? Number(form.passengerCount ?? 0)
+        : 0,
 
     paidLeaveDays:
       Number(

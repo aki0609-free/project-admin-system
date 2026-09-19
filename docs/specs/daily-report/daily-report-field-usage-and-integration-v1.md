@@ -49,11 +49,24 @@ flowchart LR
 | 休日手当対象 | `holidayPremiumEligible` / `holiday_premium_eligible` | 利用中 | 通常・残業時間を休日時間へ振替え、休日給Ruleへ渡す保存時点の判断 |
 | 休日時間 | `holidayWorkHours` / `holiday_work_hours` | 利用中 | 休日給Rule、休日請求単価、月次帳票 |
 | 備考 | `workDescription` / `work_description` | 利用中 | 日報表示、日次給与明細・日別労務・帳票・業務確認 |
-| 車両使用 | `vehicleUsedFlag` / `vehicle_used_flag` | 利用中 | 手当控除Rule変数、日報確認 |
-| 走行距離 | `mileage` / `mileage` | 利用中 | 通勤請求単価×距離、Rule変数、請求・台帳 |
+| 車両手配区分 | `vehicleArrangementType` / `vehicle_arrangement_type` | 利用中 | `NONE`は車両なし、`COMPANY`は顧客距離請求、`EMPLOYEE`は運転者として顧客距離請求＋従業員運転手当、`PASSENGER`は社員手配車両への同乗者として請求・運転手当とも対象外 |
+| 旧車両使用 | `vehicleUsedFlag` / `vehicle_used_flag` | 互換保持 | 車両手配区分から自動設定。新規業務判定は車両手配区分を使用 |
+| 走行距離 | `mileage` / `mileage` | 利用中 | `COMPANY`/`EMPLOYEE`では顧客距離請求単価×距離。`EMPLOYEE`では運転手当Ruleにも使用。`PASSENGER`では請求・運転手当の計算に使用しない |
+| 同乗者数 | `passengerCount` / `passenger_count` | 利用中 | 運転手本人を除く人数。`EMPLOYEE`の運転手当Ruleだけに使用 |
 | 有給取得日数 | `paidLeaveDays` / `paid_leave_days` | 利用中 | 月次勤怠、月次給与明細・労務帳票。作成・更新・削除の差分を給与プロフィールの有給残へ反映 |
 
-開始・終了・休憩から時間を計算する処理はフロントにあるが、サーバーは送られた時間を再算出しない。API直接呼出時も整合するよう、V1安定化ではサーバー検証が必要である。
+車両関連のV1計算は次の通り。
+
+```text
+COMPANY  : 顧客請求 = 走行距離 × 顧客距離請求単価
+EMPLOYEE : 顧客請求 = 走行距離 × 顧客距離請求単価
+           運転手当 = 走行距離 × 距離手当単価 + 同乗者数 × 同乗者手当単価
+NONE     : 顧客距離請求・運転手当ともに0
+```
+
+顧客距離請求単価は顧客マスター（初期値30円/km）、運転手当の距離単価と同乗者単価は`DAILY_DRIVER_ALLOWANCE` Ruleパラメーター（初期値15円/km、200円/人）で変更する。
+
+開始・終了・休憩から時間を計算する処理はフロントにもあるが、保存時はサーバーでも共通ポリシーにより再計算し、送信された通常・残業・深夜・休日時間との整合を検証する。
 
 ## 4. 顧客・現場・請求項目
 
@@ -69,7 +82,7 @@ flowchart LR
 | 残業単価 | `billing_overtime_unit_price` | Snapshot | 残業請求額 |
 | 深夜単価 | `billing_night_unit_price` | Snapshot | 深夜請求額 |
 | 休日単価 | `billing_holiday_unit_price` | Snapshot | 休日請求額 |
-| 通勤単価 | `billing_commute_unit_price` | Snapshot | 走行距離と掛けて通勤請求額 |
+| 顧客距離請求単価 | `billing_commute_unit_price` | Snapshot | `COMPANY`/`EMPLOYEE`のとき顧客マスターから取得し、走行距離と掛けて顧客請求額を算出。`NONE`/`PASSENGER`は0 |
 
 画面は単価をPreview表示するが保存requestへは単価値を含めない。正式値は必ずサーバーが再解決する。
 

@@ -1,5 +1,7 @@
 package com.project.backend.features.operation.preparation.entity;
 
+import java.math.BigDecimal;
+
 import com.project.backend.app.base.entity.BaseEntity;
 
 import jakarta.persistence.*;
@@ -41,6 +43,9 @@ public class DailyPreparationDispatch extends BaseEntity {
 
     @Column(name = "vehicle_count", nullable = false)
     private Integer vehicleCount = 0;
+
+    @Column(name = "other_amount", precision = 15, scale = 2, nullable = false)
+    private BigDecimal otherAmount = BigDecimal.ZERO;
 
     @Column(name = "note", length = 1000)
     private String note;

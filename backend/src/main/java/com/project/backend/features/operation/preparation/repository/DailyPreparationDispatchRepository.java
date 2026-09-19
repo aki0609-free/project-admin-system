@@ -16,6 +16,11 @@ public interface DailyPreparationDispatchRepository
 
     Optional<DailyPreparationDispatch> findByIdAndDeletedAtIsNull(Long id);
 
+    Optional<DailyPreparationDispatch> findByPreparationIdAndCustomerSiteIdAndDeletedAtIsNull(
+            Long preparationId,
+            Long customerSiteId
+    );
+
     boolean existsByPreparationIdAndCustomerSiteIdAndDeletedAtIsNull(
             Long preparationId,
             Long customerSiteId

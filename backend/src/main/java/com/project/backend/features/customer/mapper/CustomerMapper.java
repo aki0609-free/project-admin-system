@@ -37,6 +37,11 @@ public class CustomerMapper {
         entity.setRepresentativeName(trimToNull(request.representativeName()));
         entity.setPhone(trimToNull(request.phone()));
         entity.setJobType(trimToNull(request.jobType()));
+        entity.setDistanceBillingUnitPrice(
+                request.distanceBillingUnitPrice() != null
+                        ? request.distanceBillingUnitPrice()
+                        : new java.math.BigDecimal("30.00")
+        );
         entity.setContractFlag(
                 request.contractFlag() != null
                         ? request.contractFlag()
@@ -76,6 +81,7 @@ public class CustomerMapper {
                 customer.getRepresentativeName(),
                 customer.getPhone(),
                 customer.getJobType(),
+                customer.getDistanceBillingUnitPrice(),
                 customer.getContractFlag(),
 
                 normalizeInvoiceType(
@@ -126,6 +132,7 @@ public class CustomerMapper {
                 customer.getRepresentativeName(),
                 customer.getPhone(),
                 customer.getJobType(),
+                customer.getDistanceBillingUnitPrice(),
                 customer.getContractFlag(),
 
                 normalizeInvoiceType(

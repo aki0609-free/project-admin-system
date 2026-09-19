@@ -17,11 +17,19 @@ export type FormFieldType =
   | 'textarea'
   | 'sqlEditor'
 
+export interface FormSelectOption {
+  title: string
+  value: any
+  props?: {
+    disabled?: boolean
+  }
+}
+
 export interface FormFieldDef<T> {
   key: keyof T
   label: string
   type: FormFieldType
-  options?: { title: string; value: any }[]
+  options?: FormSelectOption[]
   rows?: number
   autoGrow?: boolean
   required?: boolean

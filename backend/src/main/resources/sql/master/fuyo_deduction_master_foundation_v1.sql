@@ -146,18 +146,18 @@ SELECT
     'COMPANY',
     'MANUAL',
     NULL,
-    0,
+    1000,
     TRUE,
     0,
     10000000,
-    'MONTHLY',
+    'DAILY',
     'NONE',
+    TRUE,
     FALSE,
-    TRUE,
-    TRUE,
+    FALSE,
     130,
     TRUE,
-    '締め期間内の確定済み控除取引を月次集計する',
+    '日報で手入力する。初期値は1,000円で、残高管理・繰越は行わない',
     'default',
     CURRENT_TIMESTAMP(6),
     CURRENT_TIMESTAMP(6),
@@ -224,25 +224,25 @@ SET deduction_name = 'Wi-Fi使用料',
     deduction_type = 'COMPANY',
     calculation_type = 'MANUAL',
     rule_name = NULL,
-    default_amount = 0,
+    default_amount = 1000,
     allow_manual_input = TRUE,
     min_amount = 0,
     max_amount = 10000000,
-    deduction_unit = 'BOTH',
+    deduction_unit = 'DAILY',
     detail_view_type = 'NONE',
     show_on_daily_statement = TRUE,
-    show_on_monthly_statement = TRUE,
-    carry_to_monthly_settlement = TRUE,
+    show_on_monthly_statement = FALSE,
+    carry_to_monthly_settlement = FALSE,
     display_order = 130,
     enabled = TRUE,
-    note = '請求明細を残高へ加算し、日報で実徴収額を登録する。未徴収額は翌月へ繰り越す',
+    note = '日報で手入力する。初期値は1,000円で、残高管理・繰越は行わない',
     updated_at = CURRENT_TIMESTAMP(6),
     deleted_at = NULL
 WHERE tenant_id = 'default'
   AND deduction_code = 'WIFI_FEE';
 
--- Wi-Fi使用料は従業員ごとに利用有無を設定し、請求明細を残高へ登録した後、
--- 日報で実際に徴収した金額だけを控除する。携帯電話貸出料と同じ共通方式とする。
+-- Wi-Fi使用料は従業員ごとに利用有無を設定し、日報で手入力する。
+-- 残高・請求明細・翌月繰越は使用せず、控除マスターの初期値1,000円を提示する。
 -- 従業員画面はこのポリシーをカタログとして読み込むため、コード固有の画面実装は不要。
 INSERT INTO payroll_item_balance_policy (
     target_type, target_master_id, target_code, display_name,
@@ -252,9 +252,9 @@ INSERT INTO payroll_item_balance_policy (
     tenant_id, created_at, updated_at, deleted_at
 )
 SELECT 'DEDUCTION', deduction.id, deduction.deduction_code, deduction.deduction_name,
-       'EMPLOYEE_ENROLLMENT', 'AMOUNT', TRUE, 'DAILY_REPORT_AND_TRANSACTION',
-       'MANUAL', 'MANUAL_TRANSACTION',
-       TRUE, FALSE, TRUE,
+       'EMPLOYEE_ENROLLMENT', 'AMOUNT', FALSE, 'DAILY_REPORT',
+       'MANUAL', 'NONE',
+       FALSE, FALSE, TRUE,
        deduction.tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
 FROM deduction_masters deduction
 WHERE deduction.tenant_id = 'default'

@@ -55,10 +55,6 @@ describe('useDailyReportFormFields', () => {
         key: 'billingHolidayUnitPrice',
         label: '休日単価',
       },
-      {
-        key: 'billingCommuteUnitPrice',
-        label: '通勤単価',
-      },
     ])
 
     const billingUnitField =

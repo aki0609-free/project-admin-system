@@ -37,6 +37,7 @@ public class DailyReportCommandService {
     private final DailyReportMapper mapper;
     private final DailyReportSaveValidator saveValidator;
     private final DailyReportCustomerSiteResolver customerSiteResolver;
+    private final DailyReportPlacementService placementService;
 
     private final DailyReportAllowanceCommandService allowanceCommandService;
     private final DailyReportDeductionCommandService deductionCommandService;
@@ -71,6 +72,7 @@ public class DailyReportCommandService {
         applyCalculatedWorkTimes(entity, request);
 
         customerSiteResolver.applySnapshot(entity, request);
+        placementService.applyAuthoritativePlacement(entity);
 
         billingRateService.applyBillingRate(
                 entity
@@ -153,6 +155,7 @@ public class DailyReportCommandService {
         applyCalculatedWorkTimes(entity, request);
 
         customerSiteResolver.applySnapshot(entity, request);
+        placementService.applyAuthoritativePlacement(entity);
 
         billingRateService.applyBillingRate(
                 entity

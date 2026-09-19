@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import org.springframework.stereotype.Component;
 
 import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
+import com.project.backend.features.dailyreport.enums.VehicleArrangementType;
 import com.project.backend.features.dailyreport.repository.DailyReportRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -71,6 +72,19 @@ public class DailyReportSaveValidator {
         nonNegative("貸付返済額", request.loanRepaymentAmount());
         nonNegative("積立額", request.savingAmount());
         nonNegative("走行距離", request.mileage());
+        if (request.passengerCount() != null && request.passengerCount() < 0) {
+            throw new IllegalArgumentException("同乗者数は0以上で指定してください。");
+        }
+        VehicleArrangementType arrangementType = request.vehicleArrangementType() != null
+                ? request.vehicleArrangementType()
+                : (Boolean.TRUE.equals(request.vehicleUsedFlag())
+                        ? VehicleArrangementType.EMPLOYEE
+                        : VehicleArrangementType.NONE);
+        if (arrangementType != VehicleArrangementType.EMPLOYEE
+                && request.passengerCount() != null
+                && request.passengerCount() != 0) {
+            throw new IllegalArgumentException("同乗者数は社員手配の場合だけ指定できます。");
+        }
         nonNegative("有給日数", request.paidLeaveDays());
 
         DailyReportWorkTimePolicy.WorkTimes calculated =

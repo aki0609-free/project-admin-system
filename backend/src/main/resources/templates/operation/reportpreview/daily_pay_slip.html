@@ -123,17 +123,19 @@ body {
                 <span th:text="${row['labor_period_to_label'] ?: ''}"></span>
             </div>
             <div class="cell-label">勤務時間</div>
-            <div class="cell-value right" th:text="${row['work_hours'] ?: 0} + ' 時間'"></div>
+            <div class="cell-value right" th:text="${row['work_hours_label'] ?: '0分'}"></div>
         </div>
         <div class="row">
             <div class="cell-label">時間外</div>
-            <div class="cell-value right" th:text="${row['overtime_hours'] ?: 0} + ' 時間'"></div>
+            <div class="cell-value right" th:text="${row['overtime_hours_label'] ?: '0分'}"></div>
             <div class="cell-label">深夜</div>
-            <div class="cell-value right" th:text="${row['night_work_hours'] ?: 0} + ' 時間'"></div>
+            <div class="cell-value right" th:text="${row['night_work_hours_label'] ?: '0分'}"></div>
         </div>
 
-        <div class="section-title">手当</div>
+        <div class="section-title">支給内訳</div>
         <div class="items">
+            <div class="item-name">基本単価</div>
+            <div class="item-value" th:text="${#numbers.formatDecimal(row['basic_salary'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
             <th:block th:each="i : ${#numbers.sequence(1,10)}">
                 <div class="item-name" th:text="${row['allowance_item_name' + i] ?: ''}"></div>
                 <div class="item-value"
@@ -141,7 +143,7 @@ body {
             </th:block>
         </div>
 
-        <div class="section-title">控除</div>
+        <div class="section-title">控除内訳</div>
         <div class="items">
             <th:block th:each="i : ${#numbers.sequence(1,10)}">
                 <div class="item-name" th:text="${row['deduction_item_name' + i] ?: ''}"></div>
@@ -152,7 +154,7 @@ body {
 
         <div class="total">
             <div class="total-box">
-                <div class="total-label">基本給</div>
+                <div class="total-label">基本単価</div>
                 <div class="total-value" th:text="${#numbers.formatDecimal(row['basic_salary'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
             </div>
             <div class="total-box">
@@ -164,13 +166,14 @@ body {
                 <div class="total-value" th:text="${#numbers.formatDecimal(row['deduction_total'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
             </div>
             <div class="total-box">
-                <div class="total-label">実支払額</div>
+                <div class="total-label">差引支給額</div>
                 <div class="total-value" th:text="${#numbers.formatDecimal(row['net_payment_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
             </div>
         </div>
 
         <div class="section-title">備考</div>
         <div class="note" th:text="${row['note'] ?: ''}"></div>
+
     </section>
 </main>
 </body>

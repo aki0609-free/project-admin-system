@@ -11,6 +11,7 @@ const validCustomer = {
   representativeName: '',
   phone: '',
   jobType: '',
+  distanceBillingUnitPrice: 30,
   contractFlag: 'ACTIVE' as const,
   invoiceType: 'PATTERN_1' as const,
   closingDayRule: null,

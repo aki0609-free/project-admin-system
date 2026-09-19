@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "updatedAt": "2026-09-19T13:52:21.462Z",
+  "assets": {
+    "report-design/jasper/working/daily_pay_slip.jrxml": {
+      "targetPath": "backend/src/main/resources/reports/daily_pay_slip.jrxml",
+      "baseSha256": "4956316a3452e2d29c89f20dd3193c22ed1a018caf15ef4b936c6cb2d836150b"
+    },
+    "report-design/jasper/working/daily_work_order.jrxml": {
+      "targetPath": "backend/src/main/resources/reports/daily_work_order.jrxml",
+      "baseSha256": "785854bd3e21f04b136b44ac13f1a32e4f5fac65041171d1eb00312e01ba3c28"
+    },
+    "report-design/jasper/working/envelope_kaku2.jrxml": {
+      "targetPath": "backend/src/main/resources/reports/envelope_kaku2.jrxml",
+      "baseSha256": "931c7098d17fe410a5fd16e7469c4cc7c3ae193d7ed20ab3b34be7a55e787adb"
+    },
+    "report-design/jasper/working/envelope_naga3.jrxml": {
+      "targetPath": "backend/src/main/resources/reports/envelope_naga3.jrxml",
+      "baseSha256": "dae12232be79cdee89e355958652dfcb06b1438cbeaa3332525e6f6d510c0de7"
+    },
+    "report-design/jasper/working/monthly_invoice_pattern_1.jrxml": {
+      "targetPath": "backend/src/main/resources/reports/monthly_invoice_pattern_1.jrxml",
+      "baseSha256": "419d876cb771fbf8ffa50caccd5299c93061dfeabfa202cda9ecfae842636392"
+    },
+    "report-design/jasper/working/monthly_invoice_pattern_2.jrxml": {
+      "targetPath": "backend/src/main/resources/reports/monthly_invoice_pattern_2.jrxml",
+      "baseSha256": "d2febf091be3859680204e207799b4d13e6853ffa74f965140daf307cba7bcb0"
+    },
+    "report-design/jasper/working/monthly_invoice_pattern_3.jrxml": {
+      "targetPath": "backend/src/main/resources/reports/monthly_invoice_pattern_3.jrxml",
+      "baseSha256": "9f54926b4705a98a4bb4df6cd0d5867de464a16406686eb4f7d7e5d458116584"
+    },
+    "report-design/jasper/working/monthly_order_form.jrxml": {
+      "targetPath": "backend/src/main/resources/reports/monthly_order_form.jrxml",
+      "baseSha256": "66ca1891193310f8750fc116fa49c9b8a3624b7d232fdf8200c3b82d8b18ccc0"
+    },
+    "report-design/jasper/working/monthly_pay_slip.jrxml": {
+      "targetPath": "backend/src/main/resources/reports/monthly_pay_slip.jrxml",
+      "baseSha256": "0d4b51decfb0251ef00e3af36aa8b673f76c32055fcefa9690e97f99529889a9"
+    },
+    "report-design/sql/working/system/report/monthly_snapshot_foundation_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/monthly_snapshot_foundation_v1.sql",
+      "baseSha256": "e068c415d8939e92cf2be8a28ab5e4a14d203770d3e4ba6e55d1eba4f235d3d8"
+    },
+    "report-design/sql/working/operation/monthly/closing_output_foundation_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/operation/monthly/closing_output_foundation_v1.sql",
+      "baseSha256": "07067e79fdfeee4d9be27ec68a83fbf7902fd90b5fd9a3afd96bc6a4668b1175"
+    },
+    "report-design/sql/working/operation/monthly/customer_billing_closing_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/operation/monthly/customer_billing_closing_v1.sql",
+      "baseSha256": "1f20728bffd3742a57d54c09b51e70d2897de141baf45e421ec3a0543e9c1ca1"
+    },
+    "report-design/sql/working/system/report/envelope/changeDefinition.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/envelope/changeDefinition.sql",
+      "baseSha256": "494a55245d4c0ff97a0b966d792d164ab7afb01cfb818fd6cc4f9608fc0d3b6d"
+    },
+    "report-design/sql/working/system/report/envelope/envelope_foundation_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/envelope/envelope_foundation_v1.sql",
+      "baseSha256": "bfbda005c4a629f44188a2485c0f0d2902dc19b5d1c9e8cb324af9279ba55709"
+    },
+    "report-design/sql/working/system/report/pay_slip/monthly_pay_slip_view_foundation_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/pay_slip/monthly_pay_slip_view_foundation_v1.sql",
+      "baseSha256": "f6023deaa6eeb031a90c915215148c103c9ad6d814180cac62ac3f7d90c65c1c"
+    },
+    "report-design/sql/working/system/report/pay_slip/daily_pay_slip_view_foundation_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/pay_slip/daily_pay_slip_view_foundation_v1.sql",
+      "baseSha256": "78d07f03fc2961bf2443affa95b6a37043cb5b4e56640062c3c3e9683414eb49"
+    },
+    "report-design/sql/working/system/report/pay_slip/setup.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/pay_slip/setup.sql",
+      "baseSha256": "3842f1ba0115adb23ae3d14a263b10c56080cd5643441fd558db34523a69a3b3"
+    },
+    "report-design/sql/working/system/report/pay_slip/monthly_pay_slip_snapshot_foundation_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/pay_slip/monthly_pay_slip_snapshot_foundation_v1.sql",
+      "baseSha256": "94a15aeba03436547b19e6ae520c23a63963c5b0f201b85146ed8e3ae56a5615"
+    },
+    "report-design/sql/working/system/report/pay_slip/daily_pay_slip_stored.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/pay_slip/daily_pay_slip_stored.sql",
+      "baseSha256": "07f91cc0652c3472f6bb6193a1b4858f1eb011bcd5e1b302cbf60dee33418545"
+    },
+    "report-design/sql/working/system/report/invoice/monthly_invoice_foundation_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/invoice/monthly_invoice_foundation_v1.sql",
+      "baseSha256": "8b1bd62fa05023d8abe72ec694f8430e6d5b2c809ce72b417618f6efc466aac1"
+    },
+    "report-design/sql/working/system/report/invoice/monthly_invoice_render_views_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/invoice/monthly_invoice_render_views_v1.sql",
+      "baseSha256": "319da20e7d6bc1782809e0a3f85b39ab24cbc73d9117c746be8341b460bb3e4b"
+    },
+    "report-design/sql/working/system/report/invoice/monthly_invoice_report_master_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/invoice/monthly_invoice_report_master_v1.sql",
+      "baseSha256": "4d6b043b16a52a1bbbb563a501066f2dc6f906ec14c573f3476a3b2ca530dd66"
+    },
+    "report-design/sql/working/system/report/order_form/monthly_order_form_foundation_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/order_form/monthly_order_form_foundation_v1.sql",
+      "baseSha256": "64e7153424a49587297f00f4f19af68762e3c8eba8a3746d204242e3ed8849f2"
+    },
+    "report-design/sql/working/system/report/preview/daily_preview_foundation_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/preview/daily_preview_foundation_v1.sql",
+      "baseSha256": "861b29a3b303601655b2212de3265e3c0eba31b34b92ab34f0a9494bf2f832eb"
+    },
+    "report-design/sql/working/system/report/preview/report_preview_catalog_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/preview/report_preview_catalog_v1.sql",
+      "baseSha256": "986f4a76b2f11871d6d88dacaecba9c7e3758ca999959c17a3f6835b6c95ac62"
+    },
+    "report-design/sql/working/system/report/labor_cost/monthly_labor_cost_list_foundation_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/labor_cost/monthly_labor_cost_list_foundation_v1.sql",
+      "baseSha256": "9b6a449d94934943af0afb35b3c533154688e8121ed2895dd5b93de8a53e8893"
+    },
+    "report-design/sql/working/system/report/daily_work_order/daily_work_order_foundation_v1.sql": {
+      "targetPath": "backend/src/main/resources/sql/system/report/daily_work_order/daily_work_order_foundation_v1.sql",
+      "baseSha256": "20fdc930bc3b961f9fd89e3a1907d599b98f64dcd3845f5d296d9b8ee0508b37"
+    }
+  }
+}

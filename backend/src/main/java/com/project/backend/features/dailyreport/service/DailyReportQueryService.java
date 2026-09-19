@@ -210,8 +210,14 @@ public class DailyReportQueryService {
                             .vehicleUsedFlag(
                                     response.vehicleUsedFlag()
                             )
+                            .vehicleArrangementType(
+                                    response.vehicleArrangementType()
+                            )
                             .mileage(
                                     response.mileage()
+                            )
+                            .passengerCount(
+                                    response.passengerCount()
                             )
 
                             .paidLeaveDays(
@@ -408,8 +414,14 @@ public class DailyReportQueryService {
                 .vehicleUsedFlag(
                         entity.isVehicleUsedFlag()
                 )
+                .vehicleArrangementType(
+                        entity.getVehicleArrangementType()
+                )
                 .mileage(
                         entity.getMileage()
+                )
+                .passengerCount(
+                        entity.getPassengerCount()
                 )
 
                 .paidLeaveDays(

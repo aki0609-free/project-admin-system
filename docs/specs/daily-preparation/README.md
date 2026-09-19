@@ -1,8 +1,8 @@
-# 翌日準備ドメイン仕様
+# 現場配置・配車ドメイン仕様
 
 ## 対象画面
 
-- 締め処理 → 翌日準備
+- 締め処理 → 現場配置・配車
 - 画面URL：`/operation/daily/preparation`
 - API：`/api/operation/daily-preparations`
 

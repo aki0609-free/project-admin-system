@@ -5,12 +5,10 @@ import {
   createDailyPaymentRows,
   type DailyPaymentTableRow,
 } from './useDailyPaymentTableConfig'
-import { formatDateInTimeZone } from '@/shared/utils/DateUtils'
-
-const today = () => formatDateInTimeZone(new Date())
+import { businessDateWithOffset } from '@/shared/utils/DateUtils'
 
 export const useDailyOperationPage = () => {
-  const paymentDate = ref(today())
+  const paymentDate = ref(businessDateWithOffset(-1))
   const activeTab = ref<'summary' | 'details' | 'reports'>('summary')
   const rows = ref<DailyPaymentTableRow[]>([])
 

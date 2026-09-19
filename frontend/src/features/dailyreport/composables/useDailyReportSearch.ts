@@ -1,6 +1,10 @@
 import { computed, reactive } from 'vue'
 import type { SearchPanelFieldDef } from '@/shared/components/search/types/searchPanelTypes'
 import type { DailyReportResponse } from '@/features/dailyreport/types/dailyReportApiTypes'
+import {
+  businessDateWithOffset,
+  businessMonthWithOffset,
+} from '@/shared/utils/DateUtils'
 
 export type DailyReportSearchCondition = {
   employeeKeyword: string
@@ -25,8 +29,8 @@ export const useDailyReportSearch = (reportsGetter: () => DailyReportResponse[])
     paymentDateFrom: '',
     paymentDateTo: '',
 
-    targetWorkDate: '',
-    attendanceTargetMonth: '',
+    targetWorkDate: businessDateWithOffset(-1),
+    attendanceTargetMonth: businessMonthWithOffset(-1),
   })
 
   const reportFields = computed<SearchPanelFieldDef<DailyReportSearchCondition>[]>(() => [

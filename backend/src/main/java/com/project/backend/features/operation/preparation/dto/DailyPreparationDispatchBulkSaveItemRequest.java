@@ -1,5 +1,7 @@
 package com.project.backend.features.operation.preparation.dto;
 
+import java.math.BigDecimal;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Getter;
@@ -15,7 +17,11 @@ public class DailyPreparationDispatchBulkSaveItemRequest {
 
     private Long customerSiteId;
 
+    private Integer distanceFromCompanyKm;
+
     private Integer vehicleCount;
+
+    private BigDecimal otherAmount;
 
     private String note;
 

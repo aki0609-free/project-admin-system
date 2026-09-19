@@ -1,5 +1,7 @@
 package com.project.backend.features.operation.preparation.dto;
 
+import java.math.BigDecimal;
+
 import lombok.Builder;
 
 @Builder
@@ -14,6 +16,7 @@ public record DailyPreparationDispatchResponse(
 
         Integer distanceFromCompanyKm,
         Integer vehicleCount,
+        BigDecimal otherAmount,
 
         String note
 ) {

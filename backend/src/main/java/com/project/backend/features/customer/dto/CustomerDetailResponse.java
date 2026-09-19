@@ -1,6 +1,7 @@
 package com.project.backend.features.customer.dto;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 import com.project.backend.common.dayrule.dto.DayRuleResponse;
 import com.project.backend.features.customer.enums.CustomerContractStatus;
@@ -16,6 +17,7 @@ public record CustomerDetailResponse(
         String representativeName,
         String phone,
         String jobType,
+        BigDecimal distanceBillingUnitPrice,
         CustomerContractStatus contractFlag,
 
         CustomerInvoiceType invoiceType,

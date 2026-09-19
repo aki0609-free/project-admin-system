@@ -3,7 +3,10 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { get, post } from '@/shared/api/http'
 import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
-import { formatYearMonth } from '@/shared/utils/DateUtils'
+import {
+  businessMonthWithOffset,
+  formatYearMonth,
+} from '@/shared/utils/DateUtils'
 
 import type {
   CustomerBillingBulkClosing,
@@ -12,19 +15,8 @@ import type {
   CustomerBillingTarget,
 } from '../types/customerBillingTypes'
 
-const currentMonth = () => {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Tokyo',
-    year: 'numeric',
-    month: '2-digit',
-  }).formatToParts(new Date())
-  const year = parts.find(part => part.type === 'year')?.value
-  const month = parts.find(part => part.type === 'month')?.value
-  return `${year}-${month}`
-}
-
 export const useCustomerBillingClosingPage = () => {
-  const targetMonth = ref(currentMonth())
+  const targetMonth = ref(businessMonthWithOffset(-1))
   const activeTab = ref<'customers' | 'reports'>('customers')
   const summary = ref<CustomerBillingSummary | null>(null)
   const selectedReportCustomerId = ref<number | null>(null)

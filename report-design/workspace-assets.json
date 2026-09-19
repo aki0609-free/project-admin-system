@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "kind": "jasper",
+      "name": "日次給与明細",
+      "workingPath": "report-design/jasper/working/daily_pay_slip.jrxml",
+      "targetPath": "backend/src/main/resources/reports/daily_pay_slip.jrxml"
+    },
+    {
+      "kind": "jasper",
+      "name": "作業証明伝票",
+      "workingPath": "report-design/jasper/working/daily_work_order.jrxml",
+      "targetPath": "backend/src/main/resources/reports/daily_work_order.jrxml"
+    },
+    {
+      "kind": "jasper",
+      "name": "角2封筒",
+      "workingPath": "report-design/jasper/working/envelope_kaku2.jrxml",
+      "targetPath": "backend/src/main/resources/reports/envelope_kaku2.jrxml"
+    },
+    {
+      "kind": "jasper",
+      "name": "長3封筒",
+      "workingPath": "report-design/jasper/working/envelope_naga3.jrxml",
+      "targetPath": "backend/src/main/resources/reports/envelope_naga3.jrxml"
+    },
+    {
+      "kind": "jasper",
+      "name": "請求書パターン1",
+      "workingPath": "report-design/jasper/working/monthly_invoice_pattern_1.jrxml",
+      "targetPath": "backend/src/main/resources/reports/monthly_invoice_pattern_1.jrxml"
+    },
+    {
+      "kind": "jasper",
+      "name": "請求書パターン2",
+      "workingPath": "report-design/jasper/working/monthly_invoice_pattern_2.jrxml",
+      "targetPath": "backend/src/main/resources/reports/monthly_invoice_pattern_2.jrxml"
+    },
+    {
+      "kind": "jasper",
+      "name": "請求書パターン3",
+      "workingPath": "report-design/jasper/working/monthly_invoice_pattern_3.jrxml",
+      "targetPath": "backend/src/main/resources/reports/monthly_invoice_pattern_3.jrxml"
+    },
+    {
+      "kind": "jasper",
+      "name": "注文書",
+      "workingPath": "report-design/jasper/working/monthly_order_form.jrxml",
+      "targetPath": "backend/src/main/resources/reports/monthly_order_form.jrxml"
+    },
+    {
+      "kind": "jasper",
+      "name": "月次給与明細",
+      "workingPath": "report-design/jasper/working/monthly_pay_slip.jrxml",
+      "targetPath": "backend/src/main/resources/reports/monthly_pay_slip.jrxml"
+    },
+    {
+      "kind": "sql",
+      "name": "月次帳票スナップショット基盤",
+      "workingPath": "report-design/sql/working/system/report/monthly_snapshot_foundation_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/monthly_snapshot_foundation_v1.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "月次締め出力基盤",
+      "workingPath": "report-design/sql/working/operation/monthly/closing_output_foundation_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/operation/monthly/closing_output_foundation_v1.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "顧客請求締め基盤",
+      "workingPath": "report-design/sql/working/operation/monthly/customer_billing_closing_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/operation/monthly/customer_billing_closing_v1.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "封筒定義",
+      "workingPath": "report-design/sql/working/system/report/envelope/changeDefinition.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/envelope/changeDefinition.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "封筒帳票基盤",
+      "workingPath": "report-design/sql/working/system/report/envelope/envelope_foundation_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/envelope/envelope_foundation_v1.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "月次給与明細View",
+      "workingPath": "report-design/sql/working/system/report/pay_slip/monthly_pay_slip_view_foundation_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/pay_slip/monthly_pay_slip_view_foundation_v1.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "日次給与明細View",
+      "workingPath": "report-design/sql/working/system/report/pay_slip/daily_pay_slip_view_foundation_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/pay_slip/daily_pay_slip_view_foundation_v1.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "給与明細帳票定義",
+      "workingPath": "report-design/sql/working/system/report/pay_slip/setup.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/pay_slip/setup.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "月次給与明細確定値",
+      "workingPath": "report-design/sql/working/system/report/pay_slip/monthly_pay_slip_snapshot_foundation_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/pay_slip/monthly_pay_slip_snapshot_foundation_v1.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "日次給与明細ストアド",
+      "workingPath": "report-design/sql/working/system/report/pay_slip/daily_pay_slip_stored.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/pay_slip/daily_pay_slip_stored.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "請求書基盤",
+      "workingPath": "report-design/sql/working/system/report/invoice/monthly_invoice_foundation_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/invoice/monthly_invoice_foundation_v1.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "請求書描画View",
+      "workingPath": "report-design/sql/working/system/report/invoice/monthly_invoice_render_views_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/invoice/monthly_invoice_render_views_v1.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "請求書帳票定義",
+      "workingPath": "report-design/sql/working/system/report/invoice/monthly_invoice_report_master_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/invoice/monthly_invoice_report_master_v1.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "注文書基盤",
+      "workingPath": "report-design/sql/working/system/report/order_form/monthly_order_form_foundation_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/order_form/monthly_order_form_foundation_v1.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "日次HTMLプレビュー基盤",
+      "workingPath": "report-design/sql/working/system/report/preview/daily_preview_foundation_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/preview/daily_preview_foundation_v1.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "プレビュー定義",
+      "workingPath": "report-design/sql/working/system/report/preview/report_preview_catalog_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/preview/report_preview_catalog_v1.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "月次労務費一覧基盤",
+      "workingPath": "report-design/sql/working/system/report/labor_cost/monthly_labor_cost_list_foundation_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/labor_cost/monthly_labor_cost_list_foundation_v1.sql"
+    },
+    {
+      "kind": "sql",
+      "name": "作業証明伝票基盤",
+      "workingPath": "report-design/sql/working/system/report/daily_work_order/daily_work_order_foundation_v1.sql",
+      "targetPath": "backend/src/main/resources/sql/system/report/daily_work_order/daily_work_order_foundation_v1.sql"
+    }
+  ]
+}

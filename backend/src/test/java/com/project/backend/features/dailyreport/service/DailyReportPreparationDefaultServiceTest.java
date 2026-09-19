@@ -13,22 +13,33 @@ import org.junit.jupiter.api.Test;
 import com.project.backend.features.dailyreport.dto.DailyReportPreparationDefaultResponse;
 import com.project.backend.features.operation.preparation.entity.DailyPreparation;
 import com.project.backend.features.operation.preparation.entity.DailyPreparationAssignment;
+import com.project.backend.features.operation.preparation.entity.DailyPreparationDispatch;
 import com.project.backend.features.operation.preparation.repository.DailyPreparationAssignmentRepository;
+import com.project.backend.features.operation.preparation.repository.DailyPreparationDispatchRepository;
 import com.project.backend.features.operation.preparation.repository.DailyPreparationRepository;
+import com.project.backend.features.customer.repository.CustomerSiteRepository;
+import com.project.backend.features.customer.entity.CustomerSite;
+import com.project.backend.features.dailyreport.enums.VehicleArrangementType;
 
 class DailyReportPreparationDefaultServiceTest {
 
     private DailyPreparationRepository preparationRepository;
     private DailyPreparationAssignmentRepository assignmentRepository;
+    private DailyPreparationDispatchRepository dispatchRepository;
+    private CustomerSiteRepository customerSiteRepository;
     private DailyReportPreparationDefaultService service;
 
     @BeforeEach
     void setUp() {
         preparationRepository = mock(DailyPreparationRepository.class);
         assignmentRepository = mock(DailyPreparationAssignmentRepository.class);
+        dispatchRepository = mock(DailyPreparationDispatchRepository.class);
+        customerSiteRepository = mock(CustomerSiteRepository.class);
         service = new DailyReportPreparationDefaultService(
                 preparationRepository,
-                assignmentRepository
+                assignmentRepository,
+                dispatchRepository,
+                customerSiteRepository
         );
     }
 
@@ -46,11 +57,25 @@ class DailyReportPreparationDefaultServiceTest {
         assignment.setCustomerName("顧客A");
         assignment.setSiteName("現場A");
         assignment.setWorkDescription("資材搬入");
+        assignment.setVehicleArrangementType(VehicleArrangementType.EMPLOYEE);
+        assignment.setPassengerCount(2);
+        CustomerSite site = new CustomerSite();
+        site.setId(5L);
+        site.setDistanceFromCompanyKm(18);
+        DailyPreparationDispatch dispatch = new DailyPreparationDispatch();
+        dispatch.setPreparationId(1L);
+        dispatch.setCustomerSiteId(5L);
+        dispatch.setDistanceFromCompanyKm(23);
         when(preparationRepository.findByTargetDateAndDeletedAtIsNull(date))
                 .thenReturn(Optional.of(preparation));
         when(assignmentRepository
                 .findByPreparationIdAndEmployeeIdAndDeletedAtIsNull(1L, 3L))
                 .thenReturn(Optional.of(assignment));
+        when(dispatchRepository
+                .findByPreparationIdAndCustomerSiteIdAndDeletedAtIsNull(1L, 5L))
+                .thenReturn(Optional.of(dispatch));
+        when(customerSiteRepository.findByIdAndDeletedAtIsNull(5L))
+                .thenReturn(Optional.of(site));
 
         DailyReportPreparationDefaultResponse result = service.find(date, 3L);
 
@@ -58,6 +83,9 @@ class DailyReportPreparationDefaultServiceTest {
         assertThat(result.customerId()).isEqualTo(4L);
         assertThat(result.customerSiteId()).isEqualTo(5L);
         assertThat(result.workDescription()).isEqualTo("資材搬入");
+        assertThat(result.vehicleArrangementType()).isEqualTo(VehicleArrangementType.EMPLOYEE);
+        assertThat(result.mileage()).isEqualByComparingTo("23");
+        assertThat(result.passengerCount()).isEqualTo(2);
     }
 
     @Test

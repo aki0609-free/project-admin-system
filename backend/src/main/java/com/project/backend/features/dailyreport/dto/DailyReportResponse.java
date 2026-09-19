@@ -6,6 +6,7 @@ import java.time.LocalTime;
 
 import com.project.backend.features.customer.enums.CustomerBillingUnit;
 import com.project.backend.features.employee.enums.ApprovalStatus;
+import com.project.backend.features.dailyreport.enums.VehicleArrangementType;
 
 import lombok.Builder;
 
@@ -70,7 +71,9 @@ public record DailyReportResponse(
         BigDecimal estimatedNetPayAmount,
 
         Boolean vehicleUsedFlag,
+        VehicleArrangementType vehicleArrangementType,
         BigDecimal mileage,
+        Integer passengerCount,
 
         BigDecimal paidLeaveDays,
         BigDecimal paidLeaveRemainingDays,

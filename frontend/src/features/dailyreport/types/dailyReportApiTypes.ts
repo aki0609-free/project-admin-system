@@ -15,6 +15,8 @@ export type CustomerBillingUnit =
   | 'MONTHLY'
   | 'FIXED'
 
+export type VehicleArrangementType = 'NONE' | 'COMPANY' | 'EMPLOYEE' | 'PASSENGER'
+
 export type DailyReportAllowanceResponse = {
   id: number
   allowanceMasterId: number
@@ -105,7 +107,9 @@ export type DailyReportResponse = {
   deductionAmount: number
 
   vehicleUsedFlag: boolean
+  vehicleArrangementType: VehicleArrangementType
   mileage: number
+  passengerCount: number
 
   paidLeaveDays: number
   paidLeaveRemainingDays: number
@@ -144,6 +148,9 @@ export type DailyReportPreparationDefaultResponse = {
   customerName: string | null
   siteName: string | null
   workDescription: string | null
+  vehicleArrangementType: VehicleArrangementType
+  mileage: number
+  passengerCount: number
 }
 
 export type DailyReportDetailResponse =
@@ -214,7 +221,9 @@ export type DailyReportSaveRequest = {
   deductionAmount: number
 
   vehicleUsedFlag: boolean
+  vehicleArrangementType: VehicleArrangementType
   mileage: number
+  passengerCount: number
 
   paidLeaveDays: number
 

@@ -41,11 +41,15 @@
     <field name="payment_date" class="java.sql.Date"/>
     <field name="employee_code" class="java.lang.String"/>
     <field name="employee_name" class="java.lang.String"/>
+    <field name="employee_address" class="java.lang.String"/>
     <field name="labor_period_from" class="java.sql.Date"/>
     <field name="labor_period_to" class="java.sql.Date"/>
     <field name="work_hours" class="java.math.BigDecimal"/>
     <field name="overtime_hours" class="java.math.BigDecimal"/>
     <field name="night_work_hours" class="java.math.BigDecimal"/>
+    <field name="work_hours_label" class="java.lang.String"/>
+    <field name="overtime_hours_label" class="java.lang.String"/>
+    <field name="night_work_hours_label" class="java.lang.String"/>
     <field name="basic_salary" class="java.math.BigDecimal"/>
     <field name="gross_amount" class="java.math.BigDecimal"/>
     <field name="allowance_total" class="java.math.BigDecimal"/>
@@ -109,7 +113,7 @@
                 <staticText>
                     <reportElement style="Title" x="0" y="0" width="195" height="28"/>
                     <textElement textAlignment="Center" verticalAlignment="Middle"/>
-                    <text><![CDATA[支払明細書]]></text>
+                    <text><![CDATA[日次給与明細]]></text>
                 </staticText>
                 <staticText><reportElement style="Header" x="195" y="0" width="64" height="14"/><text><![CDATA[氏名]]></text></staticText>
                 <textField isBlankWhenNull="true"><reportElement style="CellCenter" x="195" y="14" width="151" height="14"/><textFieldExpression><![CDATA[$F{employee_name}]]></textFieldExpression></textField>
@@ -121,24 +125,22 @@
                 <staticText><reportElement style="Header" x="366" y="30" width="58" height="16"/><text><![CDATA[社員コード]]></text></staticText>
                 <textField isBlankWhenNull="true"><reportElement style="CellCenter" x="424" y="30" width="64" height="16"/><textFieldExpression><![CDATA[$F{employee_code}]]></textFieldExpression></textField>
 
-                <staticText><reportElement style="Header" x="0" y="48" width="81" height="15"/><text><![CDATA[勤務時間]]></text></staticText>
-                <staticText><reportElement style="Header" x="81" y="48" width="81" height="15"/><text><![CDATA[早出・残業]]></text></staticText>
-                <staticText><reportElement style="Header" x="162" y="48" width="82" height="15"/><text><![CDATA[深夜]]></text></staticText>
-                <textField><reportElement style="CellRight" x="0" y="63" width="81" height="16"/><textFieldExpression><![CDATA[$F{work_hours}.stripTrailingZeros().toPlainString() + " h"]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="81" y="63" width="81" height="16"/><textFieldExpression><![CDATA[$F{overtime_hours}.stripTrailingZeros().toPlainString() + " h"]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="162" y="63" width="82" height="16"/><textFieldExpression><![CDATA[$F{night_work_hours}.stripTrailingZeros().toPlainString() + " h"]]></textFieldExpression></textField>
-                <staticText><reportElement style="Header" x="244" y="48" width="81" height="15"/><text><![CDATA[基礎額]]></text></staticText>
-                <staticText><reportElement style="Header" x="325" y="48" width="81" height="15"/><text><![CDATA[加算計]]></text></staticText>
-                <staticText><reportElement style="Header" x="406" y="48" width="82" height="15"/><text><![CDATA[控除計]]></text></staticText>
-                <textField><reportElement style="CellRight" x="244" y="63" width="81" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{basic_salary})]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="325" y="63" width="81" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{allowance_total})]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="406" y="63" width="82" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{deduction_total})]]></textFieldExpression></textField>
+                <staticText><reportElement style="Header" x="0" y="48" width="98" height="15"/><text><![CDATA[勤務時間]]></text></staticText>
+                <staticText><reportElement style="Header" x="98" y="48" width="98" height="15"/><text><![CDATA[早出・残業]]></text></staticText>
+                <staticText><reportElement style="Header" x="196" y="48" width="98" height="15"/><text><![CDATA[深夜]]></text></staticText>
+                <textField><reportElement style="CellRight" x="0" y="63" width="98" height="16"/><textFieldExpression><![CDATA[$F{work_hours_label}]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="98" y="63" width="98" height="16"/><textFieldExpression><![CDATA[$F{overtime_hours_label}]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="196" y="63" width="98" height="16"/><textFieldExpression><![CDATA[$F{night_work_hours_label}]]></textFieldExpression></textField>
+                <staticText><reportElement style="Header" x="294" y="48" width="97" height="15"/><text><![CDATA[基本単価]]></text></staticText>
+                <staticText><reportElement style="Header" x="391" y="48" width="97" height="15"/><text><![CDATA[控除計]]></text></staticText>
+                <textField><reportElement style="CellRight" x="294" y="63" width="97" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{basic_salary})]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="391" y="63" width="97" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{deduction_total})]]></textFieldExpression></textField>
 
                 <staticText><reportElement style="PayHeader" x="0" y="83" width="240" height="17"/><text><![CDATA[支給内訳]]></text></staticText>
                 <staticText><reportElement style="DeductionHeader" x="248" y="83" width="240" height="17"/><text><![CDATA[控除内訳]]></text></staticText>
-                <staticText><reportElement style="Cell" x="0" y="100" width="140" height="16"/><text><![CDATA[基本給]]></text></staticText>
+                <staticText><reportElement style="Cell" x="0" y="100" width="175" height="16"/><text><![CDATA[基本単価]]></text></staticText>
                 <textField isBlankWhenNull="true">
-                    <reportElement style="Cell" x="0" y="116" width="140" height="96"/>
+                    <reportElement style="Cell" x="0" y="116" width="175" height="80"/>
                     <textElement verticalAlignment="Top"/>
                     <textFieldExpression><![CDATA[
 ($F{allowance_item_name1} == null ? "" : $F{allowance_item_name1}) + "\n" +
@@ -153,9 +155,9 @@
 ($F{allowance_item_name10} == null ? "" : $F{allowance_item_name10})
                     ]]></textFieldExpression>
                 </textField>
-                <textField><reportElement style="CellRight" x="140" y="100" width="100" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{basic_salary})]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="175" y="100" width="65" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{basic_salary})]]></textFieldExpression></textField>
                 <textField isBlankWhenNull="true">
-                    <reportElement style="CellRight" x="140" y="116" width="100" height="96"/>
+                    <reportElement style="CellRight" x="175" y="116" width="65" height="80"/>
                     <textElement verticalAlignment="Top"/>
                     <textFieldExpression><![CDATA[
 ($F{allowance_item_value1} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value1})) + "\n" +
@@ -171,7 +173,7 @@
                     ]]></textFieldExpression>
                 </textField>
                 <textField isBlankWhenNull="true">
-                    <reportElement style="Cell" x="248" y="100" width="140" height="112"/>
+                    <reportElement style="Cell" x="248" y="100" width="175" height="96"/>
                     <textElement verticalAlignment="Top"/>
                     <textFieldExpression><![CDATA[
 ($F{deduction_item_name1} == null ? "" : $F{deduction_item_name1}) + "\n" +
@@ -187,7 +189,7 @@
                     ]]></textFieldExpression>
                 </textField>
                 <textField isBlankWhenNull="true">
-                    <reportElement style="CellRight" x="388" y="100" width="100" height="112"/>
+                    <reportElement style="CellRight" x="423" y="100" width="65" height="96"/>
                     <textElement verticalAlignment="Top"/>
                     <textFieldExpression><![CDATA[
 ($F{deduction_item_value1} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value1})) + "\n" +
@@ -203,36 +205,34 @@
                     ]]></textFieldExpression>
                 </textField>
 
-                <staticText><reportElement style="Header" x="0" y="218" width="98" height="17"/><text><![CDATA[総支給額]]></text></staticText>
-                <staticText><reportElement style="Header" x="98" y="218" width="98" height="17"/><text><![CDATA[控除合計]]></text></staticText>
-                <staticText><reportElement style="Header" x="196" y="218" width="98" height="17"/><text><![CDATA[当日支払額]]></text></staticText>
+                <staticText><reportElement style="Header" x="0" y="196" width="175" height="16"/><text><![CDATA[支給合計]]></text></staticText>
+                <textField><reportElement style="CellRight" x="175" y="196" width="65" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{gross_amount})]]></textFieldExpression></textField>
+                <staticText><reportElement style="Header" x="248" y="196" width="175" height="16"/><text><![CDATA[控除合計]]></text></staticText>
+                <textField><reportElement style="CellRight" x="423" y="196" width="65" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{deduction_total})]]></textFieldExpression></textField>
+
+                <staticText><reportElement style="Header" x="0" y="218" width="98" height="17"/><text><![CDATA[基本単価]]></text></staticText>
+                <staticText><reportElement style="Header" x="98" y="218" width="98" height="17"/><text><![CDATA[総支給額]]></text></staticText>
+                <staticText><reportElement style="Header" x="196" y="218" width="98" height="17"/><text><![CDATA[控除合計]]></text></staticText>
                 <staticText><reportElement style="NetHeader" x="294" y="218" width="194" height="17"/><text><![CDATA[差引支給額]]></text></staticText>
-                <textField><reportElement style="CellRight" x="0" y="235" width="98" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{gross_amount})]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="98" y="235" width="98" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{deduction_total})]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="196" y="235" width="98" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{daily_payment_amount})]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="0" y="235" width="98" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{basic_salary})]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="98" y="235" width="98" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{gross_amount})]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="196" y="235" width="98" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{deduction_total})]]></textFieldExpression></textField>
                 <textField><reportElement style="NetValue" x="294" y="235" width="194" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{net_payment_amount}) + " 円"]]></textFieldExpression></textField>
 
-                <staticText><reportElement style="Header" x="0" y="261" width="81" height="16"/><text><![CDATA[法定準備金残高]]></text></staticText>
-                <textField><reportElement style="CellRight" x="81" y="261" width="81" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{legal_deposit_balance} == null ? java.math.BigDecimal.ZERO : $F{legal_deposit_balance})]]></textFieldExpression></textField>
-                <staticText><reportElement style="Header" x="162" y="261" width="81" height="16"/><text><![CDATA[借入金残高]]></text></staticText>
-                <textField><reportElement style="CellRight" x="243" y="261" width="81" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{loan_balance} == null ? java.math.BigDecimal.ZERO : $F{loan_balance})]]></textFieldExpression></textField>
-                <staticText><reportElement style="Header" x="324" y="261" width="81" height="16"/><text><![CDATA[貯金残高]]></text></staticText>
-                <textField><reportElement style="CellRight" x="405" y="261" width="83" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{saving_balance} == null ? java.math.BigDecimal.ZERO : $F{saving_balance})]]></textFieldExpression></textField>
-
-                <staticText><reportElement style="Header" x="0" y="281" width="64" height="18"/><text><![CDATA[備考]]></text></staticText>
-                <textField isBlankWhenNull="true"><reportElement style="Cell" x="64" y="281" width="424" height="18"/><textFieldExpression><![CDATA[$F{note}]]></textFieldExpression></textField>
-                <staticText>
-                    <reportElement style="Base" x="0" y="302" width="488" height="20"/>
-                    <text><![CDATA[※上記の金額を正に領収しました。　氏名：　　　　　　　　　　　　　　印]]></text>
-                </staticText>
-                <line><reportElement x="0" y="325" width="488" height="1"/><graphicElement><pen lineStyle="Dashed" lineColor="#9CA3AF"/></graphicElement></line>
+                <staticText><reportElement style="Header" x="0" y="263" width="64" height="18"/><text><![CDATA[備考]]></text></staticText>
+                <textField isBlankWhenNull="true"><reportElement style="Cell" x="64" y="263" width="424" height="18"/><textFieldExpression><![CDATA[$F{note}]]></textFieldExpression></textField>
+                <staticText><reportElement style="Base" x="0" y="284" width="36" height="12"/><text><![CDATA[住所：]]></text></staticText>
+                <textField isBlankWhenNull="true"><reportElement style="Base" x="36" y="284" width="452" height="12"/><textFieldExpression><![CDATA[$F{employee_address}]]></textFieldExpression></textField>
+                <staticText><reportElement style="Base" x="0" y="298" width="170" height="12"/><text><![CDATA[※上記金額を受領しました。]]></text></staticText>
+                <textField isBlankWhenNull="true"><reportElement style="Base" x="170" y="298" width="318" height="12"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA["氏名：" + ($F{employee_name} == null ? "" : $F{employee_name}) + "　署名：________________　印"]]></textFieldExpression></textField>
+                <line><reportElement x="0" y="312" width="488" height="1"/><graphicElement><pen lineStyle="Dashed" lineColor="#9CA3AF"/></graphicElement></line>
             </frame>
         </band>
     </detail>
 
     <noData>
         <band height="80">
-            <staticText><reportElement style="Title" x="0" y="0" width="488" height="32"/><textElement textAlignment="Center"/><text><![CDATA[支払明細書]]></text></staticText>
+            <staticText><reportElement style="Title" x="0" y="0" width="488" height="32"/><textElement textAlignment="Center"/><text><![CDATA[日次給与明細]]></text></staticText>
             <staticText><reportElement style="Base" x="0" y="36" width="488" height="20"/><textElement textAlignment="Center"/><text><![CDATA[対象データがありません。]]></text></staticText>
         </band>
     </noData>

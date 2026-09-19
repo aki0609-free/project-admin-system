@@ -25,7 +25,7 @@ public class EmployeeDeletionPolicy {
             reject("日報");
         }
         if (preparationAssignmentRepository.existsByEmployeeIdAndDeletedAtIsNull(employeeId)) {
-            reject("翌日準備");
+            reject("現場配置・配車");
         }
         if (loanRepository.existsByEmployeeIdAndDeletedAtIsNull(employeeId)) {
             reject("貸付");

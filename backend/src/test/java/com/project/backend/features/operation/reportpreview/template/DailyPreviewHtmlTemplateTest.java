@@ -85,15 +85,19 @@ class DailyPreviewHtmlTemplateTest {
                         Map.entry("payment_date_label", "2026年8月1日"),
                         Map.entry("employee_code", "E001"),
                         Map.entry("employee_name", "山田太郎"),
+                        Map.entry("employee_address", "〒123-4567 東京都千代田区テスト1-2-3"),
                         Map.entry("labor_period_from_label", "2026年8月1日"),
                         Map.entry("labor_period_to_label", "2026年8月1日"),
                         Map.entry("work_hours", amount("8")),
                         Map.entry("overtime_hours", amount("1")),
                         Map.entry("night_work_hours", amount("0")),
+                        Map.entry("work_hours_label", "8時間"),
+                        Map.entry("overtime_hours_label", "1時間15分"),
+                        Map.entry("night_work_hours_label", "0分"),
                         Map.entry("basic_salary", amount("10000")),
                         Map.entry("allowance_item_name1", "運転手当"),
                         Map.entry("allowance_item_value1", amount("1000")),
-                        Map.entry("deduction_item_name1", "前借り"),
+                        Map.entry("deduction_item_name1", "前借り（残高：20,000円）"),
                         Map.entry("deduction_item_value1", amount("2000")),
                         Map.entry("gross_amount", amount("11000")),
                         Map.entry("deduction_total", amount("2000")),
@@ -106,10 +110,17 @@ class DailyPreviewHtmlTemplateTest {
                 .contains("日次給与明細")
                 .contains("山田太郎")
                 .contains("2026年8月1日")
-                .contains("8 時間")
+                .contains("8時間")
+                .contains("1時間15分")
+                .contains("基本単価")
                 .contains("運転手当")
                 .contains("前借り")
+                .contains("前借り（残高：20,000円）")
                 .contains("9,000 円")
+                .containsOnlyOnce("控除合計")
+                .doesNotContain("支給合計")
+                .doesNotContain("住所：")
+                .doesNotContain("※上記金額を受領しました。")
                 .contains("white-space: nowrap")
                 .doesNotContain("th:text");
     }

@@ -119,6 +119,10 @@ public class CustomerCommandService {
         validateLength(request.representativeName(), 255, "代表者名");
         validateLength(request.phone(), 255, "電話番号");
         validateLength(request.jobType(), 255, "職種");
+        if (request.distanceBillingUnitPrice() != null
+                && request.distanceBillingUnitPrice().signum() < 0) {
+            throw new IllegalArgumentException("顧客距離請求単価は0以上で入力してください。");
+        }
         validateDayRule(request.closingDayRule(), "締日");
         validateDayRule(request.paymentDayRule(), "支払日");
 

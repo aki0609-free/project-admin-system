@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -55,6 +56,9 @@ public class BundledReportHtmlTemplateInitializer
     private final StorageService storageService;
     private final ReportHtmlTemplateKeyBuilder keyBuilder;
 
+    @Value("${app.report.init.overwrite-existing:false}")
+    private boolean overwriteExisting;
+
     @Override
     public void run(ApplicationArguments args) {
         TEMPLATES.forEach(this::initializeIfMissing);
@@ -65,7 +69,7 @@ public class BundledReportHtmlTemplateInitializer
                 definition.reportCode(),
                 definition.version()
         );
-        if (storageService.exists(key)) {
+        if (storageService.exists(key) && !overwriteExisting) {
             log.info("HTML report template already exists. key={}", key);
             return;
         }
@@ -88,7 +92,11 @@ public class BundledReportHtmlTemplateInitializer
                     resource.contentLength(),
                     "text/html; charset=UTF-8"
             );
-            log.info("Bundled HTML report template initialized. key={}", key);
+            log.info(
+                    "Bundled HTML report template {}. key={}",
+                    overwriteExisting ? "synchronized" : "initialized",
+                    key
+            );
         } catch (Exception e) {
             throw new IllegalStateException(
                     "Bundled HTML report template initialization failed. key="

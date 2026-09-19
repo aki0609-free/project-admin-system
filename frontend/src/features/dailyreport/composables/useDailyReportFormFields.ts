@@ -132,6 +132,7 @@ export const useDailyReportFormFields = ({
           key: 'customerId',
           label: '顧客',
           type: 'select',
+          editable: false,
           gridColumn: '1 / span 2',
           options:
             customerOptions.value,
@@ -140,6 +141,7 @@ export const useDailyReportFormFields = ({
           key: 'customerSiteId',
           label: '現場',
           type: 'select',
+          editable: false,
           gridColumn: '3 / span 2',
           options:
             siteOptions.value,
@@ -196,14 +198,24 @@ export const useDailyReportFormFields = ({
           type: 'number',
         },
         {
-          key: 'vehicleUsedFlag',
-          label: '車両使用',
-          type: 'checkbox',
-          width: 120,
+          key: 'vehicleArrangementType',
+          label: '車両手配区分',
+          type: 'select',
+          options: [
+            { title: '車両なし', value: 'NONE' },
+            { title: '会社手配（顧客へ距離請求）', value: 'COMPANY' },
+            { title: '社員手配・運転者（顧客請求＋運転手当）', value: 'EMPLOYEE' },
+            { title: '同乗者（請求・運転手当なし）', value: 'PASSENGER' },
+          ],
         },
         {
           key: 'mileage',
-          label: '走行距離',
+          label: '走行距離（km）',
+          type: 'number',
+        },
+        {
+          key: 'passengerCount',
+          label: '同乗者数（本人を除く）',
           type: 'number',
         },
         {
@@ -311,17 +323,6 @@ export const useDailyReportFormFields = ({
             type: 'number',
             editable: false,
             gridColumn: '1 / span 2',
-          },
-          {
-            key:
-              'billingCommuteUnitPrice',
-
-            label:
-              '通勤単価',
-
-            type: 'number',
-            editable: false,
-            gridColumn: '3 / span 2',
           },
         ]
 

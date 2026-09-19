@@ -14,6 +14,7 @@ create table daily_pay_slip_output (
     employee_id bigint not null,
     employee_code varchar(100) null,
     employee_name varchar(200) null,
+    employee_address varchar(600) null,
     recipient_key varchar(255) null,
     recipient_name varchar(255) null,
     recipient_email varchar(255) null,
@@ -28,6 +29,9 @@ create table daily_pay_slip_output (
     work_hours decimal(10,2) null,
     overtime_hours decimal(10,2) null,
     night_work_hours decimal(10,2) null,
+    work_hours_label varchar(50) null,
+    overtime_hours_label varchar(50) null,
+    night_work_hours_label varchar(50) null,
 
     basic_salary decimal(15,2) null,
 
@@ -78,6 +82,9 @@ create table daily_pay_slip_output (
     deduction_total decimal(15,2) null,
     daily_payment_amount decimal(15,2) null,
     net_payment_amount decimal(15,2) null,
+    legal_deposit_balance decimal(15,2) null,
+    loan_balance decimal(15,2) null,
+    saving_balance decimal(15,2) null,
 
     note varchar(1000) null,
 

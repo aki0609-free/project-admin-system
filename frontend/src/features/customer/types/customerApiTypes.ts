@@ -121,6 +121,7 @@ export type CustomerListItemResponse = {
   representativeName: string | null
   phone: string | null
   jobType: string | null
+  distanceBillingUnitPrice: number
   contractFlag: CustomerContractStatus | null
   invoiceType: CustomerInvoiceType
   closingDayRule: DayRule | null
@@ -170,6 +171,7 @@ export type CustomerSaveRequest = {
   representativeName: string | null
   phone: string | null
   jobType: string | null
+  distanceBillingUnitPrice: number
   contractFlag: CustomerContractStatus
   invoiceType: CustomerInvoiceType
   closingDayRule: DayRule | null

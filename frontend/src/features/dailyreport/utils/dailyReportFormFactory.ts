@@ -8,6 +8,7 @@ import type {
 import type {
   DailyReportAmountItemForm,
 } from '@/features/dailyreport/types/dailyReportInputItemTypes'
+import { businessDateWithOffset } from '@/shared/utils/DateUtils'
 
 export const createEmptyDailyReportForm =
   (): DailyReportForm => ({
@@ -15,7 +16,7 @@ export const createEmptyDailyReportForm =
 
     employeeId: null,
 
-    workDate: '',
+    workDate: businessDateWithOffset(-1),
     paymentDate: '',
 
     customerId: null,
@@ -60,7 +61,9 @@ export const createEmptyDailyReportForm =
     deductions: [],
 
     vehicleUsedFlag: false,
+    vehicleArrangementType: 'NONE',
     mileage: 0,
+    passengerCount: 0,
 
     paidLeaveDays: 0,
     paidLeaveRemainingDays: 0,
@@ -293,8 +296,14 @@ export const toDailyReportForm = (
   vehicleUsedFlag:
     item.vehicleUsedFlag,
 
+  vehicleArrangementType:
+    item.vehicleArrangementType ?? (item.vehicleUsedFlag ? 'EMPLOYEE' : 'NONE'),
+
   mileage:
     item.mileage ?? 0,
+
+  passengerCount:
+    item.passengerCount ?? 0,
 
   paidLeaveDays:
     item.paidLeaveDays ?? 0,

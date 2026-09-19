@@ -1,5 +1,7 @@
 package com.project.backend.features.operation.preparation.dto;
 
+import com.project.backend.features.dailyreport.enums.VehicleArrangementType;
+
 import lombok.Builder;
 
 @Builder
@@ -15,6 +17,9 @@ public record DailyPreparationAssignmentResponse(
         Long customerSiteId,
         String customerName,
         String siteName,
+
+        VehicleArrangementType vehicleArrangementType,
+        Integer passengerCount,
 
         String workDescription
 ) {

@@ -16,6 +16,12 @@ import {
   validateEmployeeForm,
 } from '../validation/employeeSchemas'
 
+export const employeeTaxCategoryOptions = [
+  { title: '甲', value: 'KOU' },
+  { title: '乙', value: 'OTSU', props: { disabled: true } },
+  { title: '丙', value: 'HEI', props: { disabled: true } },
+]
+
 export const useEmployeeEditDialog = (
   visible: Ref<boolean>,
   employee: Ref<EmployeeDetailResponse | null>,
@@ -128,11 +134,7 @@ export const useEmployeeEditDialog = (
       key: 'taxCategory',
       label: '税区分',
       type: 'select',
-      options: [
-        { title: '甲', value: 'KOU' },
-        { title: '乙', value: 'OTSU' },
-        { title: '丙', value: 'HEI' },
-      ],
+      options: employeeTaxCategoryOptions,
     },
     { key: 'taxDependentCount', label: '扶養人数', type: 'number' },
     { key: 'paidLeaveRemainingDays', label: '有給残日数', type: 'number' },

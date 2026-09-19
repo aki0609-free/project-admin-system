@@ -6,6 +6,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 import com.project.backend.features.employee.enums.ApprovalStatus;
+import com.project.backend.features.dailyreport.enums.VehicleArrangementType;
 
 public record DailyReportSaveRequest(
 
@@ -47,7 +48,9 @@ public record DailyReportSaveRequest(
         Integer dormitoryChargeDays,
 
         Boolean vehicleUsedFlag,
+        VehicleArrangementType vehicleArrangementType,
         BigDecimal mileage,
+        Integer passengerCount,
 
         BigDecimal paidLeaveDays,
 

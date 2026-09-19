@@ -1,5 +1,7 @@
 package com.project.backend.features.customer.entity;
 
+import java.math.BigDecimal;
+
 import com.project.backend.app.base.entity.BaseEntity;
 import com.project.backend.common.dayrule.enums.DayRuleType;
 import com.project.backend.features.customer.enums.CustomerContractStatus;
@@ -42,6 +44,11 @@ public class Customer extends BaseEntity {
 
     @Column(name = "job_type")
     private String jobType;
+
+    /** 車両手配がある日報について、顧客へ請求する1km当たり単価。 */
+    @Column(name = "distance_billing_unit_price", nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal distanceBillingUnitPrice = new BigDecimal("30.00");
 
     @Enumerated(EnumType.STRING)
     @Column(name = "contract_flag", nullable = false, length = 20)

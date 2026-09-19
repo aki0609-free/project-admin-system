@@ -76,7 +76,6 @@ describe('customer editable table columns', () => {
       'overtimeUnitPrice',
       'nightUnitPrice',
       'holidayUnitPrice',
-      'commuteUnitPrice',
     ]
 
     for (const key of priceKeys) {

@@ -3,6 +3,7 @@ package com.project.backend.features.operation.preparation.service;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -15,6 +16,8 @@ import com.project.backend.features.customer.entity.Customer;
 import com.project.backend.features.customer.entity.CustomerSite;
 import com.project.backend.features.customer.repository.CustomerRepository;
 import com.project.backend.features.customer.repository.CustomerSiteRepository;
+import com.project.backend.features.dailyreport.repository.DailyReportRepository;
+import com.project.backend.features.dailyreport.service.DailyReportBillingRateService;
 import com.project.backend.features.employee.entity.Employee;
 import com.project.backend.features.employee.repository.EmployeeRepository;
 import com.project.backend.features.operation.preparation.dto.DailyPreparationAssignmentBulkSaveItemRequest;
@@ -50,6 +53,8 @@ public class DailyPreparationService {
     private final EmployeeRepository employeeRepository;
     private final CustomerRepository customerRepository;
     private final CustomerSiteRepository customerSiteRepository;
+    private final DailyReportRepository dailyReportRepository;
+    private final DailyReportBillingRateService dailyReportBillingRateService;
 
     private final DailyPreparationMapper mapper;
     private final Clock clock;
@@ -77,7 +82,7 @@ public class DailyPreparationService {
         }
 
         if (preparationRepository.existsByTargetDateAndDeletedAtIsNull(request.getTargetDate())) {
-            throw new IllegalArgumentException("指定日の翌日準備は既に存在します。");
+            throw new IllegalArgumentException("指定日の現場配置・配車は既に存在します。");
         }
 
         DailyPreparation entity = new DailyPreparation();
@@ -111,7 +116,9 @@ public class DailyPreparationService {
 
         applyAssignment(request, entity, preparation, employee);
 
-        return mapper.toAssignmentResponse(assignmentRepository.save(entity));
+        DailyPreparationAssignment saved = assignmentRepository.save(entity);
+        synchronizeDailyReportPlacement(preparation, saved);
+        return mapper.toAssignmentResponse(saved);
     }
 
     @SuppressWarnings("null")
@@ -136,7 +143,9 @@ public class DailyPreparationService {
 
         applyAssignment(request, entity, preparation, employee);
 
-        return mapper.toAssignmentResponse(assignmentRepository.save(entity));
+        DailyPreparationAssignment saved = assignmentRepository.save(entity);
+        synchronizeDailyReportPlacement(preparation, saved);
+        return mapper.toAssignmentResponse(saved);
     }
 
     public void deleteAssignment(Long id) {
@@ -244,6 +253,8 @@ public class DailyPreparationService {
         request.setEmployeeId(item.getEmployeeId());
         request.setCustomerId(item.getCustomerId());
         request.setCustomerSiteId(item.getCustomerSiteId());
+        request.setVehicleArrangementType(item.getVehicleArrangementType());
+        request.setPassengerCount(item.getPassengerCount());
         request.setWorkDescription(item.getWorkDescription());
 
         return request;
@@ -292,7 +303,9 @@ public class DailyPreparationService {
         request.setPreparationId(preparationId);
         request.setCustomerId(item.getCustomerId());
         request.setCustomerSiteId(item.getCustomerSiteId());
+        request.setDistanceFromCompanyKm(item.getDistanceFromCompanyKm());
         request.setVehicleCount(item.getVehicleCount());
+        request.setOtherAmount(item.getOtherAmount());
         request.setNote(item.getNote());
 
         return request;
@@ -336,7 +349,35 @@ public class DailyPreparationService {
         entity.setCustomerSiteId(site != null ? site.getId() : null);
         entity.setSiteName(site != null ? site.getName() : null);
 
+        var arrangementType = request.getVehicleArrangementType() != null
+                ? request.getVehicleArrangementType()
+                : com.project.backend.features.dailyreport.enums.VehicleArrangementType.NONE;
+        entity.setVehicleArrangementType(arrangementType);
+        entity.setPassengerCount(
+                arrangementType == com.project.backend.features.dailyreport.enums.VehicleArrangementType.EMPLOYEE
+                        && request.getPassengerCount() != null
+                        ? request.getPassengerCount()
+                        : 0
+        );
+
         entity.setWorkDescription(request.getWorkDescription());
+    }
+
+    private void synchronizeDailyReportPlacement(
+            DailyPreparation preparation,
+            DailyPreparationAssignment assignment
+    ) {
+        dailyReportRepository
+                .findByEmployeeIdAndWorkDateAndDeletedAtIsNull(
+                        assignment.getEmployeeId(), preparation.getTargetDate())
+                .ifPresent(report -> {
+                    report.setCustomerId(assignment.getCustomerId());
+                    report.setCustomerName(assignment.getCustomerName());
+                    report.setCustomerSiteId(assignment.getCustomerSiteId());
+                    report.setSiteName(assignment.getSiteName());
+                    dailyReportBillingRateService.applyBillingRate(report);
+                    dailyReportRepository.save(report);
+                });
     }
 
     private void applyDispatch(
@@ -357,9 +398,16 @@ public class DailyPreparationService {
 
         entity.setCustomerSiteId(site.getId());
         entity.setSiteName(site.getName());
-        entity.setDistanceFromCompanyKm(site.getDistanceFromCompanyKm());
+        entity.setDistanceFromCompanyKm(
+                request.getDistanceFromCompanyKm() != null
+                        ? request.getDistanceFromCompanyKm()
+                        : site.getDistanceFromCompanyKm()
+        );
 
         entity.setVehicleCount(request.getVehicleCount() != null ? request.getVehicleCount() : 0);
+        entity.setOtherAmount(request.getOtherAmount() != null
+                ? request.getOtherAmount()
+                : BigDecimal.ZERO);
         entity.setNote(request.getNote());
     }
 
@@ -374,6 +422,9 @@ public class DailyPreparationService {
 
         if (request.getEmployeeId() == null) {
             throw new IllegalArgumentException("employeeId は必須です。");
+        }
+        if (request.getPassengerCount() != null && request.getPassengerCount() < 0) {
+            throw new IllegalArgumentException("同乗者数は0以上で指定してください。");
         }
     }
 
@@ -394,11 +445,15 @@ public class DailyPreparationService {
                 && request.getVehicleCount() < 0) {
             throw new IllegalArgumentException("配車台数は0以上で指定してください。");
         }
+        if (request.getDistanceFromCompanyKm() != null
+                && request.getDistanceFromCompanyKm() < 0) {
+            throw new IllegalArgumentException("現場までの距離は0以上で指定してください。");
+        }
     }
 
     private DailyPreparation findPreparation(Long id) {
         return preparationRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new IllegalArgumentException("翌日準備が見つかりません。 id=" + id));
+                .orElseThrow(() -> new IllegalArgumentException("現場配置・配車が見つかりません。 id=" + id));
     }
 
     private Employee findEmployee(Long id) {
@@ -435,7 +490,7 @@ public class DailyPreparationService {
     private void requireSamePreparation(Long actualId, Long requestedId) {
         if (!Objects.equals(actualId, requestedId)) {
             throw new IllegalArgumentException(
-                    "操作対象が指定された翌日準備に属していません。"
+                    "操作対象が指定された現場配置・配車に属していません。"
             );
         }
     }
