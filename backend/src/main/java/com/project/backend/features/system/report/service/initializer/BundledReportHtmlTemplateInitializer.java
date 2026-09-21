@@ -50,6 +50,11 @@ public class BundledReportHtmlTemplateInitializer
                     "MONTHLY_PAY_SLIP",
                     3,
                     "monthly_pay_slip.html"
+            ),
+            new TemplateDefinition(
+                    "MONTHLY_INVOICE",
+                    1,
+                    "monthly_invoice.html"
             )
     );
 
