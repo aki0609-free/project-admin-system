@@ -54,15 +54,21 @@ public class CompanyProfileQueryService {
     }
 
     public CompanyProfile findCurrentEntity() {
+        CompanyProfile entity = findCurrentEntityOrNull();
+        if (entity == null) {
+            throw new IllegalArgumentException(
+                    "有効な会社情報が登録されていません。"
+            );
+        }
+        return entity;
+    }
+
+    public CompanyProfile findCurrentEntityOrNull() {
         return repository
                 .findFirstByTenantIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdAsc(
                         requireTenantId()
                 )
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "有効な会社情報が登録されていません。"
-                        )
-                );
+                .orElse(null);
     }
 
     private String requireTenantId() {

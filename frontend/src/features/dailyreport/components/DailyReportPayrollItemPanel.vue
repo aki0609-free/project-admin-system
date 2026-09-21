@@ -108,6 +108,7 @@ const updateBalanceQuantity = (item: DailyReportAmountItemForm, value: unknown) 
           hide-details
           min="0"
           step="1"
+          suffix="円"
           class="amount-input"
           :readonly="!isAmountEditable(item)"
           @update:model-value="updateAmount(item, $event)"

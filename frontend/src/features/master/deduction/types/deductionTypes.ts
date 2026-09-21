@@ -25,6 +25,7 @@ export type DeductionDetailViewType =
   | 'INCOME_TAX'
   | 'RESIDENT_TAX'
   | 'HEALTH_INSURANCE'
+  | 'CHILD_SUPPORT'
   | 'PENSION'
   | 'EMPLOYMENT_INSURANCE'
 

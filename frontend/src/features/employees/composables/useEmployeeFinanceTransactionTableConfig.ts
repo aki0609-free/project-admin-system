@@ -5,6 +5,7 @@ import type {
 } from '@/shared/components/table/simple_table/types/item/types'
 import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
 import { formatYearMonthDay } from '@/shared/utils/DateUtils'
+import { formatCurrency } from '@/shared/utils/CurrencyUtils'
 import type {
   EmployeeFinanceTransactionResponse,
   EmployeeFinanceTransactionType,
@@ -67,9 +68,9 @@ export const useEmployeeFinanceTransactionTableConfig = (
       { title: '氏名', key: 'employeeName', width: '180px', filter: { type: 'text' } },
       { title: '区分', key: 'accountTypeText', width: '100px', filter: { type: 'text' } },
       { title: '取引種別', key: 'transactionTypeText', width: '180px', filter: { type: 'text' } },
-      { title: '増減額', key: 'amount', width: '140px', filter: { type: 'text' } },
-      { title: '変更前残高', key: 'balanceBefore', width: '160px', filter: { type: 'text' } },
-      { title: '変更後残高', key: 'balanceAfter', width: '160px', filter: { type: 'text' } },
+      { title: '増減額', key: 'amount', width: '140px', filter: { type: 'text' }, formatter: value => formatCurrency(typeof value === 'number' ? value : null) },
+      { title: '変更前残高', key: 'balanceBefore', width: '160px', filter: { type: 'text' }, formatter: value => formatCurrency(typeof value === 'number' ? value : null) },
+      { title: '変更後残高', key: 'balanceAfter', width: '160px', filter: { type: 'text' }, formatter: value => formatCurrency(typeof value === 'number' ? value : null) },
       { title: '日報ID', key: 'dailyReportId', width: '120px', filter: { type: 'text' } },
       { title: '備考', key: 'note', width: '240px', filter: { type: 'text' } },
     ]

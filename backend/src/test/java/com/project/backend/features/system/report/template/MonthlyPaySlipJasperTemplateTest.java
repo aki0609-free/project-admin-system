@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Date;
@@ -26,6 +27,26 @@ class MonthlyPaySlipJasperTemplateTest {
 
     private static final String TEMPLATE =
             "reports/monthly_pay_slip.jrxml";
+
+    @Test
+    void usesFinalJapaneseLabelsAndUnits() throws Exception {
+        String template;
+        try (InputStream input = getClass()
+                .getClassLoader()
+                .getResourceAsStream(TEMPLATE)) {
+            assertThat(input).isNotNull();
+            template = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        assertThat(template)
+                .contains("締め版", "時間", "分", "+ \" 円\"", "法定準備金返済額")
+                .doesNotContain(
+                        "締めVersion",
+                        "保険計",
+                        " + \" h\"",
+                        "前払い額（日払い累計）"
+                );
+    }
 
     @Test
     void compilesAndRendersOnePagePerEmployee() throws Exception {
@@ -108,6 +129,9 @@ class MonthlyPaySlipJasperTemplateTest {
         row.put("other_deduction_total", amount("23000"));
         row.put("deduction_total", amount("90493"));
         row.put("advance_payment_amount", amount("20000"));
+        row.put("saving_balance", amount("30000"));
+        row.put("loan_balance", amount("50000"));
+        row.put("legal_deposit_refund_amount", amount("10000"));
         row.put("net_payment_amount", amount("244507"));
 
         List<String> allowanceNames = List.of(

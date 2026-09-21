@@ -11,7 +11,6 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 
 import com.project.backend.features.customer.entity.Customer;
-import com.project.backend.features.customer.exception.CustomerTransactionAlreadySettledException;
 import com.project.backend.features.operation.monthly.dto.CustomerBillingPeriod;
 import com.project.backend.features.operation.monthly.service.CustomerBillingTargetService.Target;
 import com.project.backend.features.operation.monthly.service.executor.MonthlyClosingJobExecutor;
@@ -21,7 +20,7 @@ import com.project.backend.features.customer.service.resolver.InvoiceReportCodeR
 class CustomerBillingClosingJobServiceTest {
 
     @Test
-    void execute_shouldRejectSettledTransactionBeforeGeneratingDocuments() {
+    void execute_shouldStopBeforeGeneratingDocumentsWhenTransactionValidationFails() {
         OperationReportPreviewRepository previewRepository =
                 mock(OperationReportPreviewRepository.class);
         InvoiceReportCodeResolver invoiceReportCodeResolver =
@@ -48,7 +47,7 @@ class CustomerBillingClosingJobServiceTest {
                         null
                 )
         );
-        doThrow(new CustomerTransactionAlreadySettledException(7L, "2026-08"))
+        doThrow(new IllegalArgumentException("取引同期条件が不正です。"))
                 .when(transactionService)
                 .validateSynchronizable("2026-08", 7L);
 
@@ -57,7 +56,7 @@ class CustomerBillingClosingJobServiceTest {
                 "2026-08",
                 1,
                 target
-        )).isInstanceOf(CustomerTransactionAlreadySettledException.class);
+        )).isInstanceOf(IllegalArgumentException.class);
 
         verifyNoInteractions(executor);
         verifyNoInteractions(previewRepository);

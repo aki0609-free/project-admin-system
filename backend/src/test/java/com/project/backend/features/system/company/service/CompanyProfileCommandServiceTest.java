@@ -131,6 +131,9 @@ class CompanyProfileCommandServiceTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
                 activeFlag
         );
     }

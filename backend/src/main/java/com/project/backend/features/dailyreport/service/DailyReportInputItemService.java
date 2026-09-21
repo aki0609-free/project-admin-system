@@ -37,6 +37,7 @@ public class DailyReportInputItemService {
     private final PayrollItemBalanceQueryService balanceQueryService;
     private final EmployeePayrollItemSettingService payrollItemSettingService;
     private final DailyReportRepository dailyReportRepository;
+    private final DailyStatutoryDeductionEstimateService statutoryDeductionEstimateService;
 
     public DailyReportInputResponse findItems() {
         return findItems(
@@ -235,6 +236,13 @@ public class DailyReportInputItemService {
                     contract.getStandardWorkingHours()
             );
         }
+        putIfNotNull(
+                variables,
+                "predictedStatutoryDeductionTotal",
+                statutoryDeductionEstimateService.estimateMonthlyTotal(
+                        request.employeeId(), request.workDate(), contract
+                )
+        );
 
         return variables;
     }

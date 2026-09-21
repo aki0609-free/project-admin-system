@@ -13,6 +13,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Getter;
 
@@ -93,6 +94,16 @@ public class MonthlyInvoiceHistory extends BaseEntity {
 
     @Column(name = "bank_display_text", length = 1000)
     private String bankDisplayText;
+
+    @Column(name = "company_logo_file_name", length = 255)
+    private String companyLogoFileName;
+
+    @Column(name = "company_logo_content_type", length = 100)
+    private String companyLogoContentType;
+
+    @Lob
+    @Column(name = "company_logo_image_data", columnDefinition = "LONGBLOB")
+    private byte[] companyLogoImageData;
 
     @Column(name = "invoice_note", columnDefinition = "text")
     private String invoiceNote;

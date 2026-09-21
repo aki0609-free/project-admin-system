@@ -41,6 +41,9 @@ export type CompanyProfileResponse = {
   invoiceBankAccountHolder: string | null
 
   invoiceBankDisplayText: string | null
+  invoiceLogoFileName: string | null
+  invoiceLogoContentType: string | null
+  invoiceLogoBase64: string | null
   invoiceNote: string | null
 
   activeFlag: boolean
@@ -81,6 +84,10 @@ export type CompanyProfileSaveRequest = {
   invoiceBankAccountType: string | null
   invoiceBankAccountNumber: string | null
   invoiceBankAccountHolder: string | null
+
+  invoiceLogoFileName: string | null
+  invoiceLogoContentType: string | null
+  invoiceLogoBase64: string | null
 
   invoiceNote: string | null
 

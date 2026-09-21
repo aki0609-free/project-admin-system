@@ -5,6 +5,7 @@ import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { EmployeeListItemResponse } from '../types/employeeApiTypes'
 import type { EmployeeLoanForm } from '../types/employeeLoanSavingFormTypes'
 import type { EmployeeLoanResponse } from '../types/employeeWorkApiTypes'
+import { formatCurrency } from '@/shared/utils/CurrencyUtils'
 import {
   createEmptyEmployeeLoanForm,
   toEmployeeLoanForm,
@@ -80,6 +81,7 @@ export const useEmployeeLoanEditDialog = (
       key: 'principal',
       label: '借入元本',
       type: 'number',
+      formatter: formatCurrency,
       editable:
         formModel.id === 0 ||
         formModel.currentBalance === (loan.value?.principal ?? formModel.principal),
@@ -90,12 +92,14 @@ export const useEmployeeLoanEditDialog = (
       label: '借入残高',
       type: 'number',
       editable: false,
+      formatter: formatCurrency,
       gridColumn: '4 / span 1',
     },
     {
       key: 'monthlyRepayment',
       label: '月返済額',
       type: 'number',
+      formatter: formatCurrency,
       gridColumn: '1 / span 1',
     },
     {

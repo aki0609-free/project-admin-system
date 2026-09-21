@@ -55,11 +55,11 @@ CREATE TEMPORARY TABLE tmp_august_employees (
 );
 
 INSERT INTO tmp_august_employees VALUES
-    ('E2E-AUG-D-001', NULL, '八月日次 青木 一郎', 'ハチガツニチジ アオキ イチロウ', 'DAILY', 'DAILY', 0, 0, 12000, 0, 1),
-    ('E2E-AUG-D-002', NULL, '八月日次 伊藤 二郎', 'ハチガツニチジ イトウ ジロウ', 'DAILY', 'DAILY', 0, 0, 13500, 0, 2),
-    ('E2E-AUG-WD-001', NULL, '八月週次日給 山本 一郎', 'ハチガツシュウジニッキュウ ヤマモト イチロウ', 'WEEKLY', 'DAILY', 0, 0, 13000, 0, 3),
-    ('E2E-AUG-WD-002', NULL, '八月週次日給 吉田 二郎', 'ハチガツシュウジニッキュウ ヨシダ ジロウ', 'WEEKLY', 'DAILY', 0, 0, 14500, 0, 4),
-    ('E2E-AUG-WW-001', NULL, '八月週次週給 佐藤 一郎', 'ハチガツシュウジシュウキュウ サトウ イチロウ', 'WEEKLY', 'WEEKLY', 0, 70000, 0, 0, 5),
+    ('E2E-AUG-D-001', NULL, '八月日次 青木 一郎', 'ハチガツニチジ アオキ イチロウ', 'DAILY', 'DAILY', 0, 0, 12000, 6200, 1),
+    ('E2E-AUG-D-002', NULL, '八月日次 伊藤 二郎', 'ハチガツニチジ イトウ ジロウ', 'DAILY', 'DAILY', 0, 0, 13500, 7100, 2),
+    ('E2E-AUG-WD-001', NULL, '八月週次日給 山本 一郎', 'ハチガツシュウジニッキュウ ヤマモト イチロウ', 'WEEKLY', 'DAILY', 0, 0, 13000, 7600, 3),
+    ('E2E-AUG-WD-002', NULL, '八月週次日給 吉田 二郎', 'ハチガツシュウジニッキュウ ヨシダ ジロウ', 'WEEKLY', 'DAILY', 0, 0, 14500, 8300, 4),
+    ('E2E-AUG-WW-001', NULL, '八月週次週給 佐藤 一郎', 'ハチガツシュウジシュウキュウ サトウ イチロウ', 'WEEKLY', 'WEEKLY', 0, 70000, 0, 10500, 5),
     ('E2E-AUG-MD-001', NULL, '八月月次日給 鈴木 一郎', 'ハチガツゲツジニッキュウ スズキ イチロウ', 'MONTHLY', 'DAILY', 0, 0, 14000, 8000, 6),
     ('E2E-AUG-MD-002', NULL, '八月月次日給 高橋 二郎', 'ハチガツゲツジニッキュウ タカハシ ジロウ', 'MONTHLY', 'DAILY', 0, 0, 15500, 9000, 7),
     ('E2E-AUG-MM-001', NULL, '八月月次月給 中村 一郎', 'ハチガツゲツジゲッキュウ ナカムラ イチロウ', 'MONTHLY', 'MONTHLY', 300000, 0, 0, 12000, 8);
@@ -138,8 +138,8 @@ SELECT
     @fixture_tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL,
     fixture.employee_id, 'KOU', MOD(fixture.sort_order, 3),
     MOD(fixture.sort_order, 3) > 0, FALSE, 10,
-    FALSE, fixture.resident_tax > 0, 0,
-    FALSE, FALSE, FALSE, FALSE, FALSE,
+    TRUE, fixture.resident_tax > 0, 0,
+    TRUE, TRUE, TRUE, TRUE, fixture.sort_order <= 6,
     fixture.payment_cycle = 'DAILY',
     IF(fixture.sort_order IN (3, 6), 5000, 0)
 FROM tmp_august_employees fixture
@@ -147,18 +147,67 @@ ON DUPLICATE KEY UPDATE
     tax_category = VALUES(tax_category),
     tax_dependent_count = VALUES(tax_dependent_count),
     paid_leave_remaining_days = VALUES(paid_leave_remaining_days),
-    income_tax_calc_flag = FALSE,
+    income_tax_calc_flag = TRUE,
     resident_tax_calc_flag = VALUES(resident_tax_calc_flag),
     resident_tax_monthly = 0,
-    employment_insurance_flag = FALSE,
-    social_insurance_flag = FALSE,
-    health_insurance_flag = FALSE,
-    pension_insurance_flag = FALSE,
-    care_insurance_flag = FALSE,
+    employment_insurance_flag = TRUE,
+    social_insurance_flag = TRUE,
+    health_insurance_flag = TRUE,
+    pension_insurance_flag = TRUE,
+    care_insurance_flag = VALUES(care_insurance_flag),
     daily_pay_flag = VALUES(daily_pay_flag),
     commute_allowance_monthly = VALUES(commute_allowance_monthly),
     deleted_at = NULL,
     updated_at = CURRENT_TIMESTAMP(6);
+
+-- 社会保険計算は従業員ごとの標準報酬月額を正本とする。
+-- 8月検証用の総支給額に近い等級相当額を用意し、料率取込結果を確認できるようにする。
+INSERT INTO employee_standard_remuneration (
+    employee_id, effective_from, effective_to,
+    health_standard_remuneration, pension_standard_remuneration,
+    source_type, note,
+    tenant_id, created_at, updated_at, deleted_at
+)
+SELECT
+    fixture.employee_id, '2026-08-01', NULL,
+    CASE fixture.sort_order
+        WHEN 1 THEN 260000 WHEN 2 THEN 290000
+        WHEN 3 THEN 280000 WHEN 4 THEN 310000
+        WHEN 5 THEN 300000 WHEN 6 THEN 300000
+        WHEN 7 THEN 330000 ELSE 320000
+    END,
+    CASE fixture.sort_order
+        WHEN 1 THEN 260000 WHEN 2 THEN 290000
+        WHEN 3 THEN 280000 WHEN 4 THEN 310000
+        WHEN 5 THEN 300000 WHEN 6 THEN 300000
+        WHEN 7 THEN 330000 ELSE 320000
+    END,
+    'LOCAL_FIXTURE', '2026年8月Local税・社会保険検証用',
+    @fixture_tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
+FROM tmp_august_employees fixture
+ON DUPLICATE KEY UPDATE
+    effective_to = NULL,
+    health_standard_remuneration = VALUES(health_standard_remuneration),
+    pension_standard_remuneration = VALUES(pension_standard_remuneration),
+    source_type = VALUES(source_type),
+    note = VALUES(note),
+    deleted_at = NULL,
+    updated_at = CURRENT_TIMESTAMP(6);
+
+-- 2026年8月は取込済みの2026年度料率・所得税表を使用する。
+UPDATE payroll_calculation_period
+SET income_tax_year = 2026,
+    insurance_rate_year = 2026,
+    child_care_support_required = TRUE,
+    rounding_mode = 'HALF_UP',
+    verified_flag = TRUE,
+    verified_at = CURRENT_TIMESTAMP(6),
+    verified_by = 'local-e2e',
+    source_note = '2026年8月Local税・社会保険検証用',
+    deleted_at = NULL,
+    updated_at = CURRENT_TIMESTAMP(6)
+WHERE tenant_id = @fixture_tenant_id
+  AND target_month = @fixture_target_month;
 
 INSERT INTO resident_tax_monthly (
     employee_id, fiscal_year, month, tax_amount,

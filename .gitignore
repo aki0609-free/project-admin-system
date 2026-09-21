@@ -85,6 +85,7 @@ reports/
 **/reports-output/
 **/report-output-history/
 /output/
+/outputs/
 tmp/
 __pycache__/
 *.py[cod]

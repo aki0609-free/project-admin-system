@@ -72,6 +72,7 @@ function toDetailViewType(value: string | null | undefined): DeductionDetailView
     value === 'INCOME_TAX' ||
     value === 'RESIDENT_TAX' ||
     value === 'HEALTH_INSURANCE' ||
+    value === 'CHILD_SUPPORT' ||
     value === 'PENSION' ||
     value === 'EMPLOYMENT_INSURANCE'
   ) {

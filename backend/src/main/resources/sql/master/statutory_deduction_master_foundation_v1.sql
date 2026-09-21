@@ -2,6 +2,19 @@
 -- 既存の管理画面設定は上書きせず、不足コードだけを補完する。
 -- 健康保険の給与計算値には介護保険を合算し、支援金は別項目として扱う。
 
+-- HibernateのEnumカラムは既存環境では自動拡張されないため、
+-- 子ども・子育て支援金の詳細種別を先に追加する。
+ALTER TABLE deduction_masters
+MODIFY COLUMN detail_view_type ENUM(
+    'EMPLOYMENT_INSURANCE',
+    'HEALTH_INSURANCE',
+    'INCOME_TAX',
+    'NONE',
+    'PENSION',
+    'RESIDENT_TAX',
+    'CHILD_SUPPORT'
+) NULL DEFAULT NULL;
+
 INSERT INTO deduction_masters (
     deduction_code,
     deduction_name,
@@ -61,7 +74,7 @@ FROM (
     SELECT 'HEALTH_INSURANCE', '健康・介護保険', 'MONTHLY', 'HEALTH_INSURANCE', 30,
            '健康保険料率と介護保険料率を対象者条件に応じて計算'
     UNION ALL
-    SELECT 'CHILD_SUPPORT', '子ども・子育て支援金', 'MONTHLY', 'NONE', 40,
+    SELECT 'CHILD_SUPPORT', '子ども・子育て支援金', 'MONTHLY', 'CHILD_SUPPORT', 40,
            '子ども・子育て支援金率を参照して計算'
     UNION ALL
     SELECT 'WELFARE_PENSION', '厚生年金', 'MONTHLY', 'PENSION', 50,
@@ -75,3 +88,11 @@ WHERE NOT EXISTS (
     FROM deduction_masters existing
     WHERE existing.deduction_code = seed.deduction_code
 );
+
+-- 既存環境では不足コードだけを追加するため、過去に詳細なしで作成された
+-- 子ども・子育て支援金だけを専用の料率詳細へ接続する。
+UPDATE deduction_masters
+SET detail_view_type = 'CHILD_SUPPORT',
+    updated_at = CURRENT_TIMESTAMP(6)
+WHERE deduction_code = 'CHILD_SUPPORT'
+  AND deleted_at IS NULL;

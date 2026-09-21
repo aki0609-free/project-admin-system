@@ -59,11 +59,12 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
         assertThat(resources)
-                .hasSize(46)
+                .hasSize(47)
                 .contains(
                         "sql/admin/external_support_links_v1.sql",
                         "sql/application/applicant_legacy_schema_compatibility_v1.sql",
                         "sql/customer/customer_contract_status_v1.sql",
+                        "sql/master/allowance_master_foundation_v1.sql",
                         "sql/daily_report/vehicle_arrangement_foundation_v1.sql",
                         "sql/operation/monthly/customer_transaction_adjustment_v1.sql"
                 );
@@ -97,10 +98,11 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 "vw_monthly_pay_slip_calculation_item_source",
                 "vw_monthly_pay_slip_statement_item_source",
                 "vw_monthly_pay_slip_deduction_basis",
+                "vw_monthly_pay_slip_legal_deposit_refund",
                 "vw_employee_payroll_item_transaction_confirmed",
                 "vw_employee_legal_deposit_balance",
                 "vw_monthly_order_form_render"
-        )).isEqualTo(10);
+        )).isEqualTo(11);
         assertThat(countProcedures(
                 "sp_daily_pay_slip_prepare",
                 "sp_monthly_pay_slip_snapshot",
@@ -180,9 +182,62 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND rule_name IS NULL
                   AND allow_manual_input = TRUE
                   AND show_on_daily_statement = TRUE
-                  AND show_on_monthly_statement = TRUE
+                  AND show_on_monthly_statement = FALSE
                   AND deleted_at IS NULL
                 """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM allowance_masters
+                WHERE tenant_id = 'default'
+                  AND allowance_code = 'DRIVER_ALLOWANCE'
+                  AND allowance_name = '運転手当'
+                  AND calculation_type = 'AUTO'
+                  AND allowance_unit = 'BOTH'
+                  AND rule_name = 'DAILY_DRIVER_ALLOWANCE'
+                  AND default_amount = 0
+                  AND allow_manual_input = FALSE
+                  AND min_amount = 0
+                  AND show_on_daily_statement = TRUE
+                  AND show_on_monthly_statement = TRUE
+                  AND enabled = TRUE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM allowance_masters
+                WHERE tenant_id = 'default'
+                  AND allowance_code = 'MANAGEMENT_ALLOWANCE'
+                  AND allowance_name = '管理手当'
+                  AND calculation_type = 'MANUAL'
+                  AND allowance_unit = 'BOTH'
+                  AND rule_name IS NULL
+                  AND default_amount = 0
+                  AND allow_manual_input = TRUE
+                  AND min_amount = 0
+                  AND show_on_daily_statement = TRUE
+                  AND show_on_monthly_statement = TRUE
+                  AND enabled = TRUE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM rule_master rule
+                JOIN rule_parameter parameter
+                  ON parameter.rule_id = rule.id
+                 AND parameter.deleted_at IS NULL
+                WHERE rule.tenant_id = 'default'
+                  AND rule.rule_name = 'DAILY_DRIVER_ALLOWANCE'
+                  AND rule.dsl_text = 'vehicleArrangementType == ''EMPLOYEE'' ? mileage * distanceUnitPrice + passengerCount * passengerUnitPrice : 0'
+                  AND rule.active_flag = TRUE
+                  AND rule.deleted_at IS NULL
+                  AND parameter.param_name IN (
+                      'vehicleArrangementType',
+                      'mileage',
+                      'passengerCount',
+                      'distanceUnitPrice',
+                      'passengerUnitPrice'
+                  )
+                """, Integer.class)).isEqualTo(5);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM deduction_masters
@@ -205,6 +260,7 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                       'INCOME_TAX',
                       'RESIDENT_TAX',
                       'HEALTH_INSURANCE',
+                      'CHILD_SUPPORT',
                       'PENSION',
                       'EMPLOYMENT_INSURANCE'
                   )
@@ -235,14 +291,30 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 FROM deduction_masters
                 WHERE tenant_id = 'default'
                   AND deduction_code = 'LEGAL_DEPOSIT'
-                  AND calculation_type = 'MANUAL'
-                  AND rule_name IS NULL
+                  AND calculation_type = 'AUTO'
+                  AND rule_name = 'DAILY_LEGAL_DEPOSIT_ESTIMATE'
                   AND allow_manual_input = TRUE
                   AND deduction_unit = 'DAILY'
                   AND show_on_daily_statement = TRUE
                   AND show_on_monthly_statement = FALSE
                   AND carry_to_monthly_settlement = TRUE
                   AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM rule_master rule
+                JOIN rule_parameter parameter_item
+                  ON parameter_item.rule_id = rule.id
+                 AND parameter_item.param_name = 'predictedStatutoryDeductionTotal'
+                 AND parameter_item.data_type = 'DECIMAL'
+                 AND parameter_item.deleted_at IS NULL
+                WHERE rule.tenant_id = 'default'
+                  AND rule.rule_name = 'DAILY_LEGAL_DEPOSIT_ESTIMATE'
+                  AND rule.rule_type = 'DEDUCTION'
+                  AND rule.dsl_type = 'JEXL'
+                  AND rule.dsl_text = 'predictedStatutoryDeductionTotal / 20'
+                  AND rule.active_flag = TRUE
+                  AND rule.deleted_at IS NULL
                 """, Integer.class)).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
@@ -527,6 +599,13 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 )
                 """, employeeId, TEST_TENANT_ID);
         jdbcTemplate.update("""
+                UPDATE deduction_masters
+                SET tenant_id = ?, updated_at = CURRENT_TIMESTAMP(6)
+                WHERE tenant_id = 'default'
+                  AND deduction_code = 'LEGAL_DEPOSIT'
+                  AND deleted_at IS NULL
+                """, TEST_TENANT_ID);
+        jdbcTemplate.update("""
                 INSERT INTO employee_payroll_profile (
                     employee_id, tax_category, tax_dependent_count,
                     dependent_flag, dependent_of_other_flag,
@@ -584,6 +663,29 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                     'APPROVED', ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
                 )
                 """, employeeId, TEST_TENANT_ID);
+        jdbcTemplate.update("""
+                INSERT INTO daily_report_deductions (
+                    daily_report_id, deduction_master_id,
+                    deduction_code, deduction_name,
+                    amount, calculated_amount, manual_override_flag,
+                    quantity, balance_unit,
+                    tenant_id, created_at, updated_at
+                )
+                SELECT report.id, master.id,
+                       master.deduction_code, master.deduction_name,
+                       70000, 70000, FALSE,
+                       70000, 'AMOUNT', report.tenant_id,
+                       CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                FROM daily_report report
+                JOIN deduction_masters master
+                  ON master.tenant_id = report.tenant_id
+                 AND master.deduction_code = 'LEGAL_DEPOSIT'
+                 AND master.deleted_at IS NULL
+                WHERE report.tenant_id = ?
+                  AND report.employee_id = ?
+                  AND report.work_date = '2026-08-03'
+                  AND report.deleted_at IS NULL
+                """, TEST_TENANT_ID, employeeId);
         jdbcTemplate.update("""
                 INSERT INTO employee_standard_remuneration (
                     employee_id, effective_from, effective_to,
@@ -696,6 +798,35 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 .isEqualTo(1);
         assertThat(calculation.get("calculation_error_code")).isNull();
 
+        jdbcTemplate.update("""
+                INSERT INTO daily_report_allowances (
+                    daily_report_id, allowance_master_id,
+                    allowance_code, allowance_name,
+                    amount, calculated_amount, manual_override_flag,
+                    quantity, balance_unit,
+                    tenant_id, created_at, updated_at
+                )
+                SELECT report.id, master.id,
+                       configured.allowance_code, master.allowance_name,
+                       configured.amount, configured.amount, FALSE,
+                       configured.amount, 'AMOUNT', report.tenant_id,
+                       CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                FROM daily_report report
+                CROSS JOIN (
+                    SELECT 'ATTENDANCE_ATTITUDE' AS allowance_code, 1000 AS amount
+                    UNION ALL SELECT 'DRIVER_ALLOWANCE', 2500
+                    UNION ALL SELECT 'MANAGEMENT_ALLOWANCE', 3000
+                ) configured
+                JOIN allowance_masters master
+                  ON master.tenant_id = 'default'
+                 AND master.allowance_code = configured.allowance_code
+                 AND master.deleted_at IS NULL
+                WHERE report.tenant_id = ?
+                  AND report.employee_id = ?
+                  AND report.work_date = '2026-08-03'
+                  AND report.deleted_at IS NULL
+                """, TEST_TENANT_ID, employeeId);
+
         Long mobileDeductionId = registerConfirmedAndDraftMobileTransactions(
                 employeeId
         );
@@ -704,6 +835,65 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 employeeId
         );
         assertThat(temporaryAllowanceId).isNotNull();
+
+        Map<String, Object> refundStatement = jdbcTemplate.queryForMap("""
+                SELECT latest.legal_deposit_refund_amount,
+                       latest.gross_amount,
+                       settlement.legal_deposit_amount,
+                       settlement.legal_deduction_total
+                FROM vw_monthly_pay_slip_latest latest
+                JOIN vw_monthly_pay_slip_legal_deposit_refund settlement
+                  ON settlement.tenant_id = latest.tenant_id
+                 AND settlement.target_month = latest.target_month
+                 AND settlement.employee_id = latest.employee_id
+                WHERE latest.tenant_id = ?
+                  AND latest.target_month = '2026-08-01'
+                  AND latest.employee_id = ?
+                """, TEST_TENANT_ID, employeeId);
+        assertAmount(refundStatement.get("legal_deposit_amount"), "70000");
+        BigDecimal expectedLegalDepositRefund = new BigDecimal("70000")
+                .subtract(new BigDecimal(
+                        refundStatement.get("legal_deduction_total").toString()
+                ));
+        assertThat(new BigDecimal(
+                refundStatement.get("legal_deposit_refund_amount").toString()
+        )).isEqualByComparingTo(expectedLegalDepositRefund);
+
+        List<Map<String, Object>> dailyAllowanceTotals = jdbcTemplate.queryForList("""
+                SELECT item_code, item_value
+                FROM vw_monthly_pay_slip_variable_item
+                WHERE tenant_id = ?
+                  AND target_month = '2026-08-01'
+                  AND employee_id = ?
+                  AND item_code IN (
+                      'ATTENDANCE_ATTITUDE',
+                      'DRIVER_ALLOWANCE',
+                      'MANAGEMENT_ALLOWANCE'
+                  )
+                ORDER BY item_code
+                """, TEST_TENANT_ID, employeeId);
+        assertThat(dailyAllowanceTotals).hasSize(3);
+        assertThat(dailyAllowanceTotals).anySatisfy(row -> {
+            assertThat(row.get("item_code")).isEqualTo("ATTENDANCE_ATTITUDE");
+            assertAmount(row.get("item_value"), "1000");
+        }).anySatisfy(row -> {
+            assertThat(row.get("item_code")).isEqualTo("DRIVER_ALLOWANCE");
+            assertAmount(row.get("item_value"), "2500");
+        }).anySatisfy(row -> {
+            assertThat(row.get("item_code")).isEqualTo("MANAGEMENT_ALLOWANCE");
+            assertAmount(row.get("item_value"), "3000");
+        });
+
+        Integer legalDepositDeductionCount = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM vw_monthly_pay_slip_variable_item
+                WHERE tenant_id = ?
+                  AND target_month = '2026-08-01'
+                  AND employee_id = ?
+                  AND item_category = 'LEGAL_DEDUCTION'
+                  AND item_code = 'LEGAL_DEPOSIT'
+                """, Integer.class, TEST_TENANT_ID, employeeId);
+        assertThat(legalDepositDeductionCount).isZero();
 
         String executionId = "RESIDENT-TAX-CLOSING-INTEGRATION";
         jdbcTemplate.update("""
@@ -757,6 +947,18 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND item.deleted_at IS NULL
                 """, BigDecimal.class, TEST_TENANT_ID, employeeId);
         assertThat(fixedTemporaryAllowance).isEqualByComparingTo("4200");
+
+        BigDecimal fixedLegalDepositRefund = jdbcTemplate.queryForObject("""
+                SELECT history.legal_deposit_refund_amount
+                FROM monthly_pay_slip_history history
+                WHERE history.tenant_id = ?
+                  AND history.target_month = '2026-08-01'
+                  AND history.closing_version = 1
+                  AND history.employee_id = ?
+                  AND history.deleted_at IS NULL
+                """, BigDecimal.class, TEST_TENANT_ID, employeeId);
+        assertThat(fixedLegalDepositRefund)
+                .isEqualByComparingTo(expectedLegalDepositRefund);
 
         assertRetryUsesHistoryAndRecloseCreatesNewVersion(
                 employeeId,

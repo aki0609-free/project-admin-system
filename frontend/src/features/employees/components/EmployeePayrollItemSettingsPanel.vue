@@ -57,6 +57,14 @@ const unitLabel = (unit: string) =>
     AMOUNT: '金額',
   })[unit] ?? '数量'
 
+const unitSuffix = (unit: string) =>
+  ({
+    DAYS: '日',
+    HOURS: '時間',
+    COUNT: '回',
+    AMOUNT: '円',
+  })[unit] ?? ''
+
 </script>
 
 <template>
@@ -123,28 +131,32 @@ const unitLabel = (unit: string) =>
               />
               <v-text-field
                 :model-value="activeItem.openingQuantity"
-                :label="`前月繰越${unitLabel(activeItem.balanceUnit)}`"
+                label="前月繰越"
+                :suffix="unitSuffix(activeItem.balanceUnit)"
                 readonly
                 density="compact"
                 variant="outlined"
               />
               <v-text-field
                 :model-value="activeItem.accruedQuantity"
-                :label="`当月増加${unitLabel(activeItem.balanceUnit)}`"
+                label="当月増加"
+                :suffix="unitSuffix(activeItem.balanceUnit)"
                 readonly
                 density="compact"
                 variant="outlined"
               />
               <v-text-field
                 :model-value="activeItem.consumedQuantity"
-                :label="`当月消化${unitLabel(activeItem.balanceUnit)}`"
+                label="当月消化"
+                :suffix="unitSuffix(activeItem.balanceUnit)"
                 readonly
                 density="compact"
                 variant="outlined"
               />
               <v-text-field
                 :model-value="activeItem.remainingQuantity"
-                :label="`現在残${unitLabel(activeItem.balanceUnit)}`"
+                label="現在残"
+                :suffix="unitSuffix(activeItem.balanceUnit)"
                 readonly
                 density="compact"
                 variant="outlined"

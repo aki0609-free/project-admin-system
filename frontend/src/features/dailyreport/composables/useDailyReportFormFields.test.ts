@@ -5,7 +5,7 @@ import { useDailyReportFormFields } from './useDailyReportFormFields'
 
 describe('useDailyReportFormFields', () => {
   it('請求情報は名称を選択し、内部識別子や重複名称を表示しない', () => {
-    const { billingFields, financeFields } =
+    const { fields, billingFields, financeFields } =
       useDailyReportFormFields({
         employees: ref([]),
         workDate: ref('2026-09-05'),
@@ -89,5 +89,40 @@ describe('useDailyReportFormFields', () => {
           field.key === 'loanRepaymentAmount',
       )?.editable,
     ).toBe(false)
+
+    expect(
+      fields.value.find(
+        field => field.key === 'workHours',
+      )?.formatter?.(1.5, {} as never),
+    ).toBe('1:30')
+    expect(
+      fields.value.find(
+        field => field.key === 'breakMinutes',
+      )?.formatter?.(90, {} as never),
+    ).toBe('1:30')
+    expect(
+      fields.value.find(
+        field => field.key === 'breakMinutes',
+      )?.parser?.('1:30', {} as never),
+    ).toBe(90)
+    expect(
+      fields.value.find(
+        field => field.key === 'paidLeaveDays',
+      )?.formatter?.(0.5, {} as never),
+    ).toBe('0.5日')
+
+    for (const key of [
+      'workHours',
+      'overtimeHours',
+      'nightWorkHours',
+      'holidayWorkHours',
+      'vehicleArrangementType',
+      'mileage',
+      'passengerCount',
+    ] as const) {
+      expect(
+        fields.value.find(field => field.key === key)?.editable,
+      ).toBe(false)
+    }
   })
 })

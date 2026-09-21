@@ -178,9 +178,9 @@ WHERE NOT EXISTS (
 UPDATE deduction_masters
 SET deduction_name = '法定準備金',
     deduction_type = 'LEGAL',
-    calculation_type = 'MANUAL',
-    rule_name = NULL,
-    default_amount = COALESCE(default_amount, 0),
+    calculation_type = 'AUTO',
+    rule_name = 'DAILY_LEGAL_DEPOSIT_ESTIMATE',
+    default_amount = 0,
     allow_manual_input = TRUE,
     min_amount = 0,
     max_amount = 10000000,
@@ -191,7 +191,7 @@ SET deduction_name = '法定準備金',
     carry_to_monthly_settlement = TRUE,
     display_order = 160,
     enabled = TRUE,
-    note = '日次の概算初期値を提示し、必要に応じて手動変更する。月次締めで未返金残高を精算する',
+    note = '月額予測法定控除合計÷20を初期値とし、必要に応じて日報で手動変更する。月次締めで預り総額を返金する',
     updated_at = CURRENT_TIMESTAMP(6),
     deleted_at = NULL
 WHERE tenant_id = 'default'

@@ -31,6 +31,8 @@
     </style>
     <style name="CellCenter" style="Cell" hTextAlign="Center"/>
     <style name="CellRight" style="Cell" hTextAlign="Right"/>
+    <style name="ListText" style="Base" hTextAlign="Left" vTextAlign="Middle"/>
+    <style name="ListTextRight" style="Base" hTextAlign="Right" vTextAlign="Middle"/>
     <style name="PanelTitlePay" style="Header" backcolor="#DCFCE7"/>
     <style name="PanelTitleDeduction" style="Header" backcolor="#FEE2E2"/>
     <style name="TotalLabel" style="Header" fontSize="10"/>
@@ -195,7 +197,7 @@
                 </textField>
                 <staticText>
                     <reportElement style="Header" x="516" y="38" width="79" height="20"/>
-                    <text><![CDATA[締めVersion]]></text>
+                    <text><![CDATA[締め版]]></text>
                 </staticText>
                 <textField>
                     <reportElement style="CellCenter" x="594" y="38" width="107" height="20"/>
@@ -210,10 +212,10 @@
                 <staticText><reportElement style="Header" x="585" y="64" width="116" height="18"/><text><![CDATA[有休日数]]></text></staticText>
 
                 <textField><reportElement style="CellRight" x="0" y="82" width="117" height="21"/><textFieldExpression><![CDATA[$F{work_day_count} + " 日"]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="117" y="82" width="117" height="21"/><textFieldExpression><![CDATA[$F{work_hours}.stripTrailingZeros().toPlainString() + " h"]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="234" y="82" width="117" height="21"/><textFieldExpression><![CDATA[$F{overtime_hours}.stripTrailingZeros().toPlainString() + " h"]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="351" y="82" width="117" height="21"/><textFieldExpression><![CDATA[$F{night_work_hours}.stripTrailingZeros().toPlainString() + " h"]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="468" y="82" width="116" height="21"/><textFieldExpression><![CDATA[$F{holiday_work_hours}.stripTrailingZeros().toPlainString() + " h"]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="117" y="82" width="117" height="21"/><textFieldExpression><![CDATA[$F{work_hours}.multiply(new java.math.BigDecimal("60")).setScale(0, java.math.RoundingMode.HALF_UP).intValue() / 60 + "時間" + $F{work_hours}.multiply(new java.math.BigDecimal("60")).setScale(0, java.math.RoundingMode.HALF_UP).intValue() % 60 + "分"]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="234" y="82" width="117" height="21"/><textFieldExpression><![CDATA[$F{overtime_hours}.multiply(new java.math.BigDecimal("60")).setScale(0, java.math.RoundingMode.HALF_UP).intValue() / 60 + "時間" + $F{overtime_hours}.multiply(new java.math.BigDecimal("60")).setScale(0, java.math.RoundingMode.HALF_UP).intValue() % 60 + "分"]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="351" y="82" width="117" height="21"/><textFieldExpression><![CDATA[$F{night_work_hours}.multiply(new java.math.BigDecimal("60")).setScale(0, java.math.RoundingMode.HALF_UP).intValue() / 60 + "時間" + $F{night_work_hours}.multiply(new java.math.BigDecimal("60")).setScale(0, java.math.RoundingMode.HALF_UP).intValue() % 60 + "分"]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="468" y="82" width="116" height="21"/><textFieldExpression><![CDATA[$F{holiday_work_hours}.multiply(new java.math.BigDecimal("60")).setScale(0, java.math.RoundingMode.HALF_UP).intValue() / 60 + "時間" + $F{holiday_work_hours}.multiply(new java.math.BigDecimal("60")).setScale(0, java.math.RoundingMode.HALF_UP).intValue() % 60 + "分"]]></textFieldExpression></textField>
                 <textField><reportElement style="CellRight" x="585" y="82" width="116" height="21"/><textFieldExpression><![CDATA[$F{paid_leave_days}.stripTrailingZeros().toPlainString() + " 日"]]></textFieldExpression></textField>
 
                 <staticText><reportElement style="PanelTitlePay" x="0" y="111" width="227" height="20"/><text><![CDATA[支給]]></text></staticText>
@@ -221,7 +223,7 @@
                 <staticText><reportElement style="PanelTitleDeduction" x="474" y="111" width="227" height="20"/><text><![CDATA[控除2（その他控除）]]></text></staticText>
 
                 <staticText><reportElement style="Cell" x="0" y="131" width="131" height="18"/><text><![CDATA[基本給]]></text></staticText>
-                <textField><reportElement style="CellRight" x="131" y="131" width="96" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{basic_salary})]]></textFieldExpression></textField>
+                <textField><reportElement style="CellRight" x="131" y="131" width="96" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{basic_salary}) + " 円"]]></textFieldExpression></textField>
                 <textField isBlankWhenNull="true" isStretchWithOverflow="false">
                     <reportElement style="Cell" x="0" y="148" width="131" height="193"/>
                     <textElement verticalAlignment="Top"/>
@@ -244,35 +246,37 @@
                     <reportElement style="CellRight" x="131" y="148" width="96" height="193"/>
                     <textElement verticalAlignment="Top"/>
                     <textFieldExpression><![CDATA[
-($F{allowance_item_value_01} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_01})) + "\n" +
-($F{allowance_item_value_02} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_02})) + "\n" +
-($F{allowance_item_value_03} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_03})) + "\n" +
-($F{allowance_item_value_04} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_04})) + "\n" +
-($F{allowance_item_value_05} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_05})) + "\n" +
-($F{allowance_item_value_06} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_06})) + "\n" +
-($F{allowance_item_value_07} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_07})) + "\n" +
-($F{allowance_item_value_08} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_08})) + "\n" +
-($F{allowance_item_value_09} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_09})) + "\n" +
-($F{allowance_item_value_10} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_10})) + "\n" +
-($F{allowance_item_value_11} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_11})) + "\n" +
-($F{allowance_item_value_12} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_12}))
+($F{allowance_item_value_01} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_01}) + " 円") + "\n" +
+($F{allowance_item_value_02} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_02}) + " 円") + "\n" +
+($F{allowance_item_value_03} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_03}) + " 円") + "\n" +
+($F{allowance_item_value_04} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_04}) + " 円") + "\n" +
+($F{allowance_item_value_05} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_05}) + " 円") + "\n" +
+($F{allowance_item_value_06} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_06}) + " 円") + "\n" +
+($F{allowance_item_value_07} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_07}) + " 円") + "\n" +
+($F{allowance_item_value_08} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_08}) + " 円") + "\n" +
+($F{allowance_item_value_09} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_09}) + " 円") + "\n" +
+($F{allowance_item_value_10} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_10}) + " 円") + "\n" +
+($F{allowance_item_value_11} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_11}) + " 円") + "\n" +
+($F{allowance_item_value_12} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value_12}) + " 円")
                     ]]></textFieldExpression>
                 </textField>
 
-                <staticText><reportElement style="Cell" x="237" y="131" width="131" height="16"/><text><![CDATA[健康・介護保険]]></text></staticText>
-                <textField><reportElement style="CellRight" x="368" y="131" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{health_insurance})]]></textFieldExpression></textField>
-                <staticText><reportElement style="Cell" x="237" y="147" width="131" height="16"/><text><![CDATA[子ども・子育て支援金]]></text></staticText>
-                <textField><reportElement style="CellRight" x="368" y="147" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{child_care_contribution})]]></textFieldExpression></textField>
-                <staticText><reportElement style="Cell" x="237" y="163" width="131" height="16"/><text><![CDATA[厚生年金]]></text></staticText>
-                <textField><reportElement style="CellRight" x="368" y="163" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{pension_insurance})]]></textFieldExpression></textField>
-                <staticText><reportElement style="Cell" x="237" y="179" width="131" height="16"/><text><![CDATA[雇用保険]]></text></staticText>
-                <textField><reportElement style="CellRight" x="368" y="179" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{employment_insurance})]]></textFieldExpression></textField>
-                <staticText><reportElement style="Cell" x="237" y="195" width="131" height="16"/><text><![CDATA[所得税]]></text></staticText>
-                <textField><reportElement style="CellRight" x="368" y="195" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{income_tax})]]></textFieldExpression></textField>
-                <staticText><reportElement style="Cell" x="237" y="211" width="131" height="16"/><text><![CDATA[住民税]]></text></staticText>
-                <textField><reportElement style="CellRight" x="368" y="211" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{resident_tax})]]></textFieldExpression></textField>
+                <rectangle><reportElement x="237" y="131" width="227" height="211"/><graphicElement><pen lineWidth="0.5" lineColor="#374151"/></graphicElement></rectangle>
+                <line><reportElement x="368" y="131" width="1" height="211"/><graphicElement><pen lineWidth="0.5" lineColor="#374151"/></graphicElement></line>
+                <staticText><reportElement style="ListText" x="237" y="131" width="131" height="16"/><text><![CDATA[健康・介護保険]]></text></staticText>
+                <textField><reportElement style="ListTextRight" x="368" y="131" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{health_insurance}) + " 円"]]></textFieldExpression></textField>
+                <staticText><reportElement style="ListText" x="237" y="147" width="131" height="16"/><text><![CDATA[子ども・子育て支援金]]></text></staticText>
+                <textField><reportElement style="ListTextRight" x="368" y="147" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{child_care_contribution}) + " 円"]]></textFieldExpression></textField>
+                <staticText><reportElement style="ListText" x="237" y="163" width="131" height="16"/><text><![CDATA[厚生年金]]></text></staticText>
+                <textField><reportElement style="ListTextRight" x="368" y="163" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{pension_insurance}) + " 円"]]></textFieldExpression></textField>
+                <staticText><reportElement style="ListText" x="237" y="179" width="131" height="16"/><text><![CDATA[雇用保険]]></text></staticText>
+                <textField><reportElement style="ListTextRight" x="368" y="179" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{employment_insurance}) + " 円"]]></textFieldExpression></textField>
+                <staticText><reportElement style="ListText" x="237" y="195" width="131" height="16"/><text><![CDATA[所得税]]></text></staticText>
+                <textField><reportElement style="ListTextRight" x="368" y="195" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{income_tax}) + " 円"]]></textFieldExpression></textField>
+                <staticText><reportElement style="ListText" x="237" y="211" width="131" height="16"/><text><![CDATA[住民税]]></text></staticText>
+                <textField><reportElement style="ListTextRight" x="368" y="211" width="96" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{resident_tax}) + " 円"]]></textFieldExpression></textField>
                 <textField isBlankWhenNull="true">
-                    <reportElement style="Cell" x="237" y="227" width="131" height="114"/>
+                    <reportElement style="ListText" x="237" y="227" width="131" height="114"/>
                     <textElement verticalAlignment="Top"/>
                     <textFieldExpression><![CDATA[
 ($F{legal_item_name_01} == null ? "" : $F{legal_item_name_01}) + "\n" +
@@ -290,21 +294,21 @@
                     ]]></textFieldExpression>
                 </textField>
                 <textField isBlankWhenNull="true">
-                    <reportElement style="CellRight" x="368" y="227" width="96" height="114"/>
+                    <reportElement style="ListTextRight" x="368" y="227" width="96" height="114"/>
                     <textElement verticalAlignment="Top"/>
                     <textFieldExpression><![CDATA[
-($F{legal_item_value_01} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_01})) + "\n" +
-($F{legal_item_value_02} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_02})) + "\n" +
-($F{legal_item_value_03} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_03})) + "\n" +
-($F{legal_item_value_04} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_04})) + "\n" +
-($F{legal_item_value_05} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_05})) + "\n" +
-($F{legal_item_value_06} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_06})) + "\n" +
-($F{legal_item_value_07} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_07})) + "\n" +
-($F{legal_item_value_08} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_08})) + "\n" +
-($F{legal_item_value_09} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_09})) + "\n" +
-($F{legal_item_value_10} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_10})) + "\n" +
-($F{legal_item_value_11} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_11})) + "\n" +
-($F{legal_item_value_12} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_12}))
+($F{legal_item_value_01} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_01}) + " 円") + "\n" +
+($F{legal_item_value_02} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_02}) + " 円") + "\n" +
+($F{legal_item_value_03} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_03}) + " 円") + "\n" +
+($F{legal_item_value_04} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_04}) + " 円") + "\n" +
+($F{legal_item_value_05} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_05}) + " 円") + "\n" +
+($F{legal_item_value_06} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_06}) + " 円") + "\n" +
+($F{legal_item_value_07} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_07}) + " 円") + "\n" +
+($F{legal_item_value_08} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_08}) + " 円") + "\n" +
+($F{legal_item_value_09} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_09}) + " 円") + "\n" +
+($F{legal_item_value_10} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_10}) + " 円") + "\n" +
+($F{legal_item_value_11} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_11}) + " 円") + "\n" +
+($F{legal_item_value_12} == null ? "" : $P{MONEY_FORMAT}.format($F{legal_item_value_12}) + " 円")
                     ]]></textFieldExpression>
                 </textField>
 
@@ -330,18 +334,18 @@
                     <reportElement style="CellRight" x="605" y="131" width="96" height="211"/>
                     <textElement verticalAlignment="Top"/>
                     <textFieldExpression><![CDATA[
-($F{other_item_value_01} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_01})) + "\n" +
-($F{other_item_value_02} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_02})) + "\n" +
-($F{other_item_value_03} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_03})) + "\n" +
-($F{other_item_value_04} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_04})) + "\n" +
-($F{other_item_value_05} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_05})) + "\n" +
-($F{other_item_value_06} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_06})) + "\n" +
-($F{other_item_value_07} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_07})) + "\n" +
-($F{other_item_value_08} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_08})) + "\n" +
-($F{other_item_value_09} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_09})) + "\n" +
-($F{other_item_value_10} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_10})) + "\n" +
-($F{other_item_value_11} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_11})) + "\n" +
-($F{other_item_value_12} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_12}))
+($F{other_item_value_01} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_01}) + " 円") + "\n" +
+($F{other_item_value_02} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_02}) + " 円") + "\n" +
+($F{other_item_value_03} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_03}) + " 円") + "\n" +
+($F{other_item_value_04} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_04}) + " 円") + "\n" +
+($F{other_item_value_05} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_05}) + " 円") + "\n" +
+($F{other_item_value_06} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_06}) + " 円") + "\n" +
+($F{other_item_value_07} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_07}) + " 円") + "\n" +
+($F{other_item_value_08} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_08}) + " 円") + "\n" +
+($F{other_item_value_09} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_09}) + " 円") + "\n" +
+($F{other_item_value_10} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_10}) + " 円") + "\n" +
+($F{other_item_value_11} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_11}) + " 円") + "\n" +
+($F{other_item_value_12} == null ? "" : $P{MONEY_FORMAT}.format($F{other_item_value_12}) + " 円")
                     ]]></textFieldExpression>
                 </textField>
 
@@ -357,23 +361,19 @@
                 <textField><reportElement style="TotalValue" x="420" y="370" width="140" height="30"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{deduction_total}) + " 円"]]></textFieldExpression></textField>
                 <textField><reportElement style="NetValue" x="559" y="370" width="142" height="30"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{net_payment_amount}) + " 円"]]></textFieldExpression></textField>
 
-                <staticText><reportElement style="Header" x="0" y="410" width="140" height="20"/><text><![CDATA[前払い額（日払い累計）]]></text></staticText>
-                <textField><reportElement style="CellRight" x="140" y="410" width="140" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{advance_payment_amount}) + " 円"]]></textFieldExpression></textField>
-                <staticText><reportElement style="Header" x="280" y="410" width="140" height="20"/><text><![CDATA[課税対象額]]></text></staticText>
-                <textField><reportElement style="CellRight" x="420" y="410" width="140" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{taxable_amount}) + " 円"]]></textFieldExpression></textField>
-                <staticText><reportElement style="Header" x="559" y="410" width="70" height="20"/><text><![CDATA[保険計]]></text></staticText>
-                <textField><reportElement style="CellRight" x="629" y="410" width="72" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{social_insurance_total})]]></textFieldExpression></textField>
+                <staticText><reportElement style="Header" x="0" y="410" width="175" height="20"/><text><![CDATA[法定準備金返済額]]></text></staticText>
+                <textField><reportElement style="CellRight" x="175" y="410" width="176" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{legal_deposit_refund_amount} == null ? java.math.BigDecimal.ZERO : $F{legal_deposit_refund_amount}) + " 円"]]></textFieldExpression></textField>
+                <staticText><reportElement style="Header" x="351" y="410" width="175" height="20"/><text><![CDATA[課税対象額]]></text></staticText>
+                <textField><reportElement style="CellRight" x="526" y="410" width="175" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{taxable_amount}) + " 円"]]></textFieldExpression></textField>
 
-                <staticText><reportElement style="Header" x="0" y="432" width="117" height="20"/><text><![CDATA[法定準備金返金額]]></text></staticText>
-                <textField><reportElement style="CellRight" x="117" y="432" width="117" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{legal_deposit_refund_amount} == null ? java.math.BigDecimal.ZERO : $F{legal_deposit_refund_amount}) + " 円"]]></textFieldExpression></textField>
-                <staticText><reportElement style="Header" x="234" y="432" width="117" height="20"/><text><![CDATA[借入金残高]]></text></staticText>
-                <textField><reportElement style="CellRight" x="351" y="432" width="117" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{loan_balance} == null ? java.math.BigDecimal.ZERO : $F{loan_balance}) + " 円"]]></textFieldExpression></textField>
-                <staticText><reportElement style="Header" x="468" y="432" width="116" height="20"/><text><![CDATA[貯金残高]]></text></staticText>
-                <textField><reportElement style="CellRight" x="584" y="432" width="117" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{saving_balance} == null ? java.math.BigDecimal.ZERO : $F{saving_balance}) + " 円"]]></textFieldExpression></textField>
+                <staticText><reportElement style="Header" x="0" y="432" width="175" height="20"/><text><![CDATA[借入金残高]]></text></staticText>
+                <textField><reportElement style="CellRight" x="175" y="432" width="176" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{loan_balance} == null ? java.math.BigDecimal.ZERO : $F{loan_balance}) + " 円"]]></textFieldExpression></textField>
+                <staticText><reportElement style="Header" x="351" y="432" width="175" height="20"/><text><![CDATA[貯金残高]]></text></staticText>
+                <textField><reportElement style="CellRight" x="526" y="432" width="175" height="20"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{saving_balance} == null ? java.math.BigDecimal.ZERO : $F{saving_balance}) + " 円"]]></textFieldExpression></textField>
 
                 <staticText>
                     <reportElement style="Base" x="0" y="456" width="701" height="18"/>
-                    <text><![CDATA[＜備考＞ この明細は月次締め時点の確定データです。再締めを行った場合は締めVersionで識別します。]]></text>
+                    <text><![CDATA[＜備考＞ この明細は月次締め時点の確定データです。再締めを行った場合は締め版で識別します。]]></text>
                 </staticText>
             </frame>
         </band>

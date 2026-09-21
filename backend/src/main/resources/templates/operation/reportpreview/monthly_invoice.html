@@ -11,7 +11,7 @@
       }
 
       body {
-        margin: 24px;
+        margin: 16px;
 
         font-family: "Yu Gothic", "Meiryo", sans-serif;
 
@@ -19,33 +19,31 @@
 
         color: #1f2937;
 
-        background: #f8fafc;
+        background: #eef0f2;
       }
 
       .page {
-        max-width: 1480px;
+        max-width: 1120px;
 
         margin: 0 auto;
 
         background: #ffffff;
 
-        border: 1px solid #dbe4ee;
+        border: 1px solid #d1d5db;
 
-        border-radius: 12px;
-
-        padding: 32px;
+        padding: 34px 42px 42px;
       }
 
       .title {
-        margin: 0 0 28px;
+        margin: 4px 0 42px;
 
         text-align: center;
 
-        font-size: 30px;
+        font-size: 34px;
 
         font-weight: 800;
 
-        letter-spacing: 0.45em;
+        letter-spacing: 0.7em;
       }
 
       .header {
@@ -53,17 +51,17 @@
 
         grid-template-columns:
           minmax(0, 1fr)
-          360px;
+          340px;
 
-        gap: 40px;
+        gap: 70px;
 
-        margin-bottom: 28px;
+        margin-bottom: 22px;
       }
 
       .customer-block {
         display: grid;
 
-        gap: 18px;
+        gap: 30px;
 
         align-content: start;
       }
@@ -73,7 +71,7 @@
 
         border-bottom: 2px solid #475569;
 
-        font-size: 21px;
+        font-size: 19px;
 
         font-weight: 700;
       }
@@ -91,9 +89,17 @@
 
         border-bottom: 2px solid #475569;
 
-        font-size: 30px;
+        font-size: 28px;
 
         font-weight: 800;
+      }
+
+      .invoice-note {
+        margin-top: 4px;
+        padding-left: 82px;
+        white-space: pre-line;
+        font-size: 10px;
+        font-weight: 600;
       }
 
       .company-block {
@@ -105,7 +111,49 @@
 
         align-content: start;
 
-        line-height: 1.7;
+        line-height: 1.5;
+      }
+
+      .company-logo {
+        display: block;
+        width: 100%;
+        max-height: 150px;
+        object-fit: contain;
+        object-position: right center;
+      }
+
+      .invoice-meta {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 330px;
+        gap: 70px;
+        align-items: end;
+        margin: 8px 0 18px;
+      }
+
+      .bank-row {
+        display: grid;
+        grid-template-columns: 76px minmax(0, 1fr);
+        align-items: center;
+        gap: 10px;
+      }
+
+      .bank-label {
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .bank-value {
+        min-height: 36px;
+        padding: 8px 12px;
+        white-space: pre-line;
+        background: #e7f2f5;
+      }
+
+      .registration {
+        display: grid;
+        gap: 6px;
+        text-align: right;
+        font-size: 11px;
       }
 
       .company-name {
@@ -133,7 +181,7 @@
 
         border: 1px solid #dbe4ee;
 
-        border-radius: 10px;
+        border-radius: 0;
 
         background: #f8fafc;
       }
@@ -177,7 +225,7 @@
 
         top: 0;
 
-        background: #eef2f7;
+        background: #ffffff;
 
         z-index: 10;
       }
@@ -276,6 +324,11 @@ rows[0]['total_amount'],
               >
                 ￥0
               </div>
+              <div
+                class="invoice-note"
+                th:if="${rows[0]['invoice_note'] != null and rows[0]['invoice_note'] != ''}"
+                th:text="${rows[0]['invoice_note']}"
+              ></div>
             </div>
           </div>
 
@@ -289,90 +342,30 @@ rows[0]['invoice_date'],
 )}"
             ></div>
 
-            <div class="company-name" th:text="${rows[0]['company_name']}">
-              株式会社○○
+            <img
+              class="company-logo"
+              src="/api/system/company-profile/invoice-logo"
+              alt="会社ロゴ・連絡先"
+            />
+          </div>
+        </section>
+
+        <section class="invoice-meta">
+          <div class="bank-row">
+            <div class="bank-label">振込先</div>
+            <div class="bank-value" th:text="${rows[0]['bank_display_text']}">
+              銀行・支店・口座情報
             </div>
+          </div>
 
-            <div
-              th:text="'〒'
-+ ${rows[0]['company_postal_code']}"
-            ></div>
-
-            <div th:text="${rows[0]['company_address']}"></div>
-
-            <div
-              th:if="${rows[0]['company_phone'] != null and rows[0]['company_phone'] != ''}"
-              th:text="'TEL：'
-+ ${rows[0]['company_phone']}"
-            ></div>
-
-            <div
-              th:if="${rows[0]['company_fax'] != null and rows[0]['company_fax'] != ''}"
-              th:text="'FAX：'
-+ ${rows[0]['company_fax']}"
-            ></div>
-
+          <div class="registration">
             <div
               th:if="${rows[0]['qualified_invoice_issuer_number'] != null and rows[0]['qualified_invoice_issuer_number'] != ''}"
-              th:text="'登録番号：'
-+ ${rows[0]['qualified_invoice_issuer_number']}"
+              th:text="'適格請求書登録番号　' + ${rows[0]['qualified_invoice_issuer_number']}"
             ></div>
+            <div th:text="'請求書番号　' + ${rows[0]['invoice_number']}"></div>
           </div>
         </section>
-
-        <section class="summary">
-          <div class="summary-label">請求書番号</div>
-
-          <div th:text="${rows[0]['invoice_number']}"></div>
-
-          <div class="summary-label">請求書タイプ</div>
-
-          <div th:text="${rows[0]['customer_invoice_type']}"></div>
-
-          <div class="summary-label">対象月</div>
-
-          <div th:text="${rows[0]['target_month']}"></div>
-
-          <div class="summary-label">対象期間</div>
-
-          <div>
-            <span
-              th:text="${rows[0]['period_start'] != null
-? #dates.format(
-rows[0]['period_start'],
-'yyyy年M月d日')
-: ''}"
-            >
-            </span>
-
-            ～
-
-            <span
-              th:text="${rows[0]['period_end'] != null
-? #dates.format(
-rows[0]['period_end'],
-'yyyy年M月d日')
-: ''}"
-            >
-            </span>
-          </div>
-
-          <div class="summary-label">支払期限</div>
-
-          <div
-            th:text="${rows[0]['payment_due_date'] != null
-? #dates.format(
-rows[0]['payment_due_date'],
-'yyyy年M月d日')
-: ''}"
-          ></div>
-
-          <div class="summary-label">明細件数</div>
-
-          <div th:text="${rows.size()} + ' 件'"></div>
-        </section>
-
-        <div class="section-title">請求明細</div>
 
         <div class="table-wrapper">
           <table style="min-width: 1700px">

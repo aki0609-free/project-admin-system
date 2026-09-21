@@ -22,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class CompanyProfileCommandService {
 
+    private static final int MAX_INVOICE_LOGO_BYTES = 2 * 1024 * 1024;
+
     private static final String DEFAULT_COMPANY_CODE =
             "DEFAULT";
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
@@ -131,6 +133,25 @@ public class CompanyProfileCommandService {
         validateMaxLength(request.invoiceBankAccountType(), 50, "口座種別");
         validateMaxLength(request.invoiceBankAccountNumber(), 100, "口座番号");
         validateMaxLength(request.invoiceBankAccountHolder(), 255, "口座名義");
+        validateMaxLength(request.invoiceLogoFileName(), 255, "請求書ロゴファイル名");
+        validateMaxLength(request.invoiceLogoContentType(), 100, "請求書ロゴ形式");
+
+        if (StringUtils.hasText(request.invoiceLogoBase64())) {
+            String contentType = request.invoiceLogoContentType();
+            if (!"image/png".equals(contentType)
+                    && !"image/jpeg".equals(contentType)) {
+                throw new IllegalArgumentException(
+                        "請求書ロゴはPNGまたはJPEG形式で指定してください。"
+                );
+            }
+            byte[] imageData = com.project.backend.common.util.ApplicationBase64Utils
+                    .decodeDataUrlOrBase64(request.invoiceLogoBase64());
+            if (imageData.length > MAX_INVOICE_LOGO_BYTES) {
+                throw new IllegalArgumentException(
+                        "請求書ロゴは2MB以内で指定してください。"
+                );
+            }
+        }
 
         if (StringUtils.hasText(request.email())
                 && !EMAIL_PATTERN.matcher(request.email().trim()).matches()) {
@@ -271,6 +292,10 @@ public class CompanyProfileCommandService {
                 request.invoiceBankAccountType(),
                 request.invoiceBankAccountNumber(),
                 request.invoiceBankAccountHolder(),
+
+                request.invoiceLogoFileName(),
+                request.invoiceLogoContentType(),
+                request.invoiceLogoBase64(),
 
                 request.invoiceNote(),
 

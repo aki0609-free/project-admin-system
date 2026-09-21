@@ -13,6 +13,51 @@ UPDATE daily_report
 SET billing_unit = 'MONTHLY'
 WHERE billing_unit = 'FIXED';
 
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE company_profile ADD COLUMN invoice_logo_file_name VARCHAR(255) NULL AFTER invoice_bank_account_holder',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'company_profile'
+      AND column_name = 'invoice_logo_file_name'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE company_profile ADD COLUMN invoice_logo_content_type VARCHAR(100) NULL AFTER invoice_logo_file_name',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'company_profile'
+      AND column_name = 'invoice_logo_content_type'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE company_profile ADD COLUMN invoice_logo_image_data LONGBLOB NULL AFTER invoice_logo_content_type',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'company_profile'
+      AND column_name = 'invoice_logo_image_data'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 CREATE TABLE IF NOT EXISTS monthly_invoice_input (
     id BIGINT NOT NULL AUTO_INCREMENT,
     execution_id VARCHAR(100) NOT NULL,
@@ -51,6 +96,9 @@ CREATE TABLE IF NOT EXISTS monthly_invoice_history (
     company_fax VARCHAR(50) NULL,
     qualified_invoice_issuer_number VARCHAR(50) NULL,
     bank_display_text VARCHAR(1000) NULL,
+    company_logo_file_name VARCHAR(255) NULL,
+    company_logo_content_type VARCHAR(100) NULL,
+    company_logo_image_data LONGBLOB NULL,
     invoice_note TEXT NULL,
     tax_rate DECIMAL(7,4) NOT NULL,
     subtotal_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
@@ -69,6 +117,51 @@ CREATE TABLE IF NOT EXISTS monthly_invoice_history (
     UNIQUE KEY uk_monthly_invoice_history_business
         (tenant_id, business_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_invoice_history ADD COLUMN company_logo_file_name VARCHAR(255) NULL AFTER bank_display_text',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_invoice_history'
+      AND column_name = 'company_logo_file_name'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_invoice_history ADD COLUMN company_logo_content_type VARCHAR(100) NULL AFTER company_logo_file_name',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_invoice_history'
+      AND column_name = 'company_logo_content_type'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_invoice_history ADD COLUMN company_logo_image_data LONGBLOB NULL AFTER company_logo_content_type',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_invoice_history'
+      AND column_name = 'company_logo_image_data'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS monthly_invoice_history_detail (
     id BIGINT NOT NULL AUTO_INCREMENT,
@@ -507,7 +600,11 @@ BEGIN
             company_name, company_postal_code, company_address,
             company_phone, company_fax,
             qualified_invoice_issuer_number,
-            bank_display_text, invoice_note,
+            bank_display_text,
+            company_logo_file_name,
+            company_logo_content_type,
+            company_logo_image_data,
+            invoice_note,
             tax_rate, subtotal_amount, tax_amount, total_amount,
             business_key, source_execution_id, fixed_at,
             tenant_id, created_at, updated_at
@@ -545,6 +642,9 @@ BEGIN
                 company.invoice_bank_account_number,
                 company.invoice_bank_account_holder
             ),
+            company.invoice_logo_file_name,
+            company.invoice_logo_content_type,
+            company.invoice_logo_image_data,
             company.invoice_note,
             v_tax_rate,
             0, 0, 0,

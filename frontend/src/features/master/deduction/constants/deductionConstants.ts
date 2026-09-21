@@ -32,6 +32,7 @@ export const deductionDetailViewTypeLabelMap: Record<DeductionDetailViewType, st
   INCOME_TAX: '所得税',
   RESIDENT_TAX: '住民税',
   HEALTH_INSURANCE: '健康保険',
+  CHILD_SUPPORT: '子ども・子育て支援金',
   PENSION: '厚生年金',
   EMPLOYMENT_INSURANCE: '雇用保険',
 }

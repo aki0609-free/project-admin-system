@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import type { TabbedFormFieldDef } from '@/shared/components/form/tabbed_form/types/types'
 import type { Customer } from '../types/customerTypes'
+import { formatNumberWithUnit } from '@/shared/utils/UnitFormatUtils'
 
 export const customerFormTabs = ['基本情報', '契約・請求'] as const
 
@@ -17,10 +18,11 @@ export const useCustomerFormFields = () => {
     { key: 'jobType', label: '職種', type: 'text', tab: '契約・請求' },
     {
       key: 'distanceBillingUnitPrice',
-      label: '顧客距離請求単価（円/km）',
+      label: '顧客距離請求単価',
       type: 'number',
       tab: '契約・請求',
       required: true,
+      formatter: value => formatNumberWithUnit(value, '円/km'),
     },
     {
       key: 'contractFlag',

@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import com.project.backend.common.util.ApplicationBase64Utils;
 import com.project.backend.features.system.company.dto.CompanyProfileResponse;
 import com.project.backend.features.system.company.dto.CompanyProfileSaveRequest;
 import com.project.backend.features.system.company.entity.CompanyProfile;
@@ -148,6 +149,20 @@ public class CompanyProfileMapper {
                 )
         );
 
+        if (StringUtils.hasText(request.invoiceLogoBase64())) {
+            entity.setInvoiceLogoFileName(
+                    normalizeNullable(request.invoiceLogoFileName())
+            );
+            entity.setInvoiceLogoContentType(
+                    normalizeNullable(request.invoiceLogoContentType())
+            );
+            entity.setInvoiceLogoImageData(
+                    ApplicationBase64Utils.decodeDataUrlOrBase64(
+                            request.invoiceLogoBase64()
+                    )
+            );
+        }
+
         entity.setInvoiceNote(
                 normalizeNullable(request.invoiceNote())
         );
@@ -242,12 +257,27 @@ public class CompanyProfileMapper {
                         buildInvoiceBankDisplayText(entity)
                 )
 
+                .invoiceLogoFileName(entity.getInvoiceLogoFileName())
+                .invoiceLogoContentType(entity.getInvoiceLogoContentType())
+                .invoiceLogoBase64(buildInvoiceLogoDataUrl(entity))
+
                 .invoiceNote(entity.getInvoiceNote())
 
                 .activeFlag(
                         Boolean.TRUE.equals(entity.getActiveFlag())
                 )
                 .build();
+    }
+
+    private String buildInvoiceLogoDataUrl(CompanyProfile entity) {
+        byte[] imageData = entity.getInvoiceLogoImageData();
+        if (imageData == null || imageData.length == 0) {
+            return null;
+        }
+        String contentType = StringUtils.hasText(entity.getInvoiceLogoContentType())
+                ? entity.getInvoiceLogoContentType().trim()
+                : "image/png";
+        return ApplicationBase64Utils.encodeDataUrl(imageData, contentType);
     }
 
     @SuppressWarnings("null")

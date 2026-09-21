@@ -22,6 +22,7 @@ import {
 import { useAuth } from '@/shared/auth/composables/useAuth'
 import { Role } from '@/shared/auth/types/types'
 import { companyProfileSchema } from '../validation/companyProfileSchema'
+import { fileToBase64 } from '@/shared/utils/FileUtils'
 
 const props = defineProps<{
   modelValue: boolean
@@ -61,6 +62,9 @@ const loading = computed(() => isFetching.value || saveMutation.isPending.value)
 
 const displayCompanyName = computed(() => form.companyName || '会社情報未登録')
 const loadError = computed(() => companyProfileQuery.isError.value)
+const invoiceLogoPreview = computed(
+  () => form.invoiceLogoBase64 || '/api/system/company-profile/invoice-logo',
+)
 
 const displayAddress = computed(() => {
   const address = [form.prefecture, form.city, form.addressLine1, form.addressLine2]
@@ -137,6 +141,27 @@ function startEdit() {
 function cancelEdit() {
   applyProfile()
   editMode.value = false
+}
+
+async function onInvoiceLogoChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  if (!['image/png', 'image/jpeg'].includes(file.type)) {
+    showMessage('請求書ロゴはPNGまたはJPEG形式を選択してください。', 'error')
+    input.value = ''
+    return
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    showMessage('請求書ロゴは2MB以内で選択してください。', 'error')
+    input.value = ''
+    return
+  }
+
+  form.invoiceLogoFileName = file.name
+  form.invoiceLogoContentType = file.type
+  form.invoiceLogoBase64 = await fileToBase64(file)
 }
 
 async function save() {
@@ -304,6 +329,18 @@ const rightFooterItems = computed<ToolbarItem[]>(() => {
 
           <FormLayout v-else-if="active === 'invoice'" v-model="form" :schema="schema">
             <GridBasedForm v-model="form" :fields="invoiceFields" />
+
+            <div class="invoice-logo-editor">
+              <div class="invoice-logo-label">請求書ロゴ</div>
+              <input
+                type="file"
+                accept="image/png,image/jpeg"
+                class="invoice-logo-input"
+                @change="onInvoiceLogoChange"
+              />
+              <div class="invoice-logo-help">PNGまたはJPEG・2MB以内</div>
+              <img :src="invoiceLogoPreview" alt="請求書ロゴ" class="invoice-logo-preview" />
+            </div>
           </FormLayout>
 
           <FormLayout v-else-if="active === 'certification'" v-model="form" :schema="schema">
@@ -319,6 +356,13 @@ const rightFooterItems = computed<ToolbarItem[]>(() => {
               <v-divider />
 
               <v-card-text>
+                <div class="info-row">
+                  <div class="info-label">請求書ロゴ</div>
+                  <div class="info-value">
+                    <img :src="invoiceLogoPreview" alt="請求書ロゴ" class="invoice-logo-preview" />
+                  </div>
+                </div>
+
                 <div class="info-row">
                   <div class="info-label">会社コード</div>
 
@@ -595,5 +639,39 @@ const rightFooterItems = computed<ToolbarItem[]>(() => {
 
 .empty-text {
   color: #94a3b8;
+}
+
+.invoice-logo-editor {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid #d8e0ea;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.invoice-logo-label {
+  font-weight: 700;
+  color: #334155;
+}
+
+.invoice-logo-input {
+  max-width: 420px;
+}
+
+.invoice-logo-help {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.invoice-logo-preview {
+  display: block;
+  width: min(100%, 420px);
+  max-height: 190px;
+  object-fit: contain;
+  object-position: left center;
+  border: 1px solid #e2e8f0;
+  background: #fff;
 }
 </style>

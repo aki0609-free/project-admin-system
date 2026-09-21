@@ -18,6 +18,8 @@
     <style name="CellCenter" style="Cell" hTextAlign="Center"/>
     <style name="CellRight" style="Cell" hTextAlign="Right"/>
     <style name="Total" style="CellRight" isBold="true" mode="Opaque" backcolor="#CBD5E1"/>
+    <style name="CoverHeader" style="Base" isBold="true" hTextAlign="Center" vTextAlign="Middle"><box><pen lineWidth="0.6"/></box></style>
+    <style name="CoverTotal" style="CellRight" isBold="true" mode="Opaque" backcolor="#DCE6F1"/>
     <parameter name="MONEY_FORMAT" class="java.text.DecimalFormat"><defaultValueExpression><![CDATA[new java.text.DecimalFormat("#,##0;▲#,##0")]]></defaultValueExpression></parameter>
     <parameter name="DATE_FORMAT" class="java.text.SimpleDateFormat"><defaultValueExpression><![CDATA[new java.text.SimpleDateFormat("yyyy年M月d日")]]></defaultValueExpression></parameter>
     <field name="invoice_history_id" class="java.lang.Long"/>
@@ -32,6 +34,7 @@
     <field name="company_fax" class="java.lang.String"/>
     <field name="qualified_invoice_issuer_number" class="java.lang.String"/>
     <field name="bank_display_text" class="java.lang.String"/>
+    <field name="company_logo_image_data" class="java.lang.Object"/>
     <field name="invoice_note" class="java.lang.String"/>
     <field name="tax_rate" class="java.math.BigDecimal"/>
     <field name="subtotal_amount" class="java.math.BigDecimal"/>
@@ -87,37 +90,39 @@
             <line><reportElement x="0" y="180" width="400" height="1"/></line>
             <textField isBlankWhenNull="true"><reportElement style="Small" x="80" y="182" width="320" height="30"/><textFieldExpression><![CDATA[$F{invoice_note}]]></textFieldExpression></textField>
             <staticText><reportElement style="Label" x="0" y="230" width="80" height="24"/><text><![CDATA[振込先]]></text></staticText>
+            <rectangle><reportElement mode="Opaque" x="76" y="222" width="330" height="42" backcolor="#E7F2F5"/><graphicElement><pen lineWidth="0"/></graphicElement></rectangle>
             <textField isBlankWhenNull="true"><reportElement style="Base" x="80" y="225" width="320" height="36"/><textFieldExpression><![CDATA[$F{bank_display_text}]]></textFieldExpression></textField>
-            <textField><reportElement style="Company" x="520" y="85" width="282" height="42"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA[$F{company_name}]]></textFieldExpression></textField>
-            <textField isBlankWhenNull="true"><reportElement style="Small" x="520" y="132" width="282" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA["〒" + $F{company_postal_code} + "　" + $F{company_address}]]></textFieldExpression></textField>
-            <textField isBlankWhenNull="true"><reportElement style="Small" x="520" y="151" width="282" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA["TEL:" + $F{company_phone} + "　FAX:" + $F{company_fax}]]></textFieldExpression></textField>
-            <textField isBlankWhenNull="true"><reportElement style="Small" x="520" y="170" width="282" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA["登録番号　" + $F{qualified_invoice_issuer_number}]]></textFieldExpression></textField>
-            <textField><reportElement style="Small" x="0" y="285" width="802" height="20"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA["請求書番号　" + $F{invoice_number}]]></textFieldExpression></textField>
-            <staticText><reportElement style="Header" x="0" y="310" width="32" height="24"/><text><![CDATA[NO]]></text></staticText>
-            <staticText><reportElement style="Header" x="32" y="310" width="205" height="24"/><text><![CDATA[品名]]></text></staticText>
-            <staticText><reportElement style="Header" x="237" y="310" width="205" height="24"/><text><![CDATA[形状]]></text></staticText>
-            <staticText><reportElement style="Header" x="442" y="310" width="40" height="24"/><text><![CDATA[単位]]></text></staticText>
-            <staticText><reportElement style="Header" x="482" y="310" width="65" height="24"/><text><![CDATA[数量]]></text></staticText>
-            <staticText><reportElement style="Header" x="547" y="310" width="75" height="24"/><text><![CDATA[単価]]></text></staticText>
-            <staticText><reportElement style="Header" x="622" y="310" width="100" height="24"/><text><![CDATA[金額]]></text></staticText>
-            <staticText><reportElement style="Header" x="722" y="310" width="80" height="24"/><text><![CDATA[摘要]]></text></staticText>
-            <staticText><reportElement style="CellCenter" x="0" y="334" width="32" height="80"/><text><![CDATA[1]]></text></staticText>
-            <staticText><reportElement style="Cell" x="32" y="334" width="410" height="80"/><text><![CDATA[業務請負代金として]]></text></staticText>
-            <staticText><reportElement style="CellCenter" x="442" y="334" width="40" height="80"/><text><![CDATA[式]]></text></staticText>
-            <staticText><reportElement style="CellRight" x="482" y="334" width="65" height="80"/><text><![CDATA[1.0]]></text></staticText>
-            <staticText><reportElement style="Cell" x="547" y="334" width="75" height="80"/><text><![CDATA[]]></text></staticText>
-            <textField><reportElement style="CellRight" x="622" y="334" width="100" height="80"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{subtotal_amount})]]></textFieldExpression></textField>
-            <staticText><reportElement style="Cell" x="722" y="334" width="80" height="80"/><text><![CDATA[]]></text></staticText>
-            <staticText><reportElement style="Header" x="0" y="414" width="622" height="18"/><text><![CDATA[計]]></text></staticText>
-            <textField><reportElement style="CellRight" x="622" y="414" width="100" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{subtotal_amount})]]></textFieldExpression></textField>
-            <staticText><reportElement style="Cell" x="722" y="414" width="80" height="18"/><text><![CDATA[]]></text></staticText>
-            <staticText><reportElement style="Header" x="0" y="432" width="622" height="18"/><text><![CDATA[消費税]]></text></staticText>
-            <textField><reportElement style="CellRight" x="622" y="432" width="100" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{tax_amount})]]></textFieldExpression></textField>
-            <staticText><reportElement style="Cell" x="722" y="432" width="80" height="18"/><text><![CDATA[]]></text></staticText>
-            <staticText><reportElement style="Header" x="0" y="450" width="622" height="18"/><text><![CDATA[合計]]></text></staticText>
-            <textField><reportElement style="Total" x="622" y="450" width="100" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{total_amount})]]></textFieldExpression></textField>
-            <staticText><reportElement style="Cell" x="722" y="450" width="80" height="18"/><text><![CDATA[]]></text></staticText>
-            <break type="Page"><reportElement x="0" y="469" width="1" height="1"/></break>
+            <image onErrorType="Blank" scaleImage="RetainShape">
+                <reportElement x="520" y="78" width="282" height="112"/>
+                <imageExpression class="java.io.InputStream"><![CDATA[$F{company_logo_image_data} instanceof byte[] && ((byte[]) $F{company_logo_image_data}).length > 0 ? new java.io.ByteArrayInputStream((byte[]) $F{company_logo_image_data}) : Thread.currentThread().getContextClassLoader().getResourceAsStream("reports/assets/company_invoice_logo.png")]]></imageExpression>
+            </image>
+            <textField isBlankWhenNull="true"><reportElement style="Small" x="520" y="194" width="282" height="18"/><textElement textAlignment="Center"/><textFieldExpression><![CDATA[$F{qualified_invoice_issuer_number} == null ? "" : "適格請求書登録番号　" + $F{qualified_invoice_issuer_number}]]></textFieldExpression></textField>
+            <textField><reportElement style="Small" x="0" y="260" width="802" height="20"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA["請求書番号　" + $F{invoice_number}]]></textFieldExpression></textField>
+            <staticText><reportElement style="CoverHeader" x="0" y="285" width="32" height="24"/><text><![CDATA[NO]]></text></staticText>
+            <staticText><reportElement style="CoverHeader" x="32" y="285" width="205" height="24"/><text><![CDATA[品名]]></text></staticText>
+            <staticText><reportElement style="CoverHeader" x="237" y="285" width="205" height="24"/><text><![CDATA[形状]]></text></staticText>
+            <staticText><reportElement style="CoverHeader" x="442" y="285" width="40" height="24"/><text><![CDATA[単位]]></text></staticText>
+            <staticText><reportElement style="CoverHeader" x="482" y="285" width="65" height="24"/><text><![CDATA[数量]]></text></staticText>
+            <staticText><reportElement style="CoverHeader" x="547" y="285" width="75" height="24"/><text><![CDATA[単価]]></text></staticText>
+            <staticText><reportElement style="CoverHeader" x="622" y="285" width="100" height="24"/><text><![CDATA[金額]]></text></staticText>
+            <staticText><reportElement style="CoverHeader" x="722" y="285" width="80" height="24"/><text><![CDATA[摘要]]></text></staticText>
+            <staticText><reportElement style="CellCenter" x="0" y="309" width="32" height="80"/><text><![CDATA[1]]></text></staticText>
+            <staticText><reportElement style="Cell" x="32" y="309" width="410" height="80"/><text><![CDATA[業務請負代金として]]></text></staticText>
+            <staticText><reportElement style="CellCenter" x="442" y="309" width="40" height="80"/><text><![CDATA[式]]></text></staticText>
+            <staticText><reportElement style="CellRight" x="482" y="309" width="65" height="80"/><text><![CDATA[1.0]]></text></staticText>
+            <staticText><reportElement style="Cell" x="547" y="309" width="75" height="80"/><text><![CDATA[]]></text></staticText>
+            <textField><reportElement style="CellRight" x="622" y="309" width="100" height="80"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{subtotal_amount})]]></textFieldExpression></textField>
+            <staticText><reportElement style="Cell" x="722" y="309" width="80" height="80"/><text><![CDATA[]]></text></staticText>
+            <staticText><reportElement style="CoverHeader" x="0" y="389" width="622" height="18"/><text><![CDATA[計]]></text></staticText>
+            <textField><reportElement style="CellRight" x="622" y="389" width="100" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{subtotal_amount})]]></textFieldExpression></textField>
+            <staticText><reportElement style="Cell" x="722" y="389" width="80" height="18"/><text><![CDATA[]]></text></staticText>
+            <staticText><reportElement style="CoverHeader" x="0" y="407" width="622" height="18"/><text><![CDATA[消費税]]></text></staticText>
+            <textField><reportElement style="CellRight" x="622" y="407" width="100" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{tax_amount})]]></textFieldExpression></textField>
+            <staticText><reportElement style="Cell" x="722" y="407" width="80" height="18"/><text><![CDATA[]]></text></staticText>
+            <staticText><reportElement style="CoverHeader" x="0" y="425" width="622" height="18"/><text><![CDATA[合計]]></text></staticText>
+            <textField><reportElement style="CoverTotal" x="622" y="425" width="100" height="18"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{total_amount})]]></textFieldExpression></textField>
+            <staticText><reportElement style="Cell" x="722" y="425" width="80" height="18"/><text><![CDATA[]]></text></staticText>
+            <break type="Page"><reportElement x="0" y="444" width="1" height="1"/></break>
         </band>
     </title>
     <detail><band height="19">

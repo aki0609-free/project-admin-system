@@ -22,6 +22,7 @@ export const useDeductionDetailConfig = (
         return residentTax
 
       case 'HEALTH_INSURANCE':
+      case 'CHILD_SUPPORT':
       case 'EMPLOYMENT_INSURANCE':
         return insuranceRate
 

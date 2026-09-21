@@ -5,6 +5,8 @@ import type {
 } from '@/shared/components/table/simple_table/types/item/types'
 import { createSimpleTableFilterRules } from '@/shared/components/table/simple_table/utils/createSimpleTableFilterRules'
 import type { EmployeeSavingResponse } from '../types/employeeWorkApiTypes'
+import { formatCurrency } from '@/shared/utils/CurrencyUtils'
+import { formatNumberWithUnit } from '@/shared/utils/UnitFormatUtils'
 
 export type EmployeeSavingTableRow = SimpleTableEditableRow & {
   id: number
@@ -35,9 +37,15 @@ export const useEmployeeSavingTableConfig = (savings: Ref<EmployeeSavingResponse
     const defs: SimpleTableColumnDef<EmployeeSavingTableRow>[] = [
       { title: '社員コード', key: 'employeeCode', width: '180px', filter: { type: 'text' } },
       { title: '氏名', key: 'employeeName', width: '180px', filter: { type: 'text' } },
-      { title: '貯蓄残高', key: 'currentBalance', width: '180px', filter: { type: 'text' } },
-      { title: '貯蓄率%', key: 'percentage', width: '180px', filter: { type: 'text' } },
-      { title: '積立計算基礎額', key: 'savingCalculationBaseAmount', width: '180px', filter: { type: 'text' } },
+      { title: '貯蓄残高', key: 'currentBalance', width: '180px', filter: { type: 'text' }, formatter: value => formatCurrency(typeof value === 'number' ? value : null) },
+      {
+        title: '貯蓄率',
+        key: 'percentage',
+        width: '180px',
+        filter: { type: 'text' },
+        formatter: value => formatNumberWithUnit(value, '%'),
+      },
+      { title: '積立計算基礎額', key: 'savingCalculationBaseAmount', width: '180px', filter: { type: 'text' }, formatter: value => formatCurrency(typeof value === 'number' ? value : null) },
       { title: '状態', key: 'activeText', width: '100px', filter: { type: 'text' } },
     ]
 

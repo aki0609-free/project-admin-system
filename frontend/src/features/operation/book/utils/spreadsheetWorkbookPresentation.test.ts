@@ -47,4 +47,26 @@ describe('prepareSpreadsheetWorkbook', () => {
       borderLeft: '2px solid #123456',
     })
   })
+
+  it('有限スクロール用の行数・列数を実データ範囲から補完する', () => {
+    const result = prepareSpreadsheetWorkbook({
+      Workbook: {
+        sheets: [{
+          columns: [{ index: 0 }, { index: 141 }],
+          rows: [{ index: 0 }, {
+            index: 91,
+            cells: [{ index: 141 }],
+          }],
+          usedRange: {
+            rowIndex: 91,
+            colIndex: 141,
+          },
+        }],
+      },
+    })
+
+    const sheet = result.Workbook.sheets[0] as Record<string, unknown>
+    expect(sheet.colCount).toBe(142)
+    expect(sheet.rowCount).toBe(92)
+  })
 })

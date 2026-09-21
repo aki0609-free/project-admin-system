@@ -5,9 +5,13 @@
     <title>月次給与明細</title>
 
     <style>
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
-        padding: 24px;
+        padding: 20px;
         font-family: "Yu Gothic", "Meiryo", sans-serif;
         background: #f3f4f6;
         color: #111827;
@@ -15,288 +19,463 @@
       }
 
       .page {
-        max-width: 960px;
+        max-width: 1180px;
         margin: 0 auto 28px;
-        padding: 24px;
+        padding: 24px 22px 20px;
         background: #fff;
-        border: 1px solid #d1d5db;
-        border-radius: 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        break-after: page;
       }
 
-      .header {
-        text-align: center;
-        border-bottom: 3px solid #111827;
-        padding-bottom: 10px;
-        margin-bottom: 16px;
+      .page:last-child {
+        break-after: auto;
+      }
+
+      .document-head {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: end;
+        gap: 24px;
+        margin-bottom: 12px;
       }
 
       .title {
-        font-size: 26px;
-        font-weight: 900;
-        letter-spacing: 0.18em;
+        text-align: center;
+        font-size: 30px;
+        font-weight: 500;
+        letter-spacing: 0.06em;
       }
 
-      .info {
+      .identity {
+        min-width: 250px;
+        line-height: 1.7;
+        font-weight: 700;
+      }
+
+      .identity div:first-child {
+        font-size: 14px;
+      }
+
+      .meta {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        border: 1px solid #cbd5e1;
-        margin-bottom: 16px;
+        grid-template-columns: 130px 180px 130px 1fr;
+        border: 1px solid #64748b;
+        margin-bottom: 10px;
       }
 
-      .info div {
-        padding: 8px;
-        border-right: 1px solid #cbd5e1;
+      .meta > div {
+        min-height: 34px;
+        padding: 7px 9px;
+        border-right: 1px solid #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
-      .info div:last-child {
-        border-right: none;
+      .meta > div:last-child {
+        border-right: 0;
       }
 
       .label {
-        background: #e5e7eb;
-        font-weight: 900;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-
-      th {
-        background: #e5e7eb;
-        padding: 7px;
-        border: 1px solid #cbd5e1;
-        font-weight: 900;
-      }
-
-      td {
-        padding: 7px;
-        border: 1px solid #e5e7eb;
-        height: 24px;
-      }
-
-      .right {
-        text-align: right;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .section-head.pay {
-        background: #dcfce7;
-      }
-
-      .section-head.deduction {
-        background: #fee2e2;
-      }
-
-      .total-box {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-        margin-top: 16px;
-      }
-
-      .total-card {
-        border: 1px solid #cbd5e1;
-      }
-
-      .total-label {
-        padding: 8px;
-        background: #e5e7eb;
-        font-weight: 900;
-      }
-
-      .total-value {
-        padding: 12px;
-        text-align: right;
-        font-size: 20px;
-        font-weight: 900;
-      }
-
-      .net .total-label {
-        background: #1d4ed8;
-        color: #fff;
-      }
-
-      .net .total-value {
-        color: #1d4ed8;
+        background: #dce6f2;
+        font-weight: 700;
       }
 
       .attendance {
-        margin-top: 16px;
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        margin-bottom: 12px;
+      }
+
+      .attendance th,
+      .attendance td {
+        border: 1px solid #64748b;
+        padding: 7px 6px;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .attendance th {
+        background: #dce6f2;
+        font-weight: 700;
+      }
+
+      .panels {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+
+      .panel {
+        min-width: 0;
+        border: 1px solid #64748b;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .panel-title {
+        padding: 7px;
+        border-bottom: 1px solid #64748b;
+        text-align: center;
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .panel-title.pay {
+        background: #d9f7e4;
+      }
+
+      .panel-title.deduction {
+        background: #fde0e0;
+      }
+
+      .item-list {
+        min-height: 258px;
+        flex: 1;
+        position: relative;
+      }
+
+      .item-list::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 108px;
+        bottom: 0;
+        width: 1px;
+        background: #64748b;
+        pointer-events: none;
+      }
+
+      .item-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 108px;
+      }
+
+      .item-name,
+      .item-value {
+        min-height: 25px;
+        padding: 3px 6px;
+        display: flex;
+        align-items: center;
+      }
+
+      .item-name {
+        overflow-wrap: anywhere;
+      }
+
+      .item-value {
+        justify-content: flex-end;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+        position: relative;
+        z-index: 1;
+      }
+
+      .totals {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        border: 1px solid #64748b;
+        margin-bottom: 12px;
+      }
+
+      .total-box {
+        border-right: 1px solid #64748b;
+      }
+
+      .total-box:last-child {
+        border-right: 0;
+      }
+
+      .total-label {
+        padding: 7px 5px;
+        background: #dce6f2;
+        border-bottom: 1px solid #64748b;
+        text-align: center;
+        font-weight: 700;
+      }
+
+      .total-value {
+        padding: 10px 8px;
+        text-align: right;
+        font-size: 18px;
+        font-weight: 700;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .total-box.net .total-label {
+        background: #2557d6;
+        color: #fff;
+      }
+
+      .total-box.net .total-value {
+        color: #2557d6;
+      }
+
+      .supplement {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border: 1px solid #64748b;
+        margin-bottom: 10px;
+      }
+
+      .supplement-row {
+        display: grid;
+        grid-template-columns: 175px 1fr;
+        min-height: 31px;
+      }
+
+      .supplement-row:nth-child(odd) {
+        border-right: 1px solid #64748b;
+      }
+
+      .supplement-row:nth-child(n + 3) {
+        border-top: 1px solid #64748b;
+      }
+
+      .supplement-label,
+      .supplement-value {
+        padding: 6px 8px;
+      }
+
+      .supplement-label {
+        background: #dce6f2;
+        text-align: center;
+        font-weight: 700;
+      }
+
+      .supplement-value {
+        text-align: right;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
       }
 
       .no-data {
+        padding: 50px 20px;
         text-align: center;
-        padding: 24px;
         font-weight: 700;
-        color: #6b7280;
+        color: #64748b;
+      }
+
+      @media (max-width: 900px) {
+        body {
+          overflow-x: auto;
+        }
+
+        .page {
+          min-width: 1060px;
+        }
+      }
+
+      @media print {
+        @page {
+          size: A4 landscape;
+          margin: 8mm;
+        }
+
+        body {
+          padding: 0;
+          background: #fff;
+          font-size: 10px;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        .page {
+          max-width: none;
+          margin: 0;
+          padding: 0;
+          border: 0;
+          border-radius: 0;
+        }
+
+        .title {
+          font-size: 24px;
+        }
+
+        .item-list {
+          min-height: 205px;
+        }
       }
     </style>
   </head>
 
   <body>
     <div th:if="${#lists.isEmpty(rows)}" class="page">
-      <div class="header">
-        <div class="title">給与明細書</div>
-      </div>
-      <div class="no-data">データがありません</div>
+      <div class="title">給与明細書</div>
+      <div class="no-data">対象月の給与明細データがありません。</div>
     </div>
 
-    <div
-      class="page"
-      th:each="row : ${rows}"
-      th:with="
-        gross=${row['gross_amount'] ?: 0},
-        deduction=${row['deduction_total'] ?: 0},
-        payTotal=${gross},
-        deductionTotal=${deduction}
-     "
-    >
-      <div class="header">
-        <div class="title">給与明細書</div>
+    <div class="page" th:each="row : ${rows}">
+      <div class="document-head">
+        <div
+          class="title"
+          th:text="${row['target_month_label']} + ' 給与明細書'"
+        ></div>
+        <div class="identity">
+          <div th:text="${row['employee_name']} + ' 様'"></div>
+          <div th:text="${row['company_name']}"></div>
+        </div>
       </div>
 
-      <div class="info">
-        <div>
-          <div class="label">対象月</div>
-          <div th:text="${row['target_month_label']}"></div>
-        </div>
-        <div>
-          <div class="label">支払日</div>
-          <div th:text="${row['payment_date_label']}"></div>
-        </div>
-        <div>
-          <div class="label">社員コード</div>
-          <div th:text="${row['employee_code']}"></div>
-        </div>
-        <div>
-          <div class="label">氏名</div>
-          <div th:text="${row['employee_name']}"></div>
-        </div>
+      <div class="meta">
+        <div class="label">社員コード</div>
+        <div th:text="${row['employee_code']}"></div>
+        <div class="label">締め期間</div>
+        <div
+          th:text="${row['period_start_label']} + ' ～ ' + ${row['period_end_label']}"
+        ></div>
       </div>
 
       <table class="attendance">
         <thead>
           <tr>
-            <th>締め期間</th>
-            <th>出勤日数</th>
-            <th>有休日数</th>
+            <th>勤務日数</th>
             <th>実働時間</th>
-            <th>残業時間</th>
+            <th>早出・残業時間</th>
             <th>深夜時間</th>
+            <th>休日労働時間</th>
+            <th>有休日数</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td
-              th:text="${row['period_start_label']} + ' ～ ' + ${row['period_end_label']}"
-            ></td>
-            <td
-              class="right"
-              th:text="${row['work_day_count'] ?: 0} + ' 日'"
-            ></td>
-            <td
-              class="right"
-              th:text="${row['paid_leave_days'] ?: 0} + ' 日'"
-            ></td>
-            <td
-              class="right"
-              th:text="${row['total_work_hours'] ?: 0} + ' h'"
-            ></td>
-            <td
-              class="right"
-              th:text="${row['total_overtime_hours'] ?: 0} + ' h'"
-            ></td>
-            <td
-              class="right"
-              th:text="${row['total_night_work_hours'] ?: 0} + ' h'"
-            ></td>
+            <td th:text="${row['work_day_count'] ?: 0} + ' 日'"></td>
+            <td th:text="${row['work_hours_label'] ?: '0時間0分'}"></td>
+            <td th:text="${row['overtime_hours_label'] ?: '0時間0分'}"></td>
+            <td th:text="${row['night_work_hours_label'] ?: '0時間0分'}"></td>
+            <td th:text="${row['holiday_work_hours_label'] ?: '0時間0分'}"></td>
+            <td th:text="${row['paid_leave_days'] ?: 0} + ' 日'"></td>
           </tr>
         </tbody>
       </table>
 
-      <div class="total-box">
-        <div class="total-card">
-          <div class="total-label">支給合計</div>
-          <div
-            class="total-value"
-            th:text="${#numbers.formatDecimal(payTotal, 0, 'COMMA', 0, 'POINT')} + ' 円'"
-          ></div>
-        </div>
+      <div class="panels">
+        <section class="panel">
+          <div class="panel-title pay">支給</div>
+          <div class="item-list">
+            <div class="item-row">
+              <div class="item-name">基本給</div>
+              <div
+                class="item-value"
+                th:text="${#numbers.formatDecimal(row['basic_salary'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
+              ></div>
+            </div>
+            <div
+              class="item-row"
+              th:each="i : ${#numbers.sequence(1,12)}"
+              th:if="${row['allowance_item_name_' + i] != null}"
+            >
+              <div
+                class="item-name"
+                th:text="${row['allowance_item_name_' + i]}"
+              ></div>
+              <div
+                class="item-value"
+                th:text="${#numbers.formatDecimal(row['allowance_item_value_' + i] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
+              ></div>
+            </div>
+          </div>
+        </section>
 
-        <div class="total-card">
+        <section class="panel">
+          <div class="panel-title deduction">控除1（法定控除）</div>
+          <div class="item-list">
+            <div class="item-row">
+              <div class="item-name">健康・介護保険</div>
+              <div class="item-value" th:text="${#numbers.formatDecimal(row['health_insurance'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+            </div>
+            <div class="item-row">
+              <div class="item-name">子ども・子育て支援金</div>
+              <div class="item-value" th:text="${#numbers.formatDecimal(row['child_care_contribution'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+            </div>
+            <div class="item-row">
+              <div class="item-name">厚生年金</div>
+              <div class="item-value" th:text="${#numbers.formatDecimal(row['pension_insurance'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+            </div>
+            <div class="item-row">
+              <div class="item-name">雇用保険</div>
+              <div class="item-value" th:text="${#numbers.formatDecimal(row['employment_insurance'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+            </div>
+            <div class="item-row">
+              <div class="item-name">所得税</div>
+              <div class="item-value" th:text="${#numbers.formatDecimal(row['income_tax'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+            </div>
+            <div class="item-row">
+              <div class="item-name">住民税</div>
+              <div class="item-value" th:text="${#numbers.formatDecimal(row['resident_tax'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+            </div>
+            <div
+              class="item-row"
+              th:each="i : ${#numbers.sequence(1,12)}"
+              th:if="${row['tax_deduction_item_name_' + i] != null}"
+            >
+              <div class="item-name" th:text="${row['tax_deduction_item_name_' + i]}"></div>
+              <div class="item-value" th:text="${#numbers.formatDecimal(row['tax_deduction_item_value_' + i] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title deduction">控除2（その他控除）</div>
+          <div class="item-list">
+            <div
+              class="item-row"
+              th:each="i : ${#numbers.sequence(1,12)}"
+              th:if="${row['deduction_item_name_' + i] != null}"
+            >
+              <div class="item-name" th:text="${row['deduction_item_name_' + i]}"></div>
+              <div class="item-value" th:text="${#numbers.formatDecimal(row['deduction_item_value_' + i] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="totals">
+        <div class="total-box">
+          <div class="total-label">総支給額</div>
+          <div class="total-value" th:text="${#numbers.formatDecimal(row['gross_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+        </div>
+        <div class="total-box">
+          <div class="total-label">総控除1額</div>
+          <div class="total-value" th:text="${#numbers.formatDecimal(row['tax_deduction_total'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+        </div>
+        <div class="total-box">
+          <div class="total-label">総控除2額</div>
+          <div class="total-value" th:text="${#numbers.formatDecimal(row['other_deduction_total'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+        </div>
+        <div class="total-box">
           <div class="total-label">控除合計</div>
-          <div
-            class="total-value"
-            th:text="${#numbers.formatDecimal(deductionTotal, 0, 'COMMA', 0, 'POINT')} + ' 円'"
-          ></div>
+          <div class="total-value" th:text="${#numbers.formatDecimal(row['deduction_total'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
         </div>
-
-        <div class="total-card net">
+        <div class="total-box net">
           <div class="total-label">差引支給額</div>
-          <div
-            class="total-value"
-            th:text="${#numbers.formatDecimal(row['net_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
-          ></div>
+          <div class="total-value" th:text="${#numbers.formatDecimal(row['net_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
         </div>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th colspan="2" class="section-head pay">支給</th>
-            <th colspan="2" class="section-head deduction">控除</th>
-          </tr>
-          <tr>
-            <th>項目</th>
-            <th>金額</th>
-            <th>項目</th>
-            <th>金額</th>
-          </tr>
-        </thead>
+      <div class="supplement">
+        <div class="supplement-row">
+          <div class="supplement-label">法定準備金返済額</div>
+          <div class="supplement-value" th:text="${#numbers.formatDecimal(row['legal_deposit_refund_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+        </div>
+        <div class="supplement-row">
+          <div class="supplement-label">課税対象額</div>
+          <div class="supplement-value" th:text="${#numbers.formatDecimal(row['taxable_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+        </div>
+        <div class="supplement-row">
+          <div class="supplement-label">借入金残高</div>
+          <div class="supplement-value" th:text="${#numbers.formatDecimal(row['loan_balance'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+        </div>
+        <div class="supplement-row">
+          <div class="supplement-label">貯金残高</div>
+          <div class="supplement-value" th:text="${#numbers.formatDecimal(row['saving_balance'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+        </div>
+      </div>
 
-        <tbody>
-          <tr>
-            <td>基本給</td>
-            <td
-              class="right"
-              th:text="${#numbers.formatDecimal(row['basic_salary'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
-            ></td>
-            <td th:text="${row['tax_deduction_item_name_1']}"></td>
-            <td
-              class="right"
-              th:text="${#numbers.formatDecimal(row['tax_deduction_item_value_1'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
-            ></td>
-          </tr>
-
-          <tr th:each="i : ${#numbers.sequence(1,10)}">
-            <td th:text="${row['allowance_item_name_' + i]}"></td>
-            <td
-              class="right"
-              th:text="${row['allowance_item_name_' + i] == null ? '' : #numbers.formatDecimal(row['allowance_item_value_' + i] ?: 0, 0, 'COMMA', 0, 'POINT') + ' 円'}"
-            ></td>
-
-            <td
-              th:text="${i < 10 ? row['tax_deduction_item_name_' + (i + 1)] : 'その他控除'}"
-            ></td>
-            <td
-              class="right"
-              th:text="${i < 10 && row['tax_deduction_item_name_' + (i + 1)] != null ? #numbers.formatDecimal(row['tax_deduction_item_value_' + (i + 1)] ?: 0, 0, 'COMMA', 0, 'POINT') + ' 円' : ''}"
-            ></td>
-          </tr>
-
-          <tr th:each="i : ${#numbers.sequence(1,10)}">
-            <td></td>
-            <td></td>
-            <td th:text="${row['deduction_item_name_' + i]}"></td>
-            <td
-              class="right"
-              th:text="${row['deduction_item_name_' + i] == null ? '' : #numbers.formatDecimal(row['deduction_item_value_' + i] ?: 0, 0, 'COMMA', 0, 'POINT') + ' 円'}"
-            ></td>
-          </tr>
-
-        </tbody>
-      </table>
     </div>
   </body>
 </html>

@@ -116,6 +116,16 @@ public class CompanyProfile extends BaseEntity {
     @Column(name = "invoice_bank_account_holder", length = 255)
     private String invoiceBankAccountHolder;
 
+    @Column(name = "invoice_logo_file_name", length = 255)
+    private String invoiceLogoFileName;
+
+    @Column(name = "invoice_logo_content_type", length = 100)
+    private String invoiceLogoContentType;
+
+    @Lob
+    @Column(name = "invoice_logo_image_data", columnDefinition = "LONGBLOB")
+    private byte[] invoiceLogoImageData;
+
     @Column(name = "active_flag", nullable = false)
     private Boolean activeFlag = true;
 }

@@ -55,7 +55,7 @@ class LegalDepositRefundServiceTest {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
-    void prepareRefunds_shouldSupersedeOldVersionAndCreateLatestBalance() throws Exception {
+    void prepareRefunds_shouldKeepNegativeSettlementAndCreateClosingPeriodRefund() throws Exception {
         LegalDepositRefund previous = new LegalDepositRefund();
         previous.setStatus(LegalDepositRefundStatus.ACTIVE);
         when(repository.findByMonthlyClosingIdAndStatusAndDeletedAtIsNull(
@@ -70,11 +70,12 @@ class LegalDepositRefundServiceTest {
             RowMapper mapper = invocation.getArgument(1);
             ResultSet resultSet = mock(ResultSet.class);
             when(resultSet.getLong("employee_id")).thenReturn(20L);
-            when(resultSet.getBigDecimal("balance"))
-                    .thenReturn(new BigDecimal("3500.00"));
+            when(resultSet.getBigDecimal("refund_amount"))
+                    .thenReturn(new BigDecimal("-3500.00"));
             return List.of(mapper.mapRow(resultSet, 0));
         });
-        when(repository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.saveAllAndFlush(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         List<LegalDepositRefund> result = service.prepareRefunds(
                 10L,
@@ -97,9 +98,9 @@ class LegalDepositRefundServiceTest {
             assertThat(refund.getPeriodEnd()).isEqualTo(LocalDate.of(2026, 7, 31));
             assertThat(refund.getClosingVersion()).isEqualTo(2);
             assertThat(refund.getEmployeeId()).isEqualTo(20L);
-            assertThat(refund.getAmount()).isEqualByComparingTo("3500.00");
+            assertThat(refund.getAmount()).isEqualByComparingTo("-3500.00");
             assertThat(refund.getStatus()).isEqualTo(LegalDepositRefundStatus.ACTIVE);
         });
-        verify(repository).saveAll(any());
+        verify(repository).saveAllAndFlush(any());
     }
 }

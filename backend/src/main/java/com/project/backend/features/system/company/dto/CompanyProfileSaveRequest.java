@@ -40,6 +40,10 @@ public record CompanyProfileSaveRequest(
         String invoiceBankAccountNumber,
         String invoiceBankAccountHolder,
 
+        String invoiceLogoFileName,
+        String invoiceLogoContentType,
+        String invoiceLogoBase64,
+
         String invoiceNote,
 
         Boolean activeFlag

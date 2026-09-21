@@ -8,7 +8,6 @@ import com.project.backend.features.customer.dto.CustomerTransactionClosingReque
 import com.project.backend.features.customer.dto.CustomerTransactionRequest;
 import com.project.backend.features.customer.entity.CustomerTransaction;
 import com.project.backend.features.customer.enums.CustomerPaymentStatus;
-import com.project.backend.features.customer.exception.CustomerTransactionAlreadySettledException;
 import com.project.backend.features.customer.mapper.CustomerTransactionMapper;
 import com.project.backend.features.customer.repository.CustomerRepository;
 import com.project.backend.features.customer.repository.CustomerTransactionRepository;
@@ -46,11 +45,6 @@ public class CustomerTransactionCommandService {
                         request.targetMonth()
                 )
                 .orElseGet(CustomerTransaction::new);
-        validateNotSettled(
-                entity,
-                request.customerId(),
-                request.targetMonth()
-        );
 
         mapper.applyFromClosing(entity, request);
         refreshPaymentStatus(entity);
@@ -71,31 +65,7 @@ public class CustomerTransactionCommandService {
             );
         }
 
-        repository.findByCustomerIdAndTargetMonthAndDeletedAtIsNull(
-                customerId,
-                targetMonth
-        ).ifPresent(transaction -> validateNotSettled(
-                transaction,
-                customerId,
-                targetMonth
-        ));
-    }
-
-    private void validateNotSettled(
-            CustomerTransaction transaction,
-            Long customerId,
-            String targetMonth
-    ) {
-        boolean settled = transaction.getPaymentStatus()
-                == CustomerPaymentStatus.PAID
-                || transaction.getPaymentStatus()
-                        == CustomerPaymentStatus.OVERPAID;
-        if (settled) {
-            throw new CustomerTransactionAlreadySettledException(
-                    customerId,
-                    targetMonth
-            );
-        }
+        validateTargetMonthFormat(targetMonth);
     }
 
     @SuppressWarnings("null")

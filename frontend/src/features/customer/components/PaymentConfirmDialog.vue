@@ -7,6 +7,7 @@ import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
 import { formatYearMonth } from '@/shared/utils/DateUtils'
+import { formatCurrency } from '@/shared/utils/CurrencyUtils'
 import type { CustomerPaymentConfirmPayload, CustomerTransaction } from '../types/customerTypes'
 
 const props = defineProps<{
@@ -44,10 +45,10 @@ const schema = z.object({
 })
 
 const fields: GridFormFieldDef<CustomerPaymentConfirmPayload>[] = [
-  { key: 'fee', label: '手数料', type: 'number', gridColumn: '1 / span 2' },
-  { key: 'paidAmount', label: '入金額', type: 'number', gridColumn: '3 / span 2' },
-  { key: 'offsetAmount', label: '相殺額', type: 'number', gridColumn: '1 / span 2' },
-  { key: 'adjustmentAmount', label: 'その他調整額', type: 'number', gridColumn: '3 / span 2' },
+  { key: 'fee', label: '手数料', type: 'number', formatter: formatCurrency, gridColumn: '1 / span 2' },
+  { key: 'paidAmount', label: '入金額', type: 'number', formatter: formatCurrency, gridColumn: '3 / span 2' },
+  { key: 'offsetAmount', label: '相殺額', type: 'number', formatter: formatCurrency, gridColumn: '1 / span 2' },
+  { key: 'adjustmentAmount', label: 'その他調整額', type: 'number', formatter: formatCurrency, gridColumn: '3 / span 2' },
   {
     key: 'confirmedPaymentDate',
     label: '入金確認日',

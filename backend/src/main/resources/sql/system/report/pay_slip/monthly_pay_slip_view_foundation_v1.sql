@@ -401,7 +401,8 @@ SELECT
     source.item_name,
     source.display_order,
     source.item_value
-FROM vw_monthly_pay_slip_calculation_item_source source;
+FROM vw_monthly_pay_slip_calculation_item_source source
+WHERE source.item_code <> 'LEGAL_DEPOSIT';
 
 -- 旧View名は既存の帳票・運用資産との互換境界として維持する。
 CREATE OR REPLACE VIEW vw_monthly_pay_slip_variable_item_source AS
@@ -496,6 +497,15 @@ SELECT
     COALESCE(SUM(
         CASE
             WHEN item.item_category = 'LEGAL_DEDUCTION'
+             AND item.item_code = 'LEGAL_DEPOSIT'
+                THEN item.item_value
+            ELSE 0
+        END
+    ), 0) AS legal_deposit_amount,
+    COALESCE(SUM(
+        CASE
+            WHEN item.item_category = 'LEGAL_DEDUCTION'
+             AND item.item_code <> 'LEGAL_DEPOSIT'
                 THEN item.item_value
             ELSE 0
         END
@@ -792,6 +802,35 @@ LEFT JOIN income_tax_table income_tax
  AND income_tax.dependents = taxable.tax_dependent_count
  AND taxable.taxable_amount BETWEEN income_tax.min_salary AND income_tax.max_salary;
 
+-- 法定準備金の返済額は、締め期間中の預り累計から控除1の合計を差し引く。
+-- 不足時はマイナス値を保持し、月次給与明細で精算差額として表示する。
+CREATE OR REPLACE VIEW vw_monthly_pay_slip_legal_deposit_refund AS
+SELECT
+    em.tenant_id,
+    em.target_month,
+    em.employee_id,
+    deduction_basis.legal_deposit_amount,
+    tax.social_insurance_total
+        + COALESCE(tax.income_tax, 0)
+        + COALESCE(tax.resident_tax, 0)
+        + deduction_basis.variable_legal_deduction_total
+        AS legal_deduction_total,
+    deduction_basis.legal_deposit_amount
+        - tax.social_insurance_total
+        - COALESCE(tax.income_tax, 0)
+        - COALESCE(tax.resident_tax, 0)
+        - deduction_basis.variable_legal_deduction_total
+        AS refund_amount
+FROM vw_monthly_pay_slip_employee_month em
+JOIN vw_monthly_pay_slip_tax_calculation tax
+  ON tax.tenant_id = em.tenant_id
+ AND tax.target_month = em.target_month
+ AND tax.employee_id = em.employee_id
+JOIN vw_monthly_pay_slip_deduction_basis deduction_basis
+  ON deduction_basis.tenant_id = em.tenant_id
+ AND deduction_basis.target_month = em.target_month
+ AND deduction_basis.employee_id = em.employee_id;
+
 CREATE OR REPLACE VIEW vw_monthly_pay_slip_company AS
 SELECT
     profile.tenant_id,
@@ -854,31 +893,12 @@ SELECT
         + COALESCE(tax.resident_tax, 0)
         + deduction_basis.variable_legal_deduction_total
         AS legal_deduction_total,
-    deduction_basis.variable_other_deduction_total
-        - COALESCE((
-            SELECT SUM(refund.amount)
-            FROM employee_legal_deposit_refund refund
-            WHERE refund.tenant_id = em.tenant_id
-              AND refund.employee_id = em.employee_id
-              AND refund.target_month = em.target_month
-              AND refund.status = 'ACTIVE'
-              AND refund.deleted_at IS NULL
-        ), 0)
-        AS other_deduction_total,
+    deduction_basis.variable_other_deduction_total AS other_deduction_total,
     tax.social_insurance_total
         + COALESCE(tax.income_tax, 0)
         + COALESCE(tax.resident_tax, 0)
         + deduction_basis.variable_legal_deduction_total
         + deduction_basis.variable_other_deduction_total
-        - COALESCE((
-            SELECT SUM(refund.amount)
-            FROM employee_legal_deposit_refund refund
-            WHERE refund.tenant_id = em.tenant_id
-              AND refund.employee_id = em.employee_id
-              AND refund.target_month = em.target_month
-              AND refund.status = 'ACTIVE'
-              AND refund.deleted_at IS NULL
-        ), 0)
         AS deduction_total,
     gross.gross_amount
         - tax.social_insurance_total
@@ -886,15 +906,6 @@ SELECT
         - COALESCE(tax.resident_tax, 0)
         - deduction_basis.variable_legal_deduction_total
         - deduction_basis.variable_other_deduction_total
-        + COALESCE((
-            SELECT SUM(refund.amount)
-            FROM employee_legal_deposit_refund refund
-            WHERE refund.tenant_id = em.tenant_id
-              AND refund.employee_id = em.employee_id
-              AND refund.target_month = em.target_month
-              AND refund.status = 'ACTIVE'
-              AND refund.deleted_at IS NULL
-        ), 0)
         AS net_payment_amount,
     COALESCE(adv.advance_payment_amount, 0) AS advance_payment_amount,
     COALESCE((
@@ -912,15 +923,12 @@ SELECT
           AND loan.approval_status = 'APPROVED'
           AND loan.deleted_at IS NULL
     ), 0) AS loan_balance,
-    COALESCE((
-        SELECT SUM(refund.amount)
-        FROM employee_legal_deposit_refund refund
-        WHERE refund.tenant_id = em.tenant_id
-          AND refund.employee_id = em.employee_id
-          AND refund.target_month = em.target_month
-          AND refund.status = 'ACTIVE'
-          AND refund.deleted_at IS NULL
-    ), 0) AS legal_deposit_refund_amount,
+    deduction_basis.legal_deposit_amount
+        - tax.social_insurance_total
+        - COALESCE(tax.income_tax, 0)
+        - COALESCE(tax.resident_tax, 0)
+        - deduction_basis.variable_legal_deduction_total
+        AS legal_deposit_refund_amount,
 
     COUNT(CASE WHEN item.item_category = 'ALLOWANCE' THEN 1 END) AS allowance_item_count,
     COUNT(CASE WHEN item.item_category = 'LEGAL_DEDUCTION' THEN 1 END) AS legal_deduction_item_count,
@@ -1053,6 +1061,7 @@ GROUP BY
     tax.calculation_ready,
     tax.calculation_error_code,
     deduction_basis.variable_legal_deduction_total,
+    deduction_basis.legal_deposit_amount,
     deduction_basis.variable_other_deduction_total,
     att.work_day_count,
     att.work_hours,

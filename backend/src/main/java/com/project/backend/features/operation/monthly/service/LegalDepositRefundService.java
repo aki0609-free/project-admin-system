@@ -22,35 +22,12 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class LegalDepositRefundService {
 
-    private static final String BALANCE_SQL = """
-            SELECT deposit.employee_id,
-                   deposit.deposit_amount - COALESCE(refund.refund_amount, 0) AS balance
-            FROM (
-                SELECT dr.employee_id, SUM(drd.amount) AS deposit_amount
-                FROM daily_report dr
-                JOIN daily_report_deductions drd
-                  ON drd.tenant_id = dr.tenant_id
-                 AND drd.daily_report_id = dr.id
-                 AND drd.deleted_at IS NULL
-                 AND drd.deduction_code = 'LEGAL_DEPOSIT'
-                WHERE dr.tenant_id = ?
-                  AND dr.deleted_at IS NULL
-                  AND dr.approval_status = 'APPROVED'
-                  AND dr.work_date <= ?
-                GROUP BY dr.employee_id
-            ) deposit
-            LEFT JOIN (
-                SELECT employee_id, SUM(amount) AS refund_amount
-                FROM employee_legal_deposit_refund
-                WHERE tenant_id = ?
-                  AND deleted_at IS NULL
-                  AND status = 'ACTIVE'
-                  AND period_end <= ?
-                  AND monthly_closing_id <> ?
-                GROUP BY employee_id
-            ) refund ON refund.employee_id = deposit.employee_id
-            WHERE deposit.deposit_amount - COALESCE(refund.refund_amount, 0) > 0
-            ORDER BY deposit.employee_id
+    private static final String PERIOD_REFUND_SQL = """
+            SELECT employee_id, refund_amount
+            FROM vw_monthly_pay_slip_legal_deposit_refund
+            WHERE tenant_id = ?
+              AND target_month = ?
+            ORDER BY employee_id
             """;
 
     private final LegalDepositRefundRepository repository;
@@ -71,19 +48,20 @@ public class LegalDepositRefundService {
 
         String tenantId = TenantContext.getTenantId();
         List<RefundBalance> balances = jdbcTemplate.query(
-                BALANCE_SQL,
+                PERIOD_REFUND_SQL,
                 (resultSet, rowNumber) -> new RefundBalance(
                         resultSet.getLong("employee_id"),
-                        resultSet.getBigDecimal("balance")
+                        resultSet.getBigDecimal("refund_amount")
                 ),
                 tenantId,
-                period.endDate(),
-                tenantId,
-                period.endDate(),
-                monthlyClosingId
+                java.time.YearMonth.parse(period.targetMonth()).atDay(1)
         );
 
-        return repository.saveAll(balances.stream()
+        // JdbcTemplateで実行される後続の月次帳票処理から、旧ACTIVE行の
+        // SUPERSEDED化と新しいACTIVE行を同じ状態で参照できるようにする。
+        // saveAllだけではJPAの変更が帳票SQL実行時点までflushされず、
+        // 再締め時に旧版と新版の返金額が二重集計されることがある。
+        return repository.saveAllAndFlush(balances.stream()
                 .map(balance -> newRefund(
                         monthlyClosingId, period, closingVersion, balance
                 ))

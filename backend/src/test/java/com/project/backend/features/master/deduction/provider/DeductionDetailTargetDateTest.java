@@ -49,6 +49,21 @@ class DeductionDetailTargetDateTest {
     }
 
     @Test
+    void childSupport_shouldUseTargetDateYear() {
+        InsuranceRateRepository repository = mock(InsuranceRateRepository.class);
+        when(repository.findByInsuranceTypeAndYearOrderByIdAsc(
+                InsuranceType.CHILD_CARE_SUPPORT, 2026
+        )).thenReturn(List.of());
+
+        new ChildSupportDeductionDetailProvider(repository, mapper)
+                .getDetails(deduction, LocalDate.of(2026, 4, 1));
+
+        verify(repository).findByInsuranceTypeAndYearOrderByIdAsc(
+                InsuranceType.CHILD_CARE_SUPPORT, 2026
+        );
+    }
+
+    @Test
     void employmentInsurance_shouldUseTargetDateYear() {
         InsuranceRateRepository repository = mock(InsuranceRateRepository.class);
         when(repository.findByInsuranceTypeAndYearOrderByIdAsc(

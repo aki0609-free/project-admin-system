@@ -18,7 +18,6 @@ import com.project.backend.features.customer.dto.CustomerTransactionRequest;
 import com.project.backend.features.customer.entity.Customer;
 import com.project.backend.features.customer.entity.CustomerTransaction;
 import com.project.backend.features.customer.enums.CustomerPaymentStatus;
-import com.project.backend.features.customer.exception.CustomerTransactionAlreadySettledException;
 import com.project.backend.features.customer.mapper.CustomerTransactionMapper;
 import com.project.backend.features.customer.repository.CustomerRepository;
 import com.project.backend.features.customer.repository.CustomerTransactionRepository;
@@ -184,20 +183,32 @@ class CustomerTransactionCommandServiceTest {
     }
 
     @Test
-    void upsertFromMonthlyClosing_shouldRejectPaidTransaction() {
+    void upsertFromMonthlyClosing_shouldPreservePaymentAndRecalculatePaidTransaction() {
         CustomerTransaction entity = transaction(100_000);
+        entity.setPaidAmount(100_000);
+        entity.setFee(0);
+        entity.setOffsetAmount(0);
+        entity.setAdjustmentAmount(0);
         entity.setPaymentStatus(CustomerPaymentStatus.PAID);
         customerExists();
         when(repository.findByCustomerIdAndTargetMonthAndDeletedAtIsNull(
                 10L,
                 "2026-02"
         )).thenReturn(Optional.of(entity));
+        when(repository.save(entity)).thenReturn(entity);
 
-        assertThatThrownBy(() -> service.upsertFromMonthlyClosing(
+        service.upsertFromMonthlyClosing(
                 closingRequest(110_000, 91L, 2)
-        )).isInstanceOf(CustomerTransactionAlreadySettledException.class)
-                .hasMessageContaining("入金済み");
-        verify(repository, never()).save(entity);
+        );
+
+        assertThat(entity.getBillingAmount()).isEqualTo(110_000);
+        assertThat(entity.getPaidAmount()).isEqualTo(100_000);
+        assertThat(entity.getTotalAmount()).isEqualTo(100_000);
+        assertThat(entity.getPaymentStatus())
+                .isEqualTo(CustomerPaymentStatus.PARTIAL);
+        assertThat(entity.getSourceInvoiceHistoryId()).isEqualTo(91L);
+        assertThat(entity.getSourceClosingVersion()).isEqualTo(2);
+        verify(repository).save(entity);
     }
 
     @Test

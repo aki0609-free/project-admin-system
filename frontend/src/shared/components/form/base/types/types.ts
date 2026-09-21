@@ -36,6 +36,7 @@ export interface FormFieldDef<T> {
   editable?: boolean
   visible?: (model: T) => boolean
   formatter?: (value: any, row: T) => string
+  parser?: (value: any, row: T) => any
 }
 
 export interface FormContext {

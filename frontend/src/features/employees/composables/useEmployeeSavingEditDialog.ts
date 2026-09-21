@@ -5,6 +5,8 @@ import type { ToolbarItem } from '@/shared/ui/toolbar/types'
 import type { EmployeeListItemResponse } from '../types/employeeApiTypes'
 import type { EmployeeSavingForm } from '../types/employeeLoanSavingFormTypes'
 import type { EmployeeSavingResponse } from '../types/employeeWorkApiTypes'
+import { formatCurrency } from '@/shared/utils/CurrencyUtils'
+import { formatNumberWithUnit } from '@/shared/utils/UnitFormatUtils'
 import {
   createEmptyEmployeeSavingForm,
   toEmployeeSavingForm,
@@ -78,13 +80,24 @@ export const useEmployeeSavingEditDialog = (
         editable: formModel.id === 0,
         gridColumn: '1 / span 4',
       },
-      { key: 'percentage', label: '貯蓄率%', type: 'number' },
-      { key: 'savingCalculationBaseAmount', label: '積立計算基礎額', type: 'number' },
+      {
+        key: 'percentage',
+        label: '貯蓄率',
+        type: 'number',
+        formatter: value => formatNumberWithUnit(value, '%'),
+      },
+      {
+        key: 'savingCalculationBaseAmount',
+        label: '積立計算基礎額',
+        type: 'number',
+        formatter: formatCurrency,
+      },
       {
         key: 'currentBalance',
         label: '積立残高',
         type: 'number',
         editable: false,
+        formatter: formatCurrency,
       },
       { key: 'activeFlag', label: '有効', type: 'checkbox' },
     ]

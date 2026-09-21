@@ -9,6 +9,8 @@ import type {
 } from '../types/employeeFormTypes'
 import { createEmptyEmployeeForm, toEmployeeForm } from '../utils/employeeFormFactory'
 import { formatZipCode } from '@/shared/utils/BusinessUtils'
+import { formatCurrency } from '@/shared/utils/CurrencyUtils'
+import { formatNumberWithUnit } from '@/shared/utils/UnitFormatUtils'
 import {
   employeeBasicSchema,
   employeeContractSchema,
@@ -136,9 +138,24 @@ export const useEmployeeEditDialog = (
       type: 'select',
       options: employeeTaxCategoryOptions,
     },
-    { key: 'taxDependentCount', label: '扶養人数', type: 'number' },
-    { key: 'paidLeaveRemainingDays', label: '有給残日数', type: 'number' },
-    { key: 'commuteAllowanceMonthly', label: '通勤手当月額', type: 'number' },
+    {
+      key: 'taxDependentCount',
+      label: '扶養人数',
+      type: 'number',
+      formatter: value => formatNumberWithUnit(value, '人'),
+    },
+    {
+      key: 'paidLeaveRemainingDays',
+      label: '有給残日数',
+      type: 'number',
+      formatter: value => formatNumberWithUnit(value, '日'),
+    },
+    {
+      key: 'commuteAllowanceMonthly',
+      label: '通勤手当月額',
+      type: 'number',
+      formatter: value => formatCurrency(Number(value)),
+    },
     { key: 'incomeTaxCalcFlag', label: '所得税計算', type: 'checkbox', width: 120 },
     { key: 'residentTaxCalcFlag', label: '住民税控除', type: 'checkbox', width: 120 },
     { key: 'employmentInsuranceFlag', label: '雇用保険', type: 'checkbox', width: 120 },
@@ -172,11 +189,36 @@ export const useEmployeeEditDialog = (
         { title: '月払い', value: 'MONTHLY' },
       ],
     },
-    { key: 'monthlySalary', label: '月給', type: 'number' },
-    { key: 'weeklyWage', label: '週給', type: 'number' },
-    { key: 'dailyWage', label: '日給', type: 'number' },
-    { key: 'hourlyWage', label: '時給', type: 'number' },
-    { key: 'standardWorkingHours', label: '標準労働時間', type: 'number' },
+    {
+      key: 'monthlySalary',
+      label: '月給',
+      type: 'number',
+      formatter: value => formatCurrency(Number(value)),
+    },
+    {
+      key: 'weeklyWage',
+      label: '週給',
+      type: 'number',
+      formatter: value => formatCurrency(Number(value)),
+    },
+    {
+      key: 'dailyWage',
+      label: '日給',
+      type: 'number',
+      formatter: value => formatCurrency(Number(value)),
+    },
+    {
+      key: 'hourlyWage',
+      label: '時給',
+      type: 'number',
+      formatter: value => formatCurrency(Number(value)),
+    },
+    {
+      key: 'standardWorkingHours',
+      label: '標準労働時間',
+      type: 'number',
+      formatter: value => formatNumberWithUnit(value, '時間'),
+    },
     {
       key: 'note',
       label: '契約メモ',

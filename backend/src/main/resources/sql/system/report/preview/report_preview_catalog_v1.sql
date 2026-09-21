@@ -33,6 +33,7 @@ SELECT
     source.period_to,
     DATE_FORMAT(source.period_from, '%Y年%c月%e日') AS period_start_label,
     DATE_FORMAT(source.period_to, '%Y年%c月%e日') AS period_end_label,
+    COALESCE(closing.closing_version, 0) AS closing_version,
     CASE payroll.payment_day_type
         WHEN 'END_OF_MONTH' THEN DATE_FORMAT(
             LAST_DAY(DATE_ADD(
@@ -71,19 +72,53 @@ SELECT
     source.work_day_count,
     source.work_hours,
     source.work_hours AS total_work_hours,
+    CONCAT(
+        FLOOR(ROUND(source.work_hours * 60) / 60),
+        '時間',
+        MOD(ROUND(source.work_hours * 60), 60),
+        '分'
+    ) AS work_hours_label,
     source.overtime_hours,
     source.overtime_hours AS total_overtime_hours,
+    CONCAT(
+        FLOOR(ROUND(source.overtime_hours * 60) / 60),
+        '時間',
+        MOD(ROUND(source.overtime_hours * 60), 60),
+        '分'
+    ) AS overtime_hours_label,
     source.night_work_hours,
     source.night_work_hours AS total_night_work_hours,
+    CONCAT(
+        FLOOR(ROUND(source.night_work_hours * 60) / 60),
+        '時間',
+        MOD(ROUND(source.night_work_hours * 60), 60),
+        '分'
+    ) AS night_work_hours_label,
     source.holiday_work_hours,
+    CONCAT(
+        FLOOR(ROUND(source.holiday_work_hours * 60) / 60),
+        '時間',
+        MOD(ROUND(source.holiday_work_hours * 60), 60),
+        '分'
+    ) AS holiday_work_hours_label,
     source.paid_leave_days,
     source.basic_salary,
     source.allowance_total,
     source.gross_amount,
+    source.health_insurance,
+    source.child_care_contribution,
+    source.pension_insurance,
+    source.employment_insurance,
+    source.income_tax,
+    source.resident_tax,
+    source.taxable_amount,
     source.legal_deduction_total AS tax_deduction_total,
     source.other_deduction_total AS other_deduction_total,
     source.deduction_total,
     source.advance_payment_amount,
+    source.loan_balance,
+    source.saving_balance,
+    source.legal_deposit_refund_amount,
     source.net_payment_amount,
     source.net_payment_amount AS net_amount,
     source.allowance_item_name_01 AS allowance_item_name_1,
@@ -106,6 +141,10 @@ SELECT
     source.allowance_item_value_09 AS allowance_item_value_9,
     source.allowance_item_name_10 AS allowance_item_name_10,
     source.allowance_item_value_10 AS allowance_item_value_10,
+    source.allowance_item_name_11 AS allowance_item_name_11,
+    source.allowance_item_value_11 AS allowance_item_value_11,
+    source.allowance_item_name_12 AS allowance_item_name_12,
+    source.allowance_item_value_12 AS allowance_item_value_12,
     source.legal_item_name_01 AS tax_deduction_item_name_1,
     source.legal_item_value_01 AS tax_deduction_item_value_1,
     source.legal_item_name_02 AS tax_deduction_item_name_2,
@@ -126,6 +165,10 @@ SELECT
     source.legal_item_value_09 AS tax_deduction_item_value_9,
     source.legal_item_name_10 AS tax_deduction_item_name_10,
     source.legal_item_value_10 AS tax_deduction_item_value_10,
+    source.legal_item_name_11 AS tax_deduction_item_name_11,
+    source.legal_item_value_11 AS tax_deduction_item_value_11,
+    source.legal_item_name_12 AS tax_deduction_item_name_12,
+    source.legal_item_value_12 AS tax_deduction_item_value_12,
     source.other_item_name_01 AS deduction_item_name_1,
     source.other_item_value_01 AS deduction_item_value_1,
     source.other_item_name_02 AS deduction_item_name_2,
@@ -145,8 +188,16 @@ SELECT
     source.other_item_name_09 AS deduction_item_name_9,
     source.other_item_value_09 AS deduction_item_value_9,
     source.other_item_name_10 AS deduction_item_name_10,
-    source.other_item_value_10 AS deduction_item_value_10
+    source.other_item_value_10 AS deduction_item_value_10,
+    source.other_item_name_11 AS deduction_item_name_11,
+    source.other_item_value_11 AS deduction_item_value_11,
+    source.other_item_name_12 AS deduction_item_name_12,
+    source.other_item_value_12 AS deduction_item_value_12
 FROM vw_monthly_pay_slip_latest source
+LEFT JOIN monthly_closings closing
+  ON closing.tenant_id = source.tenant_id
+ AND closing.target_month = source.target_month
+ AND closing.deleted_at IS NULL
 LEFT JOIN (
     SELECT setting.*
     FROM closing_setting setting
@@ -170,6 +221,30 @@ SELECT
     detail.work_date,
     detail.customer_id,
     MAX(customer.name) AS customer_name,
+    MAX(COALESCE(customer.invoice_type, 'PATTERN_1')) AS customer_invoice_type,
+    CURRENT_DATE AS invoice_date,
+    'プレビュー' AS invoice_number,
+    MIN(detail.work_date) OVER (
+        PARTITION BY detail.tenant_id,
+            DATE_FORMAT(detail.work_date, '%Y-%m'), detail.customer_id
+    ) AS period_start,
+    MAX(detail.work_date) OVER (
+        PARTITION BY detail.tenant_id,
+            DATE_FORMAT(detail.work_date, '%Y-%m'), detail.customer_id
+    ) AS period_end,
+    MAX(company.company_name) AS company_name,
+    MAX(company.postal_code) AS company_postal_code,
+    MAX(CONCAT_WS('', company.prefecture, company.city,
+        company.address_line1, company.address_line2)) AS company_address,
+    MAX(company.phone) AS company_phone,
+    MAX(company.fax) AS company_fax,
+    MAX(company.qualified_invoice_issuer_number)
+        AS qualified_invoice_issuer_number,
+    MAX(CONCAT_WS(' ', company.invoice_bank_name,
+        company.invoice_bank_branch_name, company.invoice_bank_account_type,
+        company.invoice_bank_account_number,
+        company.invoice_bank_account_holder)) AS bank_display_text,
+    MAX(company.invoice_note) AS invoice_note,
     detail.customer_site_id,
     MAX(detail.site_name) AS site_name,
     detail.job_code,
@@ -191,12 +266,56 @@ SELECT
         + detail.commute_amount
         + detail.other_amount
     ) AS line_amount,
+    SUM(SUM(
+        detail.base_amount
+        + detail.overtime_amount
+        + detail.night_amount
+        + detail.holiday_amount
+        + detail.commute_amount
+        + detail.other_amount
+    )) OVER (
+        PARTITION BY detail.tenant_id,
+            DATE_FORMAT(detail.work_date, '%Y-%m'), detail.customer_id
+    ) AS subtotal_amount,
+    ROUND(SUM(SUM(
+        detail.base_amount
+        + detail.overtime_amount
+        + detail.night_amount
+        + detail.holiday_amount
+        + detail.commute_amount
+        + detail.other_amount
+    )) OVER (
+        PARTITION BY detail.tenant_id,
+            DATE_FORMAT(detail.work_date, '%Y-%m'), detail.customer_id
+    ) * 0.10, 0) AS tax_amount,
+    ROUND(SUM(SUM(
+        detail.base_amount
+        + detail.overtime_amount
+        + detail.night_amount
+        + detail.holiday_amount
+        + detail.commute_amount
+        + detail.other_amount
+    )) OVER (
+        PARTITION BY detail.tenant_id,
+            DATE_FORMAT(detail.work_date, '%Y-%m'), detail.customer_id
+    ) * 1.10, 0) AS total_amount,
     MIN(detail.calculation_ready_flag) AS calculation_ready_flag
 FROM vw_monthly_invoice_latest_detail detail
 LEFT JOIN customers customer
   ON customer.tenant_id = detail.tenant_id
  AND customer.id = detail.customer_id
  AND customer.deleted_at IS NULL
+LEFT JOIN company_profile company
+  ON company.tenant_id = detail.tenant_id
+ AND company.active_flag = TRUE
+ AND company.deleted_at IS NULL
+ AND company.id = (
+     SELECT MIN(selected.id)
+     FROM company_profile selected
+     WHERE selected.tenant_id = detail.tenant_id
+       AND selected.active_flag = TRUE
+       AND selected.deleted_at IS NULL
+ )
 GROUP BY
     detail.tenant_id,
     DATE_FORMAT(detail.work_date, '%Y-%m'),
@@ -266,7 +385,7 @@ INSERT INTO operation_report_preview (
     'PRINT_MONTHLY_PAY_SLIP',
     'vw_monthly_pay_slip_operation_preview', 'target_month', 'targetMonth',
     'monthly_pay_slip.jrxml',
-    'documents/templates/reports/html/MONTHLY_PAY_SLIP/v2/template.html', 2,
+    'documents/templates/reports/html/MONTHLY_PAY_SLIP/v3/template.html', 3,
     'employee_code', 10, TRUE, 'PDF'
 ),
 (

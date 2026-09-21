@@ -58,7 +58,8 @@ WHERE NOT EXISTS (
       AND existing.deleted_at IS NULL
 );
 
--- Fuyoの勤務態度手当は日報で金額を手入力し、月次では日次確定額を集計する。
+-- Fuyoの勤務態度手当は日報で金額を手入力する日次専用項目。
+-- 月次給与の合計計算には日次確定額を含めるが、月給明細の内訳には表示しない。
 UPDATE allowance_masters
 SET calculation_type = 'MANUAL',
     allowance_unit = 'BOTH',
@@ -67,33 +68,100 @@ SET calculation_type = 'MANUAL',
     allow_manual_input = TRUE,
     min_amount = 0,
     show_on_daily_statement = TRUE,
-    show_on_monthly_statement = TRUE,
+    show_on_monthly_statement = FALSE,
     updated_at = NOW(6)
 WHERE allowance_code = 'ATTENDANCE_ATTITUDE'
   AND deleted_at IS NULL;
 
--- 管理手当も日次明細に表示する。
+-- 管理手当は日報で手入力し、月次では日次確定額を集計する。
 UPDATE allowance_masters
-SET show_on_daily_statement = TRUE,
+SET calculation_type = 'MANUAL',
+    allowance_unit = 'BOTH',
+    rule_name = NULL,
+    default_amount = 0,
+    allow_manual_input = TRUE,
+    min_amount = 0,
+    show_on_daily_statement = TRUE,
     show_on_monthly_statement = TRUE,
     updated_at = NOW(6)
 WHERE allowance_code = 'MANAGEMENT_ALLOWANCE'
   AND deleted_at IS NULL;
 
--- 法定準備金は税の確定額ではない。控除マスターの概算初期値を表示し、
+-- 法定準備金は月額法定控除の予測合計を20日で按分した初期値を表示し、
 -- 日報上で実際に預かる金額へ手動変更できるようにする。
+INSERT INTO rule_master (
+    rule_name, rule_display_name, rule_type, dsl_type, dsl_text,
+    rule_bean_name, result_fact_key, description, priority, active_flag,
+    tenant_id, created_at, updated_at, deleted_at
+)
+VALUES (
+    'DAILY_LEGAL_DEPOSIT_ESTIMATE',
+    '日次法定準備金概算',
+    'DEDUCTION',
+    'JEXL',
+    'predictedStatutoryDeductionTotal / 20',
+    NULL,
+    'result',
+    '所得税・住民税・健康介護保険・子育て支援金・厚生年金・雇用保険の月額予測合計を20日で按分する。',
+    100,
+    TRUE,
+    'default',
+    NOW(6),
+    NOW(6),
+    NULL
+)
+ON DUPLICATE KEY UPDATE
+    rule_display_name = VALUES(rule_display_name),
+    rule_type = VALUES(rule_type),
+    dsl_type = VALUES(dsl_type),
+    dsl_text = VALUES(dsl_text),
+    rule_bean_name = NULL,
+    result_fact_key = VALUES(result_fact_key),
+    description = VALUES(description),
+    active_flag = TRUE,
+    deleted_at = NULL,
+    updated_at = VALUES(updated_at);
+
+INSERT INTO rule_parameter (
+    rule_id, param_name, data_type, required_flag, default_value,
+    description, order_no, tenant_id, created_at, updated_at, deleted_at
+)
+SELECT
+    rule.id,
+    'predictedStatutoryDeductionTotal',
+    'DECIMAL',
+    TRUE,
+    '0',
+    '月額の予測法定控除合計',
+    1,
+    rule.tenant_id,
+    NOW(6),
+    NOW(6),
+    NULL
+FROM rule_master rule
+WHERE rule.tenant_id = 'default'
+  AND rule.rule_name = 'DAILY_LEGAL_DEPOSIT_ESTIMATE'
+  AND rule.deleted_at IS NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM rule_parameter existing
+      WHERE existing.rule_id = rule.id
+        AND existing.param_name = 'predictedStatutoryDeductionTotal'
+        AND existing.deleted_at IS NULL
+  );
+
 UPDATE deduction_masters
 SET deduction_name = '法定準備金',
-    calculation_type = 'MANUAL',
-    rule_name = NULL,
-    default_amount = COALESCE(default_amount, 0),
+    calculation_type = 'AUTO',
+    rule_name = 'DAILY_LEGAL_DEPOSIT_ESTIMATE',
+    default_amount = 0,
     allow_manual_input = TRUE,
     min_amount = 0,
     deduction_unit = 'DAILY',
     show_on_daily_statement = TRUE,
     show_on_monthly_statement = FALSE,
     carry_to_monthly_settlement = TRUE,
-    note = '日次の概算初期値を提示し、必要に応じて手動変更する。月次締めで未返金残高を精算する',
+    note = '月額予測法定控除合計÷20を初期値とし、必要に応じて日報で手動変更する。月次締めで預り総額を返金する',
     updated_at = NOW(6)
 WHERE deduction_code = 'LEGAL_DEPOSIT'
   AND tenant_id = 'default'

@@ -20,6 +20,7 @@ if (!formContext) {
 
 const model = formContext.model as any
 const isFocused = ref(false)
+const draftValue = ref<unknown>('')
 
 const rawValue = computed(() => model.value[props.field.key])
 
@@ -68,6 +69,10 @@ const componentModelValue = computed(() => {
     return displayValue.value
   }
 
+  if (props.field.parser && isFocused.value) {
+    return draftValue.value
+  }
+
   return rawValue.value
 })
 
@@ -84,6 +89,11 @@ const inputType = computed(() => {
 
 const updateValue = (val: unknown) => {
   if (!isEditable.value) return
+
+  if (props.field.parser) {
+    draftValue.value = val
+    return
+  }
 
   // formatter表示中に入ってくるのは避けて、編集中の生値だけ保存
   if (props.field.type === 'number') {
@@ -114,12 +124,23 @@ const updateValue = (val: unknown) => {
 
 const handleFocus = () => {
   if (!isEditable.value) return
+  draftValue.value = props.field.parser
+    ? displayValue.value
+    : rawValue.value
   isFocused.value = true
 }
 
 const handleBlur = () => {
+  if (props.field.parser) {
+    model.value[props.field.key] = props.field.parser(
+      draftValue.value,
+      model.value,
+    )
+  }
   isFocused.value = false
-  formContext.validateField(String(props.field.key))
+  void nextTick(() =>
+    formContext.validateField(String(props.field.key)),
+  )
 }
 </script>
 

@@ -50,6 +50,9 @@ public record CompanyProfileResponse(
         String invoiceBankAccountHolder,
 
         String invoiceBankDisplayText,
+        String invoiceLogoFileName,
+        String invoiceLogoContentType,
+        String invoiceLogoBase64,
         String invoiceNote,
 
         Boolean activeFlag

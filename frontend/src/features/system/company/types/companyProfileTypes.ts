@@ -36,6 +36,10 @@ export type CompanyProfileForm = {
   invoiceBankAccountNumber: string
   invoiceBankAccountHolder: string
 
+  invoiceLogoFileName: string
+  invoiceLogoContentType: string
+  invoiceLogoBase64: string
+
   invoiceNote: string
 
   activeFlag: boolean

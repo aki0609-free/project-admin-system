@@ -71,6 +71,10 @@ export const createEmptyCompanyProfileForm = (): CompanyProfileForm => ({
   invoiceBankAccountNumber: '',
   invoiceBankAccountHolder: '',
 
+  invoiceLogoFileName: '',
+  invoiceLogoContentType: '',
+  invoiceLogoBase64: '',
+
   invoiceNote: '',
 
   activeFlag: true,
@@ -119,6 +123,12 @@ export const toCompanyProfileForm = (response: CompanyProfileResponse): CompanyP
   invoiceBankAccountNumber: toStringValue(response.invoiceBankAccountNumber),
 
   invoiceBankAccountHolder: toStringValue(response.invoiceBankAccountHolder),
+
+  invoiceLogoFileName: toStringValue(response.invoiceLogoFileName),
+
+  invoiceLogoContentType: toStringValue(response.invoiceLogoContentType),
+
+  invoiceLogoBase64: toStringValue(response.invoiceLogoBase64),
 
   invoiceNote: toStringValue(response.invoiceNote),
 
@@ -180,6 +190,12 @@ export const toCompanyProfileSaveRequest = (
   invoiceBankAccountNumber: toNullableString(form.invoiceBankAccountNumber),
 
   invoiceBankAccountHolder: toNullableString(form.invoiceBankAccountHolder),
+
+  invoiceLogoFileName: toNullableString(form.invoiceLogoFileName),
+
+  invoiceLogoContentType: toNullableString(form.invoiceLogoContentType),
+
+  invoiceLogoBase64: toNullableString(form.invoiceLogoBase64),
 
   invoiceNote: toNullableString(form.invoiceNote),
 

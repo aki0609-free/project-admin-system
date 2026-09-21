@@ -43,6 +43,7 @@ class DailyReportInputItemServiceTest {
     private PayrollItemBalanceQueryService balanceQueryService;
     private EmployeePayrollItemSettingService payrollItemSettingService;
     private DailyReportRepository dailyReportRepository;
+    private DailyStatutoryDeductionEstimateService statutoryDeductionEstimateService;
     private DailyReportInputItemService service;
 
     @BeforeEach
@@ -53,6 +54,12 @@ class DailyReportInputItemServiceTest {
         balanceQueryService = mock(PayrollItemBalanceQueryService.class);
         payrollItemSettingService = mock(EmployeePayrollItemSettingService.class);
         dailyReportRepository = mock(DailyReportRepository.class);
+        statutoryDeductionEstimateService = mock(
+                DailyStatutoryDeductionEstimateService.class
+        );
+        when(statutoryDeductionEstimateService.estimateMonthlyTotal(
+                anyLong(), any(LocalDate.class), any()))
+                .thenReturn(BigDecimal.valueOf(20_000));
         when(dailyReportRepository.findByEmployeeIdAndWorkDateAndDeletedAtIsNull(
                 anyLong(), any(LocalDate.class)))
                 .thenReturn(Optional.empty());
@@ -77,7 +84,8 @@ class DailyReportInputItemServiceTest {
                 employeeContractRepository,
                 balanceQueryService,
                 payrollItemSettingService,
-                dailyReportRepository
+                dailyReportRepository,
+                statutoryDeductionEstimateService
         );
     }
 

@@ -90,15 +90,15 @@ class PayrollItemCalculationServiceTest {
     }
 
     @Test
-    void calculate_shouldUseConfiguredDefaultForManualDailyReserve() {
+    void calculate_shouldUseRuleResultForDailyReserveUntilManuallyOverridden() {
         PayrollItemMasterSnapshot master = new PayrollItemMasterSnapshot(
                 PayrollItemTargetType.DEDUCTION,
                 13L,
                 "LEGAL_DEPOSIT",
                 "法定準備金",
-                "MANUAL",
-                null,
-                2_000,
+                "AUTO",
+                "DAILY_LEGAL_DEPOSIT_ESTIMATE",
+                0,
                 0,
                 10_000_000,
                 true,
@@ -118,9 +118,9 @@ class PayrollItemCalculationServiceTest {
                     13L,
                     "LEGAL_DEPOSIT",
                     "法定準備金",
-                    "MANUAL",
-                    null,
-                    BigDecimal.valueOf(valueRequest.manualAmount()),
+                    "AUTO",
+                    "DAILY_LEGAL_DEPOSIT_ESTIMATE",
+                    BigDecimal.valueOf(2_000),
                     Map.of()
             );
         });
