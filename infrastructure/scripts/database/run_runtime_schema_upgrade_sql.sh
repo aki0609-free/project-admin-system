@@ -185,7 +185,8 @@ deduction_master_verification="$(
        FROM deduction_masters
        WHERE tenant_id = 'default'
          AND deduction_code = 'LEGAL_DEPOSIT'
-         AND calculation_type = 'MANUAL'
+         AND calculation_type = 'AUTO'
+         AND rule_name = 'DAILY_LEGAL_DEPOSIT_ESTIMATE'
          AND allow_manual_input = TRUE
          AND deduction_unit = 'DAILY'
          AND show_on_daily_statement = TRUE
@@ -198,10 +199,10 @@ deduction_master_verification="$(
        WHERE tenant_id = 'default'
          AND deduction_code = 'WIFI_FEE'
          AND calculation_type = 'MANUAL'
-         AND deduction_unit = 'BOTH'
+         AND deduction_unit = 'DAILY'
          AND show_on_daily_statement = TRUE
-         AND show_on_monthly_statement = TRUE
-         AND carry_to_monthly_settlement = TRUE
+         AND show_on_monthly_statement = FALSE
+         AND carry_to_monthly_settlement = FALSE
          AND deleted_at IS NULL)
     );
   "
