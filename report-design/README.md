@@ -9,6 +9,8 @@ Jasper Reportと、それに対応するView・ストアドを、アプリ本体
 
 `backend/src/main/resources/` 配下はアプリが利用する正式ファイルです。通常の手作業では直接編集せず、上記のworking側を編集して反映コマンドを使います。
 
+JasperテンプレートはBackendと同じ **JasperReports 6.21.3形式** で保存してください。Jaspersoft Studio 7でそのまま保存すると7形式へ変換され、印刷時に読み込めません。原則としてJaspersoft Studio 6.21.xを使用します。`reports:workspace:check`は7形式を検出した場合、環境へ配置する前に停止します。
+
 ## 普段の流れ
 
 1. 作業前に `npm run reports:workspace:status` で状態を確認します。

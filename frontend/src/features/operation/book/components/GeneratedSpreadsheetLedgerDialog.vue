@@ -6,10 +6,13 @@ import {
 } from '@syncfusion/ej2-vue-spreadsheet'
 import { configureSyncfusion } from '@/app/plugins/syncfusion'
 import { useSaveGeneratedSpreadsheetLedgerMutation } from '../api/useSaveGeneratedSpreadsheetLedgerMutation'
+import { useExportSpreadsheetLedgerXlsxMutation } from '../api/useExportSpreadsheetLedgerXlsxMutation'
 import type { SpreadsheetLedgerGenerateResponse } from '../types/operationBookTypes'
 import type { SpreadsheetJsonResult } from '@/features/system/excelbook/types/excelBookTypes'
 import { formatYearMonth } from '@/shared/utils/DateUtils'
 import { prepareSpreadsheetWorkbook } from '../utils/spreadsheetWorkbookPresentation'
+import { printSpreadsheetRange } from '../utils/printSpreadsheetRange'
+import { downloadBlob } from '@/shared/utils/BusinessUtils'
 
 import '@syncfusion/ej2-base/styles/material3.css'
 import '@syncfusion/ej2-buttons/styles/material3.css'
@@ -44,7 +47,12 @@ const dirty = ref(false)
 const saveMessage = ref('')
 const saveError = ref(false)
 const saveMutation = useSaveGeneratedSpreadsheetLedgerMutation()
+const exportMutation = useExportSpreadsheetLedgerXlsxMutation()
+const preparingExport = ref(false)
 const saving = computed(() => saveMutation.isPending.value)
+const exporting = computed(
+  () => preparingExport.value || exportMutation.isPending.value,
+)
 const scrollSettings = computed(() => ({
   enableVirtualization: true,
   isFinite: props.result?.bookCode === 'MONTHLY_SUMMARY',
@@ -65,6 +73,42 @@ function spreadsheetInstance() {
   return spreadsheet.value?.ej2Instances ?? null
 }
 
+function withProjectAdminMetadata(workbook: Record<string, unknown>) {
+  const result = structuredClone(workbook)
+  const metadata = props.result?.workbook.projectAdminMetadata
+  if (metadata && typeof metadata === 'object') {
+    // props 配下の値は Vue Proxy のため structuredClone できない。
+    // Workbook 本体と同様に、API 送信可能なプレーン値へ変換する。
+    result.projectAdminMetadata = JSON.parse(JSON.stringify(metadata))
+  }
+  return result
+}
+
+function currentWorkbookSnapshot() {
+  const instance = spreadsheetInstance()
+  if (!instance || !props.result) {
+    throw new Error('Spreadsheetが初期化されていません。')
+  }
+
+  // APIレスポンスはVueのリアクティブProxyになっているため、
+  // structuredCloneへ直接渡すとDataCloneErrorになる。JSONダウンロードと
+  // 同じ方法で、バックエンドへ送信可能なプレーンオブジェクトへ戻す。
+  const workbook = JSON.parse(JSON.stringify(props.result.workbook)) as {
+    Workbook?: { sheets?: unknown[]; activeSheetIndex?: number }
+    sheets?: unknown[]
+    activeSheetIndex?: number
+  }
+  // Syncfusion の Sheet インスタンスには循環参照が含まれるため、そのまま
+  // JSON化できない。Excel出力・部分印刷は、直近に生成（または保存）された
+  // Workbookを使い、現在表示中のシート位置だけを反映する。
+  if (workbook.Workbook) {
+    workbook.Workbook.activeSheetIndex = instance.activeSheetIndex
+  } else {
+    workbook.activeSheetIndex = instance.activeSheetIndex
+  }
+  return withProjectAdminMetadata(workbook as Record<string, unknown>)
+}
+
 async function openWorkbook() {
   if (!ready.value || !props.result) return
 
@@ -83,6 +127,7 @@ async function handleOpenComplete() {
   await nextTick()
   await nextAnimationFrame()
   await nextAnimationFrame()
+  applyMonthlyLaborHeaderOverflow()
   if (workbookOpenStartedAt.value !== null) {
     browserLoadDurationMs.value = Math.round(
       performance.now() - workbookOpenStartedAt.value,
@@ -90,6 +135,22 @@ async function handleOpenComplete() {
   }
   dirty.value = false
   applyingWorkbook.value = false
+}
+
+function applyMonthlyLaborHeaderOverflow() {
+  if (props.result?.bookCode !== 'MONTHLY_LABOR') return
+
+  const instance = spreadsheetInstance()
+  if (!instance) return
+
+  for (const rowIndex of [0, 1]) {
+    const cell = instance.getCell(rowIndex, 0)
+    if (!cell) continue
+    cell.style.overflow = 'visible'
+    cell.style.position = 'relative'
+    cell.style.zIndex = '2'
+    cell.style.whiteSpace = 'nowrap'
+  }
 }
 
 async function handleCreated() {
@@ -130,7 +191,7 @@ function downloadJson() {
   URL.revokeObjectURL(url)
 }
 
-function printWorkbook() {
+function printWorkbook(type?: 'Workbook' | 'ActiveSheet') {
   const instance = spreadsheetInstance()
   if (!instance || !props.result) return
 
@@ -140,10 +201,57 @@ function printWorkbook() {
   }
   const sheets = workbook.Workbook?.sheets ?? workbook.sheets ?? []
   instance.print({
-    type: sheets.length > 1 ? 'Workbook' : 'ActiveSheet',
+    type: type ?? (sheets.length > 1 ? 'Workbook' : 'ActiveSheet'),
     allowRowColumnHeader: false,
     allowGridLines: false,
   })
+}
+
+function printSelectedRange() {
+  const instance = spreadsheetInstance()
+  if (!instance) return
+
+  saveMessage.value = ''
+  saveError.value = false
+  try {
+    instance.endEdit()
+    const sheet = instance.getActiveSheet()
+    printSpreadsheetRange(
+      currentWorkbookSnapshot(),
+      instance.activeSheetIndex,
+      sheet.selectedRange ?? 'A1:A1',
+    )
+  } catch {
+    saveError.value = true
+    saveMessage.value = '選択範囲の印刷に失敗しました。'
+  }
+}
+
+async function exportWorkbook() {
+  if (!props.result) return
+  const instance = spreadsheetInstance()
+  if (!instance) return
+
+  saveMessage.value = ''
+  saveError.value = false
+  preparingExport.value = true
+  try {
+    instance.endEdit()
+    const blob = await exportMutation.mutateAsync({
+      bookCode: props.result.bookCode,
+      request: { workbook: currentWorkbookSnapshot() },
+    })
+    downloadBlob(
+      blob,
+      `${props.result.bookCode}-${props.result.targetMonth}.xlsx`,
+    )
+  } catch (error) {
+    console.error('Failed to export spreadsheet ledger as Excel.', error)
+    saveError.value = true
+    saveMessage.value = 'Excelファイルの作成に失敗しました。'
+  } finally {
+    preparingExport.value = false
+  }
 }
 
 function handleSpreadsheetChange() {
@@ -247,19 +355,49 @@ watch(visible, value => {
         >
           変更を保存
         </v-btn>
+        <v-menu>
+          <template #activator="{ props: activatorProps }">
+            <v-btn
+              v-bind="activatorProps"
+              prepend-icon="mdi-printer"
+              append-icon="mdi-menu-down"
+              variant="elevated"
+              color="white"
+              class="mr-2"
+              :disabled="!result"
+            >
+              印刷
+            </v-btn>
+          </template>
+          <v-list density="compact">
+            <v-list-item
+              v-if="sheetCount > 1"
+              title="全シートを印刷"
+              prepend-icon="mdi-book-open-page-variant"
+              @click="printWorkbook('Workbook')"
+            />
+            <v-list-item
+              title="現在のシートを印刷"
+              prepend-icon="mdi-file-outline"
+              @click="printWorkbook('ActiveSheet')"
+            />
+            <v-list-item
+              title="選択範囲を印刷"
+              prepend-icon="mdi-selection-drag"
+              @click="printSelectedRange"
+            />
+          </v-list>
+        </v-menu>
         <v-btn
-          prepend-icon="mdi-printer"
+          prepend-icon="mdi-microsoft-excel"
           variant="elevated"
           color="white"
           class="mr-2"
+          :loading="exporting"
           :disabled="!result"
-          @click="printWorkbook"
+          @click="exportWorkbook"
         >
-          {{
-            sheetCount > 1
-              ? '全員分を印刷'
-              : '印刷'
-          }}
+          Excelダウンロード
         </v-btn>
         <v-btn
           prepend-icon="mdi-code-json"

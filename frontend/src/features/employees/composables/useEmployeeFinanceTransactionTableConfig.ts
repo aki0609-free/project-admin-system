@@ -20,6 +20,9 @@ const transactionTypeLabels: Record<EmployeeFinanceTransactionType, string> = {
   LOAN_REPAYMENT_REVERSAL: '貸付返済取消',
   SAVING_DEPOSIT: '積立',
   SAVING_DEPOSIT_REVERSAL: '積立取消',
+  SAVING_WITHDRAWAL: '貯金引出',
+  SAVING_WITHDRAWAL_REVERSAL: '貯金引出取消',
+  SAVING_ADJUSTMENT: '貯金差額調整',
 }
 
 export type EmployeeFinanceTransactionTableRow = SimpleTableEditableRow & {

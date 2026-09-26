@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
 
-/** 日報の開始・終了・休憩から、保存する勤務時間区分を一意に計算する。 */
+/** 日報の開始・終了・休憩から勤務時間区分を計算し、手入力値を保存用に解決する。 */
 @Component
 public class DailyReportWorkTimeCalculator {
 
@@ -65,6 +65,29 @@ public class DailyReportWorkTimeCalculator {
         );
     }
 
+    /**
+     * 開始・終了・休憩の妥当性は自動計算と同じ基準で検証しつつ、
+     * 通常・残業・深夜は利用者が入力した値を優先する。
+     * 休日時間はV1では引き続き休日手当対象フラグから自動計算する。
+     */
+    public DailyReportWorkTimePolicy.WorkTimes resolveForSave(
+            DailyReportSaveRequest request
+    ) {
+        DailyReportWorkTimePolicy.WorkTimes calculated = calculate(request);
+        boolean holiday = Boolean.TRUE.equals(request.holidayPremiumEligible());
+
+        return new DailyReportWorkTimePolicy.WorkTimes(
+                holiday
+                        ? BigDecimal.ZERO
+                        : nvl(request.workHours(), calculated.workHours()),
+                holiday
+                        ? BigDecimal.ZERO
+                        : nvl(request.overtimeHours(), calculated.overtimeHours()),
+                nvl(request.nightWorkHours(), calculated.nightWorkHours()),
+                calculated.holidayWorkHours()
+        );
+    }
+
     private void ensureNoWorkHoursWithoutTime(DailyReportSaveRequest request) {
         if (positive(request.workHours())
                 || positive(request.overtimeHours())
@@ -111,5 +134,9 @@ public class DailyReportWorkTimeCalculator {
 
     private boolean positive(BigDecimal value) {
         return value != null && value.signum() > 0;
+    }
+
+    private BigDecimal nvl(BigDecimal value, BigDecimal fallback) {
+        return value != null ? value : fallback;
     }
 }

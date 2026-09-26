@@ -14,6 +14,7 @@ const {
   activeTab,
   tabs,
   summary,
+  errorMessage,
   leftToolbarItems,
   rightToolbarItems,
 } = useMonthlyOperationPage()
@@ -40,6 +41,17 @@ const {
         </div>
       </OperationTargetFilterCard>
     </template>
+
+    <v-alert
+      v-if="errorMessage"
+      type="error"
+      variant="tonal"
+      class="mb-4"
+      closable
+      @click:close="errorMessage = ''"
+    >
+      {{ errorMessage }}
+    </v-alert>
 
     <TabLayout
       v-model="activeTab"

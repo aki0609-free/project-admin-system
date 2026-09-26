@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-21T04:05:43.978Z",
+  "updatedAt": "2026-09-25T13:20:17.314Z",
   "assets": {
     "report-design/jasper/working/daily_pay_slip.jrxml": {
       "targetPath": "backend/src/main/resources/reports/daily_pay_slip.jrxml",
-      "baseSha256": "4956316a3452e2d29c89f20dd3193c22ed1a018caf15ef4b936c6cb2d836150b"
+      "baseSha256": "fc7b42198d39aad3cc29de981cac1d8afd9309367321f673affc9d0155d275b7"
     },
     "report-design/jasper/working/daily_work_order.jrxml": {
       "targetPath": "backend/src/main/resources/reports/daily_work_order.jrxml",
-      "baseSha256": "785854bd3e21f04b136b44ac13f1a32e4f5fac65041171d1eb00312e01ba3c28"
+      "baseSha256": "e397be241ea1b1be7c13ef19cfb03850e87c911b47a11804e68062f2559f462d"
     },
     "report-design/jasper/working/envelope_kaku2.jrxml": {
       "targetPath": "backend/src/main/resources/reports/envelope_kaku2.jrxml",
@@ -20,23 +20,23 @@
     },
     "report-design/jasper/working/monthly_invoice_pattern_1.jrxml": {
       "targetPath": "backend/src/main/resources/reports/monthly_invoice_pattern_1.jrxml",
-      "baseSha256": "39b777d5fe6135e12d96933f00d4d82db2f163d4530b3262d37eb884c2e79ff6"
+      "baseSha256": "ddf1f5f2336c0caa52903587b367e17f4659d91da11cfc3238de56c2c5c038df"
     },
     "report-design/jasper/working/monthly_invoice_pattern_2.jrxml": {
       "targetPath": "backend/src/main/resources/reports/monthly_invoice_pattern_2.jrxml",
-      "baseSha256": "69be00ed05693c228fd561dd50631e1d24a37a65d8355ad060c7a292c077e39b"
+      "baseSha256": "cc6d44b890ab517f7ea4db2847ecd8ec6638e54cbe2fdfb821ab9b74291568a9"
     },
     "report-design/jasper/working/monthly_invoice_pattern_3.jrxml": {
       "targetPath": "backend/src/main/resources/reports/monthly_invoice_pattern_3.jrxml",
-      "baseSha256": "bdce4dc132a33c01027f61767e26abf57dc858b1a009cce8559d48df8e86ee45"
+      "baseSha256": "5a4aec8460ed37340f57ab582f67d142732d8c1f5f40737df5c846684b05fb1f"
     },
     "report-design/jasper/working/monthly_order_form.jrxml": {
       "targetPath": "backend/src/main/resources/reports/monthly_order_form.jrxml",
-      "baseSha256": "66ca1891193310f8750fc116fa49c9b8a3624b7d232fdf8200c3b82d8b18ccc0"
+      "baseSha256": "682b4bfafb49b3782b65dedcb1b600e1795a8cf95c4b1fd41c8c062d235ba3da"
     },
     "report-design/jasper/working/monthly_pay_slip.jrxml": {
       "targetPath": "backend/src/main/resources/reports/monthly_pay_slip.jrxml",
-      "baseSha256": "6250b1be5f13df5f380cdd1f7377c67877e416267c3436cade1be5b3774f3774"
+      "baseSha256": "bb9c78db67447325eec32ce43c4e3c1cfb9f55f011e4cc17a1f0d368496a0cc7"
     },
     "report-design/sql/working/system/report/monthly_snapshot_foundation_v1.sql": {
       "targetPath": "backend/src/main/resources/sql/system/report/monthly_snapshot_foundation_v1.sql",
@@ -44,7 +44,7 @@
     },
     "report-design/sql/working/operation/monthly/closing_output_foundation_v1.sql": {
       "targetPath": "backend/src/main/resources/sql/operation/monthly/closing_output_foundation_v1.sql",
-      "baseSha256": "07067e79fdfeee4d9be27ec68a83fbf7902fd90b5fd9a3afd96bc6a4668b1175"
+      "baseSha256": "f78a99058bebc661f2e3f931e4122e92b7d8819e536fc7224499142867718dce"
     },
     "report-design/sql/working/operation/monthly/customer_billing_closing_v1.sql": {
       "targetPath": "backend/src/main/resources/sql/operation/monthly/customer_billing_closing_v1.sql",
@@ -64,11 +64,11 @@
     },
     "report-design/sql/working/system/report/pay_slip/daily_pay_slip_view_foundation_v1.sql": {
       "targetPath": "backend/src/main/resources/sql/system/report/pay_slip/daily_pay_slip_view_foundation_v1.sql",
-      "baseSha256": "78d07f03fc2961bf2443affa95b6a37043cb5b4e56640062c3c3e9683414eb49"
+      "baseSha256": "c0de4bb50b132f4751895b178d7980d220f58a15edef7576d1237e964e83798e"
     },
     "report-design/sql/working/system/report/pay_slip/setup.sql": {
       "targetPath": "backend/src/main/resources/sql/system/report/pay_slip/setup.sql",
-      "baseSha256": "3842f1ba0115adb23ae3d14a263b10c56080cd5643441fd558db34523a69a3b3"
+      "baseSha256": "ef52b7628b1bc3c1714413c67c0ddf2c5ed7063087c64165a52344a7a124c27b"
     },
     "report-design/sql/working/system/report/pay_slip/monthly_pay_slip_snapshot_foundation_v1.sql": {
       "targetPath": "backend/src/main/resources/sql/system/report/pay_slip/monthly_pay_slip_snapshot_foundation_v1.sql",
@@ -76,7 +76,7 @@
     },
     "report-design/sql/working/system/report/pay_slip/daily_pay_slip_stored.sql": {
       "targetPath": "backend/src/main/resources/sql/system/report/pay_slip/daily_pay_slip_stored.sql",
-      "baseSha256": "07f91cc0652c3472f6bb6193a1b4858f1eb011bcd5e1b302cbf60dee33418545"
+      "baseSha256": "28560593a2751b398bd3bef83f2b0df3b37e4dc0bfc8bdf907ea01ed1a0cf424"
     },
     "report-design/sql/working/system/report/invoice/monthly_invoice_foundation_v1.sql": {
       "targetPath": "backend/src/main/resources/sql/system/report/invoice/monthly_invoice_foundation_v1.sql",
@@ -100,7 +100,7 @@
     },
     "report-design/sql/working/system/report/preview/report_preview_catalog_v1.sql": {
       "targetPath": "backend/src/main/resources/sql/system/report/preview/report_preview_catalog_v1.sql",
-      "baseSha256": "297b4bce4a3ae46f7e709083f2d09ca6274685c7fd99e4a40143f51b7e98c70d"
+      "baseSha256": "3faba72024284245cc5f9390ba5ebbebc3226af70d5fe8b68866be8dbada25c8"
     },
     "report-design/sql/working/system/report/labor_cost/monthly_labor_cost_list_foundation_v1.sql": {
       "targetPath": "backend/src/main/resources/sql/system/report/labor_cost/monthly_labor_cost_list_foundation_v1.sql",

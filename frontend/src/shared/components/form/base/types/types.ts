@@ -37,6 +37,8 @@ export interface FormFieldDef<T> {
   visible?: (model: T) => boolean
   formatter?: (value: any, row: T) => string
   parser?: (value: any, row: T) => any
+  /** 利用者が入力欄を操作して値を変更した直後にだけ呼び出す。 */
+  onUpdate?: (value: any, row: T) => void
 }
 
 export interface FormContext {

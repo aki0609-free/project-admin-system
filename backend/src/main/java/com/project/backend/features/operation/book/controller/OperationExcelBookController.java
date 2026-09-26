@@ -1,7 +1,12 @@
 package com.project.backend.features.operation.book.controller;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,6 +25,7 @@ import com.project.backend.features.operation.book.dto.SpreadsheetLedgerSaveRequ
 import com.project.backend.features.operation.book.dto.SpreadsheetLedgerSaveResponse;
 import com.project.backend.features.operation.book.dto.SpreadsheetLedgerSelectionResponse;
 import com.project.backend.features.operation.book.service.SpreadsheetLedgerEditingService;
+import com.project.backend.features.operation.book.service.SpreadsheetLedgerExcelExportService;
 import com.project.backend.features.operation.book.service.SpreadsheetLedgerGenerationService;
 import com.project.backend.features.operation.book.service.SpreadsheetLedgerSelectionService;
 import com.project.backend.features.admin.business.service.AnnualReportBackupSettingService;
@@ -36,6 +42,7 @@ public class OperationExcelBookController {
     private final SpreadsheetLedgerGenerationService service;
     private final SpreadsheetLedgerEditingService editingService;
     private final SpreadsheetLedgerSelectionService selectionService;
+    private final SpreadsheetLedgerExcelExportService excelExportService;
     private final AnnualReportBackupSettingService businessSettingService;
 
     @GetMapping("/settings")
@@ -76,6 +83,32 @@ public class OperationExcelBookController {
                 request.targetMonth(),
                 request.selectionValues()
         );
+    }
+
+    @PostMapping(
+            value = "/{bookCode}/export/xlsx",
+            produces = "application/vnd.openxmlformats-officedocument"
+                    + ".spreadsheetml.sheet"
+    )
+    public ResponseEntity<byte[]> exportXlsx(
+            @PathVariable String bookCode,
+            @Valid @RequestBody SpreadsheetLedgerSaveRequest request
+    ) {
+        String safeBookCode = bookCode.replaceAll("[^A-Za-z0-9_-]", "_");
+        String fileName = safeBookCode + ".xlsx";
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument"
+                                + ".spreadsheetml.sheet"
+                ))
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment()
+                                .filename(fileName, StandardCharsets.UTF_8)
+                                .build()
+                                .toString()
+                )
+                .body(excelExportService.export(request.workbook()));
     }
 
     @PutMapping("/{bookCode}/generated/{targetMonth}")

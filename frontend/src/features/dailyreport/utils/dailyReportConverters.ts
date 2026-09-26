@@ -1,6 +1,7 @@
 import type {
   DailyReportSaveRequest,
 } from '@/features/dailyreport/types/dailyReportApiTypes'
+import { resolveManualOverrideReason } from './dailyReportPayrollItemPolicy'
 
 import type {
   DailyReportForm,
@@ -146,6 +147,11 @@ export const toDailyReportSaveRequest = (
         form.savingAmount ?? 0,
       ),
 
+    savingWithdrawalAmount:
+      Number(
+        form.savingWithdrawalAmount ?? 0,
+      ),
+
     dormitoryChargeDays:
       Number(
         form.dormitoryChargeDays ?? 0,
@@ -221,9 +227,11 @@ export const toDailyReportSaveRequest = (
             Boolean(item.manualOverride),
 
           overrideReason:
-            item.manualOverride
-              ? blankToNull(item.overrideReason)
-              : null,
+            resolveManualOverrideReason(
+              item.code,
+              item.manualOverride,
+              item.overrideReason,
+            ),
 
           quantity:
             item.balanceTracked

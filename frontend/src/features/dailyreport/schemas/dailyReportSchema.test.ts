@@ -42,4 +42,17 @@ describe('dailyReportAmountItemSchema', () => {
 
     expect(result.success).toBe(false)
   })
+
+  it('法定準備金の手動変更は利用者の変更理由を要求しない', () => {
+    const result = dailyReportAmountItemSchema.safeParse(
+      amountItem({
+        code: 'LEGAL_DEPOSIT',
+        amount: 400,
+        manualOverride: true,
+        overrideReason: '',
+      }),
+    )
+
+    expect(result.success).toBe(true)
+  })
 })

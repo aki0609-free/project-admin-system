@@ -51,7 +51,11 @@ export function downloadBlob(blob: Blob, fileName: string) {
 
   link.href = url
   link.download = fileName
+  link.style.display = 'none'
+  document.body.appendChild(link)
   link.click()
+  link.remove()
 
-  window.URL.revokeObjectURL(url)
+  // Safari 等では click 直後に URL を破棄するとダウンロードが始まらない。
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 1_000)
 }

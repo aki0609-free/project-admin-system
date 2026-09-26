@@ -99,6 +99,7 @@ const updateValue = (val: unknown) => {
   if (props.field.type === 'number') {
     if (val == null || val === '') {
       model.value[props.field.key] = null
+      props.field.onUpdate?.(null, model.value)
       return
     }
 
@@ -106,10 +107,15 @@ const updateValue = (val: unknown) => {
     model.value[props.field.key] = Number.isFinite(numericValue)
       ? numericValue
       : val
+    props.field.onUpdate?.(
+      model.value[props.field.key],
+      model.value,
+    )
     return
   }
 
   model.value[props.field.key] = val
+  props.field.onUpdate?.(val, model.value)
 
   // 日付ピッカーは入力欄の blur 後に値を反映するため、
   // blur 時の古い必須エラーを新しい値で再評価する。
@@ -134,6 +140,10 @@ const handleBlur = () => {
   if (props.field.parser) {
     model.value[props.field.key] = props.field.parser(
       draftValue.value,
+      model.value,
+    )
+    props.field.onUpdate?.(
+      model.value[props.field.key],
       model.value,
     )
   }

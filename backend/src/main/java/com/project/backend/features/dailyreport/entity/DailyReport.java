@@ -243,6 +243,14 @@ public class DailyReport extends BaseEntity {
     )
     private BigDecimal savingAmount = BigDecimal.ZERO;
 
+    @Column(
+            name = "saving_withdrawal_amount",
+            precision = 12,
+            scale = 2,
+            nullable = false
+    )
+    private BigDecimal savingWithdrawalAmount = BigDecimal.ZERO;
+
     @Column(name = "dormitory_charge_days", nullable = false)
     private Integer dormitoryChargeDays = 0;
 

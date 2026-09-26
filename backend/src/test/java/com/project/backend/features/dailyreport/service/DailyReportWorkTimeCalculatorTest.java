@@ -64,6 +64,27 @@ class DailyReportWorkTimeCalculatorTest {
                 .hasMessageContaining("勤務区間を超えて");
     }
 
+    @Test
+    void resolveForSave_shouldPreferManualNormalOvertimeAndNightHours() {
+        DailyReportSaveRequest request = request(
+                LocalTime.of(20, 0),
+                LocalTime.of(6, 0),
+                60,
+                false
+        );
+        when(request.workHours()).thenReturn(new BigDecimal("6.50"));
+        when(request.overtimeHours()).thenReturn(new BigDecimal("1.50"));
+        when(request.nightWorkHours()).thenReturn(new BigDecimal("6.00"));
+
+        DailyReportWorkTimePolicy.WorkTimes result =
+                calculator.resolveForSave(request);
+
+        assertThat(result.workHours()).isEqualByComparingTo("6.50");
+        assertThat(result.overtimeHours()).isEqualByComparingTo("1.50");
+        assertThat(result.nightWorkHours()).isEqualByComparingTo("6.00");
+        assertThat(result.holidayWorkHours()).isZero();
+    }
+
     private DailyReportSaveRequest request(
             LocalTime start,
             LocalTime end,

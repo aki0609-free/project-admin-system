@@ -220,11 +220,37 @@ public class MonthlyClosingExecutionStateService {
     }
 
     private String limitError(Throwable error) {
-        String message = error != null && StringUtils.hasText(
-                error.getMessage()
-        ) ? error.getMessage() : "月次締め処理に失敗しました。";
+        String technicalMessage = errorChainMessage(error);
+        String message;
+        if (technicalMessage.contains(
+                "monthly pay slip calculation master is not ready"
+        )) {
+            message = "月次給与明細の計算マスターが未準備です。"
+                    + "対象月の税・社会保険計算期間を確認してください。";
+        } else if (technicalMessage.contains(
+                "Errors were encountered when compiling report expressions"
+        ) || technicalMessage.contains("JRException")) {
+            message = "帳票テンプレートの生成に失敗しました。"
+                    + "帳票テンプレートを確認してください。";
+        } else {
+            message = error != null && StringUtils.hasText(error.getMessage())
+                    ? error.getMessage()
+                    : "月次締め処理に失敗しました。";
+        }
         return message.length() <= MAX_ERROR_LENGTH
                 ? message
                 : message.substring(0, MAX_ERROR_LENGTH);
+    }
+
+    private String errorChainMessage(Throwable error) {
+        StringBuilder messages = new StringBuilder();
+        Throwable current = error;
+        while (current != null) {
+            if (StringUtils.hasText(current.getMessage())) {
+                messages.append(current.getMessage()).append('\n');
+            }
+            current = current.getCause();
+        }
+        return messages.toString();
     }
 }

@@ -11,6 +11,9 @@ export type EmployeeFinanceTransactionType =
   | 'LOAN_REPAYMENT_REVERSAL'
   | 'SAVING_DEPOSIT'
   | 'SAVING_DEPOSIT_REVERSAL'
+  | 'SAVING_WITHDRAWAL'
+  | 'SAVING_WITHDRAWAL_REVERSAL'
+  | 'SAVING_ADJUSTMENT'
 
 export type EmployeeContractQueryResponse = {
   id: number | null

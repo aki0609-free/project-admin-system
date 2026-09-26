@@ -1,18 +1,15 @@
 package com.project.backend.features.operation.book.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.InputStream;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Optional;
 import java.util.List;
@@ -25,9 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.backend.app.storage.properties.StorageProperties;
 import com.project.backend.app.storage.service.StorageService;
 import com.project.backend.features.admin.document.service.DocumentStorageKeyResolver;
-import com.project.backend.features.operation.monthly.entity.MonthlyClosing;
-import com.project.backend.features.operation.monthly.enums.MonthlyClosingStatus;
-import com.project.backend.features.operation.monthly.repository.MonthlyClosingRepository;
 import com.project.backend.features.system.excelbook.entity.ExcelBookMaster;
 import com.project.backend.features.system.excelbook.enums.ExcelBookLayoutType;
 import com.project.backend.features.system.excelbook.repository.ExcelBookMasterRepository;
@@ -36,7 +30,6 @@ class SpreadsheetLedgerEditingServiceTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private ExcelBookMasterRepository masterRepository;
-    private MonthlyClosingRepository closingRepository;
     private StorageService storageService;
     private MonthlySummarySpreadsheetRenderer renderer;
     private SpreadsheetLedgerEditingService service;
@@ -46,7 +39,6 @@ class SpreadsheetLedgerEditingServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         masterRepository = mock(ExcelBookMasterRepository.class);
-        closingRepository = mock(MonthlyClosingRepository.class);
         storageService = mock(StorageService.class);
         renderer = mock(
                 MonthlySummarySpreadsheetRenderer.class
@@ -62,7 +54,6 @@ class SpreadsheetLedgerEditingServiceTest {
                         List.of(renderer)
                 ),
                 new SpreadsheetLedgerEditHandlerRegistry(List.of()),
-                closingRepository,
                 storageService,
                 new DocumentStorageKeyResolver(
                         new StorageProperties()
@@ -93,14 +84,8 @@ class SpreadsheetLedgerEditingServiceTest {
     }
 
     @Test
-    void save_shouldOverwriteMonthlyJsonBeforeClosing()
+    void save_shouldOverwriteMonthlyJsonIndependentlyOfClosing()
             throws Exception {
-        when(closingRepository
-                .findByTargetMonthAndDeletedAtIsNull(
-                        LocalDate.of(2026, 7, 1)
-                ))
-                .thenReturn(Optional.empty());
-
         var result = service.save(
                 "MONTHLY_SUMMARY",
                 "2026-07",
@@ -123,57 +108,4 @@ class SpreadsheetLedgerEditingServiceTest {
         );
     }
 
-    @Test
-    void save_shouldRejectClosedMonth() {
-        MonthlyClosing closing = new MonthlyClosing();
-        closing.setStatus(MonthlyClosingStatus.CLOSED);
-        when(closingRepository
-                .findByTargetMonthAndDeletedAtIsNull(
-                        LocalDate.of(2026, 7, 1)
-                ))
-                .thenReturn(Optional.of(closing));
-
-        assertThatThrownBy(() -> service.save(
-                "MONTHLY_SUMMARY",
-                "2026-07",
-                workbook
-        ))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("締め済み");
-
-        verify(storageService, never()).save(
-                any(),
-                any(),
-                any(Long.class),
-                any()
-        );
-    }
-
-    @Test
-    void save_shouldAllowClosedMonthWhenRendererExplicitlySupportsIt()
-            throws Exception {
-        MonthlyClosing closing = new MonthlyClosing();
-        closing.setStatus(MonthlyClosingStatus.CLOSED);
-        when(closingRepository
-                .findByTargetMonthAndDeletedAtIsNull(
-                        LocalDate.of(2026, 7, 1)
-                ))
-                .thenReturn(Optional.of(closing));
-        when(renderer.editableAfterMonthlyClosing()).thenReturn(true);
-
-        var result = service.save(
-                "MONTHLY_SUMMARY",
-                "2026-07",
-                workbook
-        );
-
-        assertThat(result.storagePath()).contains("2026-07");
-        verify(storageService).save(
-                eq("documents/generated-reports/"
-                        + result.storagePath()),
-                any(InputStream.class),
-                eq((long) result.workbookBytes()),
-                eq("application/json")
-        );
-    }
 }

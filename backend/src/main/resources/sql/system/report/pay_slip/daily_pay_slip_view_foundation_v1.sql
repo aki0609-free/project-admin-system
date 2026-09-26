@@ -57,6 +57,26 @@ HAVING item_value <> 0
 
 UNION ALL
 
+-- 貯金引出しは給与手当ではないが、当日の支払額に含めて支払明細書の
+-- 支給欄へ「引出」として表示する。
+SELECT
+    dr.tenant_id,
+    dr.payment_date,
+    dr.employee_id,
+    'ALLOWANCE' AS item_type,
+    'SAVING_WITHDRAWAL' AS item_code,
+    '引出' AS item_name,
+    9980 AS display_order,
+    SUM(COALESCE(dr.saving_withdrawal_amount, 0)) AS item_value
+FROM daily_report dr
+WHERE dr.deleted_at IS NULL
+  AND dr.approval_status = 'APPROVED'
+  AND dr.payment_date IS NOT NULL
+GROUP BY dr.tenant_id, dr.payment_date, dr.employee_id
+HAVING item_value <> 0
+
+UNION ALL
+
 SELECT
     dr.tenant_id,
     dr.payment_date,
@@ -470,6 +490,148 @@ JOIN payroll_item_balance_policy policy
  AND policy.deleted_at IS NULL
 WHERE item.item_type = 'DEDUCTION';
 
+-- 法定準備金は残高ではなく、給与締め期間の開始日から対象勤務日までの控除累計を表示する。
+-- 締日翌日を新しい期間の開始日とするため、締日を過ぎると自動的に0から再集計される。
+CREATE OR REPLACE VIEW vw_daily_pay_slip_legal_deposit_period_total AS
+SELECT
+    target.tenant_id,
+    target.payment_date,
+    target.employee_id,
+    COALESCE((
+        SELECT SUM(detail.amount)
+        FROM daily_report cumulative_report
+        JOIN daily_report_deductions detail
+          ON detail.daily_report_id = cumulative_report.id
+         AND detail.deleted_at IS NULL
+         AND detail.deduction_code = 'LEGAL_DEPOSIT'
+        WHERE cumulative_report.tenant_id = target.tenant_id
+          AND cumulative_report.employee_id = target.employee_id
+          AND cumulative_report.deleted_at IS NULL
+          AND cumulative_report.approval_status = 'APPROVED'
+          AND cumulative_report.work_date BETWEEN
+              CASE
+                  WHEN payroll.closing_day_type = 'DAY_OF_MONTH'
+                   AND payroll.closing_day_value IS NOT NULL
+                   AND payroll.closing_day_value > 0
+                  THEN CASE
+                      WHEN target.target_work_date <= DATE_ADD(
+                          DATE_FORMAT(target.target_work_date, '%Y-%m-01'),
+                          INTERVAL (LEAST(
+                              payroll.closing_day_value,
+                              DAY(LAST_DAY(target.target_work_date))
+                          ) - 1) DAY
+                      )
+                      THEN DATE_ADD(
+                          DATE_ADD(
+                              DATE_FORMAT(
+                                  DATE_SUB(target.target_work_date, INTERVAL 1 MONTH),
+                                  '%Y-%m-01'
+                              ),
+                              INTERVAL (LEAST(
+                                  payroll.closing_day_value,
+                                  DAY(LAST_DAY(DATE_SUB(target.target_work_date, INTERVAL 1 MONTH)))
+                              ) - 1) DAY
+                          ),
+                          INTERVAL 1 DAY
+                      )
+                      ELSE DATE_ADD(
+                          DATE_ADD(
+                              DATE_FORMAT(target.target_work_date, '%Y-%m-01'),
+                              INTERVAL (LEAST(
+                                  payroll.closing_day_value,
+                                  DAY(LAST_DAY(target.target_work_date))
+                              ) - 1) DAY
+                          ),
+                          INTERVAL 1 DAY
+                      )
+                  END
+                  ELSE DATE_FORMAT(target.target_work_date, '%Y-%m-01')
+              END
+              AND target.target_work_date
+    ), 0) AS current_period_total
+FROM (
+    SELECT
+        report.tenant_id,
+        report.payment_date,
+        report.employee_id,
+        MAX(report.work_date) AS target_work_date
+    FROM daily_report report
+    WHERE report.deleted_at IS NULL
+      AND report.approval_status = 'APPROVED'
+      AND report.payment_date IS NOT NULL
+    GROUP BY report.tenant_id, report.payment_date, report.employee_id
+) target
+LEFT JOIN (
+    SELECT setting.*
+    FROM closing_setting setting
+    JOIN (
+        SELECT tenant_id, MAX(id) AS setting_id
+        FROM closing_setting
+        WHERE setting_code = 'PAYROLL'
+          AND active_flag = TRUE
+          AND deleted_at IS NULL
+        GROUP BY tenant_id
+    ) selected
+      ON selected.setting_id = setting.id
+     AND selected.tenant_id = setting.tenant_id
+) payroll
+  ON payroll.tenant_id = target.tenant_id;
+
+-- 貯金累計は対象勤務日までの取引残高を基準にし、取引履歴へ未接続の
+-- 旧データ・取込データについては承認済み日報の貯蓄額を補完する。
+CREATE OR REPLACE VIEW vw_daily_pay_slip_saving_total AS
+SELECT
+    target.tenant_id,
+    target.payment_date,
+    target.employee_id,
+    COALESCE((
+        SELECT tx.balance_after
+        FROM employee_finance_transaction tx
+        WHERE tx.tenant_id = target.tenant_id
+          AND tx.employee_id = target.employee_id
+          AND tx.account_type = 'SAVING'
+          AND tx.transaction_date <= target.target_work_date
+          AND tx.deleted_at IS NULL
+        ORDER BY tx.transaction_date DESC, tx.id DESC
+        LIMIT 1
+    ), 0) + COALESCE((
+        SELECT SUM(
+            COALESCE(untracked_report.saving_amount, 0)
+            - COALESCE(untracked_report.saving_withdrawal_amount, 0)
+        )
+        FROM daily_report untracked_report
+        WHERE untracked_report.tenant_id = target.tenant_id
+          AND untracked_report.employee_id = target.employee_id
+          AND untracked_report.work_date <= target.target_work_date
+          AND untracked_report.approval_status = 'APPROVED'
+          AND untracked_report.deleted_at IS NULL
+          AND (
+              COALESCE(untracked_report.saving_amount, 0) <> 0
+              OR COALESCE(untracked_report.saving_withdrawal_amount, 0) <> 0
+          )
+          AND NOT EXISTS (
+              SELECT 1
+              FROM employee_finance_transaction linked_tx
+              WHERE linked_tx.tenant_id = untracked_report.tenant_id
+                AND linked_tx.employee_id = untracked_report.employee_id
+                AND linked_tx.account_type = 'SAVING'
+                AND linked_tx.daily_report_id = untracked_report.id
+                AND linked_tx.deleted_at IS NULL
+          )
+    ), 0) AS current_balance
+FROM (
+    SELECT
+        report.tenant_id,
+        report.payment_date,
+        report.employee_id,
+        MAX(report.work_date) AS target_work_date
+    FROM daily_report report
+    WHERE report.deleted_at IS NULL
+      AND report.approval_status = 'APPROVED'
+      AND report.payment_date IS NOT NULL
+    GROUP BY report.tenant_id, report.payment_date, report.employee_id
+) target;
+
 CREATE OR REPLACE VIEW vw_daily_pay_slip_item_display AS
 SELECT
     item.tenant_id,
@@ -482,13 +644,13 @@ SELECT
             item.item_name, '（累計額：', FORMAT(COALESCE(saving.current_balance, 0), 0), '円）'
         )
         WHEN item.item_code = 'LOAN_REPAYMENT' THEN CONCAT(
-            item.item_name, '（残高：', FORMAT(COALESCE(loan.current_balance, 0), 0), '円）'
+            item.item_name, '（残額：', FORMAT(COALESCE(loan.current_balance, 0), 0), '円）'
         )
         WHEN item.item_code = 'LEGAL_DEPOSIT' THEN CONCAT(
-            item.item_name, '（残高：', FORMAT(COALESCE(legal_deposit.current_balance, 0), 0), '円）'
+            item.item_name, '（累計額：', FORMAT(COALESCE(legal_deposit.current_period_total, 0), 0), '円）'
         )
         WHEN managed.current_balance IS NOT NULL THEN CONCAT(
-            item.item_name, '（残高：', FORMAT(managed.current_balance, 0), '円）'
+            item.item_name, '（残額：', FORMAT(managed.current_balance, 0), '円）'
         )
         ELSE item.item_name
     END AS item_name,
@@ -501,8 +663,9 @@ LEFT JOIN vw_daily_pay_slip_managed_balance managed
  AND managed.payment_date = item.payment_date
  AND managed.employee_id = item.employee_id
  AND managed.item_code = item.item_code
-LEFT JOIN vw_employee_legal_deposit_balance legal_deposit
+LEFT JOIN vw_daily_pay_slip_legal_deposit_period_total legal_deposit
   ON legal_deposit.tenant_id = item.tenant_id
+ AND legal_deposit.payment_date = item.payment_date
  AND legal_deposit.employee_id = item.employee_id
 LEFT JOIN (
     SELECT tenant_id, employee_id, SUM(current_balance) AS current_balance
@@ -512,13 +675,9 @@ LEFT JOIN (
 ) loan
   ON loan.tenant_id = item.tenant_id
  AND loan.employee_id = item.employee_id
-LEFT JOIN (
-    SELECT tenant_id, employee_id, SUM(current_balance) AS current_balance
-    FROM employee_saving
-    WHERE deleted_at IS NULL
-    GROUP BY tenant_id, employee_id
-) saving
+LEFT JOIN vw_daily_pay_slip_saving_total saving
   ON saving.tenant_id = item.tenant_id
+ AND saving.payment_date = item.payment_date
  AND saving.employee_id = item.employee_id;
 
 CREATE OR REPLACE VIEW vw_daily_pay_slip_work_summary AS
@@ -528,6 +687,7 @@ SELECT
     dr.employee_id,
     MIN(dr.work_date) AS labor_period_from,
     MAX(dr.work_date) AS labor_period_to,
+    COUNT(DISTINCT dr.id) AS attendance_days,
     COALESCE(SUM(dr.work_hours), 0) AS work_hours,
     COALESCE(SUM(dr.overtime_hours), 0) AS overtime_hours,
     COALESCE(SUM(dr.night_work_hours), 0) AS night_work_hours,
@@ -582,6 +742,7 @@ SELECT
     COALESCE(work.work_hours, 0) AS work_hours,
     COALESCE(work.overtime_hours, 0) AS overtime_hours,
     COALESCE(work.night_work_hours, 0) AS night_work_hours,
+    COALESCE(work.attendance_days, 0) AS attendance_days,
     CASE
         WHEN work.work_minutes = 0 THEN '0分'
         WHEN work.work_minutes < 60 THEN CONCAT(work.work_minutes, '分')
@@ -606,7 +767,7 @@ SELECT
     COALESCE(work.gross_amount, 0) AS gross_amount,
     COALESCE(work.net_payment_amount, 0) AS daily_payment_amount,
     COALESCE(work.net_payment_amount, 0) AS net_payment_amount,
-    COALESCE(legal_deposit.current_balance, 0) AS legal_deposit_balance,
+    COALESCE(legal_deposit.current_period_total, 0) AS legal_deposit_balance,
     COALESCE(loan.current_balance, 0) AS loan_balance,
     COALESCE(saving.current_balance, 0) AS saving_balance,
     work.note AS note,
@@ -660,14 +821,16 @@ JOIN employee e
 JOIN employee_contract contract
   ON contract.tenant_id = work.tenant_id
  AND contract.employee_id = work.employee_id
- AND contract.payment_cycle = 'DAILY'
+ -- 支払明細書は日次・週次を対象とし、月次は月次給与明細で扱う。
+ AND contract.payment_cycle IN ('DAILY', 'WEEKLY')
  AND contract.deleted_at IS NULL
 LEFT JOIN vw_daily_pay_slip_item_display item
   ON item.tenant_id = work.tenant_id
  AND item.payment_date = work.payment_date
  AND item.employee_id = work.employee_id
-LEFT JOIN vw_employee_legal_deposit_balance legal_deposit
+LEFT JOIN vw_daily_pay_slip_legal_deposit_period_total legal_deposit
   ON legal_deposit.tenant_id = work.tenant_id
+ AND legal_deposit.payment_date = work.payment_date
  AND legal_deposit.employee_id = work.employee_id
 LEFT JOIN (
     SELECT tenant_id, employee_id, SUM(current_balance) AS current_balance
@@ -678,13 +841,9 @@ LEFT JOIN (
 ) loan
   ON loan.tenant_id = work.tenant_id
  AND loan.employee_id = work.employee_id
-LEFT JOIN (
-    SELECT tenant_id, employee_id, SUM(current_balance) AS current_balance
-    FROM employee_saving
-    WHERE deleted_at IS NULL
-    GROUP BY tenant_id, employee_id
-) saving
+LEFT JOIN vw_daily_pay_slip_saving_total saving
   ON saving.tenant_id = work.tenant_id
+ AND saving.payment_date = work.payment_date
  AND saving.employee_id = work.employee_id
 GROUP BY
     work.tenant_id,
@@ -695,7 +854,7 @@ GROUP BY
     e.postal_code,
     e.address,
     e.email,
-    legal_deposit.current_balance,
+    legal_deposit.current_period_total,
     loan.current_balance,
     saving.current_balance,
     work.labor_period_from,
@@ -703,6 +862,7 @@ GROUP BY
     work.work_hours,
     work.overtime_hours,
     work.night_work_hours,
+    work.attendance_days,
     work.work_minutes,
     work.overtime_minutes,
     work.night_minutes,

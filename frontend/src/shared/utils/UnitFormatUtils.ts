@@ -45,6 +45,28 @@ export const parseHourMinuteToMinutes = (value: unknown): number | null => {
   return Number(match[1]) * 60 + Number(match[2])
 }
 
+export const parseHourMinuteToDecimalHours = (
+  value: unknown,
+): number | null => {
+  if (value == null || value === '') return null
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value >= 0
+      ? value
+      : null
+  }
+
+  const text = String(value).trim()
+  if (/^\d+(?:\.\d+)?$/.test(text)) return Number(text)
+
+  const match = /^(\d+):([0-5]\d)$/.exec(text)
+  if (!match) return null
+
+  return (
+    Number(match[1])
+    + Number(match[2]) / 60
+  )
+}
+
 const formatTotalMinutes = (totalMinutes: number): string => {
   const sign = totalMinutes < 0 ? '-' : ''
   const absoluteMinutes = Math.abs(totalMinutes)

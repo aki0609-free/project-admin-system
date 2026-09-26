@@ -91,13 +91,13 @@ test.beforeEach(async ({ page }) => {
 test('employee toolbar exposes CSV export and individual daily pay slip parameters', async ({ page }) => {
   await page.goto('/employee/information')
 
-  await expect(page.getByRole('button', { name: '個別日次給与明細' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '支払明細書' })).toBeVisible()
   await expect(page.getByRole('button', { name: '従業員CSV出力' })).toBeVisible()
   await expect(page.getByRole('button', { name: '従業員データ取込' })).toHaveCount(0)
 
-  await page.getByRole('button', { name: '個別日次給与明細' }).click()
+  await page.getByRole('button', { name: '支払明細書' }).click()
   const paySlipDialog = page.getByRole('dialog')
-  await expect(paySlipDialog.getByText('個別日次給与明細', { exact: true })).toBeVisible()
+  await expect(paySlipDialog.getByText('支払明細書', { exact: true })).toBeVisible()
   await expect(paySlipDialog.getByRole('textbox', { name: '支払日' })).toBeVisible()
   const employeeSelect = paySlipDialog.getByRole('combobox', { name: '従業員' })
   await expect(employeeSelect).toBeVisible()

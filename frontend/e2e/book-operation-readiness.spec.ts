@@ -26,7 +26,7 @@ const authenticatedHeaders = async (page: Page) => {
   }
 }
 
-test('system ledger masters expose generation readiness and monthly closing link', async ({ page }) => {
+test('system ledger masters are ready for on-demand generation', async ({ page }) => {
   await page.goto('/')
   const headers = await authenticatedHeaders(page)
 
@@ -48,11 +48,11 @@ test('system ledger masters expose generation readiness and monthly closing link
     const book = books.find(item => item.bookCode === code)
     expect(book, `${code} system master`).toBeDefined()
     expect(book?.generationReady, book?.readinessIssues.join(' / ')).toBe(true)
-    expect(book?.monthlyClosingConfigured, `${code} closing definition`).toBe(true)
+    expect(book?.monthlyClosingConfigured, `${code} is independent of monthly closing`).toBe(false)
   }
 
   await page.goto('/operation/book')
   await expect(page.getByRole('heading', { name: '台帳管理' })).toBeVisible()
-  await expect(page.getByRole('columnheader', { name: '月次締め' })).toBeVisible()
-  await expect(page.getByText('締め対象', { exact: true })).toHaveCount(4)
+  await expect(page.getByRole('columnheader', { name: '生成タイミング' })).toBeVisible()
+  await expect(page.getByText('随時生成', { exact: true })).toHaveCount(4)
 })

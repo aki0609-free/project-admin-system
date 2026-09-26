@@ -60,6 +60,7 @@ public record DailyReportResponse(
 
         BigDecimal loanRepaymentAmount,
         BigDecimal savingAmount,
+        BigDecimal savingWithdrawalAmount,
         Integer dormitoryChargeDays,
 
         BigDecimal normalPayAmount,

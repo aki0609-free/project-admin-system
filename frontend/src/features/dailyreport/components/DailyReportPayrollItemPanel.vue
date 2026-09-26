@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { DailyReportAmountItemForm } from '../types/dailyReportInputItemTypes'
+import { requiresManualOverrideReason } from '../utils/dailyReportPayrollItemPolicy'
 
 const props = defineProps<{
   itemType: 'ALLOWANCE' | 'DEDUCTION'
@@ -148,7 +149,7 @@ const updateBalanceQuantity = (item: DailyReportAmountItemForm, value: unknown) 
         </div>
 
         <v-text-field
-          v-if="item.manualOverride"
+          v-if="requiresManualOverrideReason(item.code, item.manualOverride)"
           v-model="item.overrideReason"
           class="override-reason"
           label="金額変更理由"

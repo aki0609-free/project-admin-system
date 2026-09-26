@@ -25,8 +25,6 @@ import com.project.backend.features.admin.document.service.DocumentStorageKeyRes
 import com.project.backend.features.operation.book.dto.OperationExcelBookResponse;
 import com.project.backend.features.operation.book.dto.SpreadsheetLedgerGenerationMode;
 import com.project.backend.features.operation.book.dto.SpreadsheetLedgerGenerateResponse;
-import com.project.backend.features.operation.monthly.enums.MonthlyClosingStatus;
-import com.project.backend.features.operation.monthly.repository.MonthlyClosingRepository;
 import com.project.backend.features.system.excelbook.entity.ExcelBookMaster;
 import com.project.backend.features.system.excelbook.dto.ExcelBookPrintConfig;
 import com.project.backend.features.system.excelbook.dto.ExcelBookSelectionConfig;
@@ -56,7 +54,6 @@ public class SpreadsheetLedgerGenerationService {
     private final SpreadsheetLedgerRendererRegistry rendererRegistry;
     private final SpreadsheetLedgerSelectionService selectionService;
     private final SpreadsheetLedgerReadinessService readinessService;
-    private final MonthlyClosingRepository closingRepository;
     private final StorageService storageService;
     private final DocumentStorageKeyResolver storageKeyResolver;
     private final ObjectMapper objectMapper;
@@ -233,17 +230,10 @@ public class SpreadsheetLedgerGenerationService {
             );
         }
         SpreadsheetLedgerRenderer renderer = renderer(master);
-        boolean editable = isEditable(
-                renderer,
-                targetMonth
-        );
-        if (closingVersion == null
-                && renderer.editableBeforeClosing()
-                && !editable) {
-            throw new IllegalStateException(
-                    targetMonth + " は締め済みのため再生成できません。"
-            );
-        }
+        // 台帳は確定帳票ではなく、対象月の最新データを確認するためのもの。
+        // 手動生成は月次締め状態に依存させず、常に再生成可能とする。
+        boolean editable = closingVersion == null
+                && renderer.editableBeforeClosing();
         if (renderer.requiresVariableMappings()
                 && master.getVariableMappings().isEmpty()) {
             throw new IllegalArgumentException(
@@ -404,27 +394,6 @@ public class SpreadsheetLedgerGenerationService {
                     e
             );
         }
-    }
-
-    private boolean isEditable(
-            SpreadsheetLedgerRenderer renderer,
-            String targetMonth
-    ) {
-        if (!renderer.editableBeforeClosing()) {
-            return false;
-        }
-        if (renderer.editableAfterMonthlyClosing()) {
-            return true;
-        }
-        return closingRepository
-                .findByTargetMonthAndDeletedAtIsNull(
-                        YearMonth.parse(targetMonth).atDay(1)
-                )
-                .map(entity ->
-                        entity.getStatus()
-                                != MonthlyClosingStatus.CLOSED
-                )
-                .orElse(true);
     }
 
     private byte[] serialize(JsonNode workbook) {

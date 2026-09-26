@@ -68,8 +68,19 @@ function validateAsset(asset, path) {
   if (/^(<<<<<<<|=======|>>>>>>>)/m.test(content)) {
     throw new Error(`${asset.name} に未解決の競合マーカーがあります。`);
   }
-  if (asset.kind === "jasper" && !content.includes("<jasperReport")) {
-    throw new Error(`${asset.name} はJasperテンプレートとして認識できません。`);
+  if (asset.kind === "jasper") {
+    if (!content.includes("<jasperReport")) {
+      throw new Error(`${asset.name} はJasperテンプレートとして認識できません。`);
+    }
+    if (
+      /Jaspersoft Studio version 7\./.test(content) ||
+      /<element\s+kind=/.test(content)
+    ) {
+      throw new Error(
+        `${asset.name} はJasperReports 7形式で保存されています。\n` +
+          "BackendはJasperReports 6.21.3を使用しているため、6.21.x互換形式で保存してください。",
+      );
+    }
   }
 }
 

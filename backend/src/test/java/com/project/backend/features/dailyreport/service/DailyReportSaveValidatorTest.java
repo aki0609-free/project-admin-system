@@ -49,7 +49,7 @@ class DailyReportSaveValidatorTest {
     }
 
     @Test
-    void validateForCreate_shouldRejectClientWorkHoursDifferentFromServerCalculation() {
+    void validateForCreate_shouldAllowManualWorkHoursDifferentFromAutomaticCalculation() {
         DailyReportSaveRequest request = validRequest();
         when(request.startTime()).thenReturn(LocalTime.of(8, 0));
         when(request.endTime()).thenReturn(LocalTime.of(18, 0));
@@ -59,10 +59,7 @@ class DailyReportSaveValidatorTest {
         when(request.nightWorkHours()).thenReturn(BigDecimal.ZERO);
         when(request.holidayWorkHours()).thenReturn(BigDecimal.ZERO);
 
-        assertThatThrownBy(() -> validator.validateForCreate(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("通常時間")
-                .hasMessageContaining("一致しません");
+        validator.validateForCreate(request);
     }
 
     private DailyReportSaveRequest validRequest() {

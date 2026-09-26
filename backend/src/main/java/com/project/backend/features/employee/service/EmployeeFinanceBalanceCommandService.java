@@ -27,22 +27,32 @@ public class EmployeeFinanceBalanceCommandService {
 
     public void applyDailyReportAmountDiff(
             Long employeeId,
-            BigDecimal savingAmount,
+            BigDecimal savingAmountDiff,
+            BigDecimal savingWithdrawalAmountDiff,
             BigDecimal loanRepaymentAmount,
             Long dailyReportId,
             LocalDate transactionDate
     ) {
-        applySavingAmount(employeeId, savingAmount, dailyReportId, transactionDate);
+        applySavingAmount(
+                employeeId,
+                savingAmountDiff,
+                savingWithdrawalAmountDiff,
+                dailyReportId,
+                transactionDate
+        );
         applyLoanRepaymentAmount(employeeId, loanRepaymentAmount, dailyReportId, transactionDate);
     }
 
     private void applySavingAmount(
             Long employeeId,
-            BigDecimal savingAmount,
+            BigDecimal savingAmountDiff,
+            BigDecimal savingWithdrawalAmountDiff,
             Long dailyReportId,
             LocalDate transactionDate
     ) {
-        BigDecimal amount = nvl(savingAmount);
+        BigDecimal depositDiff = nvl(savingAmountDiff);
+        BigDecimal withdrawalDiff = nvl(savingWithdrawalAmountDiff);
+        BigDecimal amount = depositDiff.subtract(withdrawalDiff);
 
         if (amount.compareTo(BigDecimal.ZERO) == 0) {
             return;
@@ -61,7 +71,7 @@ public class EmployeeFinanceBalanceCommandService {
         BigDecimal previousBalance = nvl(saving.getCurrentBalance());
         BigDecimal nextBalance = previousBalance.add(amount);
         if (nextBalance.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("積立残高を超えて取り消すことはできません。");
+            throw new IllegalArgumentException("貯蓄残額を超えて引き出すことはできません。");
         }
 
         saving.setCurrentBalance(nextBalance);
@@ -70,16 +80,33 @@ public class EmployeeFinanceBalanceCommandService {
         transactionService.record(
                 saving.getEmployee(),
                 EmployeeFinanceAccountType.SAVING,
-                amount.signum() > 0
-                        ? EmployeeFinanceTransactionType.SAVING_DEPOSIT
-                        : EmployeeFinanceTransactionType.SAVING_DEPOSIT_REVERSAL,
+                resolveSavingTransactionType(depositDiff, withdrawalDiff),
                 saving.getId(),
                 dailyReportId,
                 transactionDate,
                 previousBalance,
                 nextBalance,
-                "日報の積立額反映"
+                "日報の貯金反映（貯蓄差額=" + depositDiff
+                        + ", 引出差額=" + withdrawalDiff + "）"
         );
+    }
+
+    private EmployeeFinanceTransactionType resolveSavingTransactionType(
+            BigDecimal depositDiff,
+            BigDecimal withdrawalDiff
+    ) {
+        if (depositDiff.signum() != 0 && withdrawalDiff.signum() != 0) {
+            return EmployeeFinanceTransactionType.SAVING_ADJUSTMENT;
+        }
+        if (withdrawalDiff.signum() > 0) {
+            return EmployeeFinanceTransactionType.SAVING_WITHDRAWAL;
+        }
+        if (withdrawalDiff.signum() < 0) {
+            return EmployeeFinanceTransactionType.SAVING_WITHDRAWAL_REVERSAL;
+        }
+        return depositDiff.signum() > 0
+                ? EmployeeFinanceTransactionType.SAVING_DEPOSIT
+                : EmployeeFinanceTransactionType.SAVING_DEPOSIT_REVERSAL;
     }
 
     private void applyLoanRepaymentAmount(

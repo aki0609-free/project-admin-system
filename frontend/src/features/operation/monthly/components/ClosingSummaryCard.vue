@@ -21,6 +21,15 @@ const statusLabel = (status: string | undefined) => {
   <div v-if="!summary" class="empty">月次集計データがありません。</div>
 
   <div v-else class="summary-grid">
+    <v-alert
+      v-if="summary.closing?.status === 'FAILED' && summary.closing.note"
+      type="error"
+      variant="tonal"
+      class="failure-reason"
+    >
+      <strong>締め処理の失敗理由：</strong>{{ summary.closing.note }}
+    </v-alert>
+
     <v-card variant="outlined" class="summary-card">
       <div class="label">対象月</div>
       <div class="value">{{ formatYearMonth(summary.targetMonth) }}</div>
@@ -84,6 +93,10 @@ const statusLabel = (status: string | undefined) => {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
+}
+
+.failure-reason {
+  grid-column: 1 / -1;
 }
 
 .summary-card {

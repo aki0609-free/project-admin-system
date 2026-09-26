@@ -17,8 +17,6 @@ import com.project.backend.app.storage.service.StorageService;
 import com.project.backend.features.admin.document.enums.DocumentArea;
 import com.project.backend.features.admin.document.service.DocumentStorageKeyResolver;
 import com.project.backend.features.operation.book.dto.SpreadsheetLedgerSaveResponse;
-import com.project.backend.features.operation.monthly.enums.MonthlyClosingStatus;
-import com.project.backend.features.operation.monthly.repository.MonthlyClosingRepository;
 import com.project.backend.features.system.excelbook.entity.ExcelBookMaster;
 import com.project.backend.features.system.excelbook.repository.ExcelBookMasterRepository;
 
@@ -37,7 +35,6 @@ public class SpreadsheetLedgerEditingService {
     private final ExcelBookMasterRepository masterRepository;
     private final SpreadsheetLedgerRendererRegistry rendererRegistry;
     private final SpreadsheetLedgerEditHandlerRegistry editHandlerRegistry;
-    private final MonthlyClosingRepository closingRepository;
     private final StorageService storageService;
     private final DocumentStorageKeyResolver storageKeyResolver;
     private final ObjectMapper objectMapper;
@@ -58,7 +55,7 @@ public class SpreadsheetLedgerEditingService {
             JsonNode workbook
     ) {
         validateBookCode(bookCode);
-        YearMonth month = YearMonth.parse(targetMonth);
+        YearMonth.parse(targetMonth);
         if (workbook == null || !workbook.isObject()) {
             throw new IllegalArgumentException(
                     "SpreadsheetのWorkbook JSONは必須です。"
@@ -97,19 +94,6 @@ public class SpreadsheetLedgerEditingService {
                     "この台帳は編集保存に対応していません。"
             );
         }
-        boolean closed = closingRepository
-                .findByTargetMonthAndDeletedAtIsNull(month.atDay(1))
-                .map(entity ->
-                        entity.getStatus()
-                                == MonthlyClosingStatus.CLOSED
-                )
-                .orElse(false);
-        if (closed && !renderer.editableAfterMonthlyClosing()) {
-            throw new IllegalStateException(
-                    targetMonth + " は締め済みのため編集できません。"
-            );
-        }
-
         editHandlerRegistry.find(renderer.rendererKey())
                 .ifPresent(handler -> handler.apply(
                         targetMonth,

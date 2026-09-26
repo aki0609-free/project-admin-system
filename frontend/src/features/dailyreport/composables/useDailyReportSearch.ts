@@ -5,6 +5,7 @@ import {
   businessDateWithOffset,
   businessMonthWithOffset,
 } from '@/shared/utils/DateUtils'
+import { calculateDefaultWorkDate } from '@/features/dailyreport/utils/paymentDateSuggestion'
 
 export type DailyReportSearchCondition = {
   employeeKeyword: string
@@ -29,7 +30,9 @@ export const useDailyReportSearch = (reportsGetter: () => DailyReportResponse[])
     paymentDateFrom: '',
     paymentDateTo: '',
 
-    targetWorkDate: businessDateWithOffset(-1),
+    targetWorkDate: calculateDefaultWorkDate(
+      businessDateWithOffset(0),
+    ),
     attendanceTargetMonth: businessMonthWithOffset(-1),
   })
 

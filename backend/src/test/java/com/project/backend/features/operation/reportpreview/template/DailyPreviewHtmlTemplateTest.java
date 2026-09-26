@@ -88,6 +88,7 @@ class DailyPreviewHtmlTemplateTest {
                         Map.entry("employee_address", "〒123-4567 東京都千代田区テスト1-2-3"),
                         Map.entry("labor_period_from_label", "2026年8月1日"),
                         Map.entry("labor_period_to_label", "2026年8月1日"),
+                        Map.entry("attendance_days", 1),
                         Map.entry("work_hours", amount("8")),
                         Map.entry("overtime_hours", amount("1")),
                         Map.entry("night_work_hours", amount("0")),
@@ -107,12 +108,13 @@ class DailyPreviewHtmlTemplateTest {
         );
 
         assertThat(html)
-                .contains("日次給与明細")
+                .contains("支払明細書")
                 .contains("山田太郎")
                 .contains("2026年8月1日")
                 .contains("8時間")
                 .contains("1時間15分")
-                .contains("基本単価")
+                .contains("出勤日数")
+                .contains("1 日")
                 .contains("運転手当")
                 .contains("前借り")
                 .contains("前借り（残高：20,000円）")
@@ -121,6 +123,7 @@ class DailyPreviewHtmlTemplateTest {
                 .doesNotContain("支給合計")
                 .doesNotContain("住所：")
                 .doesNotContain("※上記金額を受領しました。")
+                .contains("grid-template-columns: 230px 1fr 230px 1fr")
                 .contains("white-space: nowrap")
                 .doesNotContain("th:text");
     }
@@ -130,7 +133,7 @@ class DailyPreviewHtmlTemplateTest {
         String html = renderRows("daily_pay_slip.html", List.of());
 
         assertThat(html)
-                .contains("対象日に日次給与明細のデータがありません。")
+                .contains("対象日に支払明細書のデータがありません。")
                 .doesNotContain("th:if");
     }
 

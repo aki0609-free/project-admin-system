@@ -12,6 +12,12 @@ trap 'rm -f "${manifest}"' EXIT
 cd "${project_root}"
 node "${workspace_script}" sync
 
+echo "JasperテンプレートをBackendと同じJasperReportsで事前検証します。"
+(
+  cd "${project_root}/backend"
+  ./gradlew test --tests '*JasperTemplateTest'
+)
+
 export AWS_PROFILE="${AWS_PROFILE:-project-admin-terraform}"
 export AWS_REGION="${AWS_REGION:-ap-northeast-1}"
 export AWS_PAGER=""

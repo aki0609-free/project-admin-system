@@ -71,6 +71,7 @@ public class DailyReportSaveValidator {
         nonNegative("休日時間", request.holidayWorkHours());
         nonNegative("貸付返済額", request.loanRepaymentAmount());
         nonNegative("積立額", request.savingAmount());
+        nonNegative("貯金引出し額", request.savingWithdrawalAmount());
         nonNegative("走行距離", request.mileage());
         if (request.passengerCount() != null && request.passengerCount() < 0) {
             throw new IllegalArgumentException("同乗者数は0以上で指定してください。");
@@ -89,9 +90,8 @@ public class DailyReportSaveValidator {
 
         DailyReportWorkTimePolicy.WorkTimes calculated =
                 workTimeCalculator.calculate(request);
-        verifyCalculated("通常時間", request.workHours(), calculated.workHours());
-        verifyCalculated("残業時間", request.overtimeHours(), calculated.overtimeHours());
-        verifyCalculated("深夜時間", request.nightWorkHours(), calculated.nightWorkHours());
+        // 通常・残業・深夜は自動計算後の手入力補正を許可する。
+        // 休日時間だけは休日手当対象フラグに連動する自動値を維持する。
         verifyCalculated("休日時間", request.holidayWorkHours(), calculated.holidayWorkHours());
 
     }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="monthly_order_form" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="802" leftMargin="20" rightMargin="20" topMargin="18" bottomMargin="18" whenNoDataType="NoDataSection">
   <property name="net.sf.jasperreports.default.font.name" value="IPAexGothic"/>
-  <style name="Base" fontName="IPAexGothic" fontSize="9" pdfFontName="fonts/ipaexg.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+  <style name="Base" fontName="IPAexGothic" fontSize="9"/>
   <style name="Small" style="Base" fontSize="7"/>
   <style name="Label" style="Base" isBold="true" hTextAlign="Center" vTextAlign="Middle"><box><pen lineWidth="0.6"/></box></style>
   <style name="Cell" style="Base" vTextAlign="Middle"><box><pen lineWidth="0.6"/></box></style>

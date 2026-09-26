@@ -196,6 +196,7 @@ class PayrollBusinessFlowContainerIntegrationTest
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,
+                BigDecimal.ZERO,
                 0,
                 false,
                 com.project.backend.features.dailyreport.enums.VehicleArrangementType.NONE,

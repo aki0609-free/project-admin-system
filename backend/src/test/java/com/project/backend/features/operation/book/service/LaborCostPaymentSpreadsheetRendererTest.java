@@ -21,7 +21,7 @@ class LaborCostPaymentSpreadsheetRendererTest {
             new LaborCostPaymentSpreadsheetRenderer(objectMapper);
 
     @Test
-    void render_shouldCreatePaymentCycleSheetsAndMonthlyTotals() {
+    void render_shouldCreateOneSheetPerPaymentCycleAndMonthlyTotals() {
         ExcelBookMaster master = master();
         List<Map<String, Object>> rows = List.of(
                 row(1, "E001", "山田 太郎", "DAILY", 1,
@@ -49,12 +49,14 @@ class LaborCostPaymentSpreadsheetRendererTest {
                 .path("value").asDouble()).isEqualTo(400d);
         assertThat(dailyRows.get(44).path("cells").get(1)
                 .path("value").asDouble()).isEqualTo(20600d);
+        assertThat(dailyRows.get(3).path("cells").get(1)
+                .path("value").asText()).isEqualTo("日払い");
         assertThat(result.path("projectAdminMetadata")
                 .path("paperSize").asText()).isEqualTo("A4");
     }
 
     @Test
-    void render_shouldSplitEveryTenEmployees() {
+    void render_shouldKeepMoreThanTenEmployeesInSingleSheet() {
         ExcelBookMaster master = master();
         List<Map<String, Object>> rows = new ArrayList<>();
         for (int index = 1; index <= 11; index++) {
@@ -75,13 +77,10 @@ class LaborCostPaymentSpreadsheetRendererTest {
         var sheets = renderer.render(context(master, rows))
                 .path("Workbook").path("sheets");
 
-        assertThat(sheets).hasSize(2);
+        assertThat(sheets).hasSize(1);
         assertThat(sheets.get(0).path("name").asText()).isEqualTo("日払い");
-        assertThat(sheets.get(1).path("name").asText()).isEqualTo("日払い 2");
         assertThat(sheets.get(0).path("usedRange").path("colIndex").asInt())
-                .isEqualTo(12);
-        assertThat(sheets.get(1).path("usedRange").path("colIndex").asInt())
-                .isEqualTo(3);
+                .isEqualTo(13);
     }
 
     @Test

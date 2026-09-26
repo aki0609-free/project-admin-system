@@ -45,6 +45,7 @@ create table if not exists daily_pay_slip_output (
     work_date date null,
     labor_period_from date null,
     labor_period_to date null,
+    attendance_days int null,
 
     work_hours decimal(10,2) null,
     overtime_hours decimal(10,2) null,
@@ -124,6 +125,16 @@ SET @ddl = (
     FROM information_schema.columns
     WHERE table_schema = DATABASE() AND table_name = 'daily_pay_slip_output'
       AND column_name = 'employee_address'
+);
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(COUNT(*) = 0,
+        'ALTER TABLE daily_pay_slip_output ADD COLUMN attendance_days INT NULL AFTER labor_period_to',
+        'SELECT 1')
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'daily_pay_slip_output'
+      AND column_name = 'attendance_days'
 );
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
@@ -495,7 +506,7 @@ insert into report_master (
     @now,
     @now,
     'DAILY_PAY_SLIP',
-    '日次給与明細',
+    '支払明細書',
     'daily_pay_slip.jrxml',
     'daily_pay_slip',
     'daily_pay_slip_input',
@@ -514,7 +525,7 @@ order by employee_code',
     'sp_daily_pay_slip_cleanup',
     'SINGLE',
     1,
-    '日次給与明細_${paymentDate}',
+    '支払明細書_${paymentDate}',
     'PDF',
     false,
     true,

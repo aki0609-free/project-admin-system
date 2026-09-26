@@ -17,6 +17,10 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class DailyReportDeductionCommandService {
 
+    private static final String LEGAL_DEPOSIT_CODE = "LEGAL_DEPOSIT";
+    private static final String LEGAL_DEPOSIT_SYSTEM_OVERRIDE_REASON =
+            "日報入力による法定準備金手動調整";
+
     private final DailyReportDeductionRepository repository;
     private final PayrollMoneyPolicy moneyPolicy;
 
@@ -59,7 +63,10 @@ public class DailyReportDeductionCommandService {
         ));
         entity.setManualOverrideFlag(Boolean.TRUE.equals(request.manualOverride()));
         entity.setOverrideReason(entity.isManualOverrideFlag()
-                ? normalizeReason(request.overrideReason()) : null);
+                ? normalizeReason(
+                        request.deductionCode(),
+                        request.overrideReason()
+                ) : null);
         entity.setQuantity(request.quantity());
         entity.setBalanceUnit(request.balanceUnit());
 
@@ -83,8 +90,11 @@ public class DailyReportDeductionCommandService {
         ).intValueExact();
     }
 
-    private String normalizeReason(String reason) {
+    private String normalizeReason(String deductionCode, String reason) {
         if (reason == null || reason.isBlank()) {
+            if (LEGAL_DEPOSIT_CODE.equals(deductionCode)) {
+                return LEGAL_DEPOSIT_SYSTEM_OVERRIDE_REASON;
+            }
             throw new IllegalArgumentException("金額を変更した場合は変更理由が必須です。");
         }
         String normalized = reason.trim();

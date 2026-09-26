@@ -22,6 +22,7 @@ sql/employee/business_settings_v1.sql
 sql/system/notice/closing_notice_foundation_v1.sql
 sql/employee/finance_foundation_v1.sql
 sql/employee/dormitory_foundation_v1.sql
+sql/daily_report/saving_withdrawal_foundation_v1.sql
 sql/daily_report/payroll_item_balance_foundation_v1.sql
 sql/daily_report/payroll_item_transaction_foundation_v1.sql
 sql/daily_report/legal_deposit_refund_foundation_v1.sql

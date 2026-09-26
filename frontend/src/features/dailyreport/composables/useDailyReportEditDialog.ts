@@ -51,7 +51,6 @@ import {
 
 import {
   calculateDailyReportWorkTimes,
-  isWeekendDate,
 } from '@/features/dailyreport/utils/dailyReportTimeCalculator'
 
 import {
@@ -61,6 +60,7 @@ import { useDailyReportInputItemsPreviewMutation } from '@/features/dailyreport/
 import { useDailyReportEstimatedPayPreviewMutation } from '@/features/dailyreport/api/useDailyReportEstimatedPayPreviewMutation'
 import { toDailyReportSaveRequest } from '@/features/dailyreport/utils/dailyReportConverters'
 import { fetchDailyReportPreparationDefaults } from '@/features/dailyreport/api/fetchDailyReportPreparationDefaults'
+import { calculateSuggestedPaymentDate } from '@/features/dailyreport/utils/paymentDateSuggestion'
 
 import {
   useDailyReportBilling,
@@ -76,6 +76,7 @@ import type {
 
 type DailyReportTab =
   | 'basic'
+  | 'vehicle'
   | 'billing'
   | 'allowance'
   | 'deduction'
@@ -115,6 +116,9 @@ export const useDailyReportEditDialog = (
     ref('')
 
   const applyingPreparationDefaults =
+    ref(false)
+
+  const paymentDateManuallyEdited =
     ref(false)
 
   let preparationDefaultsSequence = 0
@@ -195,6 +199,7 @@ export const useDailyReportEditDialog = (
 
   const {
     fields,
+    vehicleFields,
     billingFields,
     financeFields,
   } = useDailyReportFormFields({
@@ -206,6 +211,11 @@ export const useDailyReportEditDialog = (
     siteRoleOptions,
     hasActiveLoan,
     hasActiveSaving,
+    onPaymentDateInput: () => {
+      if (!applyingDetail.value) {
+        paymentDateManuallyEdited.value = true
+      }
+    },
   })
 
   const nvl = (
@@ -290,6 +300,7 @@ export const useDailyReportEditDialog = (
       - nvl(
         formModel.loanRepaymentAmount,
       )
+      + nvl(formModel.savingWithdrawalAmount)
 
     formModel.estimatedGrossPayAmount =
       Math.round(gross)
@@ -493,6 +504,7 @@ export const useDailyReportEditDialog = (
   const resetForm = () => {
     applyingDetail.value = true
     saveError.value = ''
+    paymentDateManuallyEdited.value = false
 
     preparationDefaultsSequence += 1
     appliedPreparationDefaults = null
@@ -515,8 +527,6 @@ export const useDailyReportEditDialog = (
     ) {
       formModel.workDate =
         createParams.value.workDate
-      formModel.holidayPremiumEligible =
-        isWeekendDate(formModel.workDate)
     }
 
     applyingDetail.value = false
@@ -524,6 +534,30 @@ export const useDailyReportEditDialog = (
     calculateWorkTimes()
     recalculateEstimatedPay()
     schedulePayrollItemPreview()
+  }
+
+  const applySuggestedPaymentDate = () => {
+    const contract = contractQuery.contract.value
+
+    if (
+      !visible.value
+      || applyingDetail.value
+      || formModel.id !== 0
+      || paymentDateManuallyEdited.value
+      || formModel.employeeId == null
+      || contract?.employeeId !== formModel.employeeId
+    ) {
+      return
+    }
+
+    const suggested = calculateSuggestedPaymentDate(
+      formModel.workDate,
+      contract.paymentCycle,
+    )
+
+    if (suggested) {
+      formModel.paymentDate = suggested
+    }
   }
 
   const applyPreparationDefaults = async () => {
@@ -724,10 +758,22 @@ export const useDailyReportEditDialog = (
       }
 
       recalculateEstimatedPay()
+      applySuggestedPaymentDate()
     },
     {
       immediate: true,
     },
+  )
+
+  watch(
+    () => [
+      formModel.employeeId,
+      formModel.workDate,
+      formModel.id,
+      contractQuery.contract.value?.employeeId,
+      contractQuery.contract.value?.paymentCycle,
+    ],
+    applySuggestedPaymentDate,
   )
 
   watch(
@@ -759,6 +805,7 @@ export const useDailyReportEditDialog = (
         // 月返済・月積立の予定額は参考情報として別項目に保持する。
         formModel.loanRepaymentAmount = 0
         formModel.savingAmount = 0
+        formModel.savingWithdrawalAmount = 0
       }
 
       recalculateEstimatedPay()
@@ -875,21 +922,6 @@ export const useDailyReportEditDialog = (
   )
 
   watch(
-    () => formModel.workDate,
-    (workDate, previousWorkDate) => {
-      if (
-        applyingDetail.value
-        || workDate === previousWorkDate
-      ) {
-        return
-      }
-
-      formModel.holidayPremiumEligible =
-        isWeekendDate(workDate)
-    },
-  )
-
-  watch(
     () => [
       formModel.workDate,
       formModel.startTime,
@@ -909,6 +941,7 @@ export const useDailyReportEditDialog = (
       formModel.allowanceAmount,
       formModel.deductionAmount,
       formModel.savingAmount,
+      formModel.savingWithdrawalAmount,
       formModel.loanRepaymentAmount,
     ],
     recalculateEstimatedPay,
@@ -1058,6 +1091,10 @@ export const useDailyReportEditDialog = (
       value: 'basic',
     },
     {
+      label: '車両情報',
+      value: 'vehicle',
+    },
+    {
       label: '請求情報',
       value: 'billing',
     },
@@ -1188,6 +1225,7 @@ export const useDailyReportEditDialog = (
 
     tabs,
     fields,
+    vehicleFields,
     billingFields,
     financeFields,
 

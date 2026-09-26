@@ -59,7 +59,7 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
         assertThat(resources)
-                .hasSize(47)
+                .hasSize(48)
                 .contains(
                         "sql/admin/external_support_links_v1.sql",
                         "sql/application/applicant_legacy_schema_compatibility_v1.sql",
@@ -164,8 +164,8 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                       'RECEIPT_CONFIRMATION',
                       'MONTHLY_SUMMARY'
                   )
-                  AND required_flag = TRUE
-                  AND active_flag = TRUE
+                  AND required_flag = FALSE
+                  AND active_flag = FALSE
                   AND backup_retention_years = 7
                   AND deleted_at IS NULL
                 """, Integer.class)).isEqualTo(4);
@@ -1373,9 +1373,9 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 "LABOR-MONTHLY-MONTHLY", "月給・月払い", "MONTHLY", "MONTHLY",
                 "0", "0", "300000"
         );
-        Long weeklyPaidWeekly = insertLaborCostEmployee(
-                "LABOR-WEEKLY-WEEKLY", "週給・週払い", "WEEKLY", "WEEKLY",
-                "0", "75000", "0"
+        Long dailyPaidWeekly = insertLaborCostEmployee(
+                "LABOR-DAILY-WEEKLY", "日給・週払い", "DAILY", "WEEKLY",
+                "13000", "0", "0"
         );
 
         insertPaymentPreparationReport(
@@ -1391,7 +1391,7 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 "15000", "0", "3000", "12000"
         );
         insertPaymentPreparationReport(
-                weeklyPaidWeekly, workDate, workDate.plusDays(1),
+                dailyPaidWeekly, workDate, workDate.plusDays(1),
                 "15000", "0", "3000", "12000"
         );
 
@@ -1415,8 +1415,27 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         assertAmount(rowByCode.get("LABOR-DAILY-MONTHLY").get("payment_amount"), "0");
         assertAmount(rowByCode.get("LABOR-MONTHLY-MONTHLY").get("gross_payment_amount"), "15000");
         assertAmount(rowByCode.get("LABOR-MONTHLY-MONTHLY").get("payment_amount"), "0");
-        assertAmount(rowByCode.get("LABOR-WEEKLY-WEEKLY").get("gross_payment_amount"), "15000");
-        assertAmount(rowByCode.get("LABOR-WEEKLY-WEEKLY").get("payment_amount"), "0");
+        assertAmount(rowByCode.get("LABOR-DAILY-WEEKLY").get("gross_payment_amount"), "15000");
+        assertAmount(rowByCode.get("LABOR-DAILY-WEEKLY").get("payment_amount"), "0");
+
+        Integer weeklySlipCount = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM vw_daily_pay_slip_latest
+                WHERE tenant_id = ?
+                  AND payment_date = ?
+                  AND employee_id = ?
+                """, Integer.class, TEST_TENANT_ID, workDate.plusDays(1), dailyPaidWeekly);
+        assertThat(weeklySlipCount).isEqualTo(1);
+
+        Integer monthlySlipCount = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM vw_daily_pay_slip_latest
+                WHERE tenant_id = ?
+                  AND payment_date = ?
+                  AND employee_id IN (?, ?)
+                """, Integer.class, TEST_TENANT_ID, monthlyPaymentDate,
+                dailyPaidMonthly, monthlyPaidMonthly);
+        assertThat(monthlySlipCount).isZero();
 
         Long dynamicAllowanceId = insertDailyStatementMaster(
                 "ALLOWANCE", "DYNAMIC_DAILY_ALLOWANCE", "動的日次手当", 1
@@ -1487,7 +1506,7 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         assertThat(dailySlip.get("allowance_item_name1")).isEqualTo("動的日次手当");
         assertAmount(dailySlip.get("allowance_item_value1"), "0");
         assertThat(dailySlip.get("deduction_item_name1"))
-                .isEqualTo("動的日次控除（残高：5,000円）");
+                .isEqualTo("動的日次控除（残額：5,000円）");
         assertAmount(dailySlip.get("deduction_item_value1"), "0");
         assertAmount(dailySlip.get("deduction_total"), "1000");
         assertThat(dailySlip.get("note")).isEqualTo("Testcontainers日次給与明細備考");

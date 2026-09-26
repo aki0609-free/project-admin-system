@@ -199,6 +199,9 @@ public class DailyReportQueryService {
                             .savingAmount(
                                     response.savingAmount()
                             )
+                            .savingWithdrawalAmount(
+                                    response.savingWithdrawalAmount()
+                            )
 
                             .estimatedGrossPayAmount(
                                     response.estimatedGrossPayAmount()
@@ -386,6 +389,9 @@ public class DailyReportQueryService {
                 )
                 .savingAmount(
                         entity.getSavingAmount()
+                )
+                .savingWithdrawalAmount(
+                        entity.getSavingWithdrawalAmount()
                 )
                 .dormitoryChargeDays(
                         entity.getDormitoryChargeDays()

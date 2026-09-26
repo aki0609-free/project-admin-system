@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
  * 労務費支払一覧V1。
  *
  * <p>支払周期ごとに従業員を列、日付を行として配置する。
- * 印刷時の可読性を維持するため、1シートは最大10名とする。</p>
+ * 同じ支払周期の従業員は人数にかかわらず1シートへまとめる。</p>
  */
 @Component
 @RequiredArgsConstructor
@@ -32,7 +32,7 @@ public class LaborCostPaymentSpreadsheetRenderer
         implements SpreadsheetLedgerRenderer {
 
     public static final String KEY = "LABOR_COST_PAYMENT_V1";
-    private static final int EMPLOYEES_PER_SHEET = 10;
+    private static final int EMPTY_EMPLOYEE_COLUMNS = 10;
     private static final List<String> PAYMENT_CYCLES = List.of(
             "DAILY", "WEEKLY", "MONTHLY"
     );
@@ -76,33 +76,15 @@ public class LaborCostPaymentSpreadsheetRenderer
                     paymentCycle,
                     List.of()
             );
-            for (int offset = 0;
-                    offset < employees.size();
-                    offset += EMPLOYEES_PER_SHEET) {
-                int end = Math.min(
-                        offset + EMPLOYEES_PER_SHEET,
-                        employees.size()
-                );
-                addSheet(
-                        sheets,
-                        targetMonth,
-                        paymentCycle,
-                        employees.subList(offset, end),
-                        offset / EMPLOYEES_PER_SHEET + 1
-                );
+            if (!employees.isEmpty()) {
+                addSheet(sheets, targetMonth, paymentCycle, employees);
             }
         }
 
         if (sheets.isEmpty()) {
             // 対象データがなくても、画面で帳票フォーマットを確認できる
             // ように月払い用の空フォームを生成する。
-            addSheet(
-                    sheets,
-                    targetMonth,
-                    "MONTHLY",
-                    emptyEmployees(),
-                    1
-            );
+            addSheet(sheets, targetMonth, "MONTHLY", emptyEmployees());
         }
 
         ObjectNode metadata = root.putObject("projectAdminMetadata");
@@ -113,7 +95,10 @@ public class LaborCostPaymentSpreadsheetRenderer
         metadata.put("paperSize", "A4");
         metadata.put("orientation", "LANDSCAPE");
         metadata.put("fitToOnePage", true);
-        metadata.put("employeesPerSheet", EMPLOYEES_PER_SHEET);
+        metadata.put("employeesPerSheet", grouped.values().stream()
+                .mapToInt(List::size)
+                .max()
+                .orElse(EMPTY_EMPLOYEE_COLUMNS));
         metadata.put("sheetCount", sheets.size());
         return root;
     }
@@ -161,13 +146,12 @@ public class LaborCostPaymentSpreadsheetRenderer
             ArrayNode sheets,
             YearMonth targetMonth,
             String paymentCycle,
-            List<EmployeePayment> employees,
-            int page
+            List<EmployeePayment> employees
     ) {
         int totalColumn = employees.size() + 2;
         ObjectNode sheet = sheets.addObject();
         String label = paymentCycleLabel(paymentCycle);
-        sheet.put("name", page == 1 ? label : label + " " + page);
+        sheet.put("name", label);
         sheet.put("frozenRows", 5);
         sheet.put("frozenColumns", 2);
         sheet.put("showGridLines", false);
@@ -378,7 +362,7 @@ public class LaborCostPaymentSpreadsheetRenderer
 
     private List<EmployeePayment> emptyEmployees() {
         List<EmployeePayment> employees = new ArrayList<>();
-        for (int index = 0; index < EMPLOYEES_PER_SHEET; index++) {
+        for (int index = 0; index < EMPTY_EMPLOYEE_COLUMNS; index++) {
             employees.add(new EmployeePayment(
                     new EmployeeKey("MONTHLY", "", "", ""),
                     ""

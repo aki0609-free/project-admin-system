@@ -259,7 +259,7 @@ watch(fiscalYearStartMonth, startMonth => {
 <template>
   <ListDetailPageLayout
     title="台帳管理"
-    description="対象月のデータをSpreadsheetテンプレートへ展開し、生成台帳を確認します。"
+    description="対象月の最新データをSpreadsheetへ展開し、いつでも生成・確認できます。"
     :left-toolbar-items="leftToolbarItems"
     :right-toolbar-items="rightToolbarItems"
   >
@@ -324,7 +324,7 @@ watch(fiscalYearStartMonth, startMonth => {
           <th>台帳コード</th>
           <th>データソース</th>
           <th>生成方式</th>
-          <th>月次締め</th>
+          <th>生成タイミング</th>
           <th class="book-table__action">操作</th>
         </tr>
       </thead>
@@ -368,9 +368,9 @@ watch(fiscalYearStartMonth, startMonth => {
             <v-chip
               size="small"
               variant="tonal"
-              :color="book.monthlyClosingConfigured ? 'success' : 'default'"
+              :color="book.monthlyClosingConfigured ? 'warning' : 'success'"
             >
-              {{ book.monthlyClosingConfigured ? '締め対象' : '手動生成のみ' }}
+              {{ book.monthlyClosingConfigured ? '締め連携あり' : '随時生成' }}
             </v-chip>
           </td>
           <td class="book-table__action">

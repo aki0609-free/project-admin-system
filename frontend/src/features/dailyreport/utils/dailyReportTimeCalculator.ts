@@ -21,21 +21,6 @@ const STANDARD_WORK_MINUTES = 8 * 60
 const NIGHT_START_MINUTES = 22 * 60
 const NIGHT_END_MINUTES = 5 * 60
 
-export function isWeekendDate(value: string): boolean {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
-  if (!match) {
-    return false
-  }
-
-  const date = new Date(
-    Number(match[1]),
-    Number(match[2]) - 1,
-    Number(match[3]),
-  )
-  const day = date.getDay()
-  return day === 0 || day === 6
-}
-
 function parseTimeToMinutes(
   value: string,
 ): number | null {

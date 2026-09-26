@@ -16,6 +16,7 @@ const {
   selectedReportCustomerId,
   selectedReportCustomer,
   loading,
+  errorMessage,
   leftToolbarItems,
   rightToolbarItems,
   executeCustomer,
@@ -46,6 +47,17 @@ const money = (value: number) => `${Number(value ?? 0).toLocaleString()}円`
         </div>
       </OperationTargetFilterCard>
     </template>
+
+    <v-alert
+      v-if="errorMessage"
+      type="error"
+      variant="tonal"
+      class="mb-4"
+      closable
+      @click:close="errorMessage = ''"
+    >
+      {{ errorMessage }}
+    </v-alert>
 
     <TabLayout v-model="activeTab" :tabs="tabs">
       <template #default="{ active }">

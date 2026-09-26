@@ -1,11 +1,12 @@
 import { ref } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useDailyReportFormFields } from './useDailyReportFormFields'
 
 describe('useDailyReportFormFields', () => {
   it('請求情報は名称を選択し、内部識別子や重複名称を表示しない', () => {
-    const { fields, billingFields, financeFields } =
+    const onPaymentDateInput = vi.fn()
+    const { fields, vehicleFields, billingFields, financeFields } =
       useDailyReportFormFields({
         employees: ref([]),
         workDate: ref('2026-09-05'),
@@ -25,6 +26,7 @@ describe('useDailyReportFormFields', () => {
         ]),
         hasActiveLoan: ref(false),
         hasActiveSaving: ref(false),
+        onPaymentDateInput,
       })
 
     expect(
@@ -85,6 +87,11 @@ describe('useDailyReportFormFields', () => {
     ).toBe(false)
     expect(
       financeFields.value.find(
+        field => field.key === 'savingWithdrawalAmount',
+      )?.editable,
+    ).toBe(false)
+    expect(
+      financeFields.value.find(
         field =>
           field.key === 'loanRepaymentAmount',
       )?.editable,
@@ -107,22 +114,69 @@ describe('useDailyReportFormFields', () => {
     ).toBe(90)
     expect(
       fields.value.find(
+        field => field.key === 'workHours',
+      )?.parser?.('1:30', {} as never),
+    ).toBe(1.5)
+    expect(
+      fields.value.find(
         field => field.key === 'paidLeaveDays',
       )?.formatter?.(0.5, {} as never),
     ).toBe('0.5日')
+
+    fields.value.find(
+      field => field.key === 'paymentDate',
+    )?.onUpdate?.('2026-09-08', {} as never)
+    expect(onPaymentDateInput).toHaveBeenCalledOnce()
+
+    for (const key of [
+      'holidayWorkHours',
+    ] as const) {
+      expect(
+        fields.value.find(field => field.key === key)?.editable,
+      ).toBe(false)
+    }
+
+    expect(
+      fields.value.some(field => [
+        'vehicleArrangementType',
+        'mileage',
+        'passengerCount',
+        'paidLeaveRemainingAfterUsedDays',
+      ].includes(String(field.key))),
+    ).toBe(false)
+
+    expect(vehicleFields.value.map(field => field.key)).toEqual([
+      'vehicleArrangementType',
+      'mileage',
+      'passengerCount',
+    ])
+    expect(
+      vehicleFields.value.every(field => field.editable === false),
+    ).toBe(true)
+
+    expect(
+      financeFields.value.map(field => [field.key, field.gridColumn]),
+    ).toEqual([
+      ['estimatedGrossPayAmount', '1 / span 4'],
+      ['estimatedNetPayAmount', '1 / span 2'],
+      ['savingBalance', '3 / span 2'],
+      ['loanBalance', '1 / span 2'],
+      ['savingAmount', '3 / span 2'],
+      ['loanRepaymentAmount', '1 / span 2'],
+      ['savingWithdrawalAmount', '3 / span 2'],
+    ])
 
     for (const key of [
       'workHours',
       'overtimeHours',
       'nightWorkHours',
-      'holidayWorkHours',
-      'vehicleArrangementType',
-      'mileage',
-      'passengerCount',
     ] as const) {
       expect(
         fields.value.find(field => field.key === key)?.editable,
-      ).toBe(false)
+      ).not.toBe(false)
+      expect(
+        fields.value.find(field => field.key === key)?.type,
+      ).toBe('text')
     }
   })
 })

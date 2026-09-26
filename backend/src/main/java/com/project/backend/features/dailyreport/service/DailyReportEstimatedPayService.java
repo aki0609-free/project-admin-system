@@ -40,7 +40,7 @@ public class DailyReportEstimatedPayService {
             EmployeeContract contract
     ) {
         DailyReportWorkTimePolicy.WorkTimes workTimes =
-                workTimeCalculator.calculate(request);
+                workTimeCalculator.resolveForSave(request);
         DailyReport report = new DailyReport();
         report.setWorkDate(request.workDate());
         report.setPaymentDate(request.paymentDate());
@@ -59,6 +59,7 @@ public class DailyReportEstimatedPayService {
         report.setAllowanceAmount(nvl(request.allowanceAmount()));
         report.setDeductionAmount(nvl(request.deductionAmount()));
         report.setSavingAmount(nvl(request.savingAmount()));
+        report.setSavingWithdrawalAmount(nvl(request.savingWithdrawalAmount()));
         report.setLoanRepaymentAmount(nvl(request.loanRepaymentAmount()));
         return calculatePreview(report, contract, request.employeeId());
     }
@@ -89,7 +90,8 @@ public class DailyReportEstimatedPayService {
                 estimatedGrossPayAmount
                         .subtract(nvl(report.getDeductionAmount()))
                         .subtract(nvl(report.getSavingAmount()))
-                        .subtract(nvl(report.getLoanRepaymentAmount()));
+                        .subtract(nvl(report.getLoanRepaymentAmount()))
+                        .add(nvl(report.getSavingWithdrawalAmount()));
 
         return DailyReportEstimatedPayPreviewResponse.builder()
                 .estimatedBasePayAmount(estimatedBasePayAmount)

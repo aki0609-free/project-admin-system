@@ -25,7 +25,6 @@ import com.project.backend.app.storage.service.StorageService;
 import com.project.backend.features.admin.document.service.DocumentStorageKeyResolver;
 import com.project.backend.features.system.excelbook.dto.SpreadsheetTemplateResponse;
 import com.project.backend.features.operation.book.dto.SpreadsheetLedgerGenerationMode;
-import com.project.backend.features.operation.monthly.repository.MonthlyClosingRepository;
 import com.project.backend.features.system.excelbook.entity.ExcelBookDataSourceCatalog;
 import com.project.backend.features.system.excelbook.entity.ExcelBookMaster;
 import com.project.backend.features.system.excelbook.entity.ExcelBookVariableMapping;
@@ -42,7 +41,6 @@ class SpreadsheetLedgerGenerationServiceTest {
     private SpreadsheetTemplateService templateService;
     private ExcelBookDataSourceRowQueryService rowQueryService;
     private SpreadsheetWorkbookTemplateExpander expander;
-    private MonthlyClosingRepository closingRepository;
     private SpreadsheetLedgerReadinessService readinessService;
     private StorageService storageService;
     private SpreadsheetLedgerGenerationService service;
@@ -59,7 +57,6 @@ class SpreadsheetLedgerGenerationServiceTest {
                 ExcelBookDataSourceRowQueryService.class
         );
         expander = mock(SpreadsheetWorkbookTemplateExpander.class);
-        closingRepository = mock(MonthlyClosingRepository.class);
         readinessService = mock(SpreadsheetLedgerReadinessService.class);
         storageService = mock(StorageService.class);
 
@@ -84,7 +81,6 @@ class SpreadsheetLedgerGenerationServiceTest {
                 ),
                 mock(SpreadsheetLedgerSelectionService.class),
                 readinessService,
-                closingRepository,
                 storageService,
                 new DocumentStorageKeyResolver(
                         new StorageProperties()

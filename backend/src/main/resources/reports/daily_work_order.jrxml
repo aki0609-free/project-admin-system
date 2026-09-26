@@ -17,7 +17,7 @@
     <property name="net.sf.jasperreports.default.font.name" value="IPAexGothic"/>
     <property name="net.sf.jasperreports.export.pdf.tagged" value="true"/>
 
-    <style name="Base" fontName="IPAexGothic" fontSize="7.5" pdfFontName="fonts/ipaexg.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+    <style name="Base" fontName="IPAexGothic" fontSize="7.5"/>
     <style name="Title" style="Base" fontSize="20" isBold="true"/>
     <style name="Cell" style="Base" vTextAlign="Middle">
         <box><pen lineWidth="0.65" lineColor="#27272A"/></box>

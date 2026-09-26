@@ -1,15 +1,19 @@
 package com.project.backend.features.dailyreport.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import com.project.backend.features.dailyreport.dto.DailyReportAllowanceSaveRequest;
 import com.project.backend.features.dailyreport.dto.DailyReportDeductionSaveRequest;
+import com.project.backend.features.dailyreport.entity.DailyReportDeduction;
 import com.project.backend.features.dailyreport.repository.DailyReportAllowanceRepository;
 import com.project.backend.features.dailyreport.repository.DailyReportDeductionRepository;
 import com.project.backend.features.master.payrollitem.service.PayrollMoneyPolicy;
@@ -70,5 +74,39 @@ class DailyReportPayrollItemAmountValidationTest {
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("控除の計算額は0以上で指定してください。");
         verifyNoInteractions(repository);
+    }
+
+    @Test
+    void deductionSave_shouldUseSystemReasonForLegalDepositOverride() {
+        DailyReportDeductionRepository repository =
+                mock(DailyReportDeductionRepository.class);
+        DailyReportDeductionCommandService service =
+                new DailyReportDeductionCommandService(
+                        repository,
+                        new PayrollMoneyPolicy()
+                );
+
+        service.replaceAll(
+                1L,
+                List.of(new DailyReportDeductionSaveRequest(
+                        20L,
+                        "LEGAL_DEPOSIT",
+                        "法定準備金",
+                        500,
+                        700,
+                        true,
+                        null,
+                        null,
+                        null
+                ))
+        );
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<DailyReportDeduction>> captor =
+                ArgumentCaptor.forClass(List.class);
+        verify(repository).saveAll(captor.capture());
+        assertThat(captor.getValue()).singleElement()
+                .extracting(DailyReportDeduction::getOverrideReason)
+                .isEqualTo("日報入力による法定準備金手動調整");
     }
 }

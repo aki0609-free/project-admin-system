@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import type { ToolbarItem } from '@/shared/components/toolbar/types/types'
 import {
@@ -14,6 +14,7 @@ export const useMonthlyOperationPage = () => {
   const targetMonth = ref(businessMonthWithOffset(-1))
 
   const activeTab = ref<'summary' | 'reports'>('summary')
+  const errorMessage = ref('')
 
   const summaryQuery = useClosingSummaryQuery(targetMonth)
 
@@ -53,9 +54,15 @@ export const useMonthlyOperationPage = () => {
       return
     }
 
-    await closeMutation.mutateAsync(targetMonth.value)
-
-    await summaryQuery.refetch()
+    errorMessage.value = ''
+    try {
+      await closeMutation.mutateAsync(targetMonth.value)
+      await summaryQuery.refetch()
+    } catch (error) {
+      const refreshed = await summaryQuery.refetch()
+      errorMessage.value = refreshed.data?.closing?.note
+        || resolveErrorMessage(error, '月次締め処理に失敗しました。')
+    }
   }
 
   const recloseClosing = async () => {
@@ -67,10 +74,20 @@ export const useMonthlyOperationPage = () => {
       return
     }
 
-    await recloseMutation.mutateAsync(targetMonth.value)
-
-    await summaryQuery.refetch()
+    errorMessage.value = ''
+    try {
+      await recloseMutation.mutateAsync(targetMonth.value)
+      await summaryQuery.refetch()
+    } catch (error) {
+      const refreshed = await summaryQuery.refetch()
+      errorMessage.value = refreshed.data?.closing?.note
+        || resolveErrorMessage(error, '月次再締め処理に失敗しました。')
+    }
   }
+
+  watch(targetMonth, () => {
+    errorMessage.value = ''
+  })
 
   const leftToolbarItems = computed<ToolbarItem[]>(() => [
     {
@@ -104,8 +121,18 @@ export const useMonthlyOperationPage = () => {
     tabs,
 
     summary,
+    errorMessage,
 
     leftToolbarItems,
     rightToolbarItems,
   }
+}
+
+const resolveErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message) return error.message
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === 'string' && message) return message
+  }
+  return fallback
 }

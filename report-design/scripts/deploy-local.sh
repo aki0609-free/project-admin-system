@@ -4,11 +4,18 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_root="$(cd "${script_dir}/../.." && pwd)"
 workspace_script="${script_dir}/report-workspace.mjs"
-manifest="$(mktemp "${TMPDIR:-/tmp}/project-admin-report-schema.XXXXXX")"
-trap 'rm -f "${manifest}"' EXIT
+sql_manifest="$(mktemp "${TMPDIR:-/tmp}/project-admin-report-schema.XXXXXX")"
+jasper_manifest="$(mktemp "${TMPDIR:-/tmp}/project-admin-report-jasper.XXXXXX")"
+trap 'rm -f "${sql_manifest}" "${jasper_manifest}"' EXIT
 
 cd "${project_root}"
 node "${workspace_script}" sync
+
+echo "JasperテンプレートをBackendと同じJasperReportsで事前検証します。"
+(
+  cd "${project_root}/backend"
+  ./gradlew test --tests '*JasperTemplateTest'
+)
 
 for command in docker curl; do
   command -v "${command}" >/dev/null 2>&1 || {
@@ -22,7 +29,8 @@ docker info >/dev/null 2>&1 || {
   exit 1
 }
 
-node "${workspace_script}" list --kind=sql --format=resource > "${manifest}"
+node "${workspace_script}" list --kind=sql --format=resource > "${sql_manifest}"
+node "${workspace_script}" list --kind=jasper --format=resource > "${jasper_manifest}"
 
 wait_for_backend() {
   local attempt
@@ -42,6 +50,16 @@ docker compose up -d mysql mongodb redis mailpit
 docker compose up -d --build backend
 wait_for_backend
 
+# /app/storage is a persistent volume. Rebuilding the image alone does not
+# replace templates already present there, so explicitly synchronize the
+# registered Jasper assets after the container has started.
+echo "帳票テンプレートをLocalの永続領域へ反映します。"
+while IFS= read -r resource_path || [[ -n "${resource_path}" ]]; do
+  [[ -z "${resource_path}" || "${resource_path}" == \#* ]] && continue
+  jasper_file="${project_root}/backend/src/main/resources/${resource_path}"
+  docker compose cp "${jasper_file}" "backend:/app/storage/${resource_path}" >/dev/null
+done < "${jasper_manifest}"
+
 echo "帳票用View・ストアドをLocal DBへ反映します。"
 while IFS= read -r resource_path || [[ -n "${resource_path}" ]]; do
   [[ -z "${resource_path}" || "${resource_path}" == \#* ]] && continue
@@ -49,7 +67,7 @@ while IFS= read -r resource_path || [[ -n "${resource_path}" ]]; do
   docker compose exec -T mysql sh -c \
     'exec mysql --user=root --password="$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' \
     < "${sql_file}"
-done < "${manifest}"
+done < "${sql_manifest}"
 
 docker compose restart backend >/dev/null
 wait_for_backend

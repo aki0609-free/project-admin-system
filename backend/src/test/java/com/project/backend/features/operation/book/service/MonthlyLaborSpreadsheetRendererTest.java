@@ -67,6 +67,42 @@ class MonthlyLaborSpreadsheetRendererTest {
                 .isEqualTo(
                         "2026年07月分　No.E001　氏名：山田 太郎　　月間労務表　　株式会社富陽"
                 );
+        assertThat(sheet.path("rows").get(0)
+                .path("cells").get(0).has("colSpan")).isFalse();
+        assertThat(sheet.path("rows").get(0)
+                .path("cells").get(0).path("style").path("textAlign").asText())
+                .isEqualTo("Left");
+        assertThat(sheet.path("rows").get(0)
+                .path("cells").get(0).path("style").path("overflow").asText())
+                .isEqualTo("visible");
+        assertThat(sheet.path("rows").get(0).path("cells")).hasSize(22);
+        assertThat(sheet.path("rows").get(0)
+                .path("cells").get(21).path("style").path("backgroundColor").asText())
+                .isEqualTo("#D9EAF7");
+        assertThat(sheet.path("rows").get(0)
+                .path("cells").get(0).path("style").path("borderRight").asText())
+                .isEqualTo("none");
+        assertThat(sheet.path("rows").get(0)
+                .path("cells").get(1).path("style").path("borderLeft").asText())
+                .isEqualTo("none");
+        assertThat(sheet.path("rows").get(0)
+                .path("cells").get(21).path("style").path("borderRight").asText())
+                .isEqualTo("1px solid #777777");
+        assertThat(sheet.path("rows").get(1)
+                .path("cells").get(0).has("colSpan")).isFalse();
+        assertThat(sheet.path("rows").get(1)
+                .path("cells").get(0).path("style").path("overflow").asText())
+                .isEqualTo("visible");
+        assertThat(sheet.path("rows").get(1).path("cells")).hasSize(22);
+        assertThat(sheet.path("rows").get(1)
+                .path("cells").get(21).path("style").path("backgroundColor").asText())
+                .isEqualTo("#F4F7FA");
+        assertThat(sheet.path("rows").get(1)
+                .path("cells").get(10).path("style").path("borderLeft").asText())
+                .isEqualTo("none");
+        assertThat(sheet.path("rows").get(1)
+                .path("cells").get(10).path("style").path("borderRight").asText())
+                .isEqualTo("none");
         assertThat(sheet.path("rows").get(3)
                 .path("cells").get(6).path("value").asDouble())
                 .isEqualTo(10000d);

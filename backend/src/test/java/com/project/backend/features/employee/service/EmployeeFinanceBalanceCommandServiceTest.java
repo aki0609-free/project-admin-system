@@ -49,6 +49,7 @@ class EmployeeFinanceBalanceCommandServiceTest {
         service.applyDailyReportAmountDiff(
                 1L,
                 BigDecimal.ZERO,
+                BigDecimal.ZERO,
                 new BigDecimal("100000"),
                 101L,
                 LocalDate.of(2026, 8, 22)
@@ -78,6 +79,7 @@ class EmployeeFinanceBalanceCommandServiceTest {
         assertThatThrownBy(() -> service.applyDailyReportAmountDiff(
                 1L,
                 BigDecimal.ZERO,
+                BigDecimal.ZERO,
                 new BigDecimal("30001"),
                 101L,
                 LocalDate.of(2026, 8, 22)
@@ -100,6 +102,7 @@ class EmployeeFinanceBalanceCommandServiceTest {
         service.applyDailyReportAmountDiff(
                 1L,
                 BigDecimal.ZERO,
+                BigDecimal.ZERO,
                 new BigDecimal("-25000"),
                 101L,
                 LocalDate.of(2026, 8, 22)
@@ -121,6 +124,7 @@ class EmployeeFinanceBalanceCommandServiceTest {
                 1L,
                 new BigDecimal("-2000"),
                 BigDecimal.ZERO,
+                BigDecimal.ZERO,
                 101L,
                 LocalDate.of(2026, 8, 22)
         );
@@ -130,11 +134,65 @@ class EmployeeFinanceBalanceCommandServiceTest {
                 1L,
                 new BigDecimal("-10001"),
                 BigDecimal.ZERO,
+                BigDecimal.ZERO,
                 101L,
                 LocalDate.of(2026, 8, 22)
         ))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("残高");
+                .hasMessageContaining("貯蓄残額");
+    }
+
+    @Test
+    void withdrawal_shouldReduceSavingBalanceAndRecordWithdrawal() {
+        EmployeeSaving saving = new EmployeeSaving();
+        saving.setId(20L);
+        saving.setEmployee(new com.project.backend.features.employee.entity.Employee());
+        saving.setCurrentBalance(new BigDecimal("12000"));
+        saving.setActiveFlag(true);
+        when(savingRepository.findFirstByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(1L))
+                .thenReturn(Optional.of(saving));
+
+        service.applyDailyReportAmountDiff(
+                1L,
+                BigDecimal.ZERO,
+                new BigDecimal("3000"),
+                BigDecimal.ZERO,
+                101L,
+                LocalDate.of(2026, 8, 22)
+        );
+
+        assertThat(saving.getCurrentBalance()).isEqualByComparingTo("9000");
+        verify(transactionService).record(
+                saving.getEmployee(),
+                EmployeeFinanceAccountType.SAVING,
+                EmployeeFinanceTransactionType.SAVING_WITHDRAWAL,
+                20L,
+                101L,
+                LocalDate.of(2026, 8, 22),
+                new BigDecimal("12000"),
+                new BigDecimal("9000"),
+                "日報の貯金反映（貯蓄差額=0, 引出差額=3000）"
+        );
+    }
+
+    @Test
+    void withdrawal_shouldRejectAmountOverSavingBalance() {
+        EmployeeSaving saving = new EmployeeSaving();
+        saving.setCurrentBalance(new BigDecimal("1000"));
+        saving.setActiveFlag(true);
+        when(savingRepository.findFirstByEmployeeIdAndActiveFlagTrueAndDeletedAtIsNullOrderByIdDesc(1L))
+                .thenReturn(Optional.of(saving));
+
+        assertThatThrownBy(() -> service.applyDailyReportAmountDiff(
+                1L,
+                BigDecimal.ZERO,
+                new BigDecimal("1001"),
+                BigDecimal.ZERO,
+                101L,
+                LocalDate.of(2026, 8, 22)
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("貯蓄残額");
     }
 
     private EmployeeLoan loan(String balance) {

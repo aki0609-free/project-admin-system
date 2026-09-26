@@ -21,6 +21,7 @@ export const useCustomerBillingClosingPage = () => {
   const summary = ref<CustomerBillingSummary | null>(null)
   const selectedReportCustomerId = ref<number | null>(null)
   const loading = ref(false)
+  const errorMessage = ref('')
   const processingCustomerIds = ref<number[]>([])
 
   const tabs = [
@@ -42,6 +43,11 @@ export const useCustomerBillingClosingPage = () => {
       )) {
         selectedReportCustomerId.value = loaded.customers[0]?.customerId ?? null
       }
+    } catch (error) {
+      errorMessage.value = resolveErrorMessage(
+        error,
+        '顧客締めの一覧取得に失敗しました。',
+      )
     } finally {
       loading.value = false
     }
@@ -53,6 +59,7 @@ export const useCustomerBillingClosingPage = () => {
     )) return
 
     loading.value = true
+    errorMessage.value = ''
     try {
       const result = await post<CustomerBillingBulkClosing, void>(
         '/api/operation/customer-billing/close-all',
@@ -68,6 +75,11 @@ export const useCustomerBillingClosingPage = () => {
         ...result.errors,
       ].join('\n')
       window.alert(message)
+    } catch (error) {
+      errorMessage.value = resolveErrorMessage(
+        error,
+        '顧客の一括締め処理に失敗しました。',
+      )
     } finally {
       loading.value = false
     }
@@ -84,6 +96,7 @@ export const useCustomerBillingClosingPage = () => {
     )) return
 
     processingCustomerIds.value.push(customer.customerId)
+    errorMessage.value = ''
     try {
       await post<CustomerBillingClosing, void>(
         reclose
@@ -100,6 +113,11 @@ export const useCustomerBillingClosingPage = () => {
         },
       )
       await load()
+    } catch (error) {
+      errorMessage.value = `${customer.customerName}：${resolveErrorMessage(
+        error,
+        '顧客締め処理に失敗しました。',
+      )}`
     } finally {
       processingCustomerIds.value = processingCustomerIds.value.filter(
         (customerId) => customerId !== customer.customerId,
@@ -136,7 +154,10 @@ export const useCustomerBillingClosingPage = () => {
     },
   ])
 
-  watch(targetMonth, load)
+  watch(targetMonth, () => {
+    errorMessage.value = ''
+    void load()
+  })
   onMounted(load)
 
   return {
@@ -147,9 +168,19 @@ export const useCustomerBillingClosingPage = () => {
     selectedReportCustomerId,
     selectedReportCustomer,
     loading,
+    errorMessage,
     leftToolbarItems,
     rightToolbarItems,
     executeCustomer,
     isCustomerLoading,
   }
+}
+
+const resolveErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message) return error.message
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === 'string' && message) return message
+  }
+  return fallback
 }

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { requiresManualOverrideReason } from '../utils/dailyReportPayrollItemPolicy'
 
 export const dailyReportAmountItemSchema = z.object({
   masterId: z.number().int().positive(),
@@ -28,7 +29,10 @@ export const dailyReportAmountItemSchema = z.object({
   quantity: z.number().min(0),
   remainingAfterQuantity: z.number(),
 }).superRefine((item, context) => {
-  if (item.manualOverride && item.overrideReason.trim().length === 0) {
+  if (
+    requiresManualOverrideReason(item.code, item.manualOverride)
+    && item.overrideReason.trim().length === 0
+  ) {
     context.addIssue({
       code: 'custom',
       path: ['overrideReason'],
@@ -91,6 +95,7 @@ export const dailyReportSchema = z.object({
 
   loanRepaymentAmount: z.number().min(0),
   savingAmount: z.number().min(0),
+  savingWithdrawalAmount: z.number().min(0),
   dormitoryChargeDays: z.number().int().min(0).max(31),
 
   estimatedGrossPayAmount: z.number().min(0),

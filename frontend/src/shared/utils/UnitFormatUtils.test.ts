@@ -4,6 +4,7 @@ import {
   formatDecimalHoursAsHourMinute,
   formatMinutesAsHourMinute,
   formatNumberWithUnit,
+  parseHourMinuteToDecimalHours,
   parseHourMinuteToMinutes,
 } from './UnitFormatUtils'
 
@@ -25,5 +26,12 @@ describe('UnitFormatUtils', () => {
     expect(parseHourMinuteToMinutes('0:05')).toBe(5)
     expect(parseHourMinuteToMinutes('90')).toBe(90)
     expect(parseHourMinuteToMinutes('1:60')).toBeNull()
+  })
+
+  it('H:mm入力を内部保持用の小数時間へ変換する', () => {
+    expect(parseHourMinuteToDecimalHours('1:30')).toBe(1.5)
+    expect(parseHourMinuteToDecimalHours('0:05')).toBeCloseTo(5 / 60)
+    expect(parseHourMinuteToDecimalHours('1.5')).toBe(1.5)
+    expect(parseHourMinuteToDecimalHours('1:60')).toBeNull()
   })
 })

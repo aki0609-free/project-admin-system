@@ -61,6 +61,8 @@ class DailyPaySlipJasperTemplateTest {
             String text = new PDFTextStripper().getText(document);
             assertThat(text)
                     .contains("〒123-4567 東京都千代田区テスト1-2-3")
+                    .contains("2 日")
+                    .contains("法定準備金（累計額：5,000円）")
                     .doesNotContain("加算計");
         }
 
@@ -83,6 +85,7 @@ class DailyPaySlipJasperTemplateTest {
         row.put("employee_address", "〒123-4567 東京都千代田区テスト1-2-3");
         row.put("labor_period_from", Date.valueOf(paymentDate.minusDays(1)));
         row.put("labor_period_to", Date.valueOf(paymentDate));
+        row.put("attendance_days", 2);
         row.put("work_hours", amount("8"));
         row.put("overtime_hours", amount("1.5"));
         row.put("night_work_hours", amount("0"));
@@ -110,7 +113,7 @@ class DailyPaySlipJasperTemplateTest {
                 row,
                 "deduction",
                 List.of(
-                        "法定準備金（残高：5,000円）",
+                        "法定準備金（累計額：5,000円）",
                         "貯金（累計額：30,000円）"
                 ),
                 List.of(amount("500"), amount("0"))

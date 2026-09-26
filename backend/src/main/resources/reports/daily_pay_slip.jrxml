@@ -1,149 +1,175 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport
-    xmlns="http://jasperreports.sourceforge.net/jasperreports"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
-    name="daily_pay_slip"
-    pageWidth="516"
-    pageHeight="729"
-    columnWidth="488"
-    leftMargin="14"
-    rightMargin="14"
-    topMargin="14"
-    bottomMargin="14"
-    whenNoDataType="AllSectionsNoDetail"
->
-    <property name="net.sf.jasperreports.default.font.name" value="IPAexGothic"/>
-    <property name="net.sf.jasperreports.export.pdf.tagged" value="true"/>
-
-    <style name="Base" fontName="IPAexGothic" fontSize="7.5" pdfFontName="fonts/ipaexg.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
-    <style name="Title" style="Base" fontSize="15" isBold="true"/>
-    <style name="Header" style="Base" isBold="true" hTextAlign="Center" vTextAlign="Middle" mode="Opaque" backcolor="#DCE6F1">
-        <box><pen lineWidth="0.5" lineColor="#1F2937"/></box>
-    </style>
-    <style name="Cell" style="Base" vTextAlign="Middle">
-        <box><pen lineWidth="0.4" lineColor="#374151"/></box>
-    </style>
-    <style name="CellCenter" style="Cell" hTextAlign="Center"/>
-    <style name="CellRight" style="Cell" hTextAlign="Right"/>
-    <style name="PayHeader" style="Header" backcolor="#DCFCE7"/>
-    <style name="DeductionHeader" style="Header" backcolor="#FEE2E2"/>
-    <style name="NetHeader" style="Header" forecolor="#FFFFFF" backcolor="#1D4ED8"/>
-    <style name="NetValue" style="CellRight" fontSize="10" isBold="true" forecolor="#1D4ED8"/>
-
-    <parameter name="MONEY_FORMAT" class="java.text.DecimalFormat" isForPrompting="false">
-        <defaultValueExpression><![CDATA[new java.text.DecimalFormat("#,##0;▲#,##0")]]></defaultValueExpression>
-    </parameter>
-    <parameter name="DATE_FORMAT" class="java.text.SimpleDateFormat" isForPrompting="false">
-        <defaultValueExpression><![CDATA[new java.text.SimpleDateFormat("yyyy年M月d日")]]></defaultValueExpression>
-    </parameter>
-
-    <field name="payment_date" class="java.sql.Date"/>
-    <field name="employee_code" class="java.lang.String"/>
-    <field name="employee_name" class="java.lang.String"/>
-    <field name="employee_address" class="java.lang.String"/>
-    <field name="labor_period_from" class="java.sql.Date"/>
-    <field name="labor_period_to" class="java.sql.Date"/>
-    <field name="work_hours" class="java.math.BigDecimal"/>
-    <field name="overtime_hours" class="java.math.BigDecimal"/>
-    <field name="night_work_hours" class="java.math.BigDecimal"/>
-    <field name="work_hours_label" class="java.lang.String"/>
-    <field name="overtime_hours_label" class="java.lang.String"/>
-    <field name="night_work_hours_label" class="java.lang.String"/>
-    <field name="basic_salary" class="java.math.BigDecimal"/>
-    <field name="gross_amount" class="java.math.BigDecimal"/>
-    <field name="allowance_total" class="java.math.BigDecimal"/>
-    <field name="deduction_total" class="java.math.BigDecimal"/>
-    <field name="daily_payment_amount" class="java.math.BigDecimal"/>
-    <field name="net_payment_amount" class="java.math.BigDecimal"/>
-    <field name="legal_deposit_balance" class="java.math.BigDecimal"/>
-    <field name="loan_balance" class="java.math.BigDecimal"/>
-    <field name="saving_balance" class="java.math.BigDecimal"/>
-    <field name="note" class="java.lang.String"/>
-
-    <field name="allowance_item_name1" class="java.lang.String"/>
-    <field name="allowance_item_value1" class="java.math.BigDecimal"/>
-    <field name="allowance_item_name2" class="java.lang.String"/>
-    <field name="allowance_item_value2" class="java.math.BigDecimal"/>
-    <field name="allowance_item_name3" class="java.lang.String"/>
-    <field name="allowance_item_value3" class="java.math.BigDecimal"/>
-    <field name="allowance_item_name4" class="java.lang.String"/>
-    <field name="allowance_item_value4" class="java.math.BigDecimal"/>
-    <field name="allowance_item_name5" class="java.lang.String"/>
-    <field name="allowance_item_value5" class="java.math.BigDecimal"/>
-    <field name="allowance_item_name6" class="java.lang.String"/>
-    <field name="allowance_item_value6" class="java.math.BigDecimal"/>
-    <field name="allowance_item_name7" class="java.lang.String"/>
-    <field name="allowance_item_value7" class="java.math.BigDecimal"/>
-    <field name="allowance_item_name8" class="java.lang.String"/>
-    <field name="allowance_item_value8" class="java.math.BigDecimal"/>
-    <field name="allowance_item_name9" class="java.lang.String"/>
-    <field name="allowance_item_value9" class="java.math.BigDecimal"/>
-    <field name="allowance_item_name10" class="java.lang.String"/>
-    <field name="allowance_item_value10" class="java.math.BigDecimal"/>
-
-    <field name="deduction_item_name1" class="java.lang.String"/>
-    <field name="deduction_item_value1" class="java.math.BigDecimal"/>
-    <field name="deduction_item_name2" class="java.lang.String"/>
-    <field name="deduction_item_value2" class="java.math.BigDecimal"/>
-    <field name="deduction_item_name3" class="java.lang.String"/>
-    <field name="deduction_item_value3" class="java.math.BigDecimal"/>
-    <field name="deduction_item_name4" class="java.lang.String"/>
-    <field name="deduction_item_value4" class="java.math.BigDecimal"/>
-    <field name="deduction_item_name5" class="java.lang.String"/>
-    <field name="deduction_item_value5" class="java.math.BigDecimal"/>
-    <field name="deduction_item_name6" class="java.lang.String"/>
-    <field name="deduction_item_value6" class="java.math.BigDecimal"/>
-    <field name="deduction_item_name7" class="java.lang.String"/>
-    <field name="deduction_item_value7" class="java.math.BigDecimal"/>
-    <field name="deduction_item_name8" class="java.lang.String"/>
-    <field name="deduction_item_value8" class="java.math.BigDecimal"/>
-    <field name="deduction_item_name9" class="java.lang.String"/>
-    <field name="deduction_item_value9" class="java.math.BigDecimal"/>
-    <field name="deduction_item_name10" class="java.lang.String"/>
-    <field name="deduction_item_value10" class="java.math.BigDecimal"/>
-
-    <sortField name="employee_code"/>
-
-    <detail>
-        <band height="340" splitType="Prevent">
-            <frame>
-                <reportElement x="0" y="0" width="488" height="326"/>
-
-                <staticText>
-                    <reportElement style="Title" x="0" y="0" width="195" height="28"/>
-                    <textElement textAlignment="Center" verticalAlignment="Middle"/>
-                    <text><![CDATA[日次給与明細]]></text>
-                </staticText>
-                <staticText><reportElement style="Header" x="195" y="0" width="64" height="14"/><text><![CDATA[氏名]]></text></staticText>
-                <textField isBlankWhenNull="true"><reportElement style="CellCenter" x="195" y="14" width="151" height="14"/><textFieldExpression><![CDATA[$F{employee_name}]]></textFieldExpression></textField>
-                <staticText><reportElement style="Header" x="346" y="0" width="142" height="14"/><text><![CDATA[支払日]]></text></staticText>
-                <textField><reportElement style="CellCenter" x="346" y="14" width="142" height="14"/><textFieldExpression><![CDATA[$P{DATE_FORMAT}.format($F{payment_date})]]></textFieldExpression></textField>
-
-                <staticText><reportElement style="Header" x="0" y="30" width="64" height="16"/><text><![CDATA[労務期間]]></text></staticText>
-                <textField><reportElement style="CellCenter" x="64" y="30" width="302" height="16"/><textFieldExpression><![CDATA[$P{DATE_FORMAT}.format($F{labor_period_from}) + " ～ " + $P{DATE_FORMAT}.format($F{labor_period_to})]]></textFieldExpression></textField>
-                <staticText><reportElement style="Header" x="366" y="30" width="58" height="16"/><text><![CDATA[社員コード]]></text></staticText>
-                <textField isBlankWhenNull="true"><reportElement style="CellCenter" x="424" y="30" width="64" height="16"/><textFieldExpression><![CDATA[$F{employee_code}]]></textFieldExpression></textField>
-
-                <staticText><reportElement style="Header" x="0" y="48" width="98" height="15"/><text><![CDATA[勤務時間]]></text></staticText>
-                <staticText><reportElement style="Header" x="98" y="48" width="98" height="15"/><text><![CDATA[早出・残業]]></text></staticText>
-                <staticText><reportElement style="Header" x="196" y="48" width="98" height="15"/><text><![CDATA[深夜]]></text></staticText>
-                <textField><reportElement style="CellRight" x="0" y="63" width="98" height="16"/><textFieldExpression><![CDATA[$F{work_hours_label}]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="98" y="63" width="98" height="16"/><textFieldExpression><![CDATA[$F{overtime_hours_label}]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="196" y="63" width="98" height="16"/><textFieldExpression><![CDATA[$F{night_work_hours_label}]]></textFieldExpression></textField>
-                <staticText><reportElement style="Header" x="294" y="48" width="97" height="15"/><text><![CDATA[基本単価]]></text></staticText>
-                <staticText><reportElement style="Header" x="391" y="48" width="97" height="15"/><text><![CDATA[控除計]]></text></staticText>
-                <textField><reportElement style="CellRight" x="294" y="63" width="97" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{basic_salary})]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="391" y="63" width="97" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{deduction_total})]]></textFieldExpression></textField>
-
-                <staticText><reportElement style="PayHeader" x="0" y="83" width="240" height="17"/><text><![CDATA[支給内訳]]></text></staticText>
-                <staticText><reportElement style="DeductionHeader" x="248" y="83" width="240" height="17"/><text><![CDATA[控除内訳]]></text></staticText>
-                <staticText><reportElement style="Cell" x="0" y="100" width="175" height="16"/><text><![CDATA[基本単価]]></text></staticText>
-                <textField isBlankWhenNull="true">
-                    <reportElement style="Cell" x="0" y="116" width="175" height="80"/>
-                    <textElement verticalAlignment="Top"/>
-                    <textFieldExpression><![CDATA[
-($F{allowance_item_name1} == null ? "" : $F{allowance_item_name1}) + "\n" +
+<!-- Created with Jaspersoft Studio version 6.21.3.final using JasperReports Library version 6.21.3-4a3078d20785ebe464f18037d738d12fc98c13cf  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="daily_pay_slip" pageWidth="516" pageHeight="729" whenNoDataType="AllSectionsNoDetail" columnWidth="488" leftMargin="14" rightMargin="14" topMargin="14" bottomMargin="14" uuid="fbc6b4c0-d950-4d04-9726-a6f376ddad38">
+	<property name="net.sf.jasperreports.default.font.name" value="IPAexGothic"/>
+	<property name="net.sf.jasperreports.export.pdf.tagged" value="true"/>
+	<style name="Base" fontName="IPAexGothic" fontSize="7.5"/>
+	<style name="Title" style="Base" fontSize="15" isBold="true"/>
+	<style name="Header" style="Base" mode="Opaque" backcolor="#DCE6F1" hTextAlign="Center" vTextAlign="Middle" isBold="true">
+		<box>
+			<pen lineWidth="0.5" lineColor="#1F2937"/>
+		</box>
+	</style>
+	<style name="Cell" style="Base" vTextAlign="Middle">
+		<box>
+			<pen lineWidth="0.4" lineColor="#374151"/>
+		</box>
+	</style>
+	<style name="CellCenter" style="Cell" hTextAlign="Center"/>
+	<style name="CellRight" style="Cell" hTextAlign="Right"/>
+	<style name="PayHeader" style="Header" backcolor="#DCFCE7"/>
+	<style name="DeductionHeader" style="Header" backcolor="#FEE2E2"/>
+	<style name="NetHeader" style="Header" forecolor="#FFFFFF" backcolor="#1D4ED8"/>
+	<style name="NetValue" style="CellCenter" forecolor="#1D4ED8" fontSize="10" isBold="true"/>
+	<style name="CompanyName" style="Base" fontSize="10" isBold="true"/>
+	<parameter name="MONEY_FORMAT" class="java.text.DecimalFormat" isForPrompting="false">
+		<defaultValueExpression><![CDATA[new java.text.DecimalFormat("#,##0;▲#,##0")]]></defaultValueExpression>
+	</parameter>
+	<parameter name="DATE_FORMAT" class="java.text.SimpleDateFormat" isForPrompting="false">
+		<defaultValueExpression><![CDATA[new java.text.SimpleDateFormat("yyyy年M月d日")]]></defaultValueExpression>
+	</parameter>
+	<field name="payment_date" class="java.sql.Date"/>
+	<field name="employee_code" class="java.lang.String"/>
+	<field name="employee_name" class="java.lang.String"/>
+	<field name="employee_address" class="java.lang.String"/>
+	<field name="labor_period_from" class="java.sql.Date"/>
+	<field name="labor_period_to" class="java.sql.Date"/>
+	<field name="work_hours" class="java.math.BigDecimal"/>
+	<field name="overtime_hours" class="java.math.BigDecimal"/>
+	<field name="night_work_hours" class="java.math.BigDecimal"/>
+	<field name="work_hours_label" class="java.lang.String"/>
+	<field name="overtime_hours_label" class="java.lang.String"/>
+	<field name="night_work_hours_label" class="java.lang.String"/>
+	<field name="attendance_days" class="java.lang.Integer"/>
+	<field name="basic_salary" class="java.math.BigDecimal"/>
+	<field name="gross_amount" class="java.math.BigDecimal"/>
+	<field name="allowance_total" class="java.math.BigDecimal"/>
+	<field name="deduction_total" class="java.math.BigDecimal"/>
+	<field name="daily_payment_amount" class="java.math.BigDecimal"/>
+	<field name="net_payment_amount" class="java.math.BigDecimal"/>
+	<field name="note" class="java.lang.String"/>
+	<field name="allowance_item_name1" class="java.lang.String"/>
+	<field name="allowance_item_value1" class="java.math.BigDecimal"/>
+	<field name="allowance_item_name2" class="java.lang.String"/>
+	<field name="allowance_item_value2" class="java.math.BigDecimal"/>
+	<field name="allowance_item_name3" class="java.lang.String"/>
+	<field name="allowance_item_value3" class="java.math.BigDecimal"/>
+	<field name="allowance_item_name4" class="java.lang.String"/>
+	<field name="allowance_item_value4" class="java.math.BigDecimal"/>
+	<field name="allowance_item_name5" class="java.lang.String"/>
+	<field name="allowance_item_value5" class="java.math.BigDecimal"/>
+	<field name="allowance_item_name6" class="java.lang.String"/>
+	<field name="allowance_item_value6" class="java.math.BigDecimal"/>
+	<field name="allowance_item_name7" class="java.lang.String"/>
+	<field name="allowance_item_value7" class="java.math.BigDecimal"/>
+	<field name="allowance_item_name8" class="java.lang.String"/>
+	<field name="allowance_item_value8" class="java.math.BigDecimal"/>
+	<field name="allowance_item_name9" class="java.lang.String"/>
+	<field name="allowance_item_value9" class="java.math.BigDecimal"/>
+	<field name="allowance_item_name10" class="java.lang.String"/>
+	<field name="allowance_item_value10" class="java.math.BigDecimal"/>
+	<field name="deduction_item_name1" class="java.lang.String"/>
+	<field name="deduction_item_value1" class="java.math.BigDecimal"/>
+	<field name="deduction_item_name2" class="java.lang.String"/>
+	<field name="deduction_item_value2" class="java.math.BigDecimal"/>
+	<field name="deduction_item_name3" class="java.lang.String"/>
+	<field name="deduction_item_value3" class="java.math.BigDecimal"/>
+	<field name="deduction_item_name4" class="java.lang.String"/>
+	<field name="deduction_item_value4" class="java.math.BigDecimal"/>
+	<field name="deduction_item_name5" class="java.lang.String"/>
+	<field name="deduction_item_value5" class="java.math.BigDecimal"/>
+	<field name="deduction_item_name6" class="java.lang.String"/>
+	<field name="deduction_item_value6" class="java.math.BigDecimal"/>
+	<field name="deduction_item_name7" class="java.lang.String"/>
+	<field name="deduction_item_value7" class="java.math.BigDecimal"/>
+	<field name="deduction_item_name8" class="java.lang.String"/>
+	<field name="deduction_item_value8" class="java.math.BigDecimal"/>
+	<field name="deduction_item_name9" class="java.lang.String"/>
+	<field name="deduction_item_value9" class="java.math.BigDecimal"/>
+	<field name="deduction_item_name10" class="java.lang.String"/>
+	<field name="deduction_item_value10" class="java.math.BigDecimal"/>
+	<sortField name="employee_code"/>
+	<detail>
+		<band height="340" splitType="Prevent">
+			<frame>
+				<reportElement x="0" y="0" width="488" height="326" uuid="8dfc958b-7a44-4dc5-98ec-9382a4ada3cb"/>
+				<staticText>
+					<reportElement style="Title" x="0" y="0" width="195" height="28" uuid="8481ccc0-3604-4d92-9fdd-83491a8c583f"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle"/>
+					<text><![CDATA[支払明細書]]></text>
+				</staticText>
+				<staticText>
+					<reportElement style="Header" x="195" y="0" width="151" height="14" uuid="ac329ca2-bd4f-4568-aa75-95b283058718"/>
+					<text><![CDATA[氏名]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement style="CellCenter" x="195" y="14" width="151" height="14" uuid="bcdd0174-825a-4318-a8e4-580488464d13"/>
+					<textFieldExpression><![CDATA[$F{employee_name}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement style="Header" x="346" y="0" width="142" height="14" uuid="444b2092-5573-4b9d-9db3-9e8b2ae90518"/>
+					<text><![CDATA[支払日]]></text>
+				</staticText>
+				<textField>
+					<reportElement style="CellCenter" x="346" y="14" width="142" height="14" uuid="a5b1f4a2-1363-4297-be61-c4b391b21d4c"/>
+					<textFieldExpression><![CDATA[$P{DATE_FORMAT}.format($F{payment_date})]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement style="Header" x="0" y="30" width="64" height="16" uuid="a06c6b33-7591-4cc3-b309-bf9070974868"/>
+					<text><![CDATA[労務期間]]></text>
+				</staticText>
+				<textField>
+					<reportElement style="CellCenter" x="64" y="30" width="302" height="16" uuid="b8328651-0434-4127-ac1f-48df94b23f21"/>
+					<textFieldExpression><![CDATA[$P{DATE_FORMAT}.format($F{labor_period_from}) + " ～ " + $P{DATE_FORMAT}.format($F{labor_period_to})]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement style="Header" x="366" y="30" width="58" height="16" uuid="6bf08e1d-1634-4c19-acfb-9bff2ebd1304"/>
+					<text><![CDATA[社員コード]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement style="CellCenter" x="424" y="30" width="64" height="16" uuid="a5751e6d-3dba-4397-866f-353ba0b6cf7d"/>
+					<textFieldExpression><![CDATA[$F{employee_code}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement style="Header" x="0" y="48" width="163" height="15" uuid="07e04775-dd16-4be0-85ff-8c55b46a9616"/>
+					<text><![CDATA[勤務時間]]></text>
+				</staticText>
+				<staticText>
+					<reportElement style="Header" x="163" y="48" width="163" height="15" uuid="7d597f6e-8a32-4b5c-8cc3-d14a79dfe938"/>
+					<text><![CDATA[早出・残業]]></text>
+				</staticText>
+				<staticText>
+					<reportElement style="Header" x="326" y="48" width="162" height="15" uuid="cb860dcd-b92d-4ced-b656-cd34a02aa20d"/>
+					<text><![CDATA[深夜]]></text>
+				</staticText>
+				<textField>
+					<reportElement style="CellCenter" x="0" y="63" width="163" height="16" uuid="cfee08b9-e6e1-46db-954b-f019adecb3be"/>
+					<textFieldExpression><![CDATA[$F{work_hours_label}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement style="CellCenter" x="163" y="63" width="163" height="16" uuid="411e20c2-48ef-4042-8542-f2b6c4dced3e"/>
+					<textFieldExpression><![CDATA[$F{overtime_hours_label}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement style="CellCenter" x="326" y="63" width="162" height="16" uuid="13c67e6f-de55-4e9e-9f2f-4c9cb705ea65"/>
+					<textFieldExpression><![CDATA[$F{night_work_hours_label}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement style="PayHeader" x="0" y="83" width="240" height="17" uuid="b40b94fd-1917-4818-bcfb-bd111c7342bd"/>
+					<text><![CDATA[支給内訳]]></text>
+				</staticText>
+				<staticText>
+					<reportElement style="DeductionHeader" x="248" y="83" width="240" height="17" uuid="b250fc16-ff57-40c0-9310-40e6e4fe8eb6"/>
+					<text><![CDATA[控除内訳]]></text>
+				</staticText>
+				<staticText>
+					<reportElement style="Cell" x="0" y="100" width="140" height="16" uuid="cf69bc92-64d3-4996-a0c8-85ae7793dc58"/>
+					<text><![CDATA[基本給]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement style="Cell" x="0" y="116" width="140" height="80" uuid="225dec0e-0cca-45ad-8a39-7f79e54c7a73"/>
+					<textElement verticalAlignment="Top"/>
+					<textFieldExpression><![CDATA[($F{allowance_item_name1} == null ? "" : $F{allowance_item_name1}) + "\n" +
 ($F{allowance_item_name2} == null ? "" : $F{allowance_item_name2}) + "\n" +
 ($F{allowance_item_name3} == null ? "" : $F{allowance_item_name3}) + "\n" +
 ($F{allowance_item_name4} == null ? "" : $F{allowance_item_name4}) + "\n" +
@@ -152,31 +178,30 @@
 ($F{allowance_item_name7} == null ? "" : $F{allowance_item_name7}) + "\n" +
 ($F{allowance_item_name8} == null ? "" : $F{allowance_item_name8}) + "\n" +
 ($F{allowance_item_name9} == null ? "" : $F{allowance_item_name9}) + "\n" +
-($F{allowance_item_name10} == null ? "" : $F{allowance_item_name10})
-                    ]]></textFieldExpression>
-                </textField>
-                <textField><reportElement style="CellRight" x="175" y="100" width="65" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{basic_salary})]]></textFieldExpression></textField>
-                <textField isBlankWhenNull="true">
-                    <reportElement style="CellRight" x="175" y="116" width="65" height="80"/>
-                    <textElement verticalAlignment="Top"/>
-                    <textFieldExpression><![CDATA[
-($F{allowance_item_value1} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value1})) + "\n" +
-($F{allowance_item_value2} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value2})) + "\n" +
-($F{allowance_item_value3} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value3})) + "\n" +
-($F{allowance_item_value4} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value4})) + "\n" +
-($F{allowance_item_value5} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value5})) + "\n" +
-($F{allowance_item_value6} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value6})) + "\n" +
-($F{allowance_item_value7} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value7})) + "\n" +
-($F{allowance_item_value8} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value8})) + "\n" +
-($F{allowance_item_value9} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value9})) + "\n" +
-($F{allowance_item_value10} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value10}))
-                    ]]></textFieldExpression>
-                </textField>
-                <textField isBlankWhenNull="true">
-                    <reportElement style="Cell" x="248" y="100" width="175" height="96"/>
-                    <textElement verticalAlignment="Top"/>
-                    <textFieldExpression><![CDATA[
-($F{deduction_item_name1} == null ? "" : $F{deduction_item_name1}) + "\n" +
+($F{allowance_item_name10} == null ? "" : $F{allowance_item_name10})]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement style="CellRight" x="140" y="100" width="100" height="16" uuid="0480316e-3505-4305-b4db-b0b3079cffa4"/>
+					<textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{basic_salary}) + " 円"]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement style="CellRight" x="140" y="116" width="100" height="80" uuid="a425c8c6-a2f5-4332-aed0-fd90c20dea04"/>
+					<textElement verticalAlignment="Top"/>
+					<textFieldExpression><![CDATA[($F{allowance_item_value1} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value1}) + " 円") + "\n" +
+($F{allowance_item_value2} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value2}) + " 円") + "\n" +
+($F{allowance_item_value3} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value3}) + " 円") + "\n" +
+($F{allowance_item_value4} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value4}) + " 円") + "\n" +
+($F{allowance_item_value5} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value5}) + " 円") + "\n" +
+($F{allowance_item_value6} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value6}) + " 円") + "\n" +
+($F{allowance_item_value7} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value7}) + " 円") + "\n" +
+($F{allowance_item_value8} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value8}) + " 円") + "\n" +
+($F{allowance_item_value9} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value9}) + " 円") + "\n" +
+($F{allowance_item_value10} == null ? "" : $P{MONEY_FORMAT}.format($F{allowance_item_value10}) + " 円")]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement style="Cell" x="248" y="100" width="140" height="96" uuid="f425eb8a-ed79-419a-b1dd-b5dd16906215"/>
+					<textElement verticalAlignment="Top"/>
+					<textFieldExpression><![CDATA[($F{deduction_item_name1} == null ? "" : $F{deduction_item_name1}) + "\n" +
 ($F{deduction_item_name2} == null ? "" : $F{deduction_item_name2}) + "\n" +
 ($F{deduction_item_name3} == null ? "" : $F{deduction_item_name3}) + "\n" +
 ($F{deduction_item_name4} == null ? "" : $F{deduction_item_name4}) + "\n" +
@@ -185,55 +210,130 @@
 ($F{deduction_item_name7} == null ? "" : $F{deduction_item_name7}) + "\n" +
 ($F{deduction_item_name8} == null ? "" : $F{deduction_item_name8}) + "\n" +
 ($F{deduction_item_name9} == null ? "" : $F{deduction_item_name9}) + "\n" +
-($F{deduction_item_name10} == null ? "" : $F{deduction_item_name10})
-                    ]]></textFieldExpression>
-                </textField>
-                <textField isBlankWhenNull="true">
-                    <reportElement style="CellRight" x="423" y="100" width="65" height="96"/>
-                    <textElement verticalAlignment="Top"/>
-                    <textFieldExpression><![CDATA[
-($F{deduction_item_value1} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value1})) + "\n" +
-($F{deduction_item_value2} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value2})) + "\n" +
-($F{deduction_item_value3} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value3})) + "\n" +
-($F{deduction_item_value4} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value4})) + "\n" +
-($F{deduction_item_value5} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value5})) + "\n" +
-($F{deduction_item_value6} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value6})) + "\n" +
-($F{deduction_item_value7} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value7})) + "\n" +
-($F{deduction_item_value8} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value8})) + "\n" +
-($F{deduction_item_value9} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value9})) + "\n" +
-($F{deduction_item_value10} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value10}))
-                    ]]></textFieldExpression>
-                </textField>
-
-                <staticText><reportElement style="Header" x="0" y="196" width="175" height="16"/><text><![CDATA[支給合計]]></text></staticText>
-                <textField><reportElement style="CellRight" x="175" y="196" width="65" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{gross_amount})]]></textFieldExpression></textField>
-                <staticText><reportElement style="Header" x="248" y="196" width="175" height="16"/><text><![CDATA[控除合計]]></text></staticText>
-                <textField><reportElement style="CellRight" x="423" y="196" width="65" height="16"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{deduction_total})]]></textFieldExpression></textField>
-
-                <staticText><reportElement style="Header" x="0" y="218" width="98" height="17"/><text><![CDATA[基本単価]]></text></staticText>
-                <staticText><reportElement style="Header" x="98" y="218" width="98" height="17"/><text><![CDATA[総支給額]]></text></staticText>
-                <staticText><reportElement style="Header" x="196" y="218" width="98" height="17"/><text><![CDATA[控除合計]]></text></staticText>
-                <staticText><reportElement style="NetHeader" x="294" y="218" width="194" height="17"/><text><![CDATA[差引支給額]]></text></staticText>
-                <textField><reportElement style="CellRight" x="0" y="235" width="98" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{basic_salary})]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="98" y="235" width="98" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{gross_amount})]]></textFieldExpression></textField>
-                <textField><reportElement style="CellRight" x="196" y="235" width="98" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{deduction_total})]]></textFieldExpression></textField>
-                <textField><reportElement style="NetValue" x="294" y="235" width="194" height="24"/><textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{net_payment_amount}) + " 円"]]></textFieldExpression></textField>
-
-                <staticText><reportElement style="Header" x="0" y="263" width="64" height="18"/><text><![CDATA[備考]]></text></staticText>
-                <textField isBlankWhenNull="true"><reportElement style="Cell" x="64" y="263" width="424" height="18"/><textFieldExpression><![CDATA[$F{note}]]></textFieldExpression></textField>
-                <staticText><reportElement style="Base" x="0" y="284" width="36" height="12"/><text><![CDATA[住所：]]></text></staticText>
-                <textField isBlankWhenNull="true"><reportElement style="Base" x="36" y="284" width="452" height="12"/><textFieldExpression><![CDATA[$F{employee_address}]]></textFieldExpression></textField>
-                <staticText><reportElement style="Base" x="0" y="298" width="170" height="12"/><text><![CDATA[※上記金額を受領しました。]]></text></staticText>
-                <textField isBlankWhenNull="true"><reportElement style="Base" x="170" y="298" width="318" height="12"/><textElement textAlignment="Right"/><textFieldExpression><![CDATA["氏名：" + ($F{employee_name} == null ? "" : $F{employee_name}) + "　署名：________________　印"]]></textFieldExpression></textField>
-                <line><reportElement x="0" y="312" width="488" height="1"/><graphicElement><pen lineStyle="Dashed" lineColor="#9CA3AF"/></graphicElement></line>
-            </frame>
-        </band>
-    </detail>
-
-    <noData>
-        <band height="80">
-            <staticText><reportElement style="Title" x="0" y="0" width="488" height="32"/><textElement textAlignment="Center"/><text><![CDATA[日次給与明細]]></text></staticText>
-            <staticText><reportElement style="Base" x="0" y="36" width="488" height="20"/><textElement textAlignment="Center"/><text><![CDATA[対象データがありません。]]></text></staticText>
-        </band>
-    </noData>
+($F{deduction_item_name10} == null ? "" : $F{deduction_item_name10})]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement style="CellRight" x="388" y="100" width="100" height="96" uuid="c2026ed7-c442-452f-bac7-dc70643ce087"/>
+					<textElement verticalAlignment="Top"/>
+					<textFieldExpression><![CDATA[($F{deduction_item_value1} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value1}) + " 円") + "\n" +
+($F{deduction_item_value2} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value2}) + " 円") + "\n" +
+($F{deduction_item_value3} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value3}) + " 円") + "\n" +
+($F{deduction_item_value4} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value4}) + " 円") + "\n" +
+($F{deduction_item_value5} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value5}) + " 円") + "\n" +
+($F{deduction_item_value6} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value6}) + " 円") + "\n" +
+($F{deduction_item_value7} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value7}) + " 円") + "\n" +
+($F{deduction_item_value8} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value8}) + " 円") + "\n" +
+($F{deduction_item_value9} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value9}) + " 円") + "\n" +
+($F{deduction_item_value10} == null ? "" : $P{MONEY_FORMAT}.format($F{deduction_item_value10}) + " 円")]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement style="Header" x="0" y="196" width="140" height="16" uuid="e6a3b8d5-0508-40e3-9de7-4e8bda17599f"/>
+					<text><![CDATA[支給合計]]></text>
+				</staticText>
+				<textField>
+					<reportElement style="CellRight" x="140" y="196" width="100" height="16" uuid="852bcee7-58cf-4b33-ad8d-b506c4243d6e"/>
+					<textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{gross_amount}) + " 円"]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement style="Header" x="248" y="196" width="140" height="16" uuid="5ac2ca6d-307b-47b2-9de7-e04555cfe3b3"/>
+					<text><![CDATA[控除合計]]></text>
+				</staticText>
+				<textField>
+					<reportElement style="CellRight" x="388" y="196" width="100" height="16" uuid="2238d82f-57a7-4a0c-8847-935174b383d0"/>
+					<textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{deduction_total}) + " 円"]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement style="Header" x="0" y="218" width="98" height="17" uuid="177b8090-dbfc-4e6d-9610-c2e5b70d74a0"/>
+					<text><![CDATA[出勤日数]]></text>
+				</staticText>
+				<staticText>
+					<reportElement style="Header" x="98" y="218" width="98" height="17" uuid="47648008-ef83-4601-a188-b100404c5061"/>
+					<text><![CDATA[総支給額]]></text>
+				</staticText>
+				<staticText>
+					<reportElement style="Header" x="196" y="218" width="98" height="17" uuid="20358ddb-1dc3-472f-8743-474799f47bcf"/>
+					<text><![CDATA[控除合計]]></text>
+				</staticText>
+				<staticText>
+					<reportElement style="NetHeader" x="294" y="218" width="194" height="17" uuid="626ff5fb-8a44-4d5d-8241-1128022a5dfa"/>
+					<text><![CDATA[差引支給額]]></text>
+				</staticText>
+				<textField>
+					<reportElement style="CellCenter" x="0" y="235" width="98" height="24" uuid="b010ff97-fa77-4161-88c5-c85c7b487fab"/>
+					<textFieldExpression><![CDATA[$F{attendance_days} + " 日"]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement style="CellCenter" x="98" y="235" width="98" height="24" uuid="61610c7f-94d5-4f3c-9f90-9a7c7226f0d5"/>
+					<textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{gross_amount}) + " 円"]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement style="CellCenter" x="196" y="235" width="98" height="24" uuid="71251975-0ca2-42fb-ab86-9be62b3cb25f"/>
+					<textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{deduction_total}) + " 円"]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement style="NetValue" x="294" y="235" width="194" height="24" uuid="14dc7b27-5eb5-4e52-9ae7-5a5a574f1ade"/>
+					<textFieldExpression><![CDATA[$P{MONEY_FORMAT}.format($F{net_payment_amount}) + " 円"]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement style="Header" x="0" y="265" width="64" height="18" uuid="b6b85b2a-b445-4a9e-888c-0ce2ff8f72b9"/>
+					<text><![CDATA[備考]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement style="Cell" x="64" y="265" width="424" height="18" uuid="38a5b79f-1265-421d-af19-2236f3c2d717"/>
+					<textFieldExpression><![CDATA[$F{note}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement style="CompanyName" x="0" y="287" width="110" height="16" uuid="d42a090a-86a1-467a-83e8-50187bb48f31"/>
+					<text><![CDATA[株式会社　富陽]]></text>
+				</staticText>
+				<staticText>
+					<reportElement style="Base" x="112" y="289" width="30" height="12" uuid="0a82cb14-d4d5-46d6-887a-ac84325ae0a0"/>
+					<text><![CDATA[住所：]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement style="Base" x="142" y="289" width="346" height="12" uuid="e9ffeac9-c3ce-4b27-9028-048f852f073c"/>
+					<textFieldExpression><![CDATA[$F{employee_address}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement style="Base" x="0" y="305" width="110" height="12" uuid="8ec9249f-16bf-4190-9f7c-0753bada9637"/>
+					<text><![CDATA[※上記金額を受領しました。]]></text>
+				</staticText>
+				<textField isBlankWhenNull="true">
+					<reportElement style="Base" x="140" y="305" width="154" height="12" uuid="5e2c67bb-4c0c-4501-a7e3-b453f3917a4a"/>
+					<textElement textAlignment="Left"/>
+					<textFieldExpression><![CDATA[($F{employee_name} == null ? "" : $F{employee_name}) ]]></textFieldExpression>
+				</textField>
+				<line>
+					<reportElement x="0" y="325" width="488" height="1" uuid="1ef512aa-e955-401c-85bd-ca7c3e25ca85"/>
+					<graphicElement>
+						<pen lineStyle="Dashed" lineColor="#9CA3AF"/>
+					</graphicElement>
+				</line>
+					<staticText>
+						<reportElement style="Base" x="112" y="305" width="31" height="12" uuid="99a189f8-754f-47fc-a02f-176cd5bf66b0"/>
+						<textElement textAlignment="Left"/>
+						<text><![CDATA[氏名：]]></text>
+					</staticText>
+					<staticText>
+						<reportElement style="Base" x="294" y="305" width="194" height="12" uuid="37460445-75a9-4b35-ad14-1fa3445c65aa"/>
+						<textElement textAlignment="Left"/>
+						<text><![CDATA[（署名：_____________________________________ 印）]]></text>
+					</staticText>
+			</frame>
+		</band>
+	</detail>
+	<noData>
+		<band height="80">
+			<staticText>
+				<reportElement style="Title" x="0" y="0" width="488" height="32" uuid="2645a637-98e6-44b6-ab0b-80ce92821f72"/>
+				<textElement textAlignment="Center"/>
+				<text><![CDATA[支払明細書]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="Base" x="0" y="36" width="488" height="20" uuid="c138f944-abca-4dc5-ad60-96e405da7dee"/>
+				<textElement textAlignment="Center"/>
+				<text><![CDATA[対象データがありません。]]></text>
+			</staticText>
+		</band>
+	</noData>
 </jasperReport>

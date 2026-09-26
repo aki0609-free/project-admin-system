@@ -5,6 +5,7 @@
 ## ドキュメント
 
 - [締め処理帳票・資産対応仕様 V1](./closing-report-asset-specification-v1.md)
+- [給与支払表 仕様精査メモ](./daily-payment-preparation-review-draft.md)（精査完了まで実装保留）
 
 ## 関連仕様
 

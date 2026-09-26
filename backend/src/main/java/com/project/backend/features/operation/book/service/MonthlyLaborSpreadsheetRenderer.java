@@ -153,8 +153,11 @@ public class MonthlyLaborSpreadsheetRenderer
                         companyName
                 ).trim()
         );
-        title.put("colSpan", HEADERS.size());
-        title.set("style", style(true, 15, "Center", "#D9EAF7"));
+        ObjectNode titleStyle = bandStyle(true, 15, "#D9EAF7", 0);
+        titleStyle.put("whiteSpace", "nowrap");
+        titleStyle.put("overflow", "visible");
+        title.set("style", titleStyle);
+        fillBandCells(cells, true, 15, "#D9EAF7");
     }
 
     private void summaryRow(
@@ -175,8 +178,40 @@ public class MonthlyLaborSpreadsheetRenderer
                         amount(sourceRows, "night_pay_amount")
                 )
         );
-        cell.put("colSpan", HEADERS.size());
-        cell.set("style", style(false, 9, "Left", "#F4F7FA"));
+        ObjectNode summaryStyle = bandStyle(false, 9, "#F4F7FA", 0);
+        summaryStyle.put("whiteSpace", "nowrap");
+        summaryStyle.put("overflow", "visible");
+        cell.set("style", summaryStyle);
+        fillBandCells(cells, false, 9, "#F4F7FA");
+    }
+
+    private void fillBandCells(
+            ArrayNode cells,
+            boolean bold,
+            int fontSize,
+            String background
+    ) {
+        for (int index = 1; index < HEADERS.size(); index++) {
+            ObjectNode blank = cells.addObject();
+            blank.set("style", bandStyle(bold, fontSize, background, index));
+        }
+    }
+
+    private ObjectNode bandStyle(
+            boolean bold,
+            int fontSize,
+            String background,
+            int columnIndex
+    ) {
+        ObjectNode result = style(bold, fontSize, "Left", background);
+        result.put("borderLeft", columnIndex == 0 ? "1px solid #777777" : "none");
+        result.put(
+                "borderRight",
+                columnIndex == HEADERS.size() - 1
+                        ? "1px solid #777777"
+                        : "none"
+        );
+        return result;
     }
 
     private void headerRow(ArrayNode rows) {

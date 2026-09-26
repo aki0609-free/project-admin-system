@@ -102,6 +102,7 @@ public class DailyReportCommandService {
         financeBalanceCommandService.applyDailyReportAmountDiff(
                 employee.getId(),
                 nvl(saved.getSavingAmount()),
+                nvl(saved.getSavingWithdrawalAmount()),
                 nvl(saved.getLoanRepaymentAmount()),
                 saved.getId(),
                 saved.getWorkDate()
@@ -133,6 +134,9 @@ public class DailyReportCommandService {
 
         BigDecimal oldSavingAmount =
                 nvl(entity.getSavingAmount());
+
+        BigDecimal oldSavingWithdrawalAmount =
+                nvl(entity.getSavingWithdrawalAmount());
 
         BigDecimal oldLoanRepaymentAmount =
                 nvl(entity.getLoanRepaymentAmount());
@@ -188,6 +192,9 @@ public class DailyReportCommandService {
         BigDecimal newSavingAmount =
                 nvl(saved.getSavingAmount());
 
+        BigDecimal newSavingWithdrawalAmount =
+                nvl(saved.getSavingWithdrawalAmount());
+
         BigDecimal newLoanRepaymentAmount =
                 nvl(saved.getLoanRepaymentAmount());
 
@@ -195,6 +202,7 @@ public class DailyReportCommandService {
             financeBalanceCommandService.applyDailyReportAmountDiff(
                     newEmployeeId,
                     newSavingAmount.subtract(oldSavingAmount),
+                    newSavingWithdrawalAmount.subtract(oldSavingWithdrawalAmount),
                     newLoanRepaymentAmount.subtract(
                             oldLoanRepaymentAmount
                     ),
@@ -209,6 +217,7 @@ public class DailyReportCommandService {
             financeBalanceCommandService.applyDailyReportAmountDiff(
                     oldEmployeeId,
                     oldSavingAmount.negate(),
+                    oldSavingWithdrawalAmount.negate(),
                     oldLoanRepaymentAmount.negate(),
                     saved.getId(),
                     oldWorkDate
@@ -221,6 +230,7 @@ public class DailyReportCommandService {
             financeBalanceCommandService.applyDailyReportAmountDiff(
                     newEmployeeId,
                     newSavingAmount,
+                    newSavingWithdrawalAmount,
                     newLoanRepaymentAmount,
                     saved.getId(),
                     saved.getWorkDate()
@@ -246,6 +256,7 @@ public class DailyReportCommandService {
         financeBalanceCommandService.applyDailyReportAmountDiff(
                 entity.getEmployee().getId(),
                 nvl(entity.getSavingAmount()).negate(),
+                nvl(entity.getSavingWithdrawalAmount()).negate(),
                 nvl(entity.getLoanRepaymentAmount()).negate(),
                 entity.getId(),
                 entity.getWorkDate()
@@ -306,7 +317,7 @@ public class DailyReportCommandService {
             DailyReportSaveRequest request
     ) {
         DailyReportWorkTimePolicy.WorkTimes times =
-                workTimeCalculator.calculate(request);
+                workTimeCalculator.resolveForSave(request);
         report.setWorkHours(times.workHours());
         report.setOvertimeHours(times.overtimeHours());
         report.setNightWorkHours(times.nightWorkHours());

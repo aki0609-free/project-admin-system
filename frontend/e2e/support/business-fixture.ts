@@ -62,6 +62,16 @@ type MonthlySummaryFixture = {
   customerSiteId: number
 }
 
+type DailyPreparationAssignment = {
+  id: number
+  employeeId: number
+}
+
+type DailyPreparation = {
+  id: number
+  assignments: DailyPreparationAssignment[]
+}
+
 type ResidentTaxMonth = {
   month: number
   currentTaxAmount: number | null
@@ -438,6 +448,47 @@ export const ensureBusinessFixture = async (page: Page) => {
       : await page.request.post('/api/employees', {
           headers: requestHeaders,
           data: employeeRequest,
+        }),
+  )
+
+  const existingPreparation = await json<DailyPreparation | null>(
+    await page.request.get('/api/operation/daily-preparations', {
+      headers: requestHeaders,
+      params: { targetDate: E2E_WORK_DATE },
+    }),
+  )
+  const preparation = existingPreparation?.id
+    ? existingPreparation
+    : await json<DailyPreparation>(
+        await page.request.post('/api/operation/daily-preparations', {
+          headers: requestHeaders,
+          data: {
+            targetDate: E2E_WORK_DATE,
+            note: 'Playwright固定業務データ',
+          },
+        }),
+      )
+  const existingAssignment = preparation.assignments.find(
+    assignment => assignment.employeeId === employee.id,
+  )
+  const assignmentRequest = {
+    preparationId: preparation.id,
+    employeeId: employee.id,
+    customerId: monthlySummaryFixture.customerId,
+    customerSiteId: monthlySummaryFixture.customerSiteId,
+    vehicleArrangementType: 'NONE',
+    passengerCount: 0,
+    workDescription: 'Playwright固定日報・月間集計表検証',
+  }
+  await json(
+    existingAssignment
+      ? await page.request.put(
+          `/api/operation/daily-preparations/assignments/${existingAssignment.id}`,
+          { headers: requestHeaders, data: assignmentRequest },
+        )
+      : await page.request.post('/api/operation/daily-preparations/assignments', {
+          headers: requestHeaders,
+          data: assignmentRequest,
         }),
   )
 

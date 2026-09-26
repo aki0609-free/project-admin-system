@@ -24,6 +24,7 @@ import {
   formatDecimalHoursAsHourMinute,
   formatMinutesAsHourMinute,
   formatNumberWithUnit,
+  parseHourMinuteToDecimalHours,
   parseHourMinuteToMinutes,
 } from '@/shared/utils/UnitFormatUtils'
 
@@ -59,6 +60,8 @@ type UseDailyReportFormFieldsOptions = {
 
   hasActiveSaving: Ref<boolean>
     | ComputedRef<boolean>
+
+  onPaymentDateInput?: () => void
 }
 
 export const useDailyReportFormFields = ({
@@ -70,6 +73,7 @@ export const useDailyReportFormFields = ({
   siteRoleOptions,
   hasActiveLoan,
   hasActiveSaving,
+  onPaymentDateInput,
 }: UseDailyReportFormFieldsOptions) => {
   const formatBillingUnit = (
     value: unknown,
@@ -134,6 +138,7 @@ export const useDailyReportFormFields = ({
           label: '支払日',
           type: 'date',
           gridColumn: '4 / span 1',
+          onUpdate: onPaymentDateInput,
         },
         {
           key: 'customerId',
@@ -183,29 +188,30 @@ export const useDailyReportFormFields = ({
         {
           key: 'workHours',
           label: '通常時間',
-          type: 'number',
-          editable: false,
+          type: 'text',
           formatter: formatDecimalHoursAsHourMinute,
+          parser: parseHourMinuteToDecimalHours,
         },
         {
           key: 'overtimeHours',
           label: '早出・残業時間',
-          type: 'number',
-          editable: false,
+          type: 'text',
           formatter: formatDecimalHoursAsHourMinute,
+          parser: parseHourMinuteToDecimalHours,
         },
         {
           key: 'nightWorkHours',
           label: '深夜時間',
-          type: 'number',
-          editable: false,
+          type: 'text',
           formatter: formatDecimalHoursAsHourMinute,
+          parser: parseHourMinuteToDecimalHours,
         },
         {
           key: 'holidayPremiumEligible',
           label: '休日手当対象',
           type: 'checkbox',
           width: 160,
+          gridColumn: '1 / span 1',
         },
         {
           key: 'holidayWorkHours',
@@ -213,12 +219,45 @@ export const useDailyReportFormFields = ({
           type: 'number',
           editable: false,
           formatter: formatDecimalHoursAsHourMinute,
+          gridColumn: '2 / span 1',
         },
+        {
+          key: 'paidLeaveDays',
+          label: '有給取得日数',
+          type: 'number',
+          formatter: value => formatNumberWithUnit(value, '日'),
+          gridColumn: '3 / span 1',
+        },
+        {
+          key: 'paidLeaveRemainingDays',
+          label: '有給残日数',
+          type: 'number',
+          editable: false,
+          formatter: value => formatNumberWithUnit(value, '日'),
+          gridColumn: '4 / span 1',
+        },
+        {
+          key: 'workDescription',
+          label: '備考',
+          type: 'textarea',
+          rows: 4,
+          autoGrow: true,
+          gridColumn: '1 / span 4',
+        },
+      ]
+
+    return result
+  })
+
+  const vehicleFields = computed(() => {
+    const result:
+      GridFormFieldDef<DailyReportForm>[] = [
         {
           key: 'vehicleArrangementType',
           label: '車両手配区分',
           type: 'select',
           editable: false,
+          gridColumn: '1 / span 2',
           options: [
             { title: '車両なし', value: 'NONE' },
             { title: '会社手配（顧客へ距離請求）', value: 'COMPANY' },
@@ -232,6 +271,7 @@ export const useDailyReportFormFields = ({
           type: 'number',
           editable: false,
           formatter: value => formatNumberWithUnit(value, 'km'),
+          gridColumn: '3 / span 1',
         },
         {
           key: 'passengerCount',
@@ -239,38 +279,7 @@ export const useDailyReportFormFields = ({
           type: 'number',
           editable: false,
           formatter: value => formatNumberWithUnit(value, '人'),
-        },
-        {
-          key: 'paidLeaveDays',
-          label: '有給取得日数',
-          type: 'number',
-          formatter: value => formatNumberWithUnit(value, '日'),
-        },
-        {
-          key: 'paidLeaveRemainingDays',
-          label: '有給残日数',
-          type: 'number',
-          editable: false,
-          formatter: value => formatNumberWithUnit(value, '日'),
-        },
-        {
-          key:
-            'paidLeaveRemainingAfterUsedDays',
-
-          label:
-            '有給使用後残',
-
-          type: 'number',
-          editable: false,
-          formatter: value => formatNumberWithUnit(value, '日'),
-        },
-        {
-          key: 'workDescription',
-          label: '備考',
-          type: 'textarea',
-          rows: 4,
-          autoGrow: true,
-          gridColumn: '1 / span 4',
+          gridColumn: '4 / span 1',
         },
       ]
 
@@ -372,7 +381,7 @@ export const useDailyReportFormFields = ({
             type: 'number',
             editable: false,
             formatter: value => formatCurrency(Number(value)),
-            gridColumn: '1 / span 2',
+            gridColumn: '1 / span 4',
           },
           {
             key:
@@ -384,7 +393,7 @@ export const useDailyReportFormFields = ({
             type: 'number',
             editable: false,
             formatter: value => formatCurrency(Number(value)),
-            gridColumn: '3 / span 2',
+            gridColumn: '1 / span 2',
           },
           {
             key: 'savingBalance',
@@ -392,7 +401,7 @@ export const useDailyReportFormFields = ({
             type: 'number',
             editable: false,
             formatter: value => formatCurrency(Number(value)),
-            gridColumn: '1 / span 2',
+            gridColumn: '3 / span 2',
           },
           {
             key: 'loanBalance',
@@ -400,7 +409,7 @@ export const useDailyReportFormFields = ({
             type: 'number',
             editable: false,
             formatter: value => formatCurrency(Number(value)),
-            gridColumn: '3 / span 2',
+            gridColumn: '1 / span 2',
           },
           {
             key: 'savingAmount',
@@ -408,7 +417,7 @@ export const useDailyReportFormFields = ({
             type: 'number',
             editable: hasActiveSaving.value,
             formatter: value => formatCurrency(Number(value)),
-            gridColumn: '1 / span 2',
+            gridColumn: '3 / span 2',
           },
           {
             key:
@@ -420,6 +429,14 @@ export const useDailyReportFormFields = ({
             type: 'number',
             editable: hasActiveLoan.value,
             formatter: value => formatCurrency(Number(value)),
+            gridColumn: '1 / span 2',
+          },
+          {
+            key: 'savingWithdrawalAmount',
+            label: '貯金引出し額',
+            type: 'number',
+            editable: hasActiveSaving.value,
+            formatter: value => formatCurrency(Number(value)),
             gridColumn: '3 / span 2',
           },
         ]
@@ -429,6 +446,7 @@ export const useDailyReportFormFields = ({
 
   return {
     fields,
+    vehicleFields,
     billingFields,
     financeFields,
   }

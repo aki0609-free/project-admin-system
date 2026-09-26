@@ -9,6 +9,7 @@ import type {
   DailyReportAmountItemForm,
 } from '@/features/dailyreport/types/dailyReportInputItemTypes'
 import { businessDateWithOffset } from '@/shared/utils/DateUtils'
+import { calculateDefaultWorkDate } from '@/features/dailyreport/utils/paymentDateSuggestion'
 
 export const createEmptyDailyReportForm =
   (): DailyReportForm => ({
@@ -16,7 +17,9 @@ export const createEmptyDailyReportForm =
 
     employeeId: null,
 
-    workDate: businessDateWithOffset(-1),
+    workDate: calculateDefaultWorkDate(
+      businessDateWithOffset(0),
+    ),
     paymentDate: '',
 
     customerId: null,
@@ -43,8 +46,8 @@ export const createEmptyDailyReportForm =
 
     workDescription: '',
 
-    startTime: '',
-    endTime: '',
+    startTime: '08:00',
+    endTime: '17:00',
 
     breakMinutes: 0,
 
@@ -71,6 +74,7 @@ export const createEmptyDailyReportForm =
 
     loanRepaymentAmount: 0,
     savingAmount: 0,
+    savingWithdrawalAmount: 0,
     dormitoryChargeDays: 0,
 
     estimatedGrossPayAmount: 0,
@@ -322,6 +326,9 @@ export const toDailyReportForm = (
 
   savingAmount:
     item.savingAmount ?? 0,
+
+  savingWithdrawalAmount:
+    item.savingWithdrawalAmount ?? 0,
 
   dormitoryChargeDays:
     item.dormitoryChargeDays ?? 0,

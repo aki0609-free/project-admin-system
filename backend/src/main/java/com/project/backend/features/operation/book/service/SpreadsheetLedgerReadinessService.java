@@ -20,7 +20,7 @@ import com.project.backend.features.system.excelbook.service.SpreadsheetTemplate
 import lombok.RequiredArgsConstructor;
 
 /**
- * システムメニューで登録した台帳定義が、締めメニューから生成できる状態かを判定する。
+ * システムメニューで登録した台帳定義が、台帳管理から随時生成できる状態かを判定する。
  */
 @Service
 @RequiredArgsConstructor

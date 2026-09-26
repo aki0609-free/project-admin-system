@@ -318,6 +318,7 @@ class DailyReportTrackedDeductionContainerIntegrationTest
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,
+                BigDecimal.ZERO,
                 3,
                 false,
                 com.project.backend.features.dailyreport.enums.VehicleArrangementType.NONE,

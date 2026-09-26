@@ -1,5 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
-import { E2E_EMPLOYEE_NAME, E2E_WORK_DATE } from './support/business-fixture'
+import {
+  E2E_EMPLOYEE_NAME,
+  E2E_TARGET_MONTH,
+  E2E_WORK_DATE,
+} from './support/business-fixture'
 
 const watchServerErrors = (page: Page) => {
   const errors: string[] = []
@@ -32,13 +36,24 @@ test('daily report HTML preview renders the fixed business data', async ({ page 
   const serverErrors = watchServerErrors(page)
 
   await page.goto('/operation/daily')
-  await page.getByLabel('対象日').fill(E2E_WORK_DATE)
+  await page.getByLabel('対象日').click()
+  const targetDate = new Date(`${E2E_WORK_DATE}T00:00:00`)
+  const datePicker = page.locator('.v-date-picker')
+  await expect(datePicker).toBeVisible()
+  await datePicker.getByRole('button', { name: '前の月', exact: true }).click()
+  await datePicker
+    .getByRole('button', {
+      name: new RegExp(
+        `${targetDate.getFullYear()}年${targetDate.getMonth() + 1}月${targetDate.getDate()}日`,
+      ),
+    })
+    .click()
   await page.getByRole('button', { name: '帳票', exact: true }).click()
 
   await expect(page.getByText('帳票一覧', { exact: true })).toBeVisible()
   await expect(page.getByText('日別労務費一覧', { exact: true })).toBeVisible()
   await expect(page.getByText('給与支払表', { exact: true })).toBeVisible()
-  await expect(page.getByText('日次給与明細', { exact: true })).toBeVisible()
+  await expect(page.getByText('支払明細書', { exact: true })).toBeVisible()
 
   const previewResponsePromise = page.waitForResponse(response =>
     response.url().includes('/api/operation/report-previews/html')
@@ -102,6 +117,13 @@ test('representative spreadsheet ledger is generated and displayed', async ({ pa
   const serverErrors = watchServerErrors(page)
 
   await page.goto('/operation/book')
+  await page.locator('.v-select').filter({ hasText: '対象月' }).click()
+  await page
+    .getByRole('option', {
+      name: `${Number(E2E_TARGET_MONTH.slice(5, 7))}月`,
+      exact: true,
+    })
+    .click()
   const monthlySummaryRow = page.getByRole('row').filter({
     hasText: 'MONTHLY_SUMMARY',
   })
@@ -125,8 +147,8 @@ test('representative spreadsheet ledger is generated and displayed', async ({ pa
     workbook: { Workbook?: { sheets?: unknown[] }; sheets?: unknown[] }
   }
   const sheets = generated.workbook.Workbook?.sheets ?? generated.workbook.sheets ?? []
-  expect(generated.targetMonth).toBe('2026-08')
-  expect(generated.storagePath).toContain('MONTHLY_SUMMARY/2026-08/')
+  expect(generated.targetMonth).toBe(E2E_TARGET_MONTH)
+  expect(generated.storagePath).toContain(`MONTHLY_SUMMARY/${E2E_TARGET_MONTH}/`)
   expect(sheets.length).toBeGreaterThan(0)
   expect(responseText).not.toContain('${')
   expect(responseText).toContain('E2E 月間集計検証顧客')
@@ -135,8 +157,14 @@ test('representative spreadsheet ledger is generated and displayed', async ({ pa
   const generatedDialog = page.getByRole('dialog').filter({
     hasText: '生成台帳：月間集計表',
   })
+  const [targetYear, targetMonthNumber] = E2E_TARGET_MONTH.split('-')
   await expect(generatedDialog).toBeVisible()
-  await expect(generatedDialog.getByText('対象月: 2026-08', { exact: true })).toBeVisible()
+  await expect(
+    generatedDialog.getByText(
+      `対象月: ${targetYear}年${Number(targetMonthNumber)}月`,
+      { exact: true },
+    ),
+  ).toBeVisible()
   await expect(generatedDialog.locator('.e-spreadsheet')).toBeVisible()
   expect(serverErrors, 'same-origin HTTP 5xx responses').toEqual([])
 })

@@ -117,7 +117,8 @@ CREATE TABLE IF NOT EXISTS monthly_closing_item (
         REFERENCES monthly_closing_execution (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 月次締め時に確定生成するSpreadsheet台帳。
+-- Spreadsheet台帳は最新データを随時生成するため、月次締めの実行対象には含めない。
+-- 履歴互換のため定義は残し、required_flag/active_flagをFALSEに固定する。
 -- output_codeはexcel_book_master.book_codeと一致させる。
 INSERT INTO monthly_closing_output_definition (
     output_type,
@@ -133,22 +134,22 @@ INSERT INTO monthly_closing_output_definition (
 ) VALUES
     (
         'LEDGER', 'MONTHLY_LABOR', 30,
-        TRUE, TRUE, 7, 'default',
+        FALSE, FALSE, 7, 'default',
         CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
     ),
     (
         'LEDGER', 'LABOR_COST_PAYMENT', 40,
-        TRUE, TRUE, 7, 'default',
+        FALSE, FALSE, 7, 'default',
         CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
     ),
     (
         'LEDGER', 'RECEIPT_CONFIRMATION', 50,
-        TRUE, TRUE, 7, 'default',
+        FALSE, FALSE, 7, 'default',
         CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
     ),
     (
         'LEDGER', 'MONTHLY_SUMMARY', 60,
-        TRUE, TRUE, 7, 'default',
+        FALSE, FALSE, 7, 'default',
         CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
     )
 ON DUPLICATE KEY UPDATE

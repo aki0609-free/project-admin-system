@@ -6,7 +6,7 @@
  columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20"
  whenNoDataType="NoDataSection">
     <property name="net.sf.jasperreports.default.font.name" value="IPAexGothic"/>
-    <style name="Base" fontName="IPAexGothic" fontSize="8" pdfFontName="fonts/ipaexg.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+    <style name="Base" fontName="IPAexGothic" fontSize="8"/>
     <style name="Small" style="Base" fontSize="7"/>
     <style name="Label" style="Base" fontSize="11" isBold="true"/>
     <style name="InvoiceTitle" style="Base" fontSize="25" isBold="true"/>

@@ -35,6 +35,7 @@ const {
   isEdit,
   tabs,
   fields,
+  vehicleFields,
   billingFields,
   financeFields,
   schema,
@@ -91,6 +92,17 @@ const {
             v-model="formModel"
             :schema="schema"
             :fields="fields"
+          />
+        </div>
+
+        <div v-else-if="active === 'vehicle'" class="vehicle-panel">
+          <v-alert type="info" variant="tonal" density="compact">
+            現場配置・配車で確定した車両情報を表示します。変更する場合は、先に「現場配置・配車」を修正してください。
+          </v-alert>
+          <FormGridTab
+            v-model="formModel"
+            :schema="schema"
+            :fields="vehicleFields"
           />
         </div>
 
@@ -155,7 +167,7 @@ const {
             variant="tonal"
             density="compact"
           >
-            <span v-if="!hasActiveSaving">有効な貯蓄設定がないため、実際貯蓄額は入力できません。</span>
+            <span v-if="!hasActiveSaving">有効な貯蓄設定がないため、実際貯蓄額・貯金引出し額は入力できません。</span>
             <span v-if="!hasActiveLoan">有効な貸付設定がないため、実際返済額は入力できません。</span>
           </v-alert>
           <FormGridTab
@@ -170,7 +182,8 @@ const {
 </template>
 
 <style scoped>
-.billing-panel {
+.billing-panel,
+.vehicle-panel {
   display: grid;
   gap: 16px;
   padding: 16px;

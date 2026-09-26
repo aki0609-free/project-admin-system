@@ -123,7 +123,7 @@ async function handleDelete(form: ExcelBookMasterForm) {
 <template>
   <ListDetailPageLayout
     title="台帳マスタ"
-    description="締め処理で使用するデータソースとSpreadsheetテンプレートを管理します。"
+    description="台帳のデータソースとSpreadsheetテンプレートを管理します。"
     :left-toolbar-items="leftToolbarItems"
     :right-toolbar-items="rightToolbarItems"
   >
@@ -131,8 +131,8 @@ async function handleDelete(form: ExcelBookMasterForm) {
       <v-alert type="info" variant="tonal" density="compact">
         行を選択するとマスター設定を編集できます。テンプレート方式の台帳だけ、
         Spreadsheetテンプレートを編集できます。
-        台帳の生成は「締め処理 → 台帳」から実行します。
-        月次締め対象との連携状態も、締め処理側の一覧で確認できます。
+        台帳の生成は「業務管理 → 台帳管理」からいつでも実行でき、
+        対象月の最新データが反映されます。
       </v-alert>
     </template>
 

@@ -34,7 +34,9 @@ for local_resource in \
   "sql/local/demo_monthly_summary_fixture.sql" \
   "sql/local/demo_monthly_payroll_fixture.sql" \
   "sql/local/demo_daily_operation_fixture.sql" \
+  "sql/local/demo_july_payment_cycle_fixture.sql" \
   "sql/local/demo_august_monthly_closing_fixture.sql" \
+  "sql/local/demo_september_monthly_closing_fixture.sql" \
   "sql/local/demo_customer_transaction_fixture.sql"
 do
   local_fixture="/resources/${local_resource}"
