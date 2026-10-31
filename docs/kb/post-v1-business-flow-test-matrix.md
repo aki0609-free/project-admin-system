@@ -61,7 +61,7 @@ V1で稼働している主要業務について、業務の入口から最終成
 | ID | 業務フロー | 現在確認できる主なテスト | 評価 | 不足している実務ケース |
 | --- | --- | --- | --- | --- |
 | MST-01 | 顧客登録 → 契約・請求設定 → 現場別単価 | `CustomerMapperTest`、`CustomerCommandServiceTest`、`CustomerQueryServiceTest`、`CustomerSiteBillingRateCommandServiceTest`、`frontend/e2e/customer-information-ui.spec.ts` | B | 締日、支払月区分、請求書パターン1～3、顧客距離単価を組み合わせた締め結果の確認 |
-| MST-02 | 従業員登録 → 契約・給与・税区分 → 利用開始 | `EmployeeAdminServiceTest`、`EmployeeWorkEligibilityPolicyTest`、各入力検証、`employee-registration.spec.ts`、`employee-edit-form-ui.spec.ts`、`employee-resignation-ui.spec.ts` | B | 日払い・週払い・月払いの3名を同じ期間で運用し、支払日・帳票対象・退職境界まで確認するE2E |
+| MST-02 | 従業員登録 → 契約・給与・税区分 → 利用開始 | `EmployeeAdminServiceTest`、`EmployeeWorkEligibilityPolicyTest`、`PostV1CriticalBusinessFlowsContainerIntegrationTest`、各入力検証、`employee-registration.spec.ts`、`employee-edit-form-ui.spec.ts`、`employee-resignation-ui.spec.ts` | B | 3支払区分の共通fixtureは追加済み。退職境界と画面操作を含むE2Eは未整備 |
 | MST-03 | 手当・控除マスター → 従業員紐付け → 日報の動的項目 | 給与項目ポリシー／計算／取引テスト、`DailyReportInputItemServiceTest`、`DailyReportRuleCalculationContainerIntegrationTest`、`payroll-item-master-linkage-ui.spec.ts` | A | 動的項目数が帳票上限付近の場合、無効化済み項目、同名項目、月途中の設定変更 |
 | MST-04 | 貯蓄・借入登録 → 日報で積立・返済・引出 → 残額更新 | `EmployeeSavingServiceTest`、`EmployeeLoanServiceTest`、`EmployeeFinanceBalanceCommandServiceTest`、`EmployeeFinanceTransactionServiceTest`、`employee-loan-savings-ui.spec.ts` | B | 過去日報修正・削除後の差分反映、締め跨ぎ、同日複数日報、残額0円到達後の再編集 |
 | MST-05 | 住民税編集・CSV取込 → 月別控除へ反映 | `ResidentTaxEditorContainerIntegrationTest`、`ResidentTaxImportContainerIntegrationTest`、`frontend/e2e/resident-tax-editor.spec.ts` | A | AWS上の実ファイル形式差、締め済み月を再編集した後の再締め帳票確認 |
@@ -87,8 +87,8 @@ V1で稼働している主要業務について、業務の入口から最終成
 | PAY-02 | 締め失敗 → Versionを消費せず再実行 | `MonthlyClosingContainerIntegrationTest.failedAttemptKeepsHistoryAndCanRetrySameVersion`、Job／Executorテスト | A | Jasper・SQL・計算マスターの各失敗理由が画面に表示され、修復後に同Versionで成功するE2E |
 | PAY-03 | 再締め → 新Version → 旧帳票履歴を保持 | `firstClosingAndReclosingCreateImmutableExecutionVersions`、実行状態・帳票ファイルテスト | A | 再締め前後の金額差分、保存PDF、HTML最新プレビューを同時に比較するテスト |
 | PAY-04 | 締め期間の給与・税・保険・手当・控除集計 | `DailyPayComponentCalculationServiceTest`、`LegalDepositRefundServiceTest`、給与項目計算テスト、`PayrollBusinessFlowContainerIntegrationTest` | B | 課税対象額、通勤手当除外、社会保険計、年末調整正負、法定準備金返済正負を同一fixtureで検証 |
-| PAY-05 | 月次給与明細・労務費一覧の生成 | `MonthlyPaySlipJasperTemplateTest`、Excel renderer／report file lifecycle tests、`report-ledger-file.spec.ts` | B | JRXML・HTML・Excelの項目値一致、複数ページ、動的なその他手当・控除、視覚差分 |
-| PAY-06 | 給与支払表 → 支払日単位の金種・支給額 | 日付計算、日次支払、締め関連の個別テスト | C | 日払い／週払い／月払いの同一支払日集計、月次精算の扱い、銀行振込混在、金種内訳の一連テスト |
+| PAY-05 | 月次給与明細・労務費一覧の生成 | `PostV1CriticalBusinessFlowsContainerIntegrationTest.dailyReportsSnapshotIntoMonthlyPaySlipsAndLaborCostList`、`MonthlyPaySlipJasperTemplateTest`、Excel renderer／report file lifecycle tests、`report-ledger-file.spec.ts` | B | 共通fixtureから両確定履歴への金額一致は追加済み。JRXML・HTML・Excel間、複数ページ、視覚差分は未整備 |
+| PAY-06 | 給与支払表 → 支払日単位の金種・支給額 | `PostV1CriticalBusinessFlowsContainerIntegrationTest.paymentPreparationAggregatesByActualPaymentDateAndCycle`、日付計算、日次支払テスト | A | 3支払区分と金種内訳は追加済み。銀行振込混在、負数・0円、月次精算の追加ケースが必要 |
 
 ### 4.5 顧客締め・請求・取引
 
@@ -100,7 +100,7 @@ V1で稼働している主要業務について、業務の入口から最終成
 | BILL-04 | 請求書パターン1・2・3の生成 | `MonthlyInvoiceJasperTemplateTest.compilesAndRendersAllCustomerInvoicePatterns` | B | 締日を基準にした31日マトリクス、職種・現場・工事別改ページ、合計値、レイアウト画像比較 |
 | BILL-05 | 注文書生成 | `MonthlyOrderFormJasperTemplateTest` | B | 元請・下請情報、印・担当者欄、支払条件、注記を含む視覚差分と複数ページ |
 | BILL-06 | HTML請求プレビューで最新明細確認 | HTML renderer／preview tests | C | 全パターン共通の最細粒度明細、不要な会社・口座情報の非表示、Jasper集計値との一致 |
-| BILL-07 | 取引管理 → 入金登録 → 入金確認表へ反映 | `CustomerTransactionCommandServiceTest`、`customer-transaction.spec.ts`、`customer-transaction-ui.spec.ts`、Receipt ledger tests | B | 当月／翌月／翌々月、部分入金、手数料・相殺、再締め後の台帳反映を一本で確認 |
+| BILL-07 | 取引管理 → 入金登録 → 入金確認表へ反映 | `PostV1CriticalBusinessFlowsContainerIntegrationTest.customerClosingCreatesTransactionAndReceiptConfirmationRow`、`CustomerTransactionCommandServiceTest`、`customer-transaction.spec.ts`、`customer-transaction-ui.spec.ts`、Receipt ledger tests | B | 顧客締め履歴→取引→手数料込み入金→入金確認Viewは追加済み。当月／翌々月、部分入金、相殺、再締めの組合せは未整備 |
 
 ### 4.6 台帳・ファイル出力
 
@@ -154,10 +154,10 @@ V1で稼働している主要業務について、業務の入口から最終成
 
 | 優先度 | 追加するテスト | 対応するフロー |
 | --- | --- | --- |
-| P0 | 3従業員（日払い・週払い・月払い）× 1か月の固定fixture | DAY-02～08、PAY-01～06 |
-| P0 | 日報 → 自社締め → 月次給与明細／労務費一覧のContainer結合テスト | PAY-01～05 |
-| P0 | 顧客締め → 請求履歴 → 取引 → 入金確認表のContainer結合テスト | BILL-01～07、LED-01 |
-| P0 | 給与支払表の支払日別集計テスト | PAY-06 |
+| P0（初回完了） | 3従業員（日払い・週払い・月払い）× 1か月の固定fixture | DAY-02～08、PAY-01～06 |
+| P0（初回完了） | 日報 → 自社締め → 月次給与明細／労務費一覧の確定履歴Container結合テスト | PAY-01～05 |
+| P0（初回完了） | 顧客締め履歴 → 取引 → 入金確認ViewのContainer結合テスト | BILL-01～07、LED-01 |
+| P0（初回完了） | 給与支払表の支払日別集計テスト | PAY-06 |
 | P1 | 請求書3パターン・注文書・月次給与明細のPDF回帰テスト | BILL-04～06、PAY-05 |
 | P1 | 台帳4種の実ファイルExcel回帰テストと部分印刷E2E | LED-01～06 |
 | P1 | 会社情報未登録・S3未配置・計算マスター不足の環境差テスト | BAS-02、BAS-04、OPS-01 |
@@ -220,4 +220,32 @@ npm run reports:workspace:check
 - [動的手当・控除ルール](daily-report-dynamic-payroll-items-rule-v1.md)
 - [税データ取込](tax-data-import-v1.md)
 - [Syncfusion Spreadsheet基盤](syncfusion-spreadsheet-foundation.md)
+
+## 10. 2026年10月31日 初回P0テスト追加
+
+共通fixture `PostV1PayrollScenarioFixture` に、2026年7月分の次の固定データを定義した。
+
+- 日払い・日給者: 1日報、12,000円、7月4日支払
+- 週払い・日給者: 2日報、合計26,000円、7月13日支払
+- 月払い・日給者: 2日報、合計28,000円、8月14日支払
+- 月間総支給額: 66,000円
+
+`PostV1CriticalBusinessFlowsContainerIntegrationTest` に次の4ケースを追加した。
+
+1. `threePaymentCyclesShareOneJulyFixtureWithExpectedPaymentDates`
+   - 3支払区分、勤務日、支払日、日報件数、月間総額を確認する。
+2. `dailyReportsSnapshotIntoMonthlyPaySlipsAndLaborCostList`
+   - 自社締めVersionを開始し、日報から月次給与明細と労務費一覧の確定履歴を実ストアドで作成する。両帳票が3名・66,000円で一致し、締めがVersion 1で完了することを確認する。
+3. `customerClosingCreatesTransactionAndReceiptConfirmationRow`
+   - 確定請求履歴から顧客取引を同期し、手数料込みの入金登録後に入金確認Viewが残額0円・入金済みになることを確認する。
+4. `paymentPreparationAggregatesByActualPaymentDateAndCycle`
+   - 実際の支払日ごとに日払い・週払い・月払いが集計され、月払い28,000円の金種が正しいことを確認する。
+
+実行コマンド:
+
+```bash
+cd backend
+./gradlew integrationTest \
+  --tests com.project.backend.testsupport.PostV1CriticalBusinessFlowsContainerIntegrationTest
+```
 
