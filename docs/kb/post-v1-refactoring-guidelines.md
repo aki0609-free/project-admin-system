@@ -163,7 +163,7 @@ fix: distinguish missing company profile from fetch failure
 
 ## 9. 最初に行う作業
 
-1. 主要業務フローとテストの対応表を作成する。
+1. [主要業務フローとテストの対応表](post-v1-business-flow-test-matrix.md)を維持・更新する。
 2. 日次・週次・月次の実務データfixtureを整理する。
 3. 締め処理と帳票生成の結合テストを追加する。
 4. 帳票Working資産の同期検証を自動化する。
