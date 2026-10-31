@@ -16,6 +16,10 @@ import org.springframework.http.MediaType;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.project.backend.features.admin.business.dto.BusinessClosingSettingResponse;
+import com.project.backend.features.admin.business.dto.BusinessHolidayResponse;
+import com.project.backend.features.admin.business.dto.BusinessHolidaySaveRequest;
+import com.project.backend.features.admin.business.dto.YearEndAdjustmentResponse;
+import com.project.backend.features.admin.business.dto.YearEndAdjustmentSaveRequest;
 import com.project.backend.features.admin.business.dto.AnnualReportBackupSettingResponse;
 import com.project.backend.features.admin.business.dto.AnnualReportBackupSettingSaveRequest;
 import com.project.backend.features.admin.business.dto.BusinessClosingSettingSaveRequest;
@@ -31,6 +35,8 @@ import com.project.backend.features.admin.business.dto.ResignationMessageSaveReq
 import com.project.backend.features.admin.business.dto.PreviewReportSettingResponse;
 import com.project.backend.features.admin.business.dto.PreviewReportSettingSaveRequest;
 import com.project.backend.features.admin.business.service.BusinessSettingService;
+import com.project.backend.features.admin.business.service.BusinessHolidayService;
+import com.project.backend.features.admin.business.service.YearEndAdjustmentService;
 import com.project.backend.features.admin.business.service.AnnualReportBackupSettingService;
 import com.project.backend.features.admin.business.service.ExternalSupportLinkSettingService;
 import com.project.backend.features.admin.business.service.PayrollPolicySettingService;
@@ -52,6 +58,44 @@ public class BusinessSettingController {
     private final ExternalSupportLinkSettingService externalSupportLinkSettingService;
     private final PayrollPolicySettingService payrollPolicySettingService;
     private final PreviewReportSettingService previewReportSettingService;
+    private final BusinessHolidayService businessHolidayService;
+    private final YearEndAdjustmentService yearEndAdjustmentService;
+
+    @GetMapping("/holidays/{year}")
+    public List<BusinessHolidayResponse> findHolidays(@PathVariable int year) {
+        return businessHolidayService.findByYear(year);
+    }
+
+    @PostMapping("/holidays")
+    public BusinessHolidayResponse saveHoliday(
+            @Valid @RequestBody BusinessHolidaySaveRequest request
+    ) {
+        return businessHolidayService.save(request);
+    }
+
+    @DeleteMapping("/holidays/{id}")
+    public void deleteHoliday(@PathVariable Long id) {
+        businessHolidayService.delete(id);
+    }
+
+    @GetMapping("/year-end-adjustments/{taxYear}")
+    public List<YearEndAdjustmentResponse> findYearEndAdjustments(
+            @PathVariable int taxYear
+    ) {
+        return yearEndAdjustmentService.findByYear(taxYear);
+    }
+
+    @PostMapping("/year-end-adjustments")
+    public YearEndAdjustmentResponse saveYearEndAdjustment(
+            @Valid @RequestBody YearEndAdjustmentSaveRequest request
+    ) {
+        return yearEndAdjustmentService.save(request);
+    }
+
+    @DeleteMapping("/year-end-adjustments/{id}")
+    public void deleteYearEndAdjustment(@PathVariable Long id) {
+        yearEndAdjustmentService.delete(id);
+    }
 
     @GetMapping("/preview-reports")
     public List<PreviewReportSettingResponse> findPreviewReports() {

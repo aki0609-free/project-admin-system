@@ -143,12 +143,20 @@ verification="$(
       ':',
       (SELECT COUNT(*) FROM information_schema.tables
        WHERE table_schema = DATABASE()
-         AND table_name = 'daily_pay_rule_setting')
+         AND table_name = 'daily_pay_rule_setting'),
+      ':',
+      (SELECT COUNT(*) FROM information_schema.tables
+       WHERE table_schema = DATABASE()
+         AND table_name IN (
+           'business_holiday',
+           'business_calendar_date',
+           'employee_year_end_adjustment'
+         ))
     );
   "
 )"
 
-if [[ "${verification}" != "11:5:3:4:1" ]]; then
+if [[ "${verification}" != "11:5:3:4:1:3" ]]; then
   echo "Runtime schema verification failed: ${verification}" >&2
   exit 1
 fi
@@ -360,7 +368,7 @@ daily_preview_verification="$(
   "
 )"
 
-if [[ "${daily_preview_verification}" != "2:2" ]]; then
+if [[ "${daily_preview_verification}" != "2:1" ]]; then
   echo "Daily preview verification failed: ${daily_preview_verification}" >&2
   exit 1
 fi

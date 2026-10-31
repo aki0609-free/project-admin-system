@@ -3,352 +3,147 @@
   <head>
     <meta charset="UTF-8" />
     <title>給与支払表</title>
-
     <style>
-      body {
-        margin: 0;
-        padding: 24px;
-        font-family: "Yu Gothic", "Meiryo", sans-serif;
-        font-size: 13px;
-        color: #111827;
-        background: #f3f4f6;
-      }
-
-      .page {
-        max-width: 1180px;
-        margin: 0 auto;
-        padding: 24px;
-        background: #fff;
-        border: 1px solid #d1d5db;
-        border-radius: 14px;
-      }
-
-      .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-bottom: 18px;
-        padding-bottom: 10px;
-        border-bottom: 3px solid #1f2937;
-      }
-
-      .title {
-        font-size: 26px;
-        font-weight: 900;
-        letter-spacing: 0.16em;
-      }
-
-      .date {
-        font-weight: 800;
-      }
-
-      .section {
-        margin-top: 16px;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        overflow: hidden;
-        background: #fff;
-      }
-
-      .section-title {
-        padding: 9px 12px;
-        background: #e5e7eb;
-        border-bottom: 1px solid #cbd5e1;
-        font-size: 16px;
-        font-weight: 900;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-
-      th {
-        padding: 7px 8px;
-        background: #f8fafc;
-        border-bottom: 1px solid #cbd5e1;
-        border-right: 1px solid #e5e7eb;
-        white-space: nowrap;
-      }
-
-      td {
-        padding: 7px 8px;
-        border-bottom: 1px solid #e5e7eb;
-        border-right: 1px solid #f1f5f9;
-      }
-
-      th:last-child,
-      td:last-child {
-        border-right: none;
-      }
-
-      .center {
-        text-align: center;
-      }
-
-      .num {
-        text-align: right;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .cycle {
-        text-align: center;
-        font-weight: 800;
-      }
-
-      .total-line {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-        margin-top: 16px;
-      }
-
-      .total-card {
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        overflow: hidden;
-      }
-
-      .total-label {
-        padding: 8px 10px;
-        background: #e5e7eb;
-        font-weight: 900;
-      }
-
-      .total-value {
-        padding: 10px;
-        text-align: right;
-        font-size: 22px;
-        font-weight: 900;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .cash-grid {
-        display: grid;
-        grid-template-columns: repeat(9, 1fr);
-      }
-
-      .cash-item {
-        border-right: 1px solid #d1d5db;
-      }
-
-      .cash-item:last-child {
-        border-right: none;
-      }
-
-      .cash-name {
-        padding: 8px;
-        text-align: center;
-        background: #f8fafc;
-        border-bottom: 1px solid #d1d5db;
-        font-weight: 900;
-      }
-
-      .cash-count {
-        padding: 10px;
-        text-align: center;
-        font-size: 20px;
-        font-weight: 900;
-      }
-
+      :root { --ink:#111827; --line:#64748b; --soft:#cbd5e1; --header:#dbe4f0; --sub:#eef2f7; --accent:#1d4ed8; }
+      * { box-sizing: border-box; }
+      body { margin:0; padding:18px; color:var(--ink); background:#f3f4f6; font-family:"Yu Gothic","Meiryo",sans-serif; font-size:12px; }
+      .page { width:min(100%,1400px); margin:0 auto; padding:18px; background:#fff; border:1px solid var(--soft); }
+      .header { display:flex; align-items:flex-end; justify-content:space-between; padding-bottom:8px; border-bottom:3px solid var(--ink); }
+      .title { font-size:24px; font-weight:900; letter-spacing:.12em; }
+      .date { font-size:13px; font-weight:800; }
+      .unit-note { margin:8px 0 4px; text-align:right; font-size:10px; }
+      table { width:100%; border-collapse:collapse; }
+      th,td { border:1px solid var(--line); }
+      th { background:var(--header); font-weight:800; }
+      .num { text-align:right; font-variant-numeric:tabular-nums; }
+      .center { text-align:center; }
+      .summary-table { table-layout:fixed; font-size:9px; }
+      .summary-table th { height:30px; padding:4px 2px; line-height:1.15; white-space:normal; }
+      .summary-table td { padding:6px 3px; font-size:11px; font-weight:800; }
+      .bank-total { display:flex; justify-content:flex-end; align-items:baseline; gap:12px; margin-top:8px; font-weight:900; }
+      .bank-total-value { min-width:42mm; padding:4px 8px; border-bottom:2px solid var(--ink); text-align:right; font-size:17px; font-variant-numeric:tabular-nums; }
+      .section-title { margin-top:12px; padding:6px 9px; background:var(--header); border:1px solid var(--line); border-bottom:0; font-size:14px; font-weight:900; }
+      .cash-grid { display:grid; grid-template-columns:repeat(9,1fr); border-top:1px solid var(--line); border-left:1px solid var(--line); }
+      .cash-item { border-right:1px solid var(--line); border-bottom:1px solid var(--line); text-align:center; }
+      .cash-name { padding:5px 2px; background:var(--sub); font-weight:800; }
+      .cash-count { padding:7px 2px; font-size:15px; font-weight:900; }
+      .details-area { margin-top:14px; }
+      .details-table { table-layout:fixed; font-size:8px; }
+      .details-table thead { display:table-header-group; }
+      .details-table th { padding:4px 2px; line-height:1.15; white-space:normal; }
+      .details-table td { padding:4px 3px; white-space:nowrap; }
+      .details-table tr { break-inside:avoid; page-break-inside:avoid; }
+      .employee-code { width:18mm; } .payment-cycle { width:11mm; } .employee-name { width:24mm; } .money-col { width:17mm; }
+      .cycle-heading td { padding:5px 6px; background:#e2e8f0; font-size:10px; font-weight:900; break-after:avoid; page-break-after:avoid; }
+      .subtotal td { background:var(--sub); border-top:2px solid var(--line); font-weight:900; }
+      .payment-main { color:var(--accent); font-weight:900; }
+      .no-data { padding:18px; text-align:center; }
       @media print {
-        @page {
-          size: A4 landscape;
-          margin: 0;
-        }
-
-        body {
-          padding: 0;
-          background: #fff;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-
-        .page {
-          max-width: none;
-          border: none;
-          border-radius: 0;
-          box-sizing: border-box;
-          min-height: 100vh;
-          padding: 10mm;
-        }
+        @page { size:A4 landscape; margin:8mm; }
+        body { padding:0; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .page { width:auto; margin:0; padding:0; border:0; }
+        .details-area { break-before:page; page-break-before:always; }
       }
     </style>
   </head>
-
   <body>
-    <div
-      class="page"
-      th:with="summary=${#lists.isEmpty(rows) ? null : rows[0]}"
-    >
-      <div class="header">
+    <main class="page" th:with="summary=${#lists.isEmpty(rows) ? null : rows[0]}">
+      <header class="header">
         <div class="title">給与支払表</div>
+        <div class="date">支払日：<span th:text="${summary == null ? '' : summary['payment_date_label']}"></span></div>
+      </header>
 
-        <div class="date">
-          支払日：
-          <span
-            th:text="${summary == null ? '' : summary['payment_date_label']}"
-          ></span>
-        </div>
+      <div class="unit-note">単位：円</div>
+      <table class="summary-table">
+        <thead><tr>
+          <th>総支給額</th><th>法定<br />準備金</th><th>貯金</th><th>引出</th><th>前借り</th><th>支給額</th>
+          <th>寮費</th><th>携帯電話<br />貸出料</th><th>Wi-Fi<br />使用料</th><th>長期借入<br />返済額</th><th>その他</th><th>当日支払額</th>
+        </tr></thead>
+        <tbody><tr>
+          <td class="num" th:text="${#numbers.formatDecimal(summary == null ? 0 : summary['total_gross_payment_amount'],0,'COMMA',0,'POINT')}"></td>
+          <td class="num" th:text="${#numbers.formatDecimal(summary == null ? 0 : summary['total_legal_deposit_amount'],0,'COMMA',0,'POINT')}"></td>
+          <td class="num" th:text="${#numbers.formatDecimal(summary == null ? 0 : summary['total_saving_amount'],0,'COMMA',0,'POINT')}"></td>
+          <td class="num" th:text="${#numbers.formatDecimal(summary == null ? 0 : summary['total_saving_withdrawal_amount'],0,'COMMA',0,'POINT')}"></td>
+          <td class="num" th:text="${#numbers.formatDecimal(summary == null ? 0 : summary['total_short_term_advance_amount'],0,'COMMA',0,'POINT')}"></td>
+          <td class="num" th:text="${#numbers.formatDecimal(summary == null ? 0 : summary['total_supplied_amount'],0,'COMMA',0,'POINT')}"></td>
+          <td class="num" th:text="${#numbers.formatDecimal(summary == null ? 0 : summary['total_dormitory_fee_amount'],0,'COMMA',0,'POINT')}"></td>
+          <td class="num" th:text="${#numbers.formatDecimal(summary == null ? 0 : summary['total_mobile_rental_amount'],0,'COMMA',0,'POINT')}"></td>
+          <td class="num" th:text="${#numbers.formatDecimal(summary == null ? 0 : summary['total_wifi_fee_amount'],0,'COMMA',0,'POINT')}"></td>
+          <td class="num" th:text="${#numbers.formatDecimal(summary == null ? 0 : summary['total_long_term_loan_repayment_amount'],0,'COMMA',0,'POINT')}"></td>
+          <td class="num" th:text="${#numbers.formatDecimal(summary == null ? 0 : summary['total_other_deduction_amount'],0,'COMMA',0,'POINT')}"></td>
+          <td class="num payment-main" th:text="${#numbers.formatDecimal(summary == null ? 0 : summary['total_payment_amount'],0,'COMMA',0,'POINT')}"></td>
+        </tr></tbody>
+      </table>
+
+      <div class="bank-total">
+        <span>銀行引き出し金額</span>
+        <span class="bank-total-value" th:text="${#numbers.formatDecimal(summary == null ? 0 : summary['bank_withdrawal_amount'],0,'COMMA',0,'POINT') + ' 円'}"></span>
       </div>
 
-      <div class="total-line">
-        <div class="total-card">
-          <div class="total-label">当日支払額</div>
-          <div
-            class="total-value"
-            th:text="${summary == null ? '0 円'
-                        : #numbers.formatDecimal(summary['total_net_payment_amount'] ?: 0, 0, 'COMMA', 0, 'POINT') + ' 円'}"
-          ></div>
-        </div>
-
-        <div class="total-card">
-          <div class="total-label">銀行引き出し金額</div>
-          <div
-            class="total-value"
-            th:text="${summary == null ? '0 円'
-                        : #numbers.formatDecimal(summary['total_net_payment_amount'] ?: 0, 0, 'COMMA', 0, 'POINT') + ' 円'}"
-          ></div>
-        </div>
+      <div class="section-title">金種内訳</div>
+      <div class="cash-grid">
+        <div class="cash-item"><div class="cash-name">1万円札</div><div class="cash-count" th:text="${(summary == null ? 0 : summary['bill_10000']) + ' 枚'}"></div></div>
+        <div class="cash-item"><div class="cash-name">5千円札</div><div class="cash-count" th:text="${(summary == null ? 0 : summary['bill_5000']) + ' 枚'}"></div></div>
+        <div class="cash-item"><div class="cash-name">1千円札</div><div class="cash-count" th:text="${(summary == null ? 0 : summary['bill_1000']) + ' 枚'}"></div></div>
+        <div class="cash-item"><div class="cash-name">500円玉</div><div class="cash-count" th:text="${(summary == null ? 0 : summary['coin_500']) + ' 枚'}"></div></div>
+        <div class="cash-item"><div class="cash-name">100円玉</div><div class="cash-count" th:text="${(summary == null ? 0 : summary['coin_100']) + ' 枚'}"></div></div>
+        <div class="cash-item"><div class="cash-name">50円玉</div><div class="cash-count" th:text="${(summary == null ? 0 : summary['coin_50']) + ' 枚'}"></div></div>
+        <div class="cash-item"><div class="cash-name">10円玉</div><div class="cash-count" th:text="${(summary == null ? 0 : summary['coin_10']) + ' 枚'}"></div></div>
+        <div class="cash-item"><div class="cash-name">5円玉</div><div class="cash-count" th:text="${(summary == null ? 0 : summary['coin_5']) + ' 枚'}"></div></div>
+        <div class="cash-item"><div class="cash-name">1円玉</div><div class="cash-count" th:text="${(summary == null ? 0 : summary['coin_1']) + ' 枚'}"></div></div>
       </div>
 
-      <section class="section">
-        <div class="section-title">金種内訳</div>
-
-        <div class="cash-grid">
-          <div class="cash-item">
-            <div class="cash-name">1万円札</div>
-            <div
-              class="cash-count"
-              th:text="${summary == null ? 0 : summary['bill_10000']} + ' 枚'"
-            ></div>
-          </div>
-
-          <div class="cash-item">
-            <div class="cash-name">5千円札</div>
-            <div
-              class="cash-count"
-              th:text="${summary == null ? 0 : summary['bill_5000']} + ' 枚'"
-            ></div>
-          </div>
-
-          <div class="cash-item">
-            <div class="cash-name">1千円札</div>
-            <div
-              class="cash-count"
-              th:text="${summary == null ? 0 : summary['bill_1000']} + ' 枚'"
-            ></div>
-          </div>
-
-          <div class="cash-item">
-            <div class="cash-name">500円玉</div>
-            <div
-              class="cash-count"
-              th:text="${summary == null ? 0 : summary['coin_500']} + ' 枚'"
-            ></div>
-          </div>
-
-          <div class="cash-item">
-            <div class="cash-name">100円玉</div>
-            <div
-              class="cash-count"
-              th:text="${summary == null ? 0 : summary['coin_100']} + ' 枚'"
-            ></div>
-          </div>
-
-          <div class="cash-item">
-            <div class="cash-name">50円玉</div>
-            <div
-              class="cash-count"
-              th:text="${summary == null ? 0 : summary['coin_50']} + ' 枚'"
-            ></div>
-          </div>
-
-          <div class="cash-item">
-            <div class="cash-name">10円玉</div>
-            <div
-              class="cash-count"
-              th:text="${summary == null ? 0 : summary['coin_10']} + ' 枚'"
-            ></div>
-          </div>
-
-          <div class="cash-item">
-            <div class="cash-name">5円玉</div>
-            <div
-              class="cash-count"
-              th:text="${summary == null ? 0 : summary['coin_5']} + ' 枚'"
-            ></div>
-          </div>
-
-          <div class="cash-item">
-            <div class="cash-name">1円玉</div>
-            <div
-              class="cash-count"
-              th:text="${summary == null ? 0 : summary['coin_1']} + ' 枚'"
-            ></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section">
+      <section class="details-area">
         <div class="section-title">支払明細</div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>No.</th>
-              <th>支払区分</th>
-              <th>氏名</th>
-              <th>総支給額</th>
-              <th>手当合計</th>
-              <th>控除合計</th>
-              <th>支払額</th>
-            </tr>
-          </thead>
-
+        <table class="details-table">
+          <colgroup><col class="employee-code" /><col class="payment-cycle" /><col class="employee-name" /><col class="money-col" span="12" /></colgroup>
+          <thead><tr>
+            <th>社員コード</th><th>区分</th><th>氏名</th><th>総支給額</th><th>法定<br />準備金</th><th>貯金</th><th>引出</th>
+            <th>前借り</th><th>支給額</th><th>寮費</th><th>携帯電話<br />貸出料</th><th>Wi-Fi<br />使用料</th>
+            <th>長期借入<br />返済額</th><th>その他</th><th>当日支払額</th>
+          </tr></thead>
           <tbody>
-            <tr th:if="${#lists.isEmpty(rows)}">
-              <td colspan="7" class="center">データがありません</td>
-            </tr>
-
+            <tr th:if="${#lists.isEmpty(rows)}"><td colspan="15" class="no-data">データがありません</td></tr>
             <th:block th:each="row : ${rows}">
+              <tr class="cycle-heading" th:if="${row['payment_cycle_row_number'] == 1}">
+                <td colspan="15" th:text="${row['payment_cycle'] == 'DAILY' ? '日払い' : row['payment_cycle'] == 'WEEKLY' ? '週払い' : row['payment_cycle'] == 'MONTHLY' ? '月払い' : row['payment_cycle']}"></td>
+              </tr>
               <tr>
                 <td class="center" th:text="${row['employee_code']}"></td>
-
-                <td
-                  class="cycle"
-                  th:text="${row['payment_cycle'] == 'DAILY' ? '日払い'
-                                : row['payment_cycle'] == 'WEEKLY' ? '週払い'
-                                : row['payment_cycle'] == 'MONTHLY' ? '月払い'
-                                : row['payment_cycle']}"
-                ></td>
-
+                <td class="center" th:text="${row['payment_cycle'] == 'DAILY' ? '日' : row['payment_cycle'] == 'WEEKLY' ? '週' : row['payment_cycle'] == 'MONTHLY' ? '月' : row['payment_cycle']}"></td>
                 <td th:text="${row['employee_name']}"></td>
-
-                <td
-                  class="num"
-                  th:text="${#numbers.formatDecimal(row['gross_payment_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
-                ></td>
-
-                <td
-                  class="num"
-                  th:text="${#numbers.formatDecimal(row['allowance_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
-                ></td>
-
-                <td
-                  class="num"
-                  th:text="${#numbers.formatDecimal(row['deduction_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
-                ></td>
-
-                <td
-                  class="num"
-                  th:text="${#numbers.formatDecimal(row['net_payment_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"
-                ></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['gross_payment_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['legal_deposit_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['saving_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['saving_withdrawal_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['short_term_advance_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['supplied_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['dormitory_fee_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['mobile_rental_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['wifi_fee_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['long_term_loan_repayment_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['other_deduction_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num payment-main" th:text="${#numbers.formatDecimal(row['payment_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+              </tr>
+              <tr class="subtotal" th:if="${row['payment_cycle_row_number'] == row['payment_cycle_row_count']}">
+                <td colspan="3" class="center" th:text="${row['payment_cycle'] == 'DAILY' ? '日払い小計' : row['payment_cycle'] == 'WEEKLY' ? '週払い小計' : row['payment_cycle'] == 'MONTHLY' ? '月払い小計' : '小計'}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['cycle_gross_payment_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['cycle_legal_deposit_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['cycle_saving_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['cycle_saving_withdrawal_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['cycle_short_term_advance_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['cycle_supplied_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['cycle_dormitory_fee_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['cycle_mobile_rental_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['cycle_wifi_fee_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['cycle_long_term_loan_repayment_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num" th:text="${#numbers.formatDecimal(row['cycle_other_deduction_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
+                <td class="num payment-main" th:text="${#numbers.formatDecimal(row['cycle_payment_amount'] ?: 0,0,'COMMA',0,'POINT')}"></td>
               </tr>
             </th:block>
           </tbody>
         </table>
       </section>
-    </div>
+    </main>
   </body>
 </html>

@@ -33,8 +33,8 @@ class BundledReportHtmlTemplateInitializerTest {
             new TemplateKey(3, "documents/templates/reports/html/"
                     + "MONTHLY_PAY_SLIP/v3/template.html"),
             "MONTHLY_INVOICE",
-            new TemplateKey(1, "documents/templates/reports/html/"
-                    + "MONTHLY_INVOICE/v1/template.html")
+            new TemplateKey(2, "documents/templates/reports/html/"
+                    + "MONTHLY_INVOICE/v2/template.html")
     );
 
     private final StorageService storageService =

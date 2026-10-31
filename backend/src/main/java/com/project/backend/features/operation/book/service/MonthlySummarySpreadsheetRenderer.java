@@ -1,6 +1,7 @@
 package com.project.backend.features.operation.book.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Date;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -49,6 +50,18 @@ public class MonthlySummarySpreadsheetRenderer
     private static final int MONTH_CELL_COLUMN = 13;
     private static final int DAILY_PAY_ROW = 90;
     private static final int SOCIAL_INSURANCE_ROW = 89;
+    private static final int SOCIAL_INSURANCE_LABEL_COLUMN = 0;
+    private static final int SOCIAL_INSURANCE_VALUE_COLUMN = 4;
+    private static final int SOCIAL_INSURANCE_TOTAL_COLUMN = 140;
+    private static final int EXTENDED_HEADCOUNT_HEADER_ROW = 4;
+    private static final int EXTENDED_HEADCOUNT_COLUMN = 132;
+
+    /**
+     * V1では建設事業の労災保険料率を固定値で扱う。
+     * 年度別料率の運用が固まった段階でマスター参照へ移行する。
+     */
+    private static final BigDecimal CONSTRUCTION_WORKERS_COMPENSATION_RATE =
+            new BigDecimal("0.0105");
 
     private final ObjectMapper objectMapper;
 
@@ -120,6 +133,13 @@ public class MonthlySummarySpreadsheetRenderer
         }
         writeDayHeaders(rows, yearMonth);
         writeDailyPay(rows, sourceRows, yearMonth);
+        writeSocialInsuranceBurden(rows, sourceRows);
+        setValue(
+                rows,
+                EXTENDED_HEADCOUNT_HEADER_ROW,
+                EXTENDED_HEADCOUNT_COLUMN,
+                "延べ人数"
+        );
         removeUnusedGroupFormulas(rows, groups.size());
         removeOutOfMonthFormulas(rows, yearMonth);
         clearCachedFormulaValues(rows);
@@ -132,65 +152,11 @@ public class MonthlySummarySpreadsheetRenderer
         metadata.put("targetMonth", targetMonth);
         metadata.put("generatedAt", generatedAt.toString());
         metadata.put("groupCount", groups.size());
+        metadata.put(
+                "constructionWorkersCompensationRate",
+                CONSTRUCTION_WORKERS_COMPENSATION_RATE
+        );
         return result;
-    }
-
-    /**
-     * 再生成時にも画面で手入力した社会保険負担額を維持する。
-     */
-    @Override
-    public void preserveManualInputs(
-            JsonNode generated,
-            JsonNode existing
-    ) {
-        ObjectNode generatedSheet = firstSheet(
-                workbookNode((ObjectNode) generated)
-        );
-        ObjectNode existingSheet = firstSheet(
-                workbookNode((ObjectNode) existing)
-        );
-        ArrayNode generatedRows = requireArray(
-                generatedSheet,
-                "rows"
-        );
-        ArrayNode existingRows = requireArray(
-                existingSheet,
-                "rows"
-        );
-        for (int day = 1; day <= 31; day++) {
-            int column = FIRST_DAY_COLUMN
-                    + (day - 1) * COLUMNS_PER_DAY;
-            ObjectNode existingRow = findIndexedObject(
-                    existingRows,
-                    SOCIAL_INSURANCE_ROW
-            );
-            if (existingRow == null
-                    || !existingRow.path("cells").isArray()) {
-                continue;
-            }
-            ObjectNode existingCell = findIndexedObject(
-                    (ArrayNode) existingRow.path("cells"),
-                    column
-            );
-            if (existingCell == null
-                    || !existingCell.has("value")) {
-                continue;
-            }
-            ObjectNode generatedCell = indexedObject(
-                    indexedObject(
-                            generatedRows,
-                            SOCIAL_INSURANCE_ROW,
-                            "cells"
-                    ).withArray("cells"),
-                    column,
-                    null
-            );
-            generatedCell.remove("formula");
-            generatedCell.set(
-                    "value",
-                    existingCell.get("value").deepCopy()
-            );
-        }
     }
 
     private List<MonthlyGroup> group(
@@ -316,6 +282,48 @@ public class MonthlySummarySpreadsheetRenderer
                     payByDay.getOrDefault(day, BigDecimal.ZERO)
             );
         }
+    }
+
+    private void writeSocialInsuranceBurden(
+            ArrayNode rows,
+            List<Map<String, Object>> sourceRows
+    ) {
+        BigDecimal employeeDeductionTotal = sourceRows.stream()
+                .map(row -> decimal(
+                        row,
+                        "social_insurance_deduction_total"
+                ))
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+        BigDecimal grossPayTotal = sourceRows.stream()
+                .map(row -> decimal(
+                        row,
+                        "estimated_gross_pay_amount"
+                ))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal burden = employeeDeductionTotal
+                .add(grossPayTotal.multiply(
+                        CONSTRUCTION_WORKERS_COMPENSATION_RATE
+                ))
+                .setScale(0, RoundingMode.HALF_UP);
+
+        setValue(
+                rows,
+                SOCIAL_INSURANCE_ROW,
+                SOCIAL_INSURANCE_LABEL_COLUMN,
+                "社会保険負担額"
+        );
+        setValue(
+                rows,
+                SOCIAL_INSURANCE_ROW,
+                SOCIAL_INSURANCE_VALUE_COLUMN,
+                burden
+        );
+        clearValue(
+                rows,
+                SOCIAL_INSURANCE_ROW,
+                SOCIAL_INSURANCE_TOTAL_COLUMN
+        );
     }
 
     private void clearInputArea(ArrayNode rows) {
@@ -514,17 +522,6 @@ public class MonthlySummarySpreadsheetRenderer
                 return sheet;
             }
         }
-        if (!sheets.isEmpty()
-                && sheets.get(0) instanceof ObjectNode sheet) {
-            return sheet;
-        }
-        throw new IllegalArgumentException(
-                "Spreadsheetテンプレートにシートがありません。"
-        );
-    }
-
-    private ObjectNode firstSheet(ObjectNode workbook) {
-        ArrayNode sheets = requireArray(workbook, "sheets");
         if (!sheets.isEmpty()
                 && sheets.get(0) instanceof ObjectNode sheet) {
             return sheet;

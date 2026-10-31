@@ -29,6 +29,16 @@ SELECT
             THEN item.item_value ELSE 0 END), 0) AS driver_allowance_amount,
     COALESCE(SUM(CASE
         WHEN item.item_category = 'ALLOWANCE'
+         AND item.item_code = 'ATTENDANCE_ATTITUDE'
+            THEN item.item_value ELSE 0 END), 0)
+        AS attendance_attitude_allowance_amount,
+    COALESCE(SUM(CASE
+        WHEN item.item_category = 'ALLOWANCE'
+         AND item.item_code = 'COMMUTE_ALLOWANCE_MONTHLY'
+            THEN item.item_value ELSE 0 END), 0)
+        AS commute_allowance_amount,
+    COALESCE(SUM(CASE
+        WHEN item.item_category = 'ALLOWANCE'
          AND item.item_code IN (
              'BUSINESS_TRIP_ALLOWANCE',
              'TRIP_ALLOWANCE',
@@ -36,9 +46,10 @@ SELECT
          ) THEN item.item_value ELSE 0 END), 0)
         AS business_trip_allowance_amount,
     COALESCE(SUM(CASE
-        WHEN item.item_category IN ('LEGAL_DEDUCTION', 'OTHER_DEDUCTION')
-         AND item.item_code = 'YEAR_END_ADJUSTMENT'
-            THEN item.item_value ELSE 0 END), 0)
+        WHEN item.item_code = 'YEAR_END_ADJUSTMENT'
+            THEN CASE WHEN item.item_category = 'ALLOWANCE'
+                THEN item.item_value ELSE -item.item_value END
+        ELSE 0 END), 0)
         AS year_end_adjustment_amount,
     COALESCE(SUM(CASE
         WHEN item.item_category = 'OTHER_DEDUCTION'
@@ -83,35 +94,7 @@ SELECT
     source.company_name,
     source.period_from,
     source.period_to,
-    CASE payroll.payment_day_type
-        WHEN 'END_OF_MONTH' THEN LAST_DAY(
-            DATE_ADD(
-                source.target_month,
-                INTERVAL COALESCE(payroll.payment_month_offset, 0) MONTH
-            )
-        )
-        WHEN 'DAY_OF_MONTH' THEN DATE_ADD(
-            DATE_FORMAT(
-                DATE_ADD(
-                    source.target_month,
-                    INTERVAL COALESCE(payroll.payment_month_offset, 0) MONTH
-                ),
-                '%Y-%m-01'
-            ),
-            INTERVAL (
-                LEAST(
-                    payroll.payment_day_value,
-                    DAY(LAST_DAY(
-                        DATE_ADD(
-                            source.target_month,
-                            INTERVAL COALESCE(payroll.payment_month_offset, 0) MONTH
-                        )
-                    ))
-                ) - 1
-            ) DAY
-        )
-        ELSE NULL
-    END AS payment_date,
+    source.payment_date,
     CONCAT(
         'MONTHLY_LABOR_COST_LIST:',
         DATE_FORMAT(source.target_month, '%Y-%m'),
@@ -126,15 +109,25 @@ SELECT
     COALESCE(item.overtime_pay_amount, 0) AS overtime_pay_amount,
     COALESCE(item.night_pay_amount, 0) AS night_pay_amount,
     COALESCE(item.driver_allowance_amount, 0) AS driver_allowance_amount,
+    COALESCE(item.attendance_attitude_allowance_amount, 0)
+        AS attendance_attitude_allowance_amount,
+    COALESCE(item.commute_allowance_amount, 0)
+        AS commute_allowance_amount,
     source.allowance_total
+        - GREATEST(source.legal_deposit_refund_amount, 0)
+        - GREATEST(COALESCE(item.year_end_adjustment_amount, 0), 0)
         - COALESCE(item.overtime_pay_amount, 0)
         - COALESCE(item.night_pay_amount, 0)
         - COALESCE(item.driver_allowance_amount, 0)
-        - COALESCE(item.business_trip_allowance_amount, 0)
+        - COALESCE(item.attendance_attitude_allowance_amount, 0)
+        - COALESCE(item.commute_allowance_amount, 0)
         AS other_allowance_amount,
     COALESCE(item.business_trip_allowance_amount, 0)
         AS business_trip_allowance_amount,
-    source.gross_amount,
+    source.gross_amount
+        - GREATEST(source.legal_deposit_refund_amount, 0)
+        - GREATEST(COALESCE(item.year_end_adjustment_amount, 0), 0)
+        AS gross_amount,
     source.health_insurance,
     source.child_care_contribution,
     source.pension_insurance,
@@ -144,6 +137,7 @@ SELECT
     source.income_tax,
     COALESCE(item.year_end_adjustment_amount, 0)
         AS year_end_adjustment_amount,
+    source.legal_deposit_refund_amount,
     source.resident_tax,
     COALESCE(item.dormitory_fee_amount, 0) AS dormitory_fee_amount,
     COALESCE(item.mobile_rental_amount, 0) AS mobile_rental_amount,
@@ -151,31 +145,37 @@ SELECT
     COALESCE(item.other_deduction_amount, 0) AS other_deduction_amount,
     source.social_insurance_total
         + source.income_tax
-        + COALESCE(item.year_end_adjustment_amount, 0)
         + source.resident_tax
         + COALESCE(item.dormitory_fee_amount, 0)
         + COALESCE(item.mobile_rental_amount, 0)
         + COALESCE(item.wifi_fee_amount, 0)
         + COALESCE(item.other_deduction_amount, 0)
+        + GREATEST(-source.legal_deposit_refund_amount, 0)
+        + GREATEST(-COALESCE(item.year_end_adjustment_amount, 0), 0)
         AS deduction_total,
     source.gross_amount
+        - GREATEST(source.legal_deposit_refund_amount, 0)
+        - GREATEST(COALESCE(item.year_end_adjustment_amount, 0), 0)
         - (
             source.social_insurance_total
             + source.income_tax
-            + COALESCE(item.year_end_adjustment_amount, 0)
             + source.resident_tax
             + COALESCE(item.dormitory_fee_amount, 0)
             + COALESCE(item.mobile_rental_amount, 0)
             + COALESCE(item.wifi_fee_amount, 0)
             + COALESCE(item.other_deduction_amount, 0)
-        ) AS net_before_advance_amount,
+        ) + source.legal_deposit_refund_amount
+          + COALESCE(item.year_end_adjustment_amount, 0)
+        AS net_before_advance_amount,
     source.advance_payment_amount,
     attendance.saving_amount,
+    attendance.saving_withdrawal_amount,
     source.gross_amount
+        - GREATEST(source.legal_deposit_refund_amount, 0)
+        - GREATEST(COALESCE(item.year_end_adjustment_amount, 0), 0)
         - (
             source.social_insurance_total
             + source.income_tax
-            + COALESCE(item.year_end_adjustment_amount, 0)
             + source.resident_tax
             + COALESCE(item.dormitory_fee_amount, 0)
             + COALESCE(item.mobile_rental_amount, 0)
@@ -183,25 +183,13 @@ SELECT
             + COALESCE(item.other_deduction_amount, 0)
             + source.advance_payment_amount
             + attendance.saving_amount
-        ) AS net_payment_amount,
+        ) + source.legal_deposit_refund_amount
+          + COALESCE(item.year_end_adjustment_amount, 0)
+          + attendance.saving_withdrawal_amount
+        AS net_payment_amount,
     source.calculation_ready,
     source.calculation_error_code
 FROM vw_monthly_pay_slip_latest source
-JOIN (
-    SELECT setting.*
-    FROM closing_setting setting
-    JOIN (
-        SELECT tenant_id, MAX(id) AS setting_id
-        FROM closing_setting
-        WHERE setting_code = 'PAYROLL'
-          AND active_flag = TRUE
-          AND deleted_at IS NULL
-        GROUP BY tenant_id
-    ) selected
-      ON selected.setting_id = setting.id
-     AND selected.tenant_id = setting.tenant_id
-) payroll
-  ON payroll.tenant_id = source.tenant_id
 LEFT JOIN vw_monthly_labor_cost_list_item_total item
   ON item.tenant_id = source.tenant_id
  AND item.target_month = source.target_month
@@ -246,6 +234,8 @@ CREATE TABLE IF NOT EXISTS monthly_labor_cost_list_history (
     overtime_pay_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
     night_pay_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
     driver_allowance_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
+    attendance_attitude_allowance_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
+    commute_allowance_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
     other_allowance_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
     business_trip_allowance_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
     gross_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
@@ -257,6 +247,7 @@ CREATE TABLE IF NOT EXISTS monthly_labor_cost_list_history (
     taxable_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
     income_tax DECIMAL(15,2) NOT NULL DEFAULT 0,
     year_end_adjustment_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
+    legal_deposit_refund_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
     resident_tax DECIMAL(15,2) NOT NULL DEFAULT 0,
     dormitory_fee_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
     mobile_rental_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
@@ -266,6 +257,7 @@ CREATE TABLE IF NOT EXISTS monthly_labor_cost_list_history (
     net_before_advance_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
     advance_payment_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
     saving_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
+    saving_withdrawal_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
     net_payment_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
     source_view_name VARCHAR(200) NOT NULL,
     source_execution_id VARCHAR(100) NOT NULL,
@@ -283,6 +275,156 @@ CREATE TABLE IF NOT EXISTS monthly_labor_cost_list_history (
 
 CREATE TABLE IF NOT EXISTS monthly_labor_cost_list_output
 LIKE monthly_labor_cost_list_history;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_labor_cost_list_history ADD COLUMN legal_deposit_refund_amount DECIMAL(15,2) NOT NULL DEFAULT 0 AFTER year_end_adjustment_amount',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_labor_cost_list_history'
+      AND column_name = 'legal_deposit_refund_amount'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_labor_cost_list_output ADD COLUMN legal_deposit_refund_amount DECIMAL(15,2) NOT NULL DEFAULT 0 AFTER year_end_adjustment_amount',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_labor_cost_list_output'
+      AND column_name = 'legal_deposit_refund_amount'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_labor_cost_list_history ADD COLUMN payment_date DATE NULL AFTER period_to',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_labor_cost_list_history'
+      AND column_name = 'payment_date'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_labor_cost_list_output ADD COLUMN payment_date DATE NULL AFTER period_to',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_labor_cost_list_output'
+      AND column_name = 'payment_date'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_labor_cost_list_history ADD COLUMN attendance_attitude_allowance_amount DECIMAL(15,2) NOT NULL DEFAULT 0 AFTER driver_allowance_amount',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_labor_cost_list_history'
+      AND column_name = 'attendance_attitude_allowance_amount'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_labor_cost_list_history ADD COLUMN commute_allowance_amount DECIMAL(15,2) NOT NULL DEFAULT 0 AFTER attendance_attitude_allowance_amount',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_labor_cost_list_history'
+      AND column_name = 'commute_allowance_amount'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_labor_cost_list_output ADD COLUMN attendance_attitude_allowance_amount DECIMAL(15,2) NOT NULL DEFAULT 0 AFTER driver_allowance_amount',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_labor_cost_list_output'
+      AND column_name = 'attendance_attitude_allowance_amount'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_labor_cost_list_output ADD COLUMN commute_allowance_amount DECIMAL(15,2) NOT NULL DEFAULT 0 AFTER attendance_attitude_allowance_amount',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_labor_cost_list_output'
+      AND column_name = 'commute_allowance_amount'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_labor_cost_list_history ADD COLUMN saving_withdrawal_amount DECIMAL(15,2) NOT NULL DEFAULT 0 AFTER saving_amount',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_labor_cost_list_history'
+      AND column_name = 'saving_withdrawal_amount'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) = 0,
+        'ALTER TABLE monthly_labor_cost_list_output ADD COLUMN saving_withdrawal_amount DECIMAL(15,2) NOT NULL DEFAULT 0 AFTER saving_amount',
+        'SELECT 1'
+    )
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_labor_cost_list_output'
+      AND column_name = 'saving_withdrawal_amount'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 SET @ddl = (
     SELECT IF(
@@ -428,15 +570,17 @@ BEGIN
             period_from, period_to, payment_date, business_key,
             work_day_count, paid_leave_days, overtime_hours, night_work_hours,
             basic_salary, overtime_pay_amount, night_pay_amount,
-            driver_allowance_amount, other_allowance_amount,
+            driver_allowance_amount, attendance_attitude_allowance_amount,
+            commute_allowance_amount, other_allowance_amount,
             business_trip_allowance_amount, gross_amount,
             health_insurance, child_care_contribution, pension_insurance,
             employment_insurance, social_insurance_total, taxable_amount,
-            income_tax, year_end_adjustment_amount, resident_tax,
+            income_tax, year_end_adjustment_amount,
+            legal_deposit_refund_amount, resident_tax,
             dormitory_fee_amount, mobile_rental_amount, wifi_fee_amount,
             other_deduction_amount, deduction_total,
             net_before_advance_amount, advance_payment_amount,
-            saving_amount, net_payment_amount,
+            saving_amount, saving_withdrawal_amount, net_payment_amount,
             source_view_name, source_execution_id, fixed_at,
             tenant_id, created_at, updated_at
         )
@@ -450,17 +594,21 @@ BEGIN
             source.overtime_hours, source.night_work_hours,
             source.basic_salary, source.overtime_pay_amount,
             source.night_pay_amount, source.driver_allowance_amount,
+            source.attendance_attitude_allowance_amount,
+            source.commute_allowance_amount,
             source.other_allowance_amount,
             source.business_trip_allowance_amount, source.gross_amount,
             source.health_insurance, source.child_care_contribution,
             source.pension_insurance, source.employment_insurance,
             source.social_insurance_total, source.taxable_amount,
             source.income_tax, source.year_end_adjustment_amount,
+            source.legal_deposit_refund_amount,
             source.resident_tax, source.dormitory_fee_amount,
             source.mobile_rental_amount, source.wifi_fee_amount,
             source.other_deduction_amount, source.deduction_total,
             source.net_before_advance_amount,
             source.advance_payment_amount, source.saving_amount,
+            source.saving_withdrawal_amount,
             source.net_payment_amount,
             'vw_monthly_labor_cost_list_latest', p_execution_id, NOW(6),
             source.tenant_id, NOW(6), NOW(6)
@@ -493,15 +641,17 @@ BEGIN
         period_from, period_to, payment_date, business_key,
         work_day_count, paid_leave_days, overtime_hours, night_work_hours,
         basic_salary, overtime_pay_amount, night_pay_amount,
-        driver_allowance_amount, other_allowance_amount,
+        driver_allowance_amount, attendance_attitude_allowance_amount,
+        commute_allowance_amount, other_allowance_amount,
         business_trip_allowance_amount, gross_amount,
         health_insurance, child_care_contribution, pension_insurance,
         employment_insurance, social_insurance_total, taxable_amount,
-        income_tax, year_end_adjustment_amount, resident_tax,
+        income_tax, year_end_adjustment_amount,
+        legal_deposit_refund_amount, resident_tax,
         dormitory_fee_amount, mobile_rental_amount, wifi_fee_amount,
         other_deduction_amount, deduction_total,
         net_before_advance_amount, advance_payment_amount,
-        saving_amount, net_payment_amount,
+        saving_amount, saving_withdrawal_amount, net_payment_amount,
         source_view_name, source_execution_id, fixed_at,
         tenant_id, created_at, updated_at
     )
@@ -516,17 +666,21 @@ BEGIN
         history.overtime_hours, history.night_work_hours,
         history.basic_salary, history.overtime_pay_amount,
         history.night_pay_amount, history.driver_allowance_amount,
+        history.attendance_attitude_allowance_amount,
+        history.commute_allowance_amount,
         history.other_allowance_amount,
         history.business_trip_allowance_amount, history.gross_amount,
         history.health_insurance, history.child_care_contribution,
         history.pension_insurance, history.employment_insurance,
         history.social_insurance_total, history.taxable_amount,
         history.income_tax, history.year_end_adjustment_amount,
+        history.legal_deposit_refund_amount,
         history.resident_tax, history.dormitory_fee_amount,
         history.mobile_rental_amount, history.wifi_fee_amount,
         history.other_deduction_amount, history.deduction_total,
         history.net_before_advance_amount,
         history.advance_payment_amount, history.saving_amount,
+        history.saving_withdrawal_amount,
         history.net_payment_amount,
         history.source_view_name, history.source_execution_id,
         history.fixed_at,
@@ -776,26 +930,29 @@ INSERT INTO operation_report_preview_column (
 (@tenant_id, @now, @now, @monthly_labor_preview_id, '残業手当', 'overtime_pay_amount', 13, TRUE),
 (@tenant_id, @now, @now, @monthly_labor_preview_id, '深夜手当', 'night_pay_amount', 14, TRUE),
 (@tenant_id, @now, @now, @monthly_labor_preview_id, '運転手当', 'driver_allowance_amount', 15, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, 'その他手当', 'other_allowance_amount', 16, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '出張手当', 'business_trip_allowance_amount', 17, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '総支給額', 'gross_amount', 18, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '健康保険料', 'health_insurance', 19, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '子ども・子育て拠出金', 'child_care_contribution', 20, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '厚生年金保険料', 'pension_insurance', 21, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '雇用保険料', 'employment_insurance', 22, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '社会保険料合計', 'social_insurance_total', 23, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '課税対象額', 'taxable_amount', 24, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '所得税', 'income_tax', 25, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '年末調整額', 'year_end_adjustment_amount', 26, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '住民税', 'resident_tax', 27, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '寮費', 'dormitory_fee_amount', 28, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '携帯電話貸出料', 'mobile_rental_amount', 29, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, 'Wi-Fi使用料', 'wifi_fee_amount', 30, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, 'その他控除', 'other_deduction_amount', 31, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '控除合計', 'deduction_total', 32, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '前払い控除前支給額', 'net_before_advance_amount', 33, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '前払い額', 'advance_payment_amount', 34, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '貯蓄額', 'saving_amount', 35, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '差引支給額', 'net_payment_amount', 36, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '計算可否', 'calculation_ready', 37, TRUE),
-(@tenant_id, @now, @now, @monthly_labor_preview_id, '計算エラー', 'calculation_error_code', 38, TRUE);
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '勤務態度手当', 'attendance_attitude_allowance_amount', 16, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '通勤手当', 'commute_allowance_amount', 17, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, 'その他手当', 'other_allowance_amount', 18, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '総支給額', 'gross_amount', 19, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '健康保険料', 'health_insurance', 20, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '子ども・子育て拠出金', 'child_care_contribution', 21, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '厚生年金保険料', 'pension_insurance', 22, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '雇用保険料', 'employment_insurance', 23, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '社会保険料合計', 'social_insurance_total', 24, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '課税対象額', 'taxable_amount', 25, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '法定準備金返済額', 'legal_deposit_refund_amount', 26, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '所得税', 'income_tax', 27, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '住民税', 'resident_tax', 28, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '年末調整', 'year_end_adjustment_amount', 29, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '寮費', 'dormitory_fee_amount', 30, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '携帯電話貸出料', 'mobile_rental_amount', 31, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, 'Wi-Fi使用料', 'wifi_fee_amount', 32, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, 'その他控除', 'other_deduction_amount', 33, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '控除合計', 'deduction_total', 34, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '精算前支給額', 'net_before_advance_amount', 35, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '前払い', 'advance_payment_amount', 36, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '貯金', 'saving_amount', 37, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '引出', 'saving_withdrawal_amount', 38, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '差引支給額', 'net_payment_amount', 39, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '計算可否', 'calculation_ready', 40, TRUE),
+(@tenant_id, @now, @now, @monthly_labor_preview_id, '計算エラー', 'calculation_error_code', 41, TRUE);

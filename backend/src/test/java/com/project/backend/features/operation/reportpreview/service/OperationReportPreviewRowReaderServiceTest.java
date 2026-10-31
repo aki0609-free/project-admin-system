@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -85,15 +86,17 @@ class OperationReportPreviewRowReaderServiceTest {
     @Test
     @SuppressWarnings({ "rawtypes", "unchecked" })
     void customerInvoicePreviewUsesCustomerSpecificClosingPeriod() {
+        Map<String, Object> invoiceRow = new HashMap<>();
+        invoiceRow.put("line_amount", new java.math.BigDecimal("1000"));
         when(jdbcTemplate.queryForList(anyString(), anyMap()))
-                .thenReturn(List.of());
+                .thenReturn(List.of(invoiceRow));
         OperationReportPreview definition = new OperationReportPreview();
         definition.setOperationType(OperationType.MONTHLY);
         definition.setTableName("vw_monthly_invoice_operation_preview");
         definition.setFilterColumnName("target_month");
         definition.setOrderBy("customer_name, site_name, job_code");
 
-        service.readRows(
+        List<Map<String, Object>> rows = service.readRows(
                 definition,
                 new OperationReportPreviewHtmlRequest(
                         OperationType.MONTHLY,
@@ -117,6 +120,13 @@ class OperationReportPreviewRowReaderServiceTest {
                 .containsEntry("customerId", 30L)
                 .containsEntry("periodFrom", LocalDate.of(2026, 8, 21))
                 .containsEntry("periodTo", LocalDate.of(2026, 9, 20));
+        assertThat(rows.get(0))
+                .containsEntry("target_month", "2026-09")
+                .containsEntry("period_start", java.sql.Date.valueOf("2026-08-21"))
+                .containsEntry("period_end", java.sql.Date.valueOf("2026-09-20"))
+                .containsEntry("subtotal_amount", new java.math.BigDecimal("1000"))
+                .containsEntry("tax_amount", new java.math.BigDecimal("100"))
+                .containsEntry("total_amount", new java.math.BigDecimal("1100"));
     }
 
     @Test

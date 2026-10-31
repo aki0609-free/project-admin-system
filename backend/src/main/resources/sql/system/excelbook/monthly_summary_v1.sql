@@ -54,8 +54,23 @@ SELECT
     dr.billing_night_unit_price AS night_unit_price,
     dr.billing_holiday_unit_price AS holiday_unit_price,
     COALESCE(SUM(dr.estimated_gross_pay_amount), 0)
-        AS estimated_gross_pay_amount
+        AS estimated_gross_pay_amount,
+    COALESCE(MAX(monthly_insurance.social_insurance_deduction_total), 0)
+        AS social_insurance_deduction_total
 FROM daily_report dr
+LEFT JOIN (
+    SELECT
+        tax.tenant_id,
+        DATE_FORMAT(tax.target_month, '%Y-%m') AS target_month,
+        SUM(tax.social_insurance_total)
+            AS social_insurance_deduction_total
+    FROM vw_monthly_pay_slip_tax_calculation tax
+    GROUP BY
+        tax.tenant_id,
+        DATE_FORMAT(tax.target_month, '%Y-%m')
+) monthly_insurance
+  ON monthly_insurance.tenant_id = dr.tenant_id
+ AND monthly_insurance.target_month = DATE_FORMAT(dr.work_date, '%Y-%m')
 WHERE dr.deleted_at IS NULL
   AND dr.approval_status = 'APPROVED'
 GROUP BY
@@ -202,7 +217,8 @@ INSERT INTO excel_book_data_source_catalog_column (
     (@monthly_summary_catalog_id, 'overtime_unit_price', '残業単価', 'NUMBER', 15, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default'),
     (@monthly_summary_catalog_id, 'night_unit_price', '深夜単価', 'NUMBER', 16, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default'),
     (@monthly_summary_catalog_id, 'holiday_unit_price', '休日単価', 'NUMBER', 17, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default'),
-    (@monthly_summary_catalog_id, 'estimated_gross_pay_amount', '支払給計', 'NUMBER', 18, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default')
+    (@monthly_summary_catalog_id, 'estimated_gross_pay_amount', '支払給計', 'NUMBER', 18, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default'),
+    (@monthly_summary_catalog_id, 'social_insurance_deduction_total', '社会保険給与控除額合計', 'NUMBER', 19, 1, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), 'default')
 ON DUPLICATE KEY UPDATE
     display_name = VALUES(display_name),
     data_type = VALUES(data_type),

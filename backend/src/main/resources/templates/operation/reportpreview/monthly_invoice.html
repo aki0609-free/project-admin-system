@@ -1,772 +1,111 @@
 <!DOCTYPE html>
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
-  <head>
-    <meta charset="UTF-8" />
-
-    <title>請求書 Preview</title>
-
-    <style>
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 16px;
-
-        font-family: "Yu Gothic", "Meiryo", sans-serif;
-
-        font-size: 13px;
-
-        color: #1f2937;
-
-        background: #eef0f2;
-      }
-
-      .page {
-        max-width: 1120px;
-
-        margin: 0 auto;
-
-        background: #ffffff;
-
-        border: 1px solid #d1d5db;
-
-        padding: 34px 42px 42px;
-      }
-
-      .title {
-        margin: 4px 0 42px;
-
-        text-align: center;
-
-        font-size: 34px;
-
-        font-weight: 800;
-
-        letter-spacing: 0.7em;
-      }
-
-      .header {
-        display: grid;
-
-        grid-template-columns:
-          minmax(0, 1fr)
-          340px;
-
-        gap: 70px;
-
-        margin-bottom: 22px;
-      }
-
-      .customer-block {
-        display: grid;
-
-        gap: 30px;
-
-        align-content: start;
-      }
-
-      .customer-name {
-        padding-bottom: 8px;
-
-        border-bottom: 2px solid #475569;
-
-        font-size: 19px;
-
-        font-weight: 700;
-      }
-
-      .invoice-amount-label {
-        font-weight: 700;
-
-        color: #475569;
-      }
-
-      .invoice-amount {
-        margin-top: 6px;
-
-        padding-bottom: 8px;
-
-        border-bottom: 2px solid #475569;
-
-        font-size: 28px;
-
-        font-weight: 800;
-      }
-
-      .invoice-note {
-        margin-top: 4px;
-        padding-left: 82px;
-        white-space: pre-line;
-        font-size: 10px;
-        font-weight: 600;
-      }
-
-      .company-block {
-        display: grid;
-
-        gap: 4px;
-
-        text-align: right;
-
-        align-content: start;
-
-        line-height: 1.5;
-      }
-
-      .company-logo {
-        display: block;
-        width: 100%;
-        max-height: 150px;
-        object-fit: contain;
-        object-position: right center;
-      }
-
-      .invoice-meta {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 330px;
-        gap: 70px;
-        align-items: end;
-        margin: 8px 0 18px;
-      }
-
-      .bank-row {
-        display: grid;
-        grid-template-columns: 76px minmax(0, 1fr);
-        align-items: center;
-        gap: 10px;
-      }
-
-      .bank-label {
-        font-size: 15px;
-        font-weight: 700;
-      }
-
-      .bank-value {
-        min-height: 36px;
-        padding: 8px 12px;
-        white-space: pre-line;
-        background: #e7f2f5;
-      }
-
-      .registration {
-        display: grid;
-        gap: 6px;
-        text-align: right;
-        font-size: 11px;
-      }
-
-      .company-name {
-        margin-top: 6px;
-
-        font-size: 18px;
-
-        font-weight: 700;
-      }
-
-      .summary {
-        display: grid;
-
-        grid-template-columns:
-          140px
-          1fr
-          140px
-          1fr;
-
-        gap: 10px 18px;
-
-        margin-bottom: 28px;
-
-        padding: 16px;
-
-        border: 1px solid #dbe4ee;
-
-        border-radius: 0;
-
-        background: #f8fafc;
-      }
-
-      .summary-label {
-        font-weight: 700;
-
-        color: #475569;
-      }
-
-      .section-title {
-        margin: 28px 0 12px;
-
-        padding-left: 10px;
-
-        border-left: 4px solid #334155;
-
-        font-size: 16px;
-
-        font-weight: 700;
-      }
-
-      .table-wrapper {
-        overflow-x: auto;
-
-        border: 1px solid #cbd5e1;
-
-        border-radius: 10px;
-      }
-
-      table {
-        width: 100%;
-
-        border-collapse: collapse;
-
-        background: #fff;
-      }
-
-      thead th {
-        position: sticky;
-
-        top: 0;
-
-        background: #ffffff;
-
-        z-index: 10;
-      }
-
-      th,
-      td {
-        padding: 7px 8px;
-
-        border-right: 1px solid #e5e7eb;
-
-        border-bottom: 1px solid #e5e7eb;
-
-        white-space: nowrap;
-      }
-
-      th:last-child,
-      td:last-child {
-        border-right: none;
-      }
-
-      tbody tr:nth-child(even) {
-        background: #fafafa;
-      }
-
-      tbody tr:hover {
-        background: #eef6ff;
-      }
-
-      .number {
-        text-align: right;
-
-        font-variant-numeric: tabular-nums;
-      }
-
-      .center {
-        text-align: center;
-      }
-
-      .empty {
-        padding: 40px;
-
-        text-align: center;
-
-        color: #94a3b8;
-      }
-
-      @media print {
-        body {
-          margin: 0;
-
-          background: white;
-        }
-
-        .page {
-          max-width: none;
-
-          border: none;
-
-          border-radius: 0;
-
-          padding: 8mm;
-        }
-
-        .table-wrapper {
-          overflow: visible;
-        }
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="page">
-      <h1 class="title">請 求 書</h1>
-
-      <div th:if="${rows != null && !rows.isEmpty()}">
-        <section class="header">
-          <div class="customer-block">
-            <div
-              class="customer-name"
-              th:text="${rows[0]['customer_name']} + '　御中'"
-            >
-              株式会社○○ 御中
-            </div>
-
-            <div>
-              <div class="invoice-amount-label">ご請求金額</div>
-
-              <div
-                class="invoice-amount"
-                th:text="'￥'
-+ ${#numbers.formatInteger(
-rows[0]['total_amount'],
-1,
-'COMMA'
-)}"
-              >
-                ￥0
-              </div>
-              <div
-                class="invoice-note"
-                th:if="${rows[0]['invoice_note'] != null and rows[0]['invoice_note'] != ''}"
-                th:text="${rows[0]['invoice_note']}"
-              ></div>
-            </div>
-          </div>
-
-          <div class="company-block">
-            <div
-              th:if="${rows[0]['invoice_date'] != null}"
-              th:text="'発行日　'
-+ ${#dates.format(
-rows[0]['invoice_date'],
-'yyyy年M月d日'
-)}"
-            ></div>
-
-            <img
-              class="company-logo"
-              src="/api/system/company-profile/invoice-logo"
-              alt="会社ロゴ・連絡先"
-            />
-          </div>
-        </section>
-
-        <section class="invoice-meta">
-          <div class="bank-row">
-            <div class="bank-label">振込先</div>
-            <div class="bank-value" th:text="${rows[0]['bank_display_text']}">
-              銀行・支店・口座情報
-            </div>
-          </div>
-
-          <div class="registration">
-            <div
-              th:if="${rows[0]['qualified_invoice_issuer_number'] != null and rows[0]['qualified_invoice_issuer_number'] != ''}"
-              th:text="'適格請求書登録番号　' + ${rows[0]['qualified_invoice_issuer_number']}"
-            ></div>
-            <div th:text="'請求書番号　' + ${rows[0]['invoice_number']}"></div>
-          </div>
-        </section>
-
-        <div class="table-wrapper">
-          <table style="min-width: 1700px">
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>日付</th>
-
-                <th>現場</th>
-                <th>職種</th>
-                <th>役職</th>
-
-                <th>社員コード</th>
-                <th>氏名</th>
-
-                <th>単位</th>
-                <th>数量</th>
-
-                <th>通常時間</th>
-                <th>残業時間</th>
-                <th>深夜時間</th>
-                <th>休日時間</th>
-
-                <th>距離</th>
-
-                <th>基本単価</th>
-                <th>残業単価</th>
-                <th>深夜単価</th>
-                <th>休日単価</th>
-                <th>通勤単価</th>
-
-                <th>基本金額</th>
-                <th>残業金額</th>
-                <th>深夜金額</th>
-                <th>休日金額</th>
-                <th>通勤金額</th>
-
-                <th>小計</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr th:each="row, stat : ${rows}">
-                <td class="center" th:text="${stat.count}">1</td>
-
-                <td
-                  class="center"
-                  th:text="${row['work_date'] != null
-            ? #dates.format(
-                row['work_date'],
-                'M月d日'
-            )
-            : ''}"
-                ></td>
-
-                <td
-                  th:text="${row['site_name'] != null
-            ? row['site_name']
-            : ''}"
-                ></td>
-
-                <td
-                  th:text="${row['job_name'] != null
-            and row['job_name'] != ''
-            ? row['job_name']
-            : row['job_code']}"
-                ></td>
-
-                <td
-                  th:text="${row['site_role_name'] != null
-            and row['site_role_name'] != ''
-            ? row['site_role_name']
-            : row['site_role_code']}"
-                ></td>
-
-                <td
-                  th:text="${row['employee_code'] != null
-            ? row['employee_code']
-            : ''}"
-                ></td>
-
-                <td
-                  th:text="${row['employee_name'] != null
-            ? row['employee_name']
-            : ''}"
-                ></td>
-
-                <td
-                  class="center"
-                  th:text="${row['billing_unit'] != null
-            ? row['billing_unit']
-            : ''}"
-                ></td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatDecimal(
-            row['billing_quantity'] != null
-                ? row['billing_quantity']
-                : 0,
-            1,
-            2
-        )}"
-                >
-                  0.00
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatDecimal(
-            row['work_hours'] != null
-                ? row['work_hours']
-                : 0,
-            1,
-            2
-        )}"
-                >
-                  0.00
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatDecimal(
-            row['overtime_hours'] != null
-                ? row['overtime_hours']
-                : 0,
-            1,
-            2
-        )}"
-                >
-                  0.00
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatDecimal(
-            row['night_work_hours'] != null
-                ? row['night_work_hours']
-                : 0,
-            1,
-            2
-        )}"
-                >
-                  0.00
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatDecimal(
-            row['holiday_work_hours'] != null
-                ? row['holiday_work_hours']
-                : 0,
-            1,
-            2
-        )}"
-                >
-                  0.00
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatDecimal(
-            row['mileage'] != null
-                ? row['mileage']
-                : 0,
-            1,
-            2
-        )}"
-                >
-                  0.00
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatInteger(
-            row['billing_base_unit_price'] != null
-                ? row['billing_base_unit_price']
-                : 0,
-            1,
-            'COMMA'
-        )}"
-                >
-                  0
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatInteger(
-            row['billing_overtime_unit_price'] != null
-                ? row['billing_overtime_unit_price']
-                : 0,
-            1,
-            'COMMA'
-        )}"
-                >
-                  0
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatInteger(
-            row['billing_night_unit_price'] != null
-                ? row['billing_night_unit_price']
-                : 0,
-            1,
-            'COMMA'
-        )}"
-                >
-                  0
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatInteger(
-            row['billing_holiday_unit_price'] != null
-                ? row['billing_holiday_unit_price']
-                : 0,
-            1,
-            'COMMA'
-        )}"
-                >
-                  0
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatInteger(
-            row['billing_commute_unit_price'] != null
-                ? row['billing_commute_unit_price']
-                : 0,
-            1,
-            'COMMA'
-        )}"
-                >
-                  0
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatInteger(
-            row['base_amount'] != null
-                ? row['base_amount']
-                : 0,
-            1,
-            'COMMA'
-        )}"
-                >
-                  0
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatInteger(
-            row['overtime_amount'] != null
-                ? row['overtime_amount']
-                : 0,
-            1,
-            'COMMA'
-        )}"
-                >
-                  0
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatInteger(
-            row['night_amount'] != null
-                ? row['night_amount']
-                : 0,
-            1,
-            'COMMA'
-        )}"
-                >
-                  0
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatInteger(
-            row['holiday_amount'] != null
-                ? row['holiday_amount']
-                : 0,
-            1,
-            'COMMA'
-        )}"
-                >
-                  0
-                </td>
-
-                <td
-                  class="number"
-                  th:text="${#numbers.formatInteger(
-            row['commute_amount'] != null
-                ? row['commute_amount']
-                : 0,
-            1,
-            'COMMA'
-        )}"
-                >
-                  0
-                </td>
-
-                <td
-                  class="number"
-                  style="font-weight: 700"
-                  th:text="${#numbers.formatInteger(
-            row['line_amount'] != null
-                ? row['line_amount']
-                : 0,
-            1,
-            'COMMA'
-        )}"
-                >
-                  0
-                </td>
-              </tr>
-            </tbody>
-          </table>
+<head>
+  <meta charset="UTF-8" />
+  <title>請求書プレビュー</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 16px; font-family: "Yu Gothic", "Meiryo", sans-serif; font-size: 13px; color: #1f2937; background: #eef0f2; }
+    .page { max-width: 1480px; margin: 0 auto; padding: 30px 34px 38px; border: 1px solid #d1d5db; background: #fff; }
+    .title { margin: 2px 0 26px; text-align: center; font-size: 30px; font-weight: 800; letter-spacing: .45em; }
+    .summary { display: grid; grid-template-columns: minmax(260px,1.6fr) minmax(190px,.8fr) minmax(230px,1fr) minmax(190px,.8fr); border-top: 1px solid #cbd5e1; border-left: 1px solid #cbd5e1; }
+    .summary-item { min-width: 0; padding: 12px 14px; border-right: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; }
+    .summary-label { margin-bottom: 5px; color: #64748b; font-size: 11px; font-weight: 700; }
+    .summary-value { font-size: 15px; font-weight: 700; }
+    .summary-value.amount { color: #1d4ed8; font-size: 22px; font-variant-numeric: tabular-nums; }
+    .section-title { margin: 24px 0 10px; padding-left: 9px; border-left: 4px solid #334155; font-size: 16px; font-weight: 700; }
+    .table-wrapper { overflow-x: auto; border: 1px solid #cbd5e1; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    .detail-table { min-width: 1920px; }
+    th, td { padding: 7px 8px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+    th:last-child, td:last-child { border-right: none; }
+    thead th { position: sticky; top: 0; z-index: 2; text-align: center; background: #e2e8f0; }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody tr:hover { background: #eff6ff; }
+    .center { text-align: center; }
+    .number { text-align: right; font-variant-numeric: tabular-nums; }
+    .line-total { font-weight: 700; }
+    .totals { width: min(520px,100%); margin: 18px 0 0 auto; border-top: 1px solid #cbd5e1; border-left: 1px solid #cbd5e1; }
+    .totals th { width: 60%; text-align: left; background: #f1f5f9; }
+    .totals td { text-align: right; font-variant-numeric: tabular-nums; }
+    .totals .grand-total th, .totals .grand-total td { color: #1d4ed8; font-size: 17px; font-weight: 800; }
+    .empty { padding: 40px; text-align: center; color: #94a3b8; }
+    @media (max-width: 900px) { .page { padding: 22px 18px 28px; } .summary { grid-template-columns: 1fr 1fr; } }
+    @media print { body { margin: 0; background: #fff; } .page { max-width: none; padding: 8mm; border: none; } .table-wrapper { overflow: visible; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1 class="title">請 求 書</h1>
+    <div th:if="${rows != null && !rows.isEmpty()}">
+      <section class="summary">
+        <div class="summary-item">
+          <div class="summary-label">顧客名</div>
+          <div class="summary-value" th:text="${rows[0]['customer_name']} + '　御中'">株式会社○○　御中</div>
         </div>
+        <div class="summary-item">
+          <div class="summary-label">対象月</div>
+          <div class="summary-value" th:text="${rows[0]['target_month'] != null ? #strings.replace(rows[0]['target_month'], '-', '年') + '月' : ''}"></div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">集計期間</div>
+          <div class="summary-value" th:text="${rows[0]['period_start'] != null and rows[0]['period_end'] != null ? #dates.format(rows[0]['period_start'], 'yyyy年M月d日') + ' ～ ' + #dates.format(rows[0]['period_end'], 'yyyy年M月d日') : ''}"></div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">発行日</div>
+          <div class="summary-value" th:text="${rows[0]['invoice_date'] != null ? #dates.format(rows[0]['invoice_date'], 'yyyy年M月d日') : ''}"></div>
+        </div>
+        <div class="summary-item" style="grid-column: 1 / -1">
+          <div class="summary-label">ご請求金額</div>
+          <div class="summary-value amount" th:text="'￥' + ${#numbers.formatInteger(rows[0]['total_amount'] != null ? rows[0]['total_amount'] : 0, 1, 'COMMA')}">￥0</div>
+        </div>
+      </section>
 
-        <table class="totals">
+      <h2 class="section-title">請求明細（日報単位）</h2>
+      <div class="table-wrapper">
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>No</th><th>勤務日</th><th>現場</th><th>職種</th><th>役職</th>
+              <th>社員コード</th><th>氏名</th><th>請求単位</th><th>通常数量</th>
+              <th>残業時間</th><th>深夜時間</th><th>通勤距離</th><th>基本金額</th>
+              <th>残業金額</th><th>深夜金額</th><th>通勤金額</th><th>その他金額</th><th>小計</th>
+            </tr>
+          </thead>
           <tbody>
-            <tr>
-              <th>小計</th>
-
-              <td
-                th:text="'￥'
-                + ${#numbers.formatInteger(
-                    rows[0]['subtotal_amount'] != null
-                        ? rows[0]['subtotal_amount']
-                        : 0,
-                    1,
-                    'COMMA'
-                )}"
-              ></td>
-            </tr>
-
-            <tr>
-              <th
-                th:text="'消費税（'
-                + ${#numbers.formatDecimal(
-                    rows[0]['tax_rate'] != null
-                        ? rows[0]['tax_rate'] * 100
-                        : 10,
-                    1,
-                    1
-                )}
-                + '％）'"
-              ></th>
-
-              <td
-                th:text="'￥'
-                + ${#numbers.formatInteger(
-                    rows[0]['tax_amount'] != null
-                        ? rows[0]['tax_amount']
-                        : 0,
-                    1,
-                    'COMMA'
-                )}"
-              ></td>
-            </tr>
-
-            <tr class="grand-total">
-              <th>ご請求金額</th>
-
-              <td
-                th:text="'￥'
-                + ${#numbers.formatInteger(
-                    rows[0]['total_amount'] != null
-                        ? rows[0]['total_amount']
-                        : 0,
-                    1,
-                    'COMMA'
-                )}"
-              ></td>
+            <tr th:each="row, stat : ${rows}">
+              <td class="center" th:text="${stat.count}">1</td>
+              <td class="center" th:text="${row['work_date'] != null ? #dates.format(row['work_date'], 'yyyy年M月d日') : ''}"></td>
+              <td th:text="${row['site_name'] != null ? row['site_name'] : ''}"></td>
+              <td th:text="${row['job_name'] != null and row['job_name'] != '' ? row['job_name'] : row['job_code']}"></td>
+              <td th:text="${row['site_role_name'] != null and row['site_role_name'] != '' ? row['site_role_name'] : row['site_role_code']}"></td>
+              <td th:text="${row['employee_code'] != null ? row['employee_code'] : ''}"></td>
+              <td th:text="${row['employee_name'] != null ? row['employee_name'] : ''}"></td>
+              <td class="center" th:text="${row['billing_unit'] == 'DAILY' ? '日額' : row['billing_unit'] == 'HOURLY' ? '時間額' : row['billing_unit'] == 'MONTHLY' ? '月額' : (row['billing_unit'] != null ? row['billing_unit'] : '')}"></td>
+              <td class="number" th:text="${#numbers.formatDecimal(row['billing_quantity'] != null ? row['billing_quantity'] : 0, 1, 2)} + ${row['billing_unit'] == 'HOURLY' ? '時間' : row['billing_unit'] == 'MONTHLY' ? '月' : '人'}"></td>
+              <td class="number" th:text="${#numbers.formatDecimal(row['overtime_hours'] != null ? row['overtime_hours'] : 0, 1, 2)} + '時間'"></td>
+              <td class="number" th:text="${#numbers.formatDecimal(row['night_work_hours'] != null ? row['night_work_hours'] : 0, 1, 2)} + '時間'"></td>
+              <td class="number" th:text="${#numbers.formatDecimal(row['mileage'] != null ? row['mileage'] : 0, 1, 2)} + 'km'"></td>
+              <td class="number" th:text="${#numbers.formatInteger(row['base_amount'] != null ? row['base_amount'] : 0, 1, 'COMMA')} + '円'"></td>
+              <td class="number" th:text="${#numbers.formatInteger(row['overtime_amount'] != null ? row['overtime_amount'] : 0, 1, 'COMMA')} + '円'"></td>
+              <td class="number" th:text="${#numbers.formatInteger(row['night_amount'] != null ? row['night_amount'] : 0, 1, 'COMMA')} + '円'"></td>
+              <td class="number" th:text="${#numbers.formatInteger(row['commute_amount'] != null ? row['commute_amount'] : 0, 1, 'COMMA')} + '円'"></td>
+              <td class="number" th:text="${#numbers.formatInteger(row['other_amount'] != null ? row['other_amount'] : 0, 1, 'COMMA')} + '円'"></td>
+              <td class="number line-total" th:text="${#numbers.formatInteger(row['line_amount'] != null ? row['line_amount'] : 0, 1, 'COMMA')} + '円'"></td>
             </tr>
           </tbody>
         </table>
-
-        <section class="bank-note">
-          <div>
-            <span class="bank-title"> お振込先 </span>
-          </div>
-
-          <div
-            th:if="${rows[0]['invoice_bank_display_text'] != null}"
-            th:text="${rows[0]['invoice_bank_display_text']}"
-          ></div>
-
-          <div
-            class="invoice-note"
-            th:if="${rows[0]['invoice_note'] != null
-            and rows[0]['invoice_note'] != ''}"
-            th:text="${rows[0]['invoice_note']}"
-          ></div>
-        </section>
       </div>
 
-      <div class="empty" th:if="${rows == null || rows.isEmpty()}">
-        表示する請求データがありません。
-      </div>
+      <table class="totals">
+        <tbody>
+          <tr><th>小計（税抜）</th><td th:text="${#numbers.formatInteger(rows[0]['subtotal_amount'] != null ? rows[0]['subtotal_amount'] : 0, 1, 'COMMA')} + '円'"></td></tr>
+          <tr><th>消費税（10.0％）</th><td th:text="${#numbers.formatInteger(rows[0]['tax_amount'] != null ? rows[0]['tax_amount'] : 0, 1, 'COMMA')} + '円'"></td></tr>
+          <tr class="grand-total"><th>ご請求金額</th><td th:text="${#numbers.formatInteger(rows[0]['total_amount'] != null ? rows[0]['total_amount'] : 0, 1, 'COMMA')} + '円'"></td></tr>
+        </tbody>
+      </table>
     </div>
-  </body>
+    <div class="empty" th:if="${rows == null || rows.isEmpty()}">表示する請求データがありません。</div>
+  </div>
+</body>
 </html>

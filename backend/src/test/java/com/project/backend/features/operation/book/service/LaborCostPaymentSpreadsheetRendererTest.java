@@ -25,11 +25,14 @@ class LaborCostPaymentSpreadsheetRendererTest {
         ExcelBookMaster master = master();
         List<Map<String, Object>> rows = List.of(
                 row(1, "E001", "山田 太郎", "DAILY", 1,
-                        "10000", "500", "1000", "-3000", "200"),
+                        "10000", "500", "1000", "300", "200",
+                        "400", "600", "700", "800", "900"),
                 row(1, "E001", "山田 太郎", "DAILY", 2,
-                        "11000", "500", "1000", "-3000", "200"),
+                        "11000", "500", "1000", "300", "200",
+                        "400", "600", "700", "800", "900"),
                 row(2, "E002", "鈴木 花子", "MONTHLY", 1,
-                        "16000", "0", "0", "0", "0")
+                        "16000", "0", "0", "0", "0",
+                        "0", "0", "0", "0", "0")
         );
 
         var result = renderer.render(context(master, rows));
@@ -40,15 +43,17 @@ class LaborCostPaymentSpreadsheetRendererTest {
         assertThat(sheets.get(1).path("name").asText()).isEqualTo("月払い");
 
         var dailyRows = sheets.get(0).path("rows");
-        assertThat(dailyRows).hasSize(45);
+        assertThat(dailyRows).hasSize(50);
         assertThat(dailyRows.get(5).path("cells").get(2)
                 .path("value").asDouble()).isEqualTo(10000d);
         assertThat(dailyRows.get(36).path("cells").get(1)
                 .path("value").asDouble()).isEqualTo(21000d);
-        assertThat(dailyRows.get(42).path("cells").get(1)
-                .path("value").asDouble()).isEqualTo(400d);
-        assertThat(dailyRows.get(44).path("cells").get(1)
-                .path("value").asDouble()).isEqualTo(20600d);
+        assertThat(dailyRows.get(40).path("cells").get(1)
+                .path("value").asDouble()).isEqualTo(-600d);
+        assertThat(dailyRows.get(47).path("cells").get(1)
+                .path("value").asDouble()).isEqualTo(9600d);
+        assertThat(dailyRows.get(49).path("cells").get(1)
+                .path("value").asDouble()).isEqualTo(11400d);
         assertThat(dailyRows.get(3).path("cells").get(1)
                 .path("value").asText()).isEqualTo("日払い");
         assertThat(result.path("projectAdminMetadata")
@@ -67,10 +72,8 @@ class LaborCostPaymentSpreadsheetRendererTest {
                     "DAILY",
                     1,
                     "10000",
-                    "0",
-                    "0",
-                    "0",
-                    "0"
+                    "0", "0", "0", "0", "0",
+                    "0", "0", "0", "0"
             ));
         }
 
@@ -93,13 +96,13 @@ class LaborCostPaymentSpreadsheetRendererTest {
         assertThat(sheet.path("usedRange").path("colIndex").asInt())
                 .isEqualTo(12);
         assertThat(sheet.path("columns")).hasSize(13);
-        assertThat(sheet.path("rows")).hasSize(45);
+        assertThat(sheet.path("rows")).hasSize(50);
         assertThat(sheet.path("rows").get(0).path("cells").get(0)
                 .path("value").asText())
                 .contains("労務費支払一覧総支給");
         assertThat(sheet.path("rows").get(4).path("cells").get(0)
                 .path("value").asText()).isEqualTo("日付");
-        assertThat(sheet.path("rows").get(44).path("cells").get(0)
+        assertThat(sheet.path("rows").get(49).path("cells").get(0)
                 .path("value").asText()).isEqualTo("差引支給額");
     }
 
@@ -130,9 +133,14 @@ class LaborCostPaymentSpreadsheetRendererTest {
             String paymentCycle,
             int day,
             String gross,
-            String incomeTax,
-            String savingRepayment,
-            String borrowWithdrawal,
+            String legalDeposit,
+            String saving,
+            String savingWithdrawal,
+            String shortTermAdvance,
+            String loanRepayment,
+            String dormitoryFee,
+            String mobileRental,
+            String wifiFee,
             String otherDeduction
     ) {
         return Map.ofEntries(
@@ -143,9 +151,14 @@ class LaborCostPaymentSpreadsheetRendererTest {
                 Map.entry("company_name", "株式会社富陽"),
                 Map.entry("work_date", LocalDate.of(2026, 7, day)),
                 Map.entry("daily_gross_amount", new BigDecimal(gross)),
-                Map.entry("income_tax_amount", new BigDecimal(incomeTax)),
-                Map.entry("saving_repayment_amount", new BigDecimal(savingRepayment)),
-                Map.entry("borrow_withdrawal_amount", new BigDecimal(borrowWithdrawal)),
+                Map.entry("legal_deposit_amount", new BigDecimal(legalDeposit)),
+                Map.entry("saving_amount", new BigDecimal(saving)),
+                Map.entry("saving_withdrawal_amount", new BigDecimal(savingWithdrawal)),
+                Map.entry("short_term_advance_amount", new BigDecimal(shortTermAdvance)),
+                Map.entry("loan_repayment_amount", new BigDecimal(loanRepayment)),
+                Map.entry("dormitory_fee_amount", new BigDecimal(dormitoryFee)),
+                Map.entry("mobile_rental_amount", new BigDecimal(mobileRental)),
+                Map.entry("wifi_fee_amount", new BigDecimal(wifiFee)),
                 Map.entry("other_deduction_amount", new BigDecimal(otherDeduction))
         );
     }

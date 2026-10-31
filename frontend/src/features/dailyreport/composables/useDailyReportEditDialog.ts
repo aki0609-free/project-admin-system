@@ -60,7 +60,9 @@ import { useDailyReportInputItemsPreviewMutation } from '@/features/dailyreport/
 import { useDailyReportEstimatedPayPreviewMutation } from '@/features/dailyreport/api/useDailyReportEstimatedPayPreviewMutation'
 import { toDailyReportSaveRequest } from '@/features/dailyreport/utils/dailyReportConverters'
 import { fetchDailyReportPreparationDefaults } from '@/features/dailyreport/api/fetchDailyReportPreparationDefaults'
+import { fetchDailyReportDateSuggestion } from '@/features/dailyreport/api/fetchDailyReportDateSuggestion'
 import { calculateSuggestedPaymentDate } from '@/features/dailyreport/utils/paymentDateSuggestion'
+import { businessDateWithOffset } from '@/shared/utils/DateUtils'
 
 import {
   useDailyReportBilling,
@@ -122,6 +124,8 @@ export const useDailyReportEditDialog = (
     ref(false)
 
   let preparationDefaultsSequence = 0
+  let workDateSuggestionSequence = 0
+  let paymentDateSuggestionSequence = 0
 
   let appliedPreparationDefaults: {
     employeeId: number
@@ -534,9 +538,20 @@ export const useDailyReportEditDialog = (
     calculateWorkTimes()
     recalculateEstimatedPay()
     schedulePayrollItemPreview()
+
+    if (!createParams.value?.workDate) {
+      const sequence = ++workDateSuggestionSequence
+      void fetchDailyReportDateSuggestion(
+        businessDateWithOffset(0), null, 'DAILY',
+      ).then((suggestion) => {
+        if (sequence === workDateSuggestionSequence && formModel.id === 0) {
+          formModel.workDate = suggestion.workDate
+        }
+      }).catch(() => undefined)
+    }
   }
 
-  const applySuggestedPaymentDate = () => {
+  const applySuggestedPaymentDate = async () => {
     const contract = contractQuery.contract.value
 
     if (
@@ -549,13 +564,27 @@ export const useDailyReportEditDialog = (
     ) {
       return
     }
+    const paymentCycle = contract.paymentCycle
+    if (!paymentCycle) return
 
-    const suggested = calculateSuggestedPaymentDate(
+    const sequence = ++paymentDateSuggestionSequence
+    let suggested = calculateSuggestedPaymentDate(
       formModel.workDate,
-      contract.paymentCycle,
+      paymentCycle,
     )
 
-    if (suggested) {
+    try {
+      const response = await fetchDailyReportDateSuggestion(
+        businessDateWithOffset(0), formModel.workDate, paymentCycle,
+      )
+      if (sequence !== paymentDateSuggestionSequence) return
+      suggested = response.paymentDate
+    } catch {
+      // APIが利用できない場合も、日・週払いは日曜・お盆を後ろ倒し、
+      // 月払いは土日・お盆を前倒しする互換値を使用する。
+    }
+
+    if (suggested && !paymentDateManuallyEdited.value) {
       formModel.paymentDate = suggested
     }
   }

@@ -59,7 +59,7 @@
 
       .meta {
         display: grid;
-        grid-template-columns: 130px 180px 130px 1fr;
+        grid-template-columns: 110px 150px 110px 1fr 90px 140px;
         border: 1px solid #64748b;
         margin-bottom: 10px;
       }
@@ -236,6 +236,14 @@
         border-top: 1px solid #64748b;
       }
 
+      .remark-row {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: 175px 1fr;
+        min-height: 42px;
+        border-top: 1px solid #64748b;
+      }
+
       .supplement-label,
       .supplement-value {
         padding: 6px 8px;
@@ -328,6 +336,8 @@
         <div
           th:text="${row['period_start_label']} + ' ～ ' + ${row['period_end_label']}"
         ></div>
+        <div class="label">支払日</div>
+        <div th:text="${row['payment_date_label']}"></div>
       </div>
 
       <table class="attendance">
@@ -337,8 +347,6 @@
             <th>実働時間</th>
             <th>早出・残業時間</th>
             <th>深夜時間</th>
-            <th>休日労働時間</th>
-            <th>有休日数</th>
           </tr>
         </thead>
         <tbody>
@@ -347,8 +355,6 @@
             <td th:text="${row['work_hours_label'] ?: '0時間0分'}"></td>
             <td th:text="${row['overtime_hours_label'] ?: '0時間0分'}"></td>
             <td th:text="${row['night_work_hours_label'] ?: '0時間0分'}"></td>
-            <td th:text="${row['holiday_work_hours_label'] ?: '0時間0分'}"></td>
-            <td th:text="${row['paid_leave_days'] ?: 0} + ' 日'"></td>
           </tr>
         </tbody>
       </table>
@@ -459,20 +465,16 @@
 
       <div class="supplement">
         <div class="supplement-row">
-          <div class="supplement-label">法定準備金返済額</div>
-          <div class="supplement-value" th:text="${#numbers.formatDecimal(row['legal_deposit_refund_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+          <div class="supplement-label">社会保険計</div>
+          <div class="supplement-value" th:text="${#numbers.formatDecimal(row['social_insurance_total'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
         </div>
         <div class="supplement-row">
           <div class="supplement-label">課税対象額</div>
           <div class="supplement-value" th:text="${#numbers.formatDecimal(row['taxable_amount'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
         </div>
-        <div class="supplement-row">
-          <div class="supplement-label">借入金残高</div>
-          <div class="supplement-value" th:text="${#numbers.formatDecimal(row['loan_balance'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
-        </div>
-        <div class="supplement-row">
-          <div class="supplement-label">貯金残高</div>
-          <div class="supplement-value" th:text="${#numbers.formatDecimal(row['saving_balance'] ?: 0, 0, 'COMMA', 0, 'POINT')} + ' 円'"></div>
+        <div class="remark-row">
+          <div class="supplement-label">備考</div>
+          <div class="supplement-value"></div>
         </div>
       </div>
 

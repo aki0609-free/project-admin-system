@@ -59,15 +59,15 @@ FROM (
         'monthly_invoice_pattern_1.jrxml' AS template_file_name,
         'select * from vw_monthly_invoice_pattern_1_render
 where execution_id = :executionId
-order by work_date, job_code' AS query_sql
+order by job_code, job_name, work_date' AS query_sql
     UNION ALL
     SELECT
         'MONTHLY_INVOICE_PATTERN_2',
-        '月次請求書（職種・役職別）',
+        '月次請求書（職種別・31日集計）',
         'monthly_invoice_pattern_2.jrxml',
         'select * from vw_monthly_invoice_pattern_2_render
 where execution_id = :executionId
-order by job_code, site_role_code, metric_order'
+order by job_code, metric_order'
     UNION ALL
     SELECT
         'MONTHLY_INVOICE_PATTERN_3',

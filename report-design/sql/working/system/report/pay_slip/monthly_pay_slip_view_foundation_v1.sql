@@ -75,6 +75,13 @@ SELECT
     e.id AS employee_id,
     e.employee_code,
     e.employee_name,
+    CONCAT(
+        CASE
+            WHEN NULLIF(TRIM(e.postal_code), '') IS NULL THEN ''
+            ELSE CONCAT('〒', TRIM(e.postal_code), ' ')
+        END,
+        COALESCE(TRIM(e.address), '')
+    ) AS employee_address,
     e.email AS recipient_email,
     ec.payment_cycle,
     COALESCE((
@@ -138,6 +145,7 @@ SELECT
     COALESCE(SUM(dr.allowance_amount), 0) AS daily_allowance_summary,
     COALESCE(SUM(dr.deduction_amount), 0) AS daily_deduction_summary,
     COALESCE(SUM(dr.saving_amount), 0) AS saving_amount,
+    COALESCE(SUM(dr.saving_withdrawal_amount), 0) AS saving_withdrawal_amount,
     COALESCE(SUM(dr.loan_repayment_amount), 0) AS loan_repayment_amount
 FROM vw_monthly_pay_slip_employee_month em
 LEFT JOIN daily_report dr
@@ -164,7 +172,7 @@ LEFT JOIN daily_report dr
  AND dr.deleted_at IS NULL
  AND dr.approval_status = 'APPROVED'
  AND dr.payment_date BETWEEN em.period_from AND em.period_to
- AND em.payment_cycle = 'DAILY'
+ AND em.payment_cycle IN ('DAILY', 'WEEKLY')
 GROUP BY
     em.tenant_id,
     em.target_month,
@@ -371,6 +379,20 @@ transaction_item AS (
         transaction_source.display_order,
         transaction_source.item_value
     FROM vw_employee_payroll_item_transaction_confirmed transaction_source
+),
+year_end_adjustment AS (
+    SELECT
+        adjustment.tenant_id,
+        adjustment.target_month,
+        adjustment.employee_id,
+        CASE WHEN adjustment.adjustment_amount >= 0
+            THEN 'ALLOWANCE' ELSE 'LEGAL_DEDUCTION' END AS item_category,
+        'YEAR_END_ADJUSTMENT' AS item_code,
+        CASE WHEN adjustment.adjustment_amount >= 0
+            THEN '年末調整還付' ELSE '年末調整追徴' END AS item_name,
+        9500 AS display_order,
+        ABS(adjustment.adjustment_amount) AS item_value
+    FROM vw_year_end_adjustment_confirmed adjustment
 )
 SELECT * FROM daily_pay_component
 UNION ALL
@@ -386,7 +408,9 @@ SELECT * FROM saving
 UNION ALL
 SELECT * FROM loan_repayment
 UNION ALL
-SELECT * FROM transaction_item;
+SELECT * FROM transaction_item
+UNION ALL
+SELECT * FROM year_end_adjustment;
 
 -- 月次給与明細へ表示する項目の正本。
 -- V1では計算対象をすべて表示する。会社固有の表示変更はこのViewだけを
@@ -465,6 +489,7 @@ SELECT
     COALESCE(SUM(
         CASE
             WHEN item.item_category = 'ALLOWANCE'
+             AND item.item_code <> 'YEAR_END_ADJUSTMENT'
                 THEN item.item_value
             ELSE 0
         END
@@ -473,6 +498,7 @@ SELECT
         + COALESCE(SUM(
             CASE
                 WHEN item.item_category = 'ALLOWANCE'
+                 AND item.item_code <> 'YEAR_END_ADJUSTMENT'
                     THEN item.item_value
                 ELSE 0
             END
@@ -506,6 +532,7 @@ SELECT
         CASE
             WHEN item.item_category = 'LEGAL_DEDUCTION'
              AND item.item_code <> 'LEGAL_DEPOSIT'
+             AND item.item_code <> 'YEAR_END_ADJUSTMENT'
                 THEN item.item_value
             ELSE 0
         END
@@ -513,6 +540,7 @@ SELECT
     COALESCE(SUM(
         CASE
             WHEN item.item_category = 'OTHER_DEDUCTION'
+             AND item.item_code <> 'YEAR_END_ADJUSTMENT'
                 THEN item.item_value
             ELSE 0
         END
@@ -584,6 +612,7 @@ calculation_basis AS (
         em.target_month,
         em.employee_id,
         gross.gross_amount,
+        em.commute_allowance_monthly,
         period.id AS calculation_period_id,
         period.income_tax_year,
         period.insurance_rate_year,
@@ -700,7 +729,8 @@ taxable_amount AS (
                 - amount.health_insurance
                 - amount.child_care_contribution
                 - amount.pension_insurance
-                - amount.employment_insurance,
+                - amount.employment_insurance
+                - amount.commute_allowance_monthly,
             0
         ) AS taxable_amount
     FROM insurance_amount amount
@@ -831,6 +861,56 @@ JOIN vw_monthly_pay_slip_deduction_basis deduction_basis
  AND deduction_basis.target_month = em.target_month
  AND deduction_basis.employee_id = em.employee_id;
 
+-- 帳票表示専用の動的項目。
+-- TEMPTABLEで先に確定し、呼出元の集計Viewへrefund Viewを展開させない。
+-- これにより法定準備金返済額の明細表示を維持しつつ、optimizerの
+-- 統計計算が極端に遅くなる問題を回避する。
+CREATE OR REPLACE ALGORITHM = TEMPTABLE VIEW vw_monthly_pay_slip_display_item AS
+SELECT
+    source.tenant_id,
+    source.target_month,
+    source.employee_id,
+    source.item_category,
+    source.item_code,
+    source.item_name,
+    source.item_value,
+    source.display_order,
+    ROW_NUMBER() OVER (
+        PARTITION BY
+            source.tenant_id,
+            source.target_month,
+            source.employee_id,
+            source.item_category
+        ORDER BY source.display_order, source.item_code
+    ) AS item_no
+FROM (
+    SELECT
+        item.tenant_id,
+        item.target_month,
+        item.employee_id,
+        item.item_category,
+        item.item_code,
+        item.item_name,
+        item.item_value,
+        item.display_order
+    FROM vw_monthly_pay_slip_variable_item item
+
+    UNION ALL
+
+    SELECT
+        refund.tenant_id,
+        refund.target_month,
+        refund.employee_id,
+        CASE WHEN refund.refund_amount >= 0
+            THEN 'ALLOWANCE' ELSE 'LEGAL_DEDUCTION' END,
+        'LEGAL_DEPOSIT_REFUND',
+        '法定準備金返済額',
+        ABS(refund.refund_amount),
+        9600
+    FROM vw_monthly_pay_slip_legal_deposit_refund refund
+    WHERE refund.refund_amount <> 0
+) source;
+
 CREATE OR REPLACE VIEW vw_monthly_pay_slip_company AS
 SELECT
     profile.tenant_id,
@@ -845,8 +925,76 @@ JOIN (
       AND deleted_at IS NULL
     GROUP BY tenant_id
 ) selected
-  ON selected.company_profile_id = profile.id
+ ON selected.company_profile_id = profile.id
  AND selected.tenant_id = profile.tenant_id;
+
+-- 月次給与の支払日は給与締め設定を基準とし、土日・会社休日を前倒しする。
+CREATE OR REPLACE VIEW vw_monthly_pay_slip_payment_date AS
+SELECT
+    em.tenant_id,
+    em.target_month,
+    em.employee_id,
+    (
+        SELECT MAX(calendar.calendar_date)
+        FROM business_calendar_date calendar
+        WHERE calendar.weekend_flag = FALSE
+          AND NOT (
+              MONTH(calendar.calendar_date) = 8
+              AND DAY(calendar.calendar_date) BETWEEN 13 AND 15
+          )
+          AND NOT EXISTS (
+              SELECT 1
+              FROM business_holiday holiday
+              WHERE holiday.tenant_id = em.tenant_id
+                AND holiday.holiday_date = calendar.calendar_date
+                AND holiday.active_flag = TRUE
+                AND holiday.deleted_at IS NULL
+          )
+          AND calendar.calendar_date <= CASE COALESCE(
+              payroll.payment_day_type,
+              'DAY_OF_MONTH'
+          )
+              WHEN 'END_OF_MONTH' THEN LAST_DAY(DATE_ADD(
+                  em.target_month,
+                  INTERVAL COALESCE(payroll.payment_month_offset, 1) MONTH
+              ))
+              WHEN 'DAY_OF_MONTH' THEN DATE_ADD(
+                  DATE_FORMAT(
+                      DATE_ADD(
+                          em.target_month,
+                          INTERVAL COALESCE(payroll.payment_month_offset, 1) MONTH
+                      ),
+                      '%Y-%m-01'
+                  ),
+                  INTERVAL (
+                      LEAST(
+                          COALESCE(payroll.payment_day_value, 15),
+                          DAY(LAST_DAY(DATE_ADD(
+                              em.target_month,
+                              INTERVAL COALESCE(payroll.payment_month_offset, 1) MONTH
+                          )))
+                      ) - 1
+                  ) DAY
+              )
+              ELSE NULL
+          END
+    ) AS payment_date
+FROM vw_monthly_pay_slip_employee_month em
+LEFT JOIN (
+    SELECT setting.*
+    FROM closing_setting setting
+    JOIN (
+        SELECT tenant_id, MAX(id) AS setting_id
+        FROM closing_setting
+        WHERE setting_code = 'PAYROLL'
+          AND active_flag = TRUE
+          AND deleted_at IS NULL
+        GROUP BY tenant_id
+    ) selected
+      ON selected.setting_id = setting.id
+     AND selected.tenant_id = setting.tenant_id
+) payroll
+  ON payroll.tenant_id = em.tenant_id;
 
 CREATE OR REPLACE VIEW vw_monthly_pay_slip_latest AS
 SELECT
@@ -854,9 +1002,11 @@ SELECT
     em.target_month,
     em.period_from,
     em.period_to,
+    payment.payment_date,
     em.employee_id,
     em.employee_code,
     em.employee_name,
+    em.employee_address,
     em.recipient_email,
     company.company_name,
     CONCAT(
@@ -874,8 +1024,28 @@ SELECT
     COALESCE(att.paid_leave_days, 0) AS paid_leave_days,
 
     gross.basic_salary,
-    gross.allowance_total,
-    gross.gross_amount,
+    gross.allowance_total
+        + GREATEST(
+            deduction_basis.legal_deposit_amount
+                - tax.social_insurance_total
+                - COALESCE(tax.income_tax, 0)
+                - COALESCE(tax.resident_tax, 0)
+                - deduction_basis.variable_legal_deduction_total,
+            0
+        )
+        + GREATEST(COALESCE(year_end.adjustment_amount, 0), 0)
+        AS allowance_total,
+    gross.gross_amount
+        + GREATEST(
+            deduction_basis.legal_deposit_amount
+                - tax.social_insurance_total
+                - COALESCE(tax.income_tax, 0)
+                - COALESCE(tax.resident_tax, 0)
+                - deduction_basis.variable_legal_deduction_total,
+            0
+        )
+        + GREATEST(COALESCE(year_end.adjustment_amount, 0), 0)
+        AS gross_amount,
     tax.health_standard_remuneration,
     tax.pension_standard_remuneration,
     tax.health_insurance,
@@ -892,6 +1062,17 @@ SELECT
         + COALESCE(tax.income_tax, 0)
         + COALESCE(tax.resident_tax, 0)
         + deduction_basis.variable_legal_deduction_total
+        + GREATEST(-COALESCE(year_end.adjustment_amount, 0), 0)
+        + GREATEST(
+            -(
+                deduction_basis.legal_deposit_amount
+                    - tax.social_insurance_total
+                    - COALESCE(tax.income_tax, 0)
+                    - COALESCE(tax.resident_tax, 0)
+                    - deduction_basis.variable_legal_deduction_total
+            ),
+            0
+        )
         AS legal_deduction_total,
     deduction_basis.variable_other_deduction_total AS other_deduction_total,
     tax.social_insurance_total
@@ -899,6 +1080,17 @@ SELECT
         + COALESCE(tax.resident_tax, 0)
         + deduction_basis.variable_legal_deduction_total
         + deduction_basis.variable_other_deduction_total
+        + GREATEST(-COALESCE(year_end.adjustment_amount, 0), 0)
+        + GREATEST(
+            -(
+                deduction_basis.legal_deposit_amount
+                    - tax.social_insurance_total
+                    - COALESCE(tax.income_tax, 0)
+                    - COALESCE(tax.resident_tax, 0)
+                    - deduction_basis.variable_legal_deduction_total
+            ),
+            0
+        )
         AS deduction_total,
     gross.gross_amount
         - tax.social_insurance_total
@@ -906,6 +1098,12 @@ SELECT
         - COALESCE(tax.resident_tax, 0)
         - deduction_basis.variable_legal_deduction_total
         - deduction_basis.variable_other_deduction_total
+        + deduction_basis.legal_deposit_amount
+        - tax.social_insurance_total
+        - COALESCE(tax.income_tax, 0)
+        - COALESCE(tax.resident_tax, 0)
+        - deduction_basis.variable_legal_deduction_total
+        + COALESCE(year_end.adjustment_amount, 0)
         AS net_payment_amount,
     COALESCE(adv.advance_payment_amount, 0) AS advance_payment_amount,
     COALESCE((
@@ -1029,7 +1227,15 @@ JOIN vw_monthly_pay_slip_deduction_basis deduction_basis
   ON deduction_basis.tenant_id = em.tenant_id
  AND deduction_basis.target_month = em.target_month
  AND deduction_basis.employee_id = em.employee_id
-LEFT JOIN vw_monthly_pay_slip_variable_item item
+LEFT JOIN vw_monthly_pay_slip_payment_date payment
+  ON payment.tenant_id = em.tenant_id
+ AND payment.target_month = em.target_month
+ AND payment.employee_id = em.employee_id
+LEFT JOIN vw_year_end_adjustment_confirmed year_end
+  ON year_end.tenant_id = em.tenant_id
+ AND year_end.target_month = em.target_month
+ AND year_end.employee_id = em.employee_id
+LEFT JOIN vw_monthly_pay_slip_display_item item
   ON item.tenant_id = em.tenant_id
  AND item.target_month = em.target_month
  AND item.employee_id = em.employee_id
@@ -1040,9 +1246,11 @@ GROUP BY
     em.target_month,
     em.period_from,
     em.period_to,
+    payment.payment_date,
     em.employee_id,
     em.employee_code,
     em.employee_name,
+    em.employee_address,
     em.recipient_email,
     company.company_name,
     gross.basic_salary,
@@ -1063,6 +1271,7 @@ GROUP BY
     deduction_basis.variable_legal_deduction_total,
     deduction_basis.legal_deposit_amount,
     deduction_basis.variable_other_deduction_total,
+    year_end.adjustment_amount,
     att.work_day_count,
     att.work_hours,
     att.overtime_hours,

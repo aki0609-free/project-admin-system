@@ -77,11 +77,12 @@ public class OperationReportPreviewReadinessValidator
     }
 
     private int countRequiredDefinitions() {
+        // 非表示の帳票も基盤定義としては残す。active_flag は一覧公開の可否であり、
+        // SQL/View の適用漏れを検出する本チェックとは分離する。
         Integer count = jdbcTemplate.queryForObject("""
                 select count(distinct report_code)
                 from operation_report_preview
                 where tenant_id = 'default'
-                  and active_flag = true
                   and deleted_at is null
                   and report_code in (?, ?)
                 """,

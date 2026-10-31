@@ -318,6 +318,14 @@ watch(fiscalYearStartMonth, startMonth => {
     />
 
     <v-table class="book-table" density="comfortable">
+      <colgroup>
+        <col class="book-table__name-column">
+        <col class="book-table__code-column">
+        <col class="book-table__source-column">
+        <col class="book-table__mode-column">
+        <col class="book-table__timing-column">
+        <col class="book-table__action-column">
+      </colgroup>
       <thead>
         <tr>
           <th>台帳名</th>
@@ -330,13 +338,20 @@ watch(fiscalYearStartMonth, startMonth => {
       </thead>
       <tbody>
         <tr v-for="book in booksQuery.books.value" :key="book.id">
-          <td class="font-weight-bold">{{ book.bookName }}</td>
-          <td>
+          <td class="font-weight-bold book-table__name">
+            {{ book.bookName }}
+          </td>
+          <td class="book-table__code">
             <v-chip size="small" variant="tonal">
               {{ book.bookCode }}
             </v-chip>
           </td>
-          <td>{{ book.dataSourceCode }}</td>
+          <td
+            class="book-table__source"
+            :title="book.dataSourceCode"
+          >
+            {{ book.dataSourceCode }}
+          </td>
           <td>
             <v-chip
               size="small"
@@ -543,6 +558,48 @@ watch(fiscalYearStartMonth, startMonth => {
   border-radius: 8px;
 }
 
+.book-table :deep(.v-table__wrapper) {
+  overflow-x: auto;
+}
+
+.book-table :deep(table) {
+  width: 100%;
+  min-width: 1140px;
+  table-layout: fixed;
+}
+
+.book-table__name-column {
+  width: 150px;
+}
+
+.book-table__code-column {
+  width: 220px;
+}
+
+.book-table__source-column {
+  width: 290px;
+}
+
+.book-table__mode-column,
+.book-table__timing-column {
+  width: 150px;
+}
+
+.book-table__action-column {
+  width: 180px;
+}
+
+.book-table__name,
+.book-table__code,
+.book-table__source {
+  white-space: nowrap;
+}
+
+.book-table__source {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .book-table__action {
   width: 180px;
   min-width: 180px;
@@ -558,5 +615,12 @@ watch(fiscalYearStartMonth, startMonth => {
 .book-table__readiness {
   max-width: 320px;
   white-space: normal;
+}
+
+@media (max-width: 720px) {
+  .book-search {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
 }
 </style>

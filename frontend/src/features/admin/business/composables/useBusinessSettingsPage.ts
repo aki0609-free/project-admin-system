@@ -1,4 +1,6 @@
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { get } from '@/shared/api/http'
+import type { EmployeeListItemResponse } from '@/features/employees/types/employeeApiTypes'
 import {
   createResignationChecklist,
   deleteResignationChecklist,
@@ -20,6 +22,12 @@ import {
   savePreviewReportSetting,
   saveResignationMessage,
   updateResignationChecklist,
+  getBusinessHolidays,
+  saveBusinessHoliday,
+  deleteBusinessHoliday,
+  getYearEndAdjustments,
+  saveYearEndAdjustment,
+  deleteYearEndAdjustment,
 } from '../api/businessSettingApi'
 import type {
   AnnualReportBackupResult,
@@ -33,6 +41,8 @@ import type {
   ResignationChecklistItem,
   ResignationChecklistSaveRequest,
   ResignationMessage,
+  BusinessHoliday,
+  YearEndAdjustment,
 } from '../types/businessSettingTypes'
 
 const emptyChecklist = (): ResignationChecklistItem => ({
@@ -82,10 +92,32 @@ const emptyPreviewReport = (): PreviewReportSetting => ({
   templateExists: false,
 })
 
+const emptyHoliday = (year: number): BusinessHoliday => ({
+  id: null,
+  holidayDate: `${year}-08-13`,
+  holidayName: 'お盆休み',
+  holidayType: 'OBON',
+  note: null,
+  activeFlag: true,
+})
+
+const emptyYearEndAdjustment = (taxYear: number): YearEndAdjustment => ({
+  id: null,
+  employeeId: null,
+  taxYear,
+  targetMonth: `${taxYear}-12`,
+  adjustmentAmount: 0,
+  status: 'DRAFT',
+  note: null,
+  lockVersion: null,
+})
+
 export const useBusinessSettingsPage = () => {
   const activeTab = ref<
     | 'resignation'
     | 'closing'
+    | 'holidays'
+    | 'yearEndAdjustment'
     | 'payrollPolicy'
     | 'outputs'
     | 'previewReports'
@@ -123,6 +155,13 @@ export const useBusinessSettingsPage = () => {
   const previewReportDialog = ref(false)
   const editingPreviewReport = reactive<PreviewReportSetting>(emptyPreviewReport())
   const previewTemplateFile = ref<File | null>(null)
+  const holidayYear = ref(new Date().getFullYear())
+  const holidays = ref<BusinessHoliday[]>([])
+  const editingHoliday = reactive<BusinessHoliday>(emptyHoliday(holidayYear.value))
+  const taxYear = ref(new Date().getFullYear())
+  const yearEndAdjustments = ref<YearEndAdjustment[]>([])
+  const editingYearEndAdjustment = reactive<YearEndAdjustment>(emptyYearEndAdjustment(taxYear.value))
+  const employees = ref<EmployeeListItemResponse[]>([])
 
   const showSuccess = (text: string) => {
     successMessage.value = text
@@ -184,6 +223,15 @@ export const useBusinessSettingsPage = () => {
             previewReports.value = value
           })
           .catch(() => failures.push('プレビュー帳票')),
+        getBusinessHolidays(holidayYear.value)
+          .then((value) => { holidays.value = value })
+          .catch(() => failures.push('休日設定')),
+        getYearEndAdjustments(taxYear.value)
+          .then((value) => { yearEndAdjustments.value = value })
+          .catch(() => failures.push('年末調整')),
+        get<EmployeeListItemResponse[]>('/api/employees')
+          .then((value) => { employees.value = value })
+          .catch(() => failures.push('従業員')),
       ])
       if (failures.length > 0) {
         throw new Error(`設定の取得に失敗しました: ${failures.join('、')}`)
@@ -243,6 +291,63 @@ export const useBusinessSettingsPage = () => {
         paymentDay: closingSetting.value.paymentDay,
       })
     }, '締日設定を保存しました。')
+
+  const loadHolidays = () => run(async () => {
+    holidays.value = await getBusinessHolidays(Number(holidayYear.value))
+    Object.assign(editingHoliday, emptyHoliday(Number(holidayYear.value)))
+  })
+
+  const editHoliday = (item?: BusinessHoliday) => {
+    Object.assign(editingHoliday, item ?? emptyHoliday(Number(holidayYear.value)))
+  }
+
+  const saveHoliday = () => run(async () => {
+    await saveBusinessHoliday({ ...editingHoliday })
+    holidays.value = await getBusinessHolidays(Number(holidayYear.value))
+    Object.assign(editingHoliday, emptyHoliday(Number(holidayYear.value)))
+  }, '休日を保存しました。')
+
+  const removeHoliday = (item: BusinessHoliday) => {
+    if (item.id == null || !window.confirm(`「${item.holidayName}」を削除しますか？`)) return
+    return run(async () => {
+      await deleteBusinessHoliday(item.id as number)
+      holidays.value = await getBusinessHolidays(Number(holidayYear.value))
+    }, '休日を削除しました。')
+  }
+
+  const loadYearEndAdjustments = () => run(async () => {
+    yearEndAdjustments.value = await getYearEndAdjustments(Number(taxYear.value))
+    Object.assign(editingYearEndAdjustment, emptyYearEndAdjustment(Number(taxYear.value)))
+  })
+
+  const editYearEndAdjustment = (item?: YearEndAdjustment) => {
+    Object.assign(editingYearEndAdjustment,
+      item ?? emptyYearEndAdjustment(Number(taxYear.value)))
+  }
+
+  const saveYearEnd = () => {
+    if (editingYearEndAdjustment.employeeId == null) {
+      errorMessage.value = '従業員を選択してください。'
+      return
+    }
+    return run(async () => {
+      await saveYearEndAdjustment({
+        ...editingYearEndAdjustment,
+        taxYear: Number(taxYear.value),
+        adjustmentAmount: Number(editingYearEndAdjustment.adjustmentAmount),
+      })
+      yearEndAdjustments.value = await getYearEndAdjustments(Number(taxYear.value))
+      Object.assign(editingYearEndAdjustment, emptyYearEndAdjustment(Number(taxYear.value)))
+    }, '年末調整を保存しました。')
+  }
+
+  const removeYearEnd = (item: YearEndAdjustment) => {
+    if (item.id == null || !window.confirm(`${item.employeeName ?? ''}の年末調整を削除しますか？`)) return
+    return run(async () => {
+      await deleteYearEndAdjustment(item.id as number)
+      yearEndAdjustments.value = await getYearEndAdjustments(Number(taxYear.value))
+    }, '年末調整を削除しました。')
+  }
 
   const saveOutputs = () =>
     run(async () => {
@@ -399,6 +504,13 @@ export const useBusinessSettingsPage = () => {
     previewReportDialog,
     editingPreviewReport,
     previewTemplateFile,
+    holidayYear,
+    holidays,
+    editingHoliday,
+    taxYear,
+    yearEndAdjustments,
+    editingYearEndAdjustment,
+    employees,
     load,
     saveMessage,
     openChecklistCreate,
@@ -406,6 +518,14 @@ export const useBusinessSettingsPage = () => {
     saveChecklist,
     removeChecklist,
     saveClosing,
+    loadHolidays,
+    editHoliday,
+    saveHoliday,
+    removeHoliday,
+    loadYearEndAdjustments,
+    editYearEndAdjustment,
+    saveYearEnd,
+    removeYearEnd,
     saveOutputs,
     saveBackupSetting,
     executeBackup,

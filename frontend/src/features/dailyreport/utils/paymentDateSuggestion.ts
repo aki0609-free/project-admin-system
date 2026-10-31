@@ -32,16 +32,50 @@ const addDays = (
 ): Date =>
   new Date(date.getTime() + days * DAY_MILLISECONDS)
 
-const rollForwardFromSunday = (
+const isHoliday = (
   date: Date,
-): Date =>
+): boolean =>
   date.getUTCDay() === 0
-    ? addDays(date, 1)
-    : date
+  || (
+    date.getUTCMonth() === 7
+    && date.getUTCDate() >= 13
+    && date.getUTCDate() <= 15
+  )
+
+const rollForwardFromHoliday = (
+  date: Date,
+): Date => {
+  let candidate = date
+  while (isHoliday(candidate)) {
+    candidate = addDays(candidate, 1)
+  }
+  return candidate
+}
+
+const isMonthlyPaymentHoliday = (
+  date: Date,
+): boolean =>
+  date.getUTCDay() === 0
+  || date.getUTCDay() === 6
+  || (
+    date.getUTCMonth() === 7
+    && date.getUTCDate() >= 13
+    && date.getUTCDate() <= 15
+  )
+
+const rollBackMonthlyPaymentDate = (
+  date: Date,
+): Date => {
+  let candidate = date
+  while (isMonthlyPaymentHoliday(candidate)) {
+    candidate = addDays(candidate, -1)
+  }
+  return candidate
+}
 
 /**
- * 新規日報の勤務日初期値。前日が日曜日の場合だけ土曜日へ戻す。
- * 土曜日と祝日は通常日として扱い、必要に応じて利用者が手修正する。
+ * API応答までの新規日報の勤務日初期値。日曜とお盆（8/13〜15）を避ける。
+ * 土曜日と国民の祝日は通常日として扱う。
  */
 export const calculateDefaultWorkDate = (
   currentBusinessDateValue: string,
@@ -52,7 +86,7 @@ export const calculateDefaultWorkDate = (
   if (!currentBusinessDate) return ''
 
   let candidate = addDays(currentBusinessDate, -1)
-  if (candidate.getUTCDay() === 0) {
+  while (isHoliday(candidate)) {
     candidate = addDays(candidate, -1)
   }
 
@@ -91,6 +125,8 @@ export const calculateSuggestedPaymentDate = (
   }
 
   return toIsoDate(
-    rollForwardFromSunday(candidate),
+    paymentCycle === 'MONTHLY'
+      ? rollBackMonthlyPaymentDate(candidate)
+      : rollForwardFromHoliday(candidate),
   )
 }

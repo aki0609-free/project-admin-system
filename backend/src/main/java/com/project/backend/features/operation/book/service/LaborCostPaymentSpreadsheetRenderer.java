@@ -156,7 +156,7 @@ public class LaborCostPaymentSpreadsheetRenderer
         sheet.put("frozenColumns", 2);
         sheet.put("showGridLines", false);
         sheet.putObject("usedRange")
-                .put("rowIndex", 44)
+                .put("rowIndex", 49)
                 .put("colIndex", totalColumn);
 
         ArrayNode columns = sheet.putArray("columns");
@@ -187,13 +187,23 @@ public class LaborCostPaymentSpreadsheetRenderer
         summaryRow(rows, "月合計", employees,
                 EmployeePayment::grossTotal, "#FFF2CC");
         spacerRow(rows, totalColumn + 1);
-        summaryRow(rows, "所得税", employees,
-                EmployeePayment::incomeTaxTotal, "#FCE4D6");
-        summaryRow(rows, "借金・引出", employees,
-                EmployeePayment::borrowWithdrawalAmount, "#FCE4D6");
-        summaryRow(rows, "貯金・返済", employees,
-                EmployeePayment::savingRepaymentTotal, "#FCE4D6");
-        summaryRow(rows, "その他控除", employees,
+        summaryRow(rows, "法定準備金", employees,
+                EmployeePayment::legalDepositTotal, "#FCE4D6");
+        summaryRow(rows, "貯金", employees,
+                EmployeePayment::savingTotal, "#FCE4D6");
+        summaryRow(rows, "引出", employees,
+                EmployeePayment::savingWithdrawalOffset, "#FCE4D6");
+        summaryRow(rows, "前借り", employees,
+                EmployeePayment::shortTermAdvanceTotal, "#FCE4D6");
+        summaryRow(rows, "借入金返済額", employees,
+                EmployeePayment::loanRepaymentTotal, "#FCE4D6");
+        summaryRow(rows, "寮費", employees,
+                EmployeePayment::dormitoryFeeTotal, "#FCE4D6");
+        summaryRow(rows, "携帯電話貸出料", employees,
+                EmployeePayment::mobileRentalTotal, "#FCE4D6");
+        summaryRow(rows, "Wi-Fi使用料", employees,
+                EmployeePayment::wifiFeeTotal, "#FCE4D6");
+        summaryRow(rows, "その他", employees,
                 EmployeePayment::otherDeductionTotal, "#FCE4D6");
         summaryRow(rows, "控除合計", employees,
                 EmployeePayment::deductionTotal, "#F4CCCC");
@@ -486,10 +496,15 @@ public class LaborCostPaymentSpreadsheetRenderer
         private final String companyName;
         private final Map<Integer, BigDecimal> dailyAmounts =
                 new LinkedHashMap<>();
-        private BigDecimal incomeTaxTotal = BigDecimal.ZERO;
-        private BigDecimal savingRepaymentTotal = BigDecimal.ZERO;
+        private BigDecimal legalDepositTotal = BigDecimal.ZERO;
+        private BigDecimal savingTotal = BigDecimal.ZERO;
+        private BigDecimal savingWithdrawalTotal = BigDecimal.ZERO;
+        private BigDecimal shortTermAdvanceTotal = BigDecimal.ZERO;
+        private BigDecimal loanRepaymentTotal = BigDecimal.ZERO;
+        private BigDecimal dormitoryFeeTotal = BigDecimal.ZERO;
+        private BigDecimal mobileRentalTotal = BigDecimal.ZERO;
+        private BigDecimal wifiFeeTotal = BigDecimal.ZERO;
         private BigDecimal otherDeductionTotal = BigDecimal.ZERO;
-        private BigDecimal borrowWithdrawalAmount = BigDecimal.ZERO;
 
         private EmployeePayment(EmployeeKey key, String companyName) {
             this.key = key;
@@ -505,17 +520,32 @@ public class LaborCostPaymentSpreadsheetRenderer
                         BigDecimal::add
                 );
             }
-            incomeTaxTotal = incomeTaxTotal.add(
-                    decimal(row.get("income_tax_amount"))
+            legalDepositTotal = legalDepositTotal.add(
+                    decimal(row.get("legal_deposit_amount"))
             );
-            savingRepaymentTotal = savingRepaymentTotal.add(
-                    decimal(row.get("saving_repayment_amount"))
+            savingTotal = savingTotal.add(
+                    decimal(row.get("saving_amount"))
+            );
+            savingWithdrawalTotal = savingWithdrawalTotal.add(
+                    decimal(row.get("saving_withdrawal_amount"))
+            );
+            shortTermAdvanceTotal = shortTermAdvanceTotal.add(
+                    decimal(row.get("short_term_advance_amount"))
+            );
+            loanRepaymentTotal = loanRepaymentTotal.add(
+                    decimal(row.get("loan_repayment_amount"))
+            );
+            dormitoryFeeTotal = dormitoryFeeTotal.add(
+                    decimal(row.get("dormitory_fee_amount"))
+            );
+            mobileRentalTotal = mobileRentalTotal.add(
+                    decimal(row.get("mobile_rental_amount"))
+            );
+            wifiFeeTotal = wifiFeeTotal.add(
+                    decimal(row.get("wifi_fee_amount"))
             );
             otherDeductionTotal = otherDeductionTotal.add(
                     decimal(row.get("other_deduction_amount"))
-            );
-            borrowWithdrawalAmount = decimal(
-                    row.get("borrow_withdrawal_amount")
             );
         }
 
@@ -528,26 +558,51 @@ public class LaborCostPaymentSpreadsheetRenderer
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
 
-        private BigDecimal incomeTaxTotal() {
-            return incomeTaxTotal;
+        private BigDecimal legalDepositTotal() {
+            return legalDepositTotal;
         }
 
-        private BigDecimal savingRepaymentTotal() {
-            return savingRepaymentTotal;
+        private BigDecimal savingTotal() {
+            return savingTotal;
+        }
+
+        private BigDecimal savingWithdrawalOffset() {
+            return savingWithdrawalTotal.negate();
+        }
+
+        private BigDecimal shortTermAdvanceTotal() {
+            return shortTermAdvanceTotal;
+        }
+
+        private BigDecimal loanRepaymentTotal() {
+            return loanRepaymentTotal;
+        }
+
+        private BigDecimal dormitoryFeeTotal() {
+            return dormitoryFeeTotal;
+        }
+
+        private BigDecimal mobileRentalTotal() {
+            return mobileRentalTotal;
+        }
+
+        private BigDecimal wifiFeeTotal() {
+            return wifiFeeTotal;
         }
 
         private BigDecimal otherDeductionTotal() {
             return otherDeductionTotal;
         }
 
-        private BigDecimal borrowWithdrawalAmount() {
-            return borrowWithdrawalAmount;
-        }
-
         private BigDecimal deductionTotal() {
-            return incomeTaxTotal
-                    .add(borrowWithdrawalAmount)
-                    .add(savingRepaymentTotal)
+            return legalDepositTotal
+                    .add(savingTotal)
+                    .subtract(savingWithdrawalTotal)
+                    .add(shortTermAdvanceTotal)
+                    .add(loanRepaymentTotal)
+                    .add(dormitoryFeeTotal)
+                    .add(mobileRentalTotal)
+                    .add(wifiFeeTotal)
                     .add(otherDeductionTotal);
         }
 

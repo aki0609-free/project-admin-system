@@ -46,7 +46,7 @@ SELECT
     SUM(flat.commute_distance) AS commute_distance,
     MAX(flat.commute_unit_price) AS commute_unit_price,
     SUM(flat.commute_amount) AS commute_amount,
-    SUM(flat.other_amount) AS other_amount,
+    SUM(flat.holiday_amount) + SUM(flat.other_amount) AS other_amount,
     SUM(flat.line_amount) AS line_amount
 FROM vw_monthly_invoice_render_flat flat
 GROUP BY
@@ -88,6 +88,53 @@ SELECT flat.*, 6, 'その他金額',
        flat.other_amount, flat.other_amount
 FROM vw_monthly_invoice_render_flat flat;
 
+-- パターン2・3は31日マトリクス内の単位を帳票仕様に合わせる。
+CREATE OR REPLACE VIEW vw_monthly_invoice_pattern_2_metric_source AS
+SELECT flat.*, 1 AS metric_order, '通常（人）' AS metric_name,
+       flat.base_quantity AS quantity,
+       flat.base_unit_price AS unit_price,
+       flat.base_amount AS amount
+FROM vw_monthly_invoice_render_flat flat
+UNION ALL
+SELECT flat.*, 2, '残業（時間）', flat.overtime_hours,
+       flat.overtime_unit_price, flat.overtime_amount
+FROM vw_monthly_invoice_render_flat flat
+UNION ALL
+SELECT flat.*, 3, '深夜（時間）', flat.night_hours,
+       flat.night_unit_price, flat.night_amount
+FROM vw_monthly_invoice_render_flat flat
+UNION ALL
+SELECT flat.*, 4, '通勤（円）', flat.commute_amount,
+       NULL, flat.commute_amount
+FROM vw_monthly_invoice_render_flat flat
+UNION ALL
+SELECT flat.*, 5, 'その他（円）', flat.holiday_amount + flat.other_amount,
+       NULL, flat.holiday_amount + flat.other_amount
+FROM vw_monthly_invoice_render_flat flat;
+
+CREATE OR REPLACE VIEW vw_monthly_invoice_pattern_3_metric_source AS
+SELECT flat.*, 1 AS metric_order, '通常（人）' AS metric_name,
+       flat.base_quantity AS quantity,
+       flat.base_unit_price AS unit_price,
+       flat.base_amount AS amount
+FROM vw_monthly_invoice_render_flat flat
+UNION ALL
+SELECT flat.*, 2, '残業（時間）', flat.overtime_hours,
+       flat.overtime_unit_price, flat.overtime_amount
+FROM vw_monthly_invoice_render_flat flat
+UNION ALL
+SELECT flat.*, 3, '深夜（時間）', flat.night_hours,
+       flat.night_unit_price, flat.night_amount
+FROM vw_monthly_invoice_render_flat flat
+UNION ALL
+SELECT flat.*, 4, '通勤（円）', flat.commute_amount,
+       NULL, flat.commute_amount
+FROM vw_monthly_invoice_render_flat flat
+UNION ALL
+SELECT flat.*, 5, 'その他（円）', flat.holiday_amount + flat.other_amount,
+       NULL, flat.holiday_amount + flat.other_amount
+FROM vw_monthly_invoice_render_flat flat;
+
 CREATE OR REPLACE VIEW vw_monthly_invoice_pattern_2_render AS
 SELECT
     metric.execution_id,
@@ -95,6 +142,8 @@ SELECT
     metric.invoice_number,
     metric.issue_date,
     metric.target_month,
+    metric.period_from,
+    metric.period_to,
     metric.closing_version,
     metric.customer_id,
     metric.customer_name,
@@ -113,55 +162,60 @@ SELECT
     metric.total_amount,
     metric.job_code,
     metric.job_name,
-    metric.site_role_code,
-    metric.site_role_name,
     metric.metric_order,
     metric.metric_name,
-    SUM(CASE WHEN DAY(metric.work_date) = 1 THEN metric.quantity ELSE 0 END) AS day_01,
-    SUM(CASE WHEN DAY(metric.work_date) = 2 THEN metric.quantity ELSE 0 END) AS day_02,
-    SUM(CASE WHEN DAY(metric.work_date) = 3 THEN metric.quantity ELSE 0 END) AS day_03,
-    SUM(CASE WHEN DAY(metric.work_date) = 4 THEN metric.quantity ELSE 0 END) AS day_04,
-    SUM(CASE WHEN DAY(metric.work_date) = 5 THEN metric.quantity ELSE 0 END) AS day_05,
-    SUM(CASE WHEN DAY(metric.work_date) = 6 THEN metric.quantity ELSE 0 END) AS day_06,
-    SUM(CASE WHEN DAY(metric.work_date) = 7 THEN metric.quantity ELSE 0 END) AS day_07,
-    SUM(CASE WHEN DAY(metric.work_date) = 8 THEN metric.quantity ELSE 0 END) AS day_08,
-    SUM(CASE WHEN DAY(metric.work_date) = 9 THEN metric.quantity ELSE 0 END) AS day_09,
-    SUM(CASE WHEN DAY(metric.work_date) = 10 THEN metric.quantity ELSE 0 END) AS day_10,
-    SUM(CASE WHEN DAY(metric.work_date) = 11 THEN metric.quantity ELSE 0 END) AS day_11,
-    SUM(CASE WHEN DAY(metric.work_date) = 12 THEN metric.quantity ELSE 0 END) AS day_12,
-    SUM(CASE WHEN DAY(metric.work_date) = 13 THEN metric.quantity ELSE 0 END) AS day_13,
-    SUM(CASE WHEN DAY(metric.work_date) = 14 THEN metric.quantity ELSE 0 END) AS day_14,
-    SUM(CASE WHEN DAY(metric.work_date) = 15 THEN metric.quantity ELSE 0 END) AS day_15,
-    SUM(CASE WHEN DAY(metric.work_date) = 16 THEN metric.quantity ELSE 0 END) AS day_16,
-    SUM(CASE WHEN DAY(metric.work_date) = 17 THEN metric.quantity ELSE 0 END) AS day_17,
-    SUM(CASE WHEN DAY(metric.work_date) = 18 THEN metric.quantity ELSE 0 END) AS day_18,
-    SUM(CASE WHEN DAY(metric.work_date) = 19 THEN metric.quantity ELSE 0 END) AS day_19,
-    SUM(CASE WHEN DAY(metric.work_date) = 20 THEN metric.quantity ELSE 0 END) AS day_20,
-    SUM(CASE WHEN DAY(metric.work_date) = 21 THEN metric.quantity ELSE 0 END) AS day_21,
-    SUM(CASE WHEN DAY(metric.work_date) = 22 THEN metric.quantity ELSE 0 END) AS day_22,
-    SUM(CASE WHEN DAY(metric.work_date) = 23 THEN metric.quantity ELSE 0 END) AS day_23,
-    SUM(CASE WHEN DAY(metric.work_date) = 24 THEN metric.quantity ELSE 0 END) AS day_24,
-    SUM(CASE WHEN DAY(metric.work_date) = 25 THEN metric.quantity ELSE 0 END) AS day_25,
-    SUM(CASE WHEN DAY(metric.work_date) = 26 THEN metric.quantity ELSE 0 END) AS day_26,
-    SUM(CASE WHEN DAY(metric.work_date) = 27 THEN metric.quantity ELSE 0 END) AS day_27,
-    SUM(CASE WHEN DAY(metric.work_date) = 28 THEN metric.quantity ELSE 0 END) AS day_28,
-    SUM(CASE WHEN DAY(metric.work_date) = 29 THEN metric.quantity ELSE 0 END) AS day_29,
-    SUM(CASE WHEN DAY(metric.work_date) = 30 THEN metric.quantity ELSE 0 END) AS day_30,
-    SUM(CASE WHEN DAY(metric.work_date) = 31 THEN metric.quantity ELSE 0 END) AS day_31,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 0 THEN metric.quantity ELSE 0 END) AS day_01,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 1 THEN metric.quantity ELSE 0 END) AS day_02,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 2 THEN metric.quantity ELSE 0 END) AS day_03,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 3 THEN metric.quantity ELSE 0 END) AS day_04,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 4 THEN metric.quantity ELSE 0 END) AS day_05,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 5 THEN metric.quantity ELSE 0 END) AS day_06,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 6 THEN metric.quantity ELSE 0 END) AS day_07,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 7 THEN metric.quantity ELSE 0 END) AS day_08,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 8 THEN metric.quantity ELSE 0 END) AS day_09,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 9 THEN metric.quantity ELSE 0 END) AS day_10,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 10 THEN metric.quantity ELSE 0 END) AS day_11,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 11 THEN metric.quantity ELSE 0 END) AS day_12,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 12 THEN metric.quantity ELSE 0 END) AS day_13,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 13 THEN metric.quantity ELSE 0 END) AS day_14,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 14 THEN metric.quantity ELSE 0 END) AS day_15,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 15 THEN metric.quantity ELSE 0 END) AS day_16,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 16 THEN metric.quantity ELSE 0 END) AS day_17,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 17 THEN metric.quantity ELSE 0 END) AS day_18,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 18 THEN metric.quantity ELSE 0 END) AS day_19,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 19 THEN metric.quantity ELSE 0 END) AS day_20,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 20 THEN metric.quantity ELSE 0 END) AS day_21,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 21 THEN metric.quantity ELSE 0 END) AS day_22,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 22 THEN metric.quantity ELSE 0 END) AS day_23,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 23 THEN metric.quantity ELSE 0 END) AS day_24,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 24 THEN metric.quantity ELSE 0 END) AS day_25,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 25 THEN metric.quantity ELSE 0 END) AS day_26,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 26 THEN metric.quantity ELSE 0 END) AS day_27,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 27 THEN metric.quantity ELSE 0 END) AS day_28,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 28 THEN metric.quantity ELSE 0 END) AS day_29,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 29 THEN metric.quantity ELSE 0 END) AS day_30,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 30 THEN metric.quantity ELSE 0 END) AS day_31,
     SUM(metric.quantity) AS metric_total,
     MAX(metric.unit_price) AS unit_price,
-    SUM(metric.amount) AS metric_amount
-FROM vw_monthly_invoice_metric_source metric
+    SUM(metric.amount) AS metric_amount,
+    (
+        SELECT SUM(job_flat.line_amount)
+        FROM vw_monthly_invoice_render_flat job_flat
+        WHERE job_flat.execution_id = metric.execution_id
+          AND job_flat.job_code = metric.job_code
+    ) AS job_total_amount
+FROM vw_monthly_invoice_pattern_2_metric_source metric
 GROUP BY
     metric.execution_id, metric.id, metric.invoice_number,
-    metric.issue_date, metric.target_month, metric.closing_version,
+    metric.issue_date, metric.target_month, metric.period_from,
+    metric.period_to, metric.closing_version,
     metric.customer_id, metric.customer_name,
     metric.company_name, metric.company_postal_code,
     metric.company_address, metric.company_phone, metric.company_fax,
     metric.qualified_invoice_issuer_number, metric.bank_display_text,
     metric.invoice_note, metric.tax_rate, metric.subtotal_amount,
     metric.tax_amount, metric.total_amount, metric.job_code,
-    metric.job_name, metric.site_role_code, metric.site_role_name,
+    metric.job_name,
     metric.metric_order, metric.metric_name;
 CREATE OR REPLACE VIEW vw_monthly_invoice_pattern_3_render AS
 SELECT
@@ -170,6 +224,8 @@ SELECT
     metric.invoice_number,
     metric.issue_date,
     metric.target_month,
+    metric.period_from,
+    metric.period_to,
     metric.closing_version,
     metric.customer_id,
     metric.customer_name,
@@ -192,46 +248,69 @@ SELECT
     metric.job_name,
     metric.site_role_code,
     metric.site_role_name,
+    CONCAT(
+        COALESCE(metric.site_name, ''),
+        CASE
+            WHEN NULLIF(TRIM(metric.job_name), '') IS NULL THEN ''
+            ELSE CONCAT(
+                '（', metric.job_name,
+                CASE
+                    WHEN NULLIF(TRIM(metric.site_role_name), '') IS NULL THEN ''
+                    ELSE CONCAT('／', metric.site_role_name)
+                END,
+                '）'
+            )
+        END
+    ) AS aggregation_label,
     metric.metric_order,
     metric.metric_name,
-    SUM(CASE WHEN DAY(metric.work_date) = 1 THEN metric.quantity ELSE 0 END) AS day_01,
-    SUM(CASE WHEN DAY(metric.work_date) = 2 THEN metric.quantity ELSE 0 END) AS day_02,
-    SUM(CASE WHEN DAY(metric.work_date) = 3 THEN metric.quantity ELSE 0 END) AS day_03,
-    SUM(CASE WHEN DAY(metric.work_date) = 4 THEN metric.quantity ELSE 0 END) AS day_04,
-    SUM(CASE WHEN DAY(metric.work_date) = 5 THEN metric.quantity ELSE 0 END) AS day_05,
-    SUM(CASE WHEN DAY(metric.work_date) = 6 THEN metric.quantity ELSE 0 END) AS day_06,
-    SUM(CASE WHEN DAY(metric.work_date) = 7 THEN metric.quantity ELSE 0 END) AS day_07,
-    SUM(CASE WHEN DAY(metric.work_date) = 8 THEN metric.quantity ELSE 0 END) AS day_08,
-    SUM(CASE WHEN DAY(metric.work_date) = 9 THEN metric.quantity ELSE 0 END) AS day_09,
-    SUM(CASE WHEN DAY(metric.work_date) = 10 THEN metric.quantity ELSE 0 END) AS day_10,
-    SUM(CASE WHEN DAY(metric.work_date) = 11 THEN metric.quantity ELSE 0 END) AS day_11,
-    SUM(CASE WHEN DAY(metric.work_date) = 12 THEN metric.quantity ELSE 0 END) AS day_12,
-    SUM(CASE WHEN DAY(metric.work_date) = 13 THEN metric.quantity ELSE 0 END) AS day_13,
-    SUM(CASE WHEN DAY(metric.work_date) = 14 THEN metric.quantity ELSE 0 END) AS day_14,
-    SUM(CASE WHEN DAY(metric.work_date) = 15 THEN metric.quantity ELSE 0 END) AS day_15,
-    SUM(CASE WHEN DAY(metric.work_date) = 16 THEN metric.quantity ELSE 0 END) AS day_16,
-    SUM(CASE WHEN DAY(metric.work_date) = 17 THEN metric.quantity ELSE 0 END) AS day_17,
-    SUM(CASE WHEN DAY(metric.work_date) = 18 THEN metric.quantity ELSE 0 END) AS day_18,
-    SUM(CASE WHEN DAY(metric.work_date) = 19 THEN metric.quantity ELSE 0 END) AS day_19,
-    SUM(CASE WHEN DAY(metric.work_date) = 20 THEN metric.quantity ELSE 0 END) AS day_20,
-    SUM(CASE WHEN DAY(metric.work_date) = 21 THEN metric.quantity ELSE 0 END) AS day_21,
-    SUM(CASE WHEN DAY(metric.work_date) = 22 THEN metric.quantity ELSE 0 END) AS day_22,
-    SUM(CASE WHEN DAY(metric.work_date) = 23 THEN metric.quantity ELSE 0 END) AS day_23,
-    SUM(CASE WHEN DAY(metric.work_date) = 24 THEN metric.quantity ELSE 0 END) AS day_24,
-    SUM(CASE WHEN DAY(metric.work_date) = 25 THEN metric.quantity ELSE 0 END) AS day_25,
-    SUM(CASE WHEN DAY(metric.work_date) = 26 THEN metric.quantity ELSE 0 END) AS day_26,
-    SUM(CASE WHEN DAY(metric.work_date) = 27 THEN metric.quantity ELSE 0 END) AS day_27,
-    SUM(CASE WHEN DAY(metric.work_date) = 28 THEN metric.quantity ELSE 0 END) AS day_28,
-    SUM(CASE WHEN DAY(metric.work_date) = 29 THEN metric.quantity ELSE 0 END) AS day_29,
-    SUM(CASE WHEN DAY(metric.work_date) = 30 THEN metric.quantity ELSE 0 END) AS day_30,
-    SUM(CASE WHEN DAY(metric.work_date) = 31 THEN metric.quantity ELSE 0 END) AS day_31,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 0 THEN metric.quantity ELSE 0 END) AS day_01,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 1 THEN metric.quantity ELSE 0 END) AS day_02,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 2 THEN metric.quantity ELSE 0 END) AS day_03,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 3 THEN metric.quantity ELSE 0 END) AS day_04,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 4 THEN metric.quantity ELSE 0 END) AS day_05,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 5 THEN metric.quantity ELSE 0 END) AS day_06,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 6 THEN metric.quantity ELSE 0 END) AS day_07,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 7 THEN metric.quantity ELSE 0 END) AS day_08,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 8 THEN metric.quantity ELSE 0 END) AS day_09,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 9 THEN metric.quantity ELSE 0 END) AS day_10,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 10 THEN metric.quantity ELSE 0 END) AS day_11,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 11 THEN metric.quantity ELSE 0 END) AS day_12,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 12 THEN metric.quantity ELSE 0 END) AS day_13,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 13 THEN metric.quantity ELSE 0 END) AS day_14,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 14 THEN metric.quantity ELSE 0 END) AS day_15,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 15 THEN metric.quantity ELSE 0 END) AS day_16,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 16 THEN metric.quantity ELSE 0 END) AS day_17,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 17 THEN metric.quantity ELSE 0 END) AS day_18,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 18 THEN metric.quantity ELSE 0 END) AS day_19,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 19 THEN metric.quantity ELSE 0 END) AS day_20,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 20 THEN metric.quantity ELSE 0 END) AS day_21,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 21 THEN metric.quantity ELSE 0 END) AS day_22,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 22 THEN metric.quantity ELSE 0 END) AS day_23,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 23 THEN metric.quantity ELSE 0 END) AS day_24,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 24 THEN metric.quantity ELSE 0 END) AS day_25,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 25 THEN metric.quantity ELSE 0 END) AS day_26,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 26 THEN metric.quantity ELSE 0 END) AS day_27,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 27 THEN metric.quantity ELSE 0 END) AS day_28,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 28 THEN metric.quantity ELSE 0 END) AS day_29,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 29 THEN metric.quantity ELSE 0 END) AS day_30,
+    SUM(CASE WHEN DATEDIFF(metric.work_date, metric.period_from) = 30 THEN metric.quantity ELSE 0 END) AS day_31,
     SUM(metric.quantity) AS metric_total,
     MAX(metric.unit_price) AS unit_price,
-    SUM(metric.amount) AS metric_amount
-FROM vw_monthly_invoice_metric_source metric
+    SUM(metric.amount) AS metric_amount,
+    (
+        SELECT SUM(combo_flat.line_amount)
+        FROM vw_monthly_invoice_render_flat combo_flat
+        WHERE combo_flat.execution_id = metric.execution_id
+          AND combo_flat.customer_site_id <=> metric.customer_site_id
+          AND combo_flat.job_code <=> metric.job_code
+          AND combo_flat.site_role_code <=> metric.site_role_code
+    ) AS job_total_amount
+FROM vw_monthly_invoice_pattern_3_metric_source metric
 GROUP BY
     metric.execution_id, metric.id, metric.invoice_number,
-    metric.issue_date, metric.target_month, metric.closing_version,
+    metric.issue_date, metric.target_month, metric.period_from,
+    metric.period_to, metric.closing_version,
     metric.customer_id, metric.customer_name,
     metric.company_name, metric.company_postal_code,
     metric.company_address, metric.company_phone, metric.company_fax,

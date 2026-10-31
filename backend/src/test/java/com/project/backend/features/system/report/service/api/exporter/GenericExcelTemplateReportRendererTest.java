@@ -49,7 +49,7 @@ class GenericExcelTemplateReportRendererTest {
                     .isEqualTo("7月分");
             assertThat(sheet.getRow(0).getCell(7).getStringCellValue())
                     .isEqualTo("8/15支払");
-            assertThat(sheet.getRow(0).getCell(26).getStringCellValue())
+            assertThat(sheet.getRow(0).getCell(27).getStringCellValue())
                     .isEqualTo("テスト株式会社");
 
             assertThat(sheet.getRow(3).getCell(0).getStringCellValue())
@@ -60,6 +60,22 @@ class GenericExcelTemplateReportRendererTest {
                     .isEqualTo(CellType.NUMERIC);
             assertThat(sheet.getRow(3).getCell(5).getNumericCellValue())
                     .isEqualTo(10000d);
+            assertThat(sheet.getRow(2).getCell(8).getStringCellValue())
+                    .isEqualTo("運転手当");
+            assertThat(sheet.getRow(3).getCell(8).getNumericCellValue())
+                    .isEqualTo(300d);
+            assertThat(sheet.getRow(2).getCell(19).getStringCellValue())
+                    .isEqualTo("法定準備金返済額");
+            assertThat(sheet.getRow(3).getCell(19).getNumericCellValue())
+                    .isEqualTo(3000d);
+            assertThat(sheet.getRow(2).getCell(28).getStringCellValue())
+                    .isEqualTo("精算前支給額");
+            assertThat(sheet.getRow(2).getCell(29).getStringCellValue())
+                    .isEqualTo("前払い");
+            assertThat(sheet.getRow(2).getCell(31).getStringCellValue())
+                    .isEqualTo("引出");
+            assertThat(sheet.getRow(3).getCell(31).getNumericCellValue())
+                    .isEqualTo(200d);
             assertThat(sheet.getRow(38).getCell(0).getStringCellValue())
                     .isEqualTo("計");
             assertThat(sheet.getRow(38).getCell(5).getCellFormula())
@@ -151,22 +167,31 @@ class GenericExcelTemplateReportRendererTest {
         row.put("basic_salary", BigDecimal.valueOf(10000));
         row.put("overtime_pay_amount", BigDecimal.valueOf(1000));
         row.put("night_pay_amount", BigDecimal.valueOf(500));
-        row.put("driver_allowance_amount", BigDecimal.valueOf(100));
+        row.put("driver_allowance_amount", BigDecimal.valueOf(300));
+        row.put("attendance_attitude_allowance_amount", BigDecimal.valueOf(100));
+        row.put("commute_allowance_amount", BigDecimal.valueOf(100));
         row.put("other_allowance_amount", BigDecimal.valueOf(100));
-        row.put("business_trip_allowance_amount", BigDecimal.valueOf(100));
+        row.put("gross_amount", BigDecimal.valueOf(12100));
         row.put("health_insurance", BigDecimal.valueOf(500));
         row.put("child_care_contribution", BigDecimal.ZERO);
         row.put("pension_insurance", BigDecimal.valueOf(500));
         row.put("employment_insurance", BigDecimal.valueOf(100));
+        row.put("social_insurance_total", BigDecimal.valueOf(1100));
+        row.put("taxable_amount", BigDecimal.valueOf(9900));
         row.put("income_tax", BigDecimal.valueOf(500));
         row.put("year_end_adjustment_amount", BigDecimal.ZERO);
+        row.put("legal_deposit_refund_amount", BigDecimal.valueOf(3000));
         row.put("resident_tax", BigDecimal.valueOf(500));
         row.put("dormitory_fee_amount", BigDecimal.valueOf(100));
         row.put("mobile_rental_amount", BigDecimal.valueOf(100));
         row.put("wifi_fee_amount", BigDecimal.valueOf(100));
         row.put("other_deduction_amount", BigDecimal.valueOf(100));
+        row.put("deduction_total", BigDecimal.valueOf(2500));
+        row.put("net_before_advance_amount", BigDecimal.valueOf(9200));
         row.put("advance_payment_amount", BigDecimal.valueOf(1000));
         row.put("saving_amount", BigDecimal.valueOf(400));
+        row.put("saving_withdrawal_amount", BigDecimal.valueOf(200));
+        row.put("net_payment_amount", BigDecimal.valueOf(7800));
         return row;
     }
 }

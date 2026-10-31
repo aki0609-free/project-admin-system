@@ -86,6 +86,8 @@ reports/
 **/report-output-history/
 /output/
 /outputs/
+backend/output/
+infrastructure/scripts/windows.zip
 tmp/
 __pycache__/
 *.py[cod]

@@ -39,10 +39,14 @@ class MonthlyPaySlipJasperTemplateTest {
         }
 
         assertThat(template)
-                .contains("締め版", "時間", "分", "+ \" 円\"", "法定準備金返済額")
+                .contains("支払日", "時間", "分", "+ \" 円\"", "社会保険計", "備考", "住所", "署名")
                 .doesNotContain(
                         "締めVersion",
-                        "保険計",
+                        "休日労働時間",
+                        "有休日数",
+                        "法定準備金返済額",
+                        "借入金残高",
+                        "貯金残高",
                         " + \" h\"",
                         "前払い額（日払い累計）"
                 );
@@ -105,9 +109,11 @@ class MonthlyPaySlipJasperTemplateTest {
         row.put("closing_version", closingVersion);
         row.put("employee_code", employeeCode);
         row.put("employee_name", employeeName);
+        row.put("employee_address", "〒416-0909 静岡県富士市松岡1162-1");
         row.put("company_name", "株式会社富陽");
         row.put("period_from", Date.valueOf(LocalDate.of(2026, 6, 21)));
         row.put("period_to", Date.valueOf(LocalDate.of(2026, 7, 20)));
+        row.put("payment_date", Date.valueOf(LocalDate.of(2026, 8, 14)));
         row.put("work_day_count", 21);
         row.put("work_hours", amount("168"));
         row.put("overtime_hours", amount("12.5"));

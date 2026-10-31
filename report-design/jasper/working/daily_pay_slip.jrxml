@@ -301,7 +301,7 @@
 				<textField isBlankWhenNull="true">
 					<reportElement style="Base" x="140" y="305" width="154" height="12" uuid="5e2c67bb-4c0c-4501-a7e3-b453f3917a4a"/>
 					<textElement textAlignment="Left"/>
-					<textFieldExpression><![CDATA[($F{employee_name} == null ? "" : $F{employee_name}) ]]></textFieldExpression>
+					<textFieldExpression><![CDATA[($F{employee_name} == null ? "" : $F{employee_name})]]></textFieldExpression>
 				</textField>
 				<line>
 					<reportElement x="0" y="325" width="488" height="1" uuid="1ef512aa-e955-401c-85bd-ca7c3e25ca85"/>
@@ -309,16 +309,16 @@
 						<pen lineStyle="Dashed" lineColor="#9CA3AF"/>
 					</graphicElement>
 				</line>
-					<staticText>
-						<reportElement style="Base" x="112" y="305" width="31" height="12" uuid="99a189f8-754f-47fc-a02f-176cd5bf66b0"/>
-						<textElement textAlignment="Left"/>
-						<text><![CDATA[氏名：]]></text>
-					</staticText>
-					<staticText>
-						<reportElement style="Base" x="294" y="305" width="194" height="12" uuid="37460445-75a9-4b35-ad14-1fa3445c65aa"/>
-						<textElement textAlignment="Left"/>
-						<text><![CDATA[（署名：_____________________________________ 印）]]></text>
-					</staticText>
+				<staticText>
+					<reportElement style="Base" x="112" y="305" width="31" height="12" uuid="99a189f8-754f-47fc-a02f-176cd5bf66b0"/>
+					<textElement textAlignment="Left"/>
+					<text><![CDATA[氏名：]]></text>
+				</staticText>
+				<staticText>
+					<reportElement style="Base" x="294" y="305" width="194" height="12" uuid="37460445-75a9-4b35-ad14-1fa3445c65aa"/>
+					<textElement textAlignment="Center"/>
+					<text><![CDATA[署名：_______________________________________ 印]]></text>
+				</staticText>
 			</frame>
 		</band>
 	</detail>

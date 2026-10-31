@@ -59,9 +59,10 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
         assertThat(resources)
-                .hasSize(48)
+                .hasSize(49)
                 .contains(
                         "sql/admin/external_support_links_v1.sql",
+                        "sql/admin/business_calendar_year_end_adjustment_v1.sql",
                         "sql/application/applicant_legacy_schema_compatibility_v1.sql",
                         "sql/customer/customer_contract_status_v1.sql",
                         "sql/master/allowance_master_foundation_v1.sql",
@@ -839,6 +840,8 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         Map<String, Object> refundStatement = jdbcTemplate.queryForMap("""
                 SELECT latest.legal_deposit_refund_amount,
                        latest.gross_amount,
+                       latest.deduction_total,
+                       latest.net_payment_amount,
                        settlement.legal_deposit_amount,
                        settlement.legal_deduction_total
                 FROM vw_monthly_pay_slip_latest latest
@@ -858,6 +861,30 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         assertThat(new BigDecimal(
                 refundStatement.get("legal_deposit_refund_amount").toString()
         )).isEqualByComparingTo(expectedLegalDepositRefund);
+
+        Map<String, Object> refundDisplayItem = jdbcTemplate.queryForMap("""
+                SELECT item_category, item_value
+                FROM vw_monthly_pay_slip_display_item
+                WHERE tenant_id = ?
+                  AND target_month = '2026-08-01'
+                  AND employee_id = ?
+                  AND item_code = 'LEGAL_DEPOSIT_REFUND'
+                """, TEST_TENANT_ID, employeeId);
+        assertThat(refundDisplayItem.get("item_category")).isEqualTo(
+                expectedLegalDepositRefund.signum() >= 0
+                        ? "ALLOWANCE"
+                        : "LEGAL_DEDUCTION"
+        );
+        assertAmount(
+                refundDisplayItem.get("item_value"),
+                expectedLegalDepositRefund.abs().toPlainString()
+        );
+        assertThat(new BigDecimal(refundStatement.get("gross_amount").toString())
+                .subtract(new BigDecimal(
+                        refundStatement.get("deduction_total").toString()
+                ))).isEqualByComparingTo(new BigDecimal(
+                        refundStatement.get("net_payment_amount").toString()
+                ));
 
         List<Map<String, Object>> dailyAllowanceTotals = jdbcTemplate.queryForList("""
                 SELECT item_code, item_value
@@ -1255,10 +1282,24 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 weeklyEmployeeId, LocalDate.of(2026, 9, 9), paymentDate,
                 "3000", "200", "0", "3000"
         );
-        insertPaymentPreparationReport(
+        Long monthlyReportId = insertPaymentPreparationReport(
                 monthlyEmployeeId, LocalDate.of(2026, 9, 8), paymentDate,
-                "13063", "500", "500", "12563"
+                "13063", "500", "400", "12613"
         );
+        jdbcTemplate.update("""
+                UPDATE daily_report
+                SET saving_amount = 40,
+                    saving_withdrawal_amount = 20,
+                    loan_repayment_amount = 30,
+                    estimated_net_pay_amount = 12613
+                WHERE id = ?
+                """, monthlyReportId);
+        insertPaymentPreparationDeduction(monthlyReportId, "LEGAL_DEPOSIT", 100);
+        insertPaymentPreparationDeduction(monthlyReportId, "SHORT_TERM_ADVANCE", 200);
+        insertPaymentPreparationDeduction(monthlyReportId, "DORMITORY_FEE", 50);
+        insertPaymentPreparationDeduction(monthlyReportId, "MOBILE_RENTAL", 25);
+        insertPaymentPreparationDeduction(monthlyReportId, "WIFI_FEE", 10);
+        insertPaymentPreparationDeduction(monthlyReportId, "INCOME_TAX", 15);
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
                 SELECT *
@@ -1273,15 +1314,28 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 .containsExactly("DAILY", "WEEKLY", "MONTHLY");
         assertAmount(rows.get(1).get("gross_payment_amount"), "6000");
         assertAmount(rows.get(1).get("allowance_amount"), "300");
-        assertAmount(rows.getFirst().get("total_net_payment_amount"), "24563");
+        Map<String, Object> monthly = rows.get(2);
+        assertAmount(monthly.get("legal_deposit_amount"), "100");
+        assertAmount(monthly.get("saving_amount"), "40");
+        assertAmount(monthly.get("saving_withdrawal_amount"), "20");
+        assertAmount(monthly.get("short_term_advance_amount"), "200");
+        assertAmount(monthly.get("supplied_amount"), "12743");
+        assertAmount(monthly.get("dormitory_fee_amount"), "50");
+        assertAmount(monthly.get("mobile_rental_amount"), "25");
+        assertAmount(monthly.get("wifi_fee_amount"), "10");
+        assertAmount(monthly.get("long_term_loan_repayment_amount"), "30");
+        assertAmount(monthly.get("other_deduction_amount"), "15");
+        assertAmount(monthly.get("payment_amount"), "12613");
+        assertAmount(rows.getFirst().get("total_net_payment_amount"), "24613");
+        assertAmount(rows.getFirst().get("bank_withdrawal_amount"), "24613");
 
         Map<String, Object> summary = rows.getFirst();
         assertAmount(summary.get("bill_10000"), "1");
         assertAmount(summary.get("bill_5000"), "2");
         assertAmount(summary.get("bill_1000"), "4");
         assertAmount(summary.get("coin_500"), "1");
-        assertAmount(summary.get("coin_100"), "0");
-        assertAmount(summary.get("coin_50"), "1");
+        assertAmount(summary.get("coin_100"), "1");
+        assertAmount(summary.get("coin_50"), "0");
         assertAmount(summary.get("coin_10"), "1");
         assertAmount(summary.get("coin_5"), "0");
         assertAmount(summary.get("coin_1"), "3");
@@ -1783,7 +1837,7 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         return employeeId;
     }
 
-    private void insertPaymentPreparationReport(
+    private Long insertPaymentPreparationReport(
             Long employeeId,
             LocalDate workDate,
             LocalDate paymentDate,
@@ -1819,6 +1873,42 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 grossAmount, allowanceAmount, deductionAmount,
                 grossAmount, netAmount, TEST_TENANT_ID
         );
+        return jdbcTemplate.queryForObject("""
+                SELECT MAX(id)
+                FROM daily_report
+                WHERE tenant_id = ?
+                  AND employee_id = ?
+                  AND work_date = ?
+                  AND payment_date = ?
+                  AND deleted_at IS NULL
+                """, Long.class, TEST_TENANT_ID, employeeId, workDate, paymentDate);
+    }
+
+    private void insertPaymentPreparationDeduction(
+            Long dailyReportId,
+            String deductionCode,
+            int amount
+    ) {
+        Integer inserted = jdbcTemplate.update("""
+                INSERT INTO daily_report_deductions (
+                    daily_report_id, deduction_master_id,
+                    deduction_code, deduction_name,
+                    amount, calculated_amount, manual_override_flag,
+                    quantity, balance_unit,
+                    tenant_id, created_at, updated_at
+                )
+                SELECT ?, master.id,
+                       master.deduction_code, master.deduction_name,
+                       ?, ?, FALSE,
+                       ?, 'AMOUNT',
+                       ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+                FROM deduction_masters master
+                WHERE master.deduction_code = ?
+                  AND master.deleted_at IS NULL
+                LIMIT 1
+                """, dailyReportId, amount, amount, amount,
+                TEST_TENANT_ID, deductionCode);
+        assertThat(inserted).isEqualTo(1);
     }
 
     private int countTables(String... names) {

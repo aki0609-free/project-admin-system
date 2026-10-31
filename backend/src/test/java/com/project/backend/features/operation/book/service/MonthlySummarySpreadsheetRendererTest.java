@@ -54,7 +54,8 @@ class MonthlySummarySpreadsheetRendererTest {
                         18500,
                         2891,
                         3469,
-                        30000
+                        30000,
+                        2000
                 )),
                 "2026-02",
                 Instant.parse("2026-02-28T00:00:00Z")
@@ -88,6 +89,13 @@ class MonthlySummarySpreadsheetRendererTest {
                 .isLessThan(countFormulas(template));
         assertThat(cell(rows, 90, 12).path("value").asInt())
                 .isEqualTo(30000);
+        assertThat(cell(rows, 4, 132).path("value").asText())
+                .isEqualTo("延べ人数");
+        assertThat(cell(rows, 89, 0).path("value").asText())
+                .isEqualTo("社会保険負担額");
+        assertThat(cell(rows, 89, 4).path("value").asInt())
+                .isEqualTo(2315);
+        assertThat(cell(rows, 89, 140).has("value")).isFalse();
         assertThat(result.path("projectAdminMetadata")
                 .path("layoutType").asText())
                 .isEqualTo("MONTHLY_SUMMARY");
@@ -109,7 +117,8 @@ class MonthlySummarySpreadsheetRendererTest {
                         12000,
                         0,
                         0,
-                        12000
+                        12000,
+                        0
                 )),
                 "2026-02",
                 Instant.parse("2026-02-28T00:00:00Z")
@@ -139,7 +148,8 @@ class MonthlySummarySpreadsheetRendererTest {
                         1000,
                         0,
                         0,
-                        1000
+                        1000,
+                        0
                 )),
                 "2026-02",
                 Instant.parse("2026-02-28T00:00:00Z")
@@ -149,39 +159,34 @@ class MonthlySummarySpreadsheetRendererTest {
     }
 
     @Test
-    void preserveManualInputs_shouldKeepSocialInsurance()
+    void render_shouldRoundSocialInsuranceAfterMonthlyAggregation()
             throws Exception {
-        JsonNode generated = renderer.render(
+        JsonNode result = renderer.render(
                 template,
                 master,
-                List.of(),
+                List.of(
+                        row(
+                                "DAILY",
+                                LocalDate.of(2026, 2, 3),
+                                1, 0, 0, 0,
+                                12000, 0, 0, 10001, 1000
+                        ),
+                        row(
+                                "DAILY",
+                                LocalDate.of(2026, 2, 4),
+                                1, 0, 0, 0,
+                                12000, 0, 0, 10000, 1000
+                        )
+                ),
                 "2026-02",
                 Instant.parse("2026-02-28T00:00:00Z")
         );
-        JsonNode existing = objectMapper.readTree(
-                """
-                {
-                  "Workbook": {
-                    "sheets": [{
-                      "name": "2026.02",
-                      "rows": [{
-                        "index": 89,
-                        "cells": [{"index": 4, "value": 1234}]
-                      }]
-                    }]
-                  }
-                }
-                """
-        );
 
-        renderer.preserveManualInputs(generated, existing);
-
-        assertThat(cell(
-                generated.path("Workbook")
-                        .path("sheets").get(0).path("rows"),
-                89,
-                4
-        ).path("value").asInt()).isEqualTo(1234);
+        JsonNode rows = result.path("Workbook")
+                .path("sheets").get(0).path("rows");
+        assertThat(cell(rows, 89, 4).path("value").asInt())
+                .isEqualTo(1210);
+        assertThat(cell(rows, 89, 140).has("value")).isFalse();
     }
 
     private Map<String, Object> row(
@@ -194,7 +199,8 @@ class MonthlySummarySpreadsheetRendererTest {
             Object baseUnitPrice,
             Object overtimeUnitPrice,
             Object nightUnitPrice,
-            Object estimatedGrossPay
+            Object estimatedGrossPay,
+            Object socialInsuranceDeductionTotal
     ) {
         return Map.ofEntries(
                 Map.entry("billing_unit", billingUnit),
@@ -215,6 +221,10 @@ class MonthlySummarySpreadsheetRendererTest {
                 Map.entry(
                         "estimated_gross_pay_amount",
                         estimatedGrossPay
+                ),
+                Map.entry(
+                        "social_insurance_deduction_total",
+                        socialInsuranceDeductionTotal
                 )
         );
     }

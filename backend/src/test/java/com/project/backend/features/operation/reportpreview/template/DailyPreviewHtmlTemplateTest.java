@@ -50,11 +50,48 @@ class DailyPreviewHtmlTemplateTest {
                         Map.entry("employee_code", "E001"),
                         Map.entry("employee_name", "山田太郎"),
                         Map.entry("payment_cycle", "DAILY"),
+                        Map.entry("payment_cycle_row_number", 1),
+                        Map.entry("payment_cycle_row_count", 1),
                         Map.entry("gross_payment_amount", amount("12000")),
                         Map.entry("allowance_amount", amount("1000")),
-                        Map.entry("deduction_amount", amount("2000")),
+                        Map.entry("legal_deposit_amount", amount("500")),
+                        Map.entry("saving_amount", amount("300")),
+                        Map.entry("saving_withdrawal_amount", amount("100")),
+                        Map.entry("short_term_advance_amount", amount("200")),
+                        Map.entry("supplied_amount", amount("11100")),
+                        Map.entry("dormitory_fee_amount", amount("400")),
+                        Map.entry("mobile_rental_amount", amount("300")),
+                        Map.entry("wifi_fee_amount", amount("100")),
+                        Map.entry("long_term_loan_repayment_amount", amount("200")),
+                        Map.entry("other_deduction_amount", amount("100")),
+                        Map.entry("deduction_amount", amount("1600")),
+                        Map.entry("payment_amount", amount("10000")),
                         Map.entry("net_payment_amount", amount("10000")),
-                        Map.entry("total_net_payment_amount", amount("10000")),
+                        Map.entry("total_gross_payment_amount", amount("12000")),
+                        Map.entry("total_legal_deposit_amount", amount("500")),
+                        Map.entry("total_saving_amount", amount("300")),
+                        Map.entry("total_saving_withdrawal_amount", amount("100")),
+                        Map.entry("total_short_term_advance_amount", amount("200")),
+                        Map.entry("total_supplied_amount", amount("11100")),
+                        Map.entry("total_dormitory_fee_amount", amount("400")),
+                        Map.entry("total_mobile_rental_amount", amount("300")),
+                        Map.entry("total_wifi_fee_amount", amount("100")),
+                        Map.entry("total_long_term_loan_repayment_amount", amount("200")),
+                        Map.entry("total_other_deduction_amount", amount("100")),
+                        Map.entry("total_payment_amount", amount("10000")),
+                        Map.entry("bank_withdrawal_amount", amount("10000")),
+                        Map.entry("cycle_gross_payment_amount", amount("12000")),
+                        Map.entry("cycle_legal_deposit_amount", amount("500")),
+                        Map.entry("cycle_saving_amount", amount("300")),
+                        Map.entry("cycle_saving_withdrawal_amount", amount("100")),
+                        Map.entry("cycle_short_term_advance_amount", amount("200")),
+                        Map.entry("cycle_supplied_amount", amount("11100")),
+                        Map.entry("cycle_dormitory_fee_amount", amount("400")),
+                        Map.entry("cycle_mobile_rental_amount", amount("300")),
+                        Map.entry("cycle_wifi_fee_amount", amount("100")),
+                        Map.entry("cycle_long_term_loan_repayment_amount", amount("200")),
+                        Map.entry("cycle_other_deduction_amount", amount("100")),
+                        Map.entry("cycle_payment_amount", amount("10000")),
                         Map.entry("bill_10000", 1),
                         Map.entry("bill_5000", 0),
                         Map.entry("bill_1000", 0),
@@ -70,7 +107,10 @@ class DailyPreviewHtmlTemplateTest {
         assertThat(html)
                 .contains("給与支払表")
                 .contains("山田太郎")
-                .contains("10,000 円")
+                .contains("10,000")
+                .contains("長期借入")
+                .contains("銀行引き出し金額")
+                .contains("日払い小計")
                 .contains("10円玉")
                 .contains("5円玉")
                 .contains("1円玉")
@@ -146,9 +186,11 @@ class DailyPreviewHtmlTemplateTest {
                         Map.entry("target_month_label", "2026年8月"),
                         Map.entry("employee_code", "E2E-AUG-D-001"),
                         Map.entry("employee_name", "八月日次 青木 一郎"),
+                        Map.entry("employee_address", "〒416-0909 静岡県富士市松岡1162-1"),
                         Map.entry("company_name", "E2E ローカル検証会社"),
                         Map.entry("period_start_label", "2026年8月1日"),
                         Map.entry("period_end_label", "2026年8月31日"),
+                        Map.entry("payment_date_label", "2026年9月15日"),
                         Map.entry("work_day_count", 20),
                         Map.entry("work_hours_label", "160時間0分"),
                         Map.entry("overtime_hours_label", "4時間0分"),
@@ -168,6 +210,7 @@ class DailyPreviewHtmlTemplateTest {
                         Map.entry("child_care_contribution", amount("0")),
                         Map.entry("pension_insurance", amount("0")),
                         Map.entry("employment_insurance", amount("0")),
+                        Map.entry("social_insurance_total", amount("0")),
                         Map.entry("income_tax", amount("0")),
                         Map.entry("resident_tax", amount("0")),
                         Map.entry("deduction_item_name_1", "寮費"),
@@ -189,21 +232,28 @@ class DailyPreviewHtmlTemplateTest {
 
         assertThat(html)
                 .contains("2026年8月 給与明細書")
+                .contains("支払日", "2026年9月15日")
                 .contains("160時間0分")
-                .contains("法定準備金返済額")
-                .contains("-5,000 円")
                 .contains("勤務態度手当", "運転手当", "管理手当")
                 .contains("right: 108px")
                 .contains("bottom: 0")
                 .contains("控除1（法定控除）")
                 .contains("控除2（その他控除）")
-                .contains("借入金残高")
-                .contains("貯金残高")
+                .contains("社会保険計", "課税対象額", "備考")
+                .contains("grid-template-columns: 175px 1fr")
+                .doesNotContain("休日労働時間")
+                .doesNotContain("有休日数")
+                .doesNotContain("借入金残高")
+                .doesNotContain("貯金残高")
+                .doesNotContain("法定準備金返済額")
+                .doesNotContain("receipt-row")
+                .doesNotContain("receipt-area")
+                .doesNotContain(">住所<")
+                .doesNotContain(">署名<")
+                .doesNotContain("〒416-0909 静岡県富士市松岡1162-1")
                 .doesNotContain("締め版")
                 .doesNotContain("＜備考＞")
                 .doesNotContain("月次締め時点の確定データ")
-                .doesNotContain("保険計")
-                .doesNotContain("支払日")
                 .doesNotContain("前払い額（日払い累計）")
                 .doesNotContain("th:text");
     }
@@ -218,13 +268,16 @@ class DailyPreviewHtmlTemplateTest {
     }
 
     @Test
-    void rendersMonthlyInvoiceWithCommonCoverInformation()
+    void rendersMonthlyInvoiceAsDetailedDataReview()
             throws Exception {
         String html = render(
                 "monthly_invoice.html",
                 Map.ofEntries(
                         Map.entry("customer_name", "E2E 土木株式会社"),
                         Map.entry("invoice_date", java.sql.Date.valueOf("2026-09-20")),
+                        Map.entry("target_month", "2026-09"),
+                        Map.entry("period_start", java.sql.Date.valueOf("2026-08-21")),
+                        Map.entry("period_end", java.sql.Date.valueOf("2026-09-20")),
                         Map.entry("invoice_number", "202609-000025-V4"),
                         Map.entry("invoice_note", "下記の通り御請求申し上げます。"),
                         Map.entry("qualified_invoice_issuer_number", "T1215121512151"),
@@ -238,7 +291,7 @@ class DailyPreviewHtmlTemplateTest {
                         Map.entry("site_role_code", "GENERAL"),
                         Map.entry("employee_code", "E2E-EMP-001"),
                         Map.entry("employee_name", "検証 太郎"),
-                        Map.entry("billing_unit", "人日"),
+                        Map.entry("billing_unit", "DAILY"),
                         Map.entry("billing_quantity", amount("1")),
                         Map.entry("work_hours", amount("8")),
                         Map.entry("overtime_hours", amount("0")),
@@ -254,8 +307,11 @@ class DailyPreviewHtmlTemplateTest {
                         Map.entry("overtime_amount", amount("0")),
                         Map.entry("night_amount", amount("0")),
                         Map.entry("holiday_amount", amount("0")),
-                        Map.entry("commuting_amount", amount("300")),
-                        Map.entry("subtotal_amount", amount("23300"))
+                        Map.entry("commute_amount", amount("300")),
+                        Map.entry("other_amount", amount("0")),
+                        Map.entry("line_amount", amount("23300")),
+                        Map.entry("subtotal_amount", amount("23300")),
+                        Map.entry("tax_amount", amount("2330"))
                 )
         );
 
@@ -264,10 +320,15 @@ class DailyPreviewHtmlTemplateTest {
                 .contains("E2E 土木株式会社　御中")
                 .contains("￥829,876")
                 .contains("2026年9月20日")
-                .contains("レスリー銀行 セブ支店 普通 12151215")
-                .contains("適格請求書登録番号　T1215121512151")
-                .contains("請求書番号　202609-000025-V4")
-                .contains("/api/system/company-profile/invoice-logo")
+                .contains("2026年8月21日 ～ 2026年9月20日")
+                .contains("請求明細（日報単位）")
+                .contains("E2E-EMP-001")
+                .contains("検証 太郎")
+                .doesNotContain("レスリー銀行 セブ支店 普通 12151215")
+                .doesNotContain("適格請求書登録番号")
+                .doesNotContain("請求書番号")
+                .doesNotContain("/api/system/company-profile/invoice-logo")
+                .doesNotContain("お振込先")
                 .doesNotContain("th:text")
                 .doesNotContain("th:if");
     }

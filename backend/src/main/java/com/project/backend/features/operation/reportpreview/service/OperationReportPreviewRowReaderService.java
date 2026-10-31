@@ -1,5 +1,8 @@
 package com.project.backend.features.operation.reportpreview.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
@@ -62,7 +65,7 @@ public class OperationReportPreviewRowReaderService {
                             "periodFromはperiodTo以前の日付を指定してください。"
                     );
                 }
-                return jdbcTemplate.queryForList("""
+                List<Map<String, Object>> rows = jdbcTemplate.queryForList("""
                         select *
                         from %s
                         where tenant_id = :tenantId
@@ -76,6 +79,12 @@ public class OperationReportPreviewRowReaderService {
                                 "periodFrom", periodFrom,
                                 "periodTo", periodTo
                         ));
+                return enrichMonthlyInvoiceRows(
+                        rows,
+                        targetMonth,
+                        periodFrom,
+                        periodTo
+                );
             }
             if (customerScoped) {
                 return jdbcTemplate.queryForList("""
@@ -153,6 +162,45 @@ public class OperationReportPreviewRowReaderService {
                         "tenantId", tenantId,
                         "targetDate", targetDate
                 ));
+    }
+
+    private List<Map<String, Object>> enrichMonthlyInvoiceRows(
+            List<Map<String, Object>> rows,
+            String targetMonth,
+            LocalDate periodFrom,
+            LocalDate periodTo
+    ) {
+        BigDecimal subtotal = rows.stream()
+                .map(row -> toBigDecimal(row.get("line_amount")))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal taxRate = new BigDecimal("0.10");
+        BigDecimal taxAmount = subtotal.multiply(taxRate)
+                .setScale(0, RoundingMode.HALF_UP);
+        BigDecimal totalAmount = subtotal.add(taxAmount);
+
+        rows.forEach(row -> {
+            row.put("target_month", targetMonth);
+            row.put("period_start", Date.valueOf(periodFrom));
+            row.put("period_end", Date.valueOf(periodTo));
+            row.put("tax_rate", taxRate);
+            row.put("subtotal_amount", subtotal);
+            row.put("tax_amount", taxAmount);
+            row.put("total_amount", totalAmount);
+        });
+        return rows;
+    }
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value instanceof BigDecimal decimal) {
+            return decimal;
+        }
+        if (value instanceof Number number) {
+            return BigDecimal.valueOf(number.doubleValue());
+        }
+        if (value == null) {
+            return BigDecimal.ZERO;
+        }
+        return new BigDecimal(value.toString());
     }
 
     private LocalDate validateTargetDate(String value) {

@@ -32,15 +32,16 @@ public class MonthlyLaborSpreadsheetRenderer
 
     private static final List<String> HEADERS = List.of(
             "日", "曜", "元請", "現場", "勤務時間", "H",
-            "通常給金", "早出・残業", "休日", "深夜", "車両代", "その他手当",
-            "支払給 A", "税額他", "積立", "返済", "前払い",
-            "その他控除", "当日支給額 B", "寮費", "その他", "備考"
+            "通常給金", "早出・残業", "深夜", "運転手当",
+            "勤務態度手当", "管理手当", "その他手当", "支払給 A",
+            "法定準備金", "貯金", "引出", "前借り", "借入金返済額",
+            "寮費", "携帯電話貸出料", "Wi-Fi使用料", "その他", "備考"
     );
 
     private static final List<Double> WIDTHS = List.of(
             34d, 28d, 82d, 82d, 74d, 38d,
-            64d, 64d, 58d, 58d, 58d, 64d, 68d,
-            58d, 54d, 54d, 58d, 64d, 68d, 54d, 54d, 90d
+            64d, 72d, 58d, 72d, 92d, 78d, 78d, 72d,
+            80d, 54d, 54d, 62d, 90d, 54d, 100d, 84d, 58d, 90d
     );
 
     private final ObjectMapper objectMapper;
@@ -119,6 +120,7 @@ public class MonthlyLaborSpreadsheetRenderer
         metadata.put("paperSize", "A3");
         metadata.put("orientation", "LANDSCAPE");
         metadata.put("fitToOnePage", true);
+        metadata.put("governmentSubmissionPrintEndColumn", "N");
         return root;
     }
 
@@ -170,11 +172,10 @@ public class MonthlyLaborSpreadsheetRenderer
         ObjectNode cell = cells.addObject();
         cell.put(
                 "value",
-                "勤務日数 %d日　通常 %s　残業 %s　休日 %s　深夜 %s".formatted(
+                "勤務日数 %d日　通常 %s　残業 %s　深夜 %s".formatted(
                         sourceRows.size(),
                         amount(sourceRows, "normal_pay_amount"),
                         amount(sourceRows, "overtime_pay_amount"),
-                        amount(sourceRows, "holiday_pay_amount"),
                         amount(sourceRows, "night_pay_amount")
                 )
         );
@@ -221,7 +222,14 @@ public class MonthlyLaborSpreadsheetRenderer
         for (String header : HEADERS) {
             ObjectNode cell = cells.addObject();
             cell.put("value", header);
-            cell.set("style", style(true, 8, "Center", "#D9EAD3"));
+            ObjectNode headerStyle = style(
+                    true,
+                    8,
+                    "Center",
+                    "#D9EAD3"
+            );
+            headerStyle.put("whiteSpace", "nowrap");
+            cell.set("style", headerStyle);
         }
     }
 
@@ -250,19 +258,21 @@ public class MonthlyLaborSpreadsheetRenderer
         moneyCells(cells, source,
                 "normal_pay_amount",
                 "overtime_pay_amount",
-                "holiday_pay_amount",
                 "night_pay_amount",
-                "vehicle_allowance_amount",
+                "driver_allowance_amount",
+                "attendance_attitude_allowance_amount",
+                "management_allowance_amount",
                 "other_allowance_amount",
                 "gross_pay_amount",
-                "tax_other_amount",
+                "legal_deposit_amount",
                 "saving_amount",
+                "saving_withdrawal_amount",
+                "short_term_advance_amount",
                 "loan_repayment_amount",
-                "advance_payment_amount",
-                "other_deduction_amount",
-                "available_payment_amount",
                 "dormitory_fee_amount",
-                "other_daily_amount");
+                "mobile_rental_amount",
+                "wifi_fee_amount",
+                "other_deduction_amount");
         valueCell(cells, value(source, "note"), null, null, "Left");
     }
 
@@ -282,13 +292,15 @@ public class MonthlyLaborSpreadsheetRenderer
         valueCell(cells, amount(sourceRows, "total_hours"), "0.00", "#FFF2CC", "Right");
         for (String key : List.of(
                 "normal_pay_amount", "overtime_pay_amount",
-                "holiday_pay_amount", "night_pay_amount",
-                "vehicle_allowance_amount",
+                "night_pay_amount", "driver_allowance_amount",
+                "attendance_attitude_allowance_amount",
+                "management_allowance_amount",
                 "other_allowance_amount", "gross_pay_amount",
-                "tax_other_amount", "saving_amount",
-                "loan_repayment_amount", "advance_payment_amount",
-                "other_deduction_amount", "available_payment_amount",
-                "dormitory_fee_amount", "other_daily_amount"
+                "legal_deposit_amount", "saving_amount",
+                "saving_withdrawal_amount", "short_term_advance_amount",
+                "loan_repayment_amount", "dormitory_fee_amount",
+                "mobile_rental_amount", "wifi_fee_amount",
+                "other_deduction_amount"
         )) {
             valueCell(cells, amount(sourceRows, key), "#,##0", "#FFF2CC", "Right");
         }

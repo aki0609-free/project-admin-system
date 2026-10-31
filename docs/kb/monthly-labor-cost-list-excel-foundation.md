@@ -92,30 +92,34 @@ report_history
 | F | 基本給 | `basic_salary` |
 | G | 残業 | `overtime_pay_amount` |
 | H | 深夜 | `night_pay_amount` |
-| I | 運転 | `driver_allowance_amount` |
-| J | 他手当 | `other_allowance_amount` |
-| K | 出張手当 | `business_trip_allowance_amount` |
-| L | 支給合計 | `gross_amount` |
-| M | 健保 | `health_insurance` |
-| N | 子ども子育て支援金 | `child_care_contribution` |
-| O | 厚年 | `pension_insurance` |
-| P | 雇用 | `employment_insurance` |
-| Q | 社保計 | `social_insurance_total` |
-| R | 課税対象 | `taxable_amount` |
-| S | 所得税 | `income_tax` |
-| T | 年調分 | `year_end_adjustment_amount` |
-| U | 住民税 | `resident_tax` |
-| V | 寮費 | `dormitory_fee_amount` |
-| W | 携帯貸出料 | `mobile_rental_amount` |
-| X | WiFi使用料 | `wifi_fee_amount` |
-| Y | その他 | `other_deduction_amount` |
-| Z | 控除合計 | `deduction_total` |
-| AA | 総支給額 | `net_before_advance_amount` |
-| AB | 前払 | `advance_payment_amount` |
-| AC | 貯金 | `saving_amount` |
-| AD | 差引支給 | `net_payment_amount` |
+| I | 運転手当 | `driver_allowance_amount` |
+| J | 勤務態度手当 | `attendance_attitude_allowance_amount` |
+| K | 通勤手当 | `commute_allowance_amount` |
+| L | その他手当 | `other_allowance_amount` |
+| M | 総支給額 | `gross_amount` |
+| N | 健保 | `health_insurance` |
+| O | 子ども子育て支援金 | `child_care_contribution` |
+| P | 厚年 | `pension_insurance` |
+| Q | 雇用 | `employment_insurance` |
+| R | 社保計 | `social_insurance_total` |
+| S | 課税対象 | `taxable_amount` |
+| T | 法定準備金返済額 | `legal_deposit_refund_amount` |
+| U | 所得税 | `income_tax` |
+| V | 住民税 | `resident_tax` |
+| W | 年末調整 | `year_end_adjustment_amount` |
+| X | 寮費 | `dormitory_fee_amount` |
+| Y | 携帯貸出料 | `mobile_rental_amount` |
+| Z | Wi-Fi使用料 | `wifi_fee_amount` |
+| AA | その他控除 | `other_deduction_amount` |
+| AB | 控除合計 | `deduction_total` |
+| AC | 精算前支給額 | `net_before_advance_amount` |
+| AD | 前払い | `advance_payment_amount` |
+| AE | 貯金 | `saving_amount` |
+| AF | 引出 | `saving_withdrawal_amount` |
+| AG | 差引支給額 | `net_payment_amount` |
 
-休日金額は原本に専用列がないため、`他手当` に含める。今後原本へ休日列を追加する場合は、Viewの出力列とExcelテンプレートのプレースホルダーを変更する。
+休日金額・出張手当など、独立列へ出さない手当は `その他手当` に含める。
+課税対象額は `総支給額 - 社会保険計 - 通勤手当` とし、通勤手当を課税対象へ含めない。
 
 ## 5. 可変手当・控除の集約ルール
 
@@ -123,18 +127,20 @@ report_history
 
 - `OVERTIME_PAY`：残業
 - `NIGHT_PAY`：深夜
-- `DRIVER_ALLOWANCE`：運転
-- `BUSINESS_TRIP_ALLOWANCE` / `TRIP_ALLOWANCE` / `BUSINESS_TRIP`：出張手当
-- 上記以外および休日金額：他手当
+- `DRIVER_ALLOWANCE`：運転手当
+- `ATTENDANCE_ATTITUDE`：勤務態度手当
+- `COMMUTE_ALLOWANCE_MONTHLY`：通勤手当
+- 上記以外（出張手当、休日金額を含む）：その他手当
 
 ### 控除
 
-- `YEAR_END_ADJUSTMENT`：年調分
+- `YEAR_END_ADJUSTMENT`：年末調整（正数は還付、負数は不足徴収）
 - `DORMITORY_FEE`：寮費
 - `MOBILE_RENTAL`：携帯貸出料
 - `WIFI_FEE`：WiFi使用料
-- `ADVANCE_PAYMENT`：前払
+- 承認済み日報のうち日払い・週払い済み額：前払い
 - `SAVING` / `SAVINGS`：貯金
+- 日報の貯金引出し額：引出
 - 上記以外：その他
 
 業務項目の追加はマスターおよびView側で吸収し、Excel共通出力基盤は変更しない。

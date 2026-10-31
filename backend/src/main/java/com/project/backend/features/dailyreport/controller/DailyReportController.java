@@ -13,6 +13,7 @@ import com.project.backend.features.dailyreport.dto.DailyReportEstimatedPayPrevi
 import com.project.backend.features.dailyreport.dto.DailyReportMissingEmployeeResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportMonthlyAttendanceResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportPreparationDefaultResponse;
+import com.project.backend.features.dailyreport.dto.DailyReportDateSuggestionResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportResponse;
 import com.project.backend.features.dailyreport.dto.DailyReportSaveRequest;
 import com.project.backend.features.dailyreport.service.DailyReportCommandService;
@@ -20,9 +21,11 @@ import com.project.backend.features.dailyreport.service.DailyReportEstimatedPayS
 import com.project.backend.features.dailyreport.service.DailyReportMissingQueryService;
 import com.project.backend.features.dailyreport.service.DailyReportMonthlyAttendanceQueryService;
 import com.project.backend.features.dailyreport.service.DailyReportPreparationDefaultService;
+import com.project.backend.features.dailyreport.service.DailyReportDateSuggestionService;
 import com.project.backend.features.dailyreport.service.DailyReportQueryService;
 import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.repository.EmployeeContractRepository;
+import com.project.backend.features.employee.enums.PaymentCycle;
 
 import lombok.RequiredArgsConstructor;
 
@@ -38,6 +41,16 @@ public class DailyReportController {
     private final DailyReportEstimatedPayService estimatedPayService;
     private final DailyReportPreparationDefaultService preparationDefaultService;
     private final EmployeeContractRepository employeeContractRepository;
+    private final DailyReportDateSuggestionService dateSuggestionService;
+
+    @GetMapping("/date-suggestion")
+    public DailyReportDateSuggestionResponse findDateSuggestion(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate businessDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate workDate,
+            @RequestParam PaymentCycle paymentCycle
+    ) {
+        return dateSuggestionService.resolve(businessDate, workDate, paymentCycle);
+    }
 
     @GetMapping
     public List<DailyReportResponse> findAll(

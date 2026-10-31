@@ -6,6 +6,7 @@ project_root="$(cd "${script_dir}/../.." && pwd)"
 workspace_script="${script_dir}/report-workspace.mjs"
 sql_manifest="$(mktemp "${TMPDIR:-/tmp}/project-admin-report-schema.XXXXXX")"
 jasper_manifest="$(mktemp "${TMPDIR:-/tmp}/project-admin-report-jasper.XXXXXX")"
+template_storage_dir="/app/storage/documents/templates/reports"
 trap 'rm -f "${sql_manifest}" "${jasper_manifest}"' EXIT
 
 cd "${project_root}"
@@ -57,8 +58,15 @@ echo "帳票テンプレートをLocalの永続領域へ反映します。"
 while IFS= read -r resource_path || [[ -n "${resource_path}" ]]; do
   [[ -z "${resource_path}" || "${resource_path}" == \#* ]] && continue
   jasper_file="${project_root}/backend/src/main/resources/${resource_path}"
-  docker compose cp "${jasper_file}" "backend:/app/storage/${resource_path}" >/dev/null
+  docker compose cp "${jasper_file}" "backend:${template_storage_dir}/$(basename "${resource_path}")" >/dev/null
 done < "${jasper_manifest}"
+
+# Excel templates are also read from the persistent report-template directory.
+# Rebuilding the backend image alone does not replace an already initialized
+# workbook, so synchronize it explicitly just like Jasper templates.
+docker compose cp \
+  "${project_root}/backend/src/main/resources/reports/monthly_labor_cost_list.xlsx" \
+  "backend:${template_storage_dir}/monthly_labor_cost_list.xlsx" >/dev/null
 
 echo "帳票用View・ストアドをLocal DBへ反映します。"
 while IFS= read -r resource_path || [[ -n "${resource_path}" ]]; do

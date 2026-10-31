@@ -34,40 +34,11 @@ SELECT
     DATE_FORMAT(source.period_from, '%Y年%c月%e日') AS period_start_label,
     DATE_FORMAT(source.period_to, '%Y年%c月%e日') AS period_end_label,
     COALESCE(closing.closing_version, 0) AS closing_version,
-    CASE payroll.payment_day_type
-        WHEN 'END_OF_MONTH' THEN DATE_FORMAT(
-            LAST_DAY(DATE_ADD(
-                source.target_month,
-                INTERVAL COALESCE(payroll.payment_month_offset, 0) MONTH
-            )),
-            '%Y年%c月%e日'
-        )
-        WHEN 'DAY_OF_MONTH' THEN DATE_FORMAT(
-            DATE_ADD(
-                DATE_FORMAT(
-                    DATE_ADD(
-                        source.target_month,
-                        INTERVAL COALESCE(payroll.payment_month_offset, 0) MONTH
-                    ),
-                    '%Y-%m-01'
-                ),
-                INTERVAL (
-                    LEAST(
-                        payroll.payment_day_value,
-                        DAY(LAST_DAY(DATE_ADD(
-                            source.target_month,
-                            INTERVAL COALESCE(payroll.payment_month_offset, 0) MONTH
-                        )))
-                    ) - 1
-                ) DAY
-            ),
-            '%Y年%c月%e日'
-        )
-        ELSE NULL
-    END AS payment_date_label,
+    DATE_FORMAT(source.payment_date, '%Y年%c月%e日') AS payment_date_label,
     source.employee_id,
     source.employee_code,
     source.employee_name,
+    source.employee_address,
     source.company_name,
     source.work_day_count,
     source.work_hours,
@@ -109,6 +80,7 @@ SELECT
     source.child_care_contribution,
     source.pension_insurance,
     source.employment_insurance,
+    source.social_insurance_total,
     source.income_tax,
     source.resident_tax,
     source.taxable_amount,
@@ -198,132 +170,53 @@ LEFT JOIN monthly_closings closing
   ON closing.tenant_id = source.tenant_id
  AND closing.target_month = source.target_month
  AND closing.deleted_at IS NULL
-LEFT JOIN (
-    SELECT setting.*
-    FROM closing_setting setting
-    JOIN (
-        SELECT tenant_id, MAX(id) AS setting_id
-        FROM closing_setting
-        WHERE setting_code = 'PAYROLL'
-          AND active_flag = TRUE
-          AND deleted_at IS NULL
-        GROUP BY tenant_id
-    ) selected
-      ON selected.setting_id = setting.id
-     AND selected.tenant_id = setting.tenant_id
-) payroll
-  ON payroll.tenant_id = source.tenant_id;
+;
 
 CREATE OR REPLACE VIEW vw_monthly_invoice_operation_preview AS
 SELECT
     detail.tenant_id,
+    detail.daily_report_id,
     DATE_FORMAT(detail.work_date, '%Y-%m') AS target_month,
     detail.work_date,
     detail.customer_id,
-    MAX(customer.name) AS customer_name,
-    MAX(COALESCE(customer.invoice_type, 'PATTERN_1')) AS customer_invoice_type,
+    customer.name AS customer_name,
+    COALESCE(customer.invoice_type, 'PATTERN_1') AS customer_invoice_type,
     CURRENT_DATE AS invoice_date,
     'プレビュー' AS invoice_number,
-    MIN(detail.work_date) OVER (
-        PARTITION BY detail.tenant_id,
-            DATE_FORMAT(detail.work_date, '%Y-%m'), detail.customer_id
-    ) AS period_start,
-    MAX(detail.work_date) OVER (
-        PARTITION BY detail.tenant_id,
-            DATE_FORMAT(detail.work_date, '%Y-%m'), detail.customer_id
-    ) AS period_end,
-    MAX(company.company_name) AS company_name,
-    MAX(company.postal_code) AS company_postal_code,
-    MAX(CONCAT_WS('', company.prefecture, company.city,
-        company.address_line1, company.address_line2)) AS company_address,
-    MAX(company.phone) AS company_phone,
-    MAX(company.fax) AS company_fax,
-    MAX(company.qualified_invoice_issuer_number)
-        AS qualified_invoice_issuer_number,
-    MAX(CONCAT_WS(' ', company.invoice_bank_name,
-        company.invoice_bank_branch_name, company.invoice_bank_account_type,
-        company.invoice_bank_account_number,
-        company.invoice_bank_account_holder)) AS bank_display_text,
-    MAX(company.invoice_note) AS invoice_note,
+    detail.employee_id,
+    detail.employee_code,
+    detail.employee_name,
     detail.customer_site_id,
-    MAX(detail.site_name) AS site_name,
+    detail.site_name,
     detail.job_code,
-    MAX(detail.job_name) AS job_name,
+    detail.job_name,
+    detail.site_role_code,
+    detail.site_role_name,
     detail.billing_unit,
-    SUM(detail.base_quantity) AS base_quantity,
-    MAX(detail.base_unit_price) AS base_unit_price,
-    SUM(detail.base_amount) AS base_amount,
-    SUM(detail.overtime_amount) AS overtime_amount,
-    SUM(detail.night_amount) AS night_amount,
-    SUM(detail.holiday_amount) AS holiday_amount,
-    SUM(detail.commute_amount) AS commute_amount,
-    SUM(detail.other_amount) AS other_amount,
-    SUM(
-        detail.base_amount
+    detail.base_quantity AS base_quantity,
+    detail.base_quantity AS billing_quantity,
+    detail.work_hours,
+    detail.overtime_hours,
+    detail.night_hours AS night_work_hours,
+    detail.commute_distance AS mileage,
+    detail.base_amount,
+    detail.overtime_amount,
+    detail.night_amount,
+    detail.commute_amount,
+    detail.holiday_amount + detail.other_amount AS other_amount,
+    detail.base_amount
         + detail.overtime_amount
         + detail.night_amount
         + detail.holiday_amount
         + detail.commute_amount
-        + detail.other_amount
-    ) AS line_amount,
-    SUM(SUM(
-        detail.base_amount
-        + detail.overtime_amount
-        + detail.night_amount
-        + detail.holiday_amount
-        + detail.commute_amount
-        + detail.other_amount
-    )) OVER (
-        PARTITION BY detail.tenant_id,
-            DATE_FORMAT(detail.work_date, '%Y-%m'), detail.customer_id
-    ) AS subtotal_amount,
-    ROUND(SUM(SUM(
-        detail.base_amount
-        + detail.overtime_amount
-        + detail.night_amount
-        + detail.holiday_amount
-        + detail.commute_amount
-        + detail.other_amount
-    )) OVER (
-        PARTITION BY detail.tenant_id,
-            DATE_FORMAT(detail.work_date, '%Y-%m'), detail.customer_id
-    ) * 0.10, 0) AS tax_amount,
-    ROUND(SUM(SUM(
-        detail.base_amount
-        + detail.overtime_amount
-        + detail.night_amount
-        + detail.holiday_amount
-        + detail.commute_amount
-        + detail.other_amount
-    )) OVER (
-        PARTITION BY detail.tenant_id,
-            DATE_FORMAT(detail.work_date, '%Y-%m'), detail.customer_id
-    ) * 1.10, 0) AS total_amount,
-    MIN(detail.calculation_ready_flag) AS calculation_ready_flag
+        + detail.other_amount AS line_amount,
+    detail.calculation_ready_flag
 FROM vw_monthly_invoice_latest_detail detail
 LEFT JOIN customers customer
   ON customer.tenant_id = detail.tenant_id
  AND customer.id = detail.customer_id
  AND customer.deleted_at IS NULL
-LEFT JOIN company_profile company
-  ON company.tenant_id = detail.tenant_id
- AND company.active_flag = TRUE
- AND company.deleted_at IS NULL
- AND company.id = (
-     SELECT MIN(selected.id)
-     FROM company_profile selected
-     WHERE selected.tenant_id = detail.tenant_id
-       AND selected.active_flag = TRUE
-       AND selected.deleted_at IS NULL
- )
-GROUP BY
-    detail.tenant_id,
-    DATE_FORMAT(detail.work_date, '%Y-%m'),
-    detail.work_date,
-    detail.customer_id,
-    detail.customer_site_id,
-    detail.job_code,
-    detail.billing_unit;
+;
 
 INSERT INTO batch_job_definition (
     tenant_id, job_code, job_name, job_type, target_code,
@@ -339,10 +232,10 @@ INSERT INTO batch_job_definition (
     @now, @now
 ),
 (
-    @tenant_id, 'PRINT_MONTHLY_PAY_SLIP', '月給料明細出力',
+    @tenant_id, 'PRINT_MONTHLY_PAY_SLIP', '月次給与明細出力',
     'REPORT', 'MONTHLY_PAY_SLIP',
     TRUE, FALSE, 'NONE', NULL, TRUE,
-    '月次締めVersionから全従業員の月給料明細PDFを生成する',
+    '月次締めVersionから全従業員の月次給与明細PDFを生成する',
     @now, @now
 ),
 (
@@ -381,7 +274,7 @@ INSERT INTO operation_report_preview (
 ),
 (
     @tenant_id, @now, @now,
-    'MONTHLY', 'MONTHLY_PAY_SLIP', '月給料明細',
+    'MONTHLY', 'MONTHLY_PAY_SLIP', '月次給与明細',
     'PRINT_MONTHLY_PAY_SLIP',
     'vw_monthly_pay_slip_operation_preview', 'target_month', 'targetMonth',
     'monthly_pay_slip.jrxml',
@@ -393,8 +286,9 @@ INSERT INTO operation_report_preview (
     'MONTHLY', 'MONTHLY_INVOICE', '請求書',
     'PRINT_MONTHLY_INVOICE',
     'vw_monthly_invoice_operation_preview', 'target_month', 'targetMonth',
-    'monthly_invoice.html', NULL, 1,
-    'customer_name, site_name, job_code', 20, TRUE, 'PDF'
+    'monthly_invoice.html', NULL, 2,
+    'work_date, site_name, job_code, site_role_code, employee_code, daily_report_id',
+    20, TRUE, 'PDF'
 )
 ON DUPLICATE KEY UPDATE
     report_name = VALUES(report_name),
@@ -435,7 +329,7 @@ INSERT INTO operation_report_preview_column (
 (@tenant_id, @now, @now, @monthly_invoice_preview_id, '現場名', 'site_name', 2, TRUE),
 (@tenant_id, @now, @now, @monthly_invoice_preview_id, '職種', 'job_name', 3, TRUE),
 (@tenant_id, @now, @now, @monthly_invoice_preview_id, '請求単位', 'billing_unit', 4, TRUE),
-(@tenant_id, @now, @now, @monthly_invoice_preview_id, '数量', 'base_quantity', 5, TRUE),
+(@tenant_id, @now, @now, @monthly_invoice_preview_id, '数量', 'billing_quantity', 5, TRUE),
 (@tenant_id, @now, @now, @monthly_invoice_preview_id, '基本金額', 'base_amount', 6, TRUE),
 (@tenant_id, @now, @now, @monthly_invoice_preview_id, '割増金額', 'overtime_amount', 7, TRUE),
 (@tenant_id, @now, @now, @monthly_invoice_preview_id, '行合計', 'line_amount', 8, TRUE),

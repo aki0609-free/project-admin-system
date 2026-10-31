@@ -283,7 +283,7 @@ where rm.tenant_id = @tenant_id
   );
 
 -- =====================================================
--- 月給料明細
+-- 月次給与明細
 -- =====================================================
 
 insert into report_master (
@@ -317,7 +317,7 @@ insert into report_master (
     @now,
     @now,
     'MONTHLY_PAY_SLIP',
-    '月給料明細',
+    '月次給与明細',
     'monthly_pay_slip.jrxml',
     'monthly_pay_slip',
     'monthly_pay_slip_input',
@@ -336,7 +336,7 @@ order by employee_code',
     'sp_monthly_pay_slip_cleanup',
     'SINGLE',
     1,
-    '月給料明細_${targetMonth}',
+    '月次給与明細_${targetMonth}',
     'PDF',
     false,
     true,

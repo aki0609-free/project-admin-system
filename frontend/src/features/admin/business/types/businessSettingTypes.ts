@@ -26,6 +26,28 @@ export type BusinessClosingSetting = {
   activeFlag: boolean
 }
 
+export type BusinessHoliday = {
+  id: number | null
+  holidayDate: string
+  holidayName: string
+  holidayType: 'OBON'
+  note: string | null
+  activeFlag: boolean
+}
+
+export type YearEndAdjustment = {
+  id: number | null
+  employeeId: number | null
+  employeeCode?: string
+  employeeName?: string
+  taxYear: number
+  targetMonth: string
+  adjustmentAmount: number
+  status: 'DRAFT' | 'CONFIRMED'
+  note: string | null
+  lockVersion: number | null
+}
+
 export type MonthlyClosingOutputSetting = {
   id: number | null
   reportCode: string

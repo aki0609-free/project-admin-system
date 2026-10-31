@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { z } from 'zod'
 import DayRuleField from '@/shared/components/form/base/components/form/DayRuleField.vue'
 import DateFormField from '@/shared/components/form/base/components/form/DateFormField.vue'
+import MonthFormField from '@/shared/components/form/base/components/form/MonthFormField.vue'
 import FormLayout from '@/shared/components/form/base/FormLayout.vue'
 import GridBasedForm from '@/shared/components/form/grid_based_form/GridBasedForm.vue'
 import type { GridFormFieldDef } from '@/shared/components/form/grid_based_form/types/types'
@@ -37,12 +38,23 @@ const {
   previewReportDialog,
   editingPreviewReport,
   previewTemplateFile,
+  holidayYear,
+  holidays,
+  taxYear,
+  yearEndAdjustments,
+  editingYearEndAdjustment,
+  employees,
   saveMessage,
   openChecklistCreate,
   openChecklistEdit,
   saveChecklist,
   removeChecklist,
   saveClosing,
+  loadHolidays,
+  loadYearEndAdjustments,
+  editYearEndAdjustment,
+  saveYearEnd,
+  removeYearEnd,
   saveOutputs,
   saveBackupSetting,
   executeBackup,
@@ -239,7 +251,7 @@ const previewReportFooterItems = computed<ToolbarItem[]>(() => [
 <template>
   <ListDetailPageLayout
     title="業務管理"
-    description="退職処理、給与締日、給与制度、月次締め帳票、年度バックアップ、外部リンクを管理します。"
+    description="退職処理、給与締日、休日、年末調整、給与制度、月次締め帳票、年度バックアップ、外部リンクを管理します。"
   >
     <v-alert
       v-if="errorMessage"
@@ -275,6 +287,8 @@ const previewReportFooterItems = computed<ToolbarItem[]>(() => [
       >
         <v-tab value="resignation">退職時設定</v-tab>
         <v-tab value="closing">締日設定</v-tab>
+        <v-tab value="holidays">休日管理</v-tab>
+        <v-tab value="yearEndAdjustment">年末調整</v-tab>
         <v-tab value="payrollPolicy">給与制度設定</v-tab>
         <v-tab value="outputs">締め帳票</v-tab>
         <v-tab value="previewReports">プレビュー帳票</v-tab>
@@ -354,6 +368,72 @@ const previewReportFooterItems = computed<ToolbarItem[]>(() => [
                 締日設定を保存
               </v-btn>
             </div>
+          </section>
+        </v-window-item>
+
+        <v-window-item value="holidays">
+          <section class="settings-section">
+            <div class="section-heading">
+              <div>
+                <h2>休日管理</h2>
+                <p>日曜日と8月13日〜15日のお盆休みだけを休日として扱います。土曜日と国民の祝日は通常日です。</p>
+              </div>
+              <div class="inline-actions">
+                <v-text-field v-model.number="holidayYear" label="対象年" type="number" min="2000" max="2200" hide-details />
+                <v-btn variant="tonal" @click="loadHolidays">表示</v-btn>
+              </div>
+            </div>
+            <v-table density="comfortable">
+              <thead><tr><th>日付</th><th>休日名</th><th>区分</th></tr></thead>
+              <tbody>
+                <tr v-for="item in holidays" :key="item.id ?? item.holidayDate">
+                  <td>{{ item.holidayDate }}</td><td>{{ item.holidayName }}</td>
+                  <td>お盆休み</td>
+                </tr>
+              </tbody>
+            </v-table>
+          </section>
+        </v-window-item>
+
+        <v-window-item value="yearEndAdjustment">
+          <section class="settings-section">
+            <div class="section-heading">
+              <div>
+                <h2>年末調整</h2>
+                <p>正の金額は還付、負の金額は追加徴収です。確定した金額だけが指定月の月次給与明細に反映されます。</p>
+              </div>
+              <div class="inline-actions">
+                <v-text-field v-model.number="taxYear" label="対象年度" type="number" min="2000" max="2200" hide-details />
+                <v-btn variant="tonal" @click="loadYearEndAdjustments">表示</v-btn>
+                <v-btn color="primary" variant="tonal" @click="editYearEndAdjustment()">新規追加</v-btn>
+              </div>
+            </div>
+            <div class="year-end-editor">
+              <v-select v-model="editingYearEndAdjustment.employeeId" label="従業員"
+                :items="employees" item-title="employeeName" item-value="id" variant="outlined" hide-details />
+              <MonthFormField v-model="editingYearEndAdjustment.targetMonth" label="反映対象月" variant="outlined" hide-details />
+              <v-text-field v-model.number="editingYearEndAdjustment.adjustmentAmount" label="年末調整額"
+                type="number" suffix="円" variant="outlined" hide-details />
+              <v-select v-model="editingYearEndAdjustment.status" label="状態" :items="[
+                { title: '下書き', value: 'DRAFT' }, { title: '確定', value: 'CONFIRMED' },
+              ]" variant="outlined" hide-details />
+              <v-text-field v-model="editingYearEndAdjustment.note" label="備考" variant="outlined" hide-details />
+              <v-btn color="primary" :loading="loading" @click="saveYearEnd">保存</v-btn>
+            </div>
+            <v-table density="comfortable">
+              <thead><tr><th>社員コード</th><th>氏名</th><th>反映月</th><th>調整額</th><th>状態</th><th /></tr></thead>
+              <tbody>
+                <tr v-for="item in yearEndAdjustments" :key="item.id ?? `${item.employeeId}-${item.taxYear}`">
+                  <td>{{ item.employeeCode }}</td><td>{{ item.employeeName }}</td><td>{{ item.targetMonth }}</td>
+                  <td>{{ Number(item.adjustmentAmount).toLocaleString() }}円</td>
+                  <td>{{ item.status === 'CONFIRMED' ? '確定' : '下書き' }}</td>
+                  <td class="row-actions">
+                    <v-btn size="small" variant="text" @click="editYearEndAdjustment(item)">編集</v-btn>
+                    <v-btn size="small" color="error" variant="text" @click="removeYearEnd(item)">削除</v-btn>
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
           </section>
         </v-window-item>
 
@@ -847,6 +927,24 @@ const previewReportFooterItems = computed<ToolbarItem[]>(() => [
 .actions {
   display: flex;
   justify-content: flex-end;
+}
+.inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.inline-actions .v-text-field {
+  width: 150px;
+}
+.holiday-editor,
+.year-end-editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 8px;
 }
 .row-actions {
   white-space: nowrap;

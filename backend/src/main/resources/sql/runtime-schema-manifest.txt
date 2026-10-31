@@ -1,6 +1,7 @@
 # AWS実行環境とTestcontainersで共通利用するSQL資産一覧。
 # 依存順で記載し、パスはsrc/main/resourcesからの相対パスとする。
 sql/admin/external_support_links_v1.sql
+sql/admin/business_calendar_year_end_adjustment_v1.sql
 sql/application/applicant_legacy_schema_compatibility_v1.sql
 sql/customer/customer_contract_status_v1.sql
 sql/daily_report/payroll_policy_setting_v1.sql
@@ -9,7 +10,6 @@ sql/master/allowance_master_foundation_v1.sql
 sql/daily_report/vehicle_arrangement_foundation_v1.sql
 sql/system/excelbook/renderer_selection_v1.sql
 sql/system/excelbook/remove_verification_ledger_v1.sql
-sql/system/excelbook/monthly_summary_v1.sql
 sql/system/excelbook/monthly_labor_v1.sql
 sql/system/excelbook/labor_cost_payment_v1.sql
 sql/operation/monthly/customer_transaction_sync_v1.sql
@@ -46,5 +46,6 @@ sql/system/report/order_form/monthly_order_form_foundation_v1.sql
 sql/system/report/preview/daily_preview_foundation_v1.sql
 sql/system/report/preview/report_preview_catalog_v1.sql
 sql/system/report/labor_cost/monthly_labor_cost_list_foundation_v1.sql
+sql/system/excelbook/monthly_summary_v1.sql
 sql/system/report/daily_work_order/daily_work_order_foundation_v1.sql
 sql/operation/monthly/annual_report_backup_foundation_v1.sql

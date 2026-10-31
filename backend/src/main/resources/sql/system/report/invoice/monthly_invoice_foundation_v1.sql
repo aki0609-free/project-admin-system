@@ -369,6 +369,10 @@ FROM (
 CREATE OR REPLACE VIEW vw_monthly_invoice_latest_detail AS
 SELECT
     source.tenant_id,
+    source.daily_report_id,
+    source.employee_id,
+    source.employee_code,
+    source.employee_name,
     source.customer_id,
     source.work_date,
     source.customer_site_id,
@@ -378,6 +382,7 @@ SELECT
     source.site_role_code,
     source.site_role_name,
     source.billing_unit,
+    source.work_hours,
     CASE
         WHEN source.billing_unit = 'DAILY' THEN source.work_hours / 8
         WHEN source.billing_unit = 'HOURLY' THEN source.work_hours
@@ -423,6 +428,10 @@ SELECT
 FROM (
     SELECT
         dr.tenant_id,
+        dr.id AS daily_report_id,
+        dr.employee_id,
+        employee.employee_code,
+        employee.employee_name,
         dr.customer_id,
         dr.work_date,
         dr.customer_site_id,
@@ -457,6 +466,10 @@ FROM (
             ORDER BY dr.id
         ) AS dispatch_occurrence
     FROM daily_report dr
+    LEFT JOIN employee employee
+      ON employee.tenant_id = dr.tenant_id
+     AND employee.id = dr.employee_id
+     AND employee.deleted_at IS NULL
     LEFT JOIN customer_sites site
       ON site.tenant_id = dr.tenant_id
      AND site.id = dr.customer_site_id
@@ -640,7 +653,11 @@ BEGIN
                 company.invoice_bank_branch_name,
                 company.invoice_bank_account_type,
                 company.invoice_bank_account_number,
-                company.invoice_bank_account_holder
+                IF(
+                    NULLIF(TRIM(company.invoice_bank_account_holder), '') IS NULL,
+                    NULL,
+                    CONCAT('\n（口座名義　', company.invoice_bank_account_holder, '）')
+                )
             ),
             company.invoice_logo_file_name,
             company.invoice_logo_content_type,

@@ -49,11 +49,13 @@ CREATE TABLE IF NOT EXISTS monthly_pay_slip_history (
     employee_id BIGINT NOT NULL,
     employee_code VARCHAR(100) NOT NULL,
     employee_name VARCHAR(200) NOT NULL,
+    employee_address VARCHAR(600) NULL,
     company_name VARCHAR(255) NOT NULL,
     recipient_email VARCHAR(255) NULL,
     business_key VARCHAR(255) NOT NULL,
     period_from DATE NOT NULL,
     period_to DATE NOT NULL,
+    payment_date DATE NOT NULL,
 
     work_day_count INT NOT NULL DEFAULT 0,
     work_hours DECIMAL(10, 2) NOT NULL DEFAULT 0,
@@ -109,6 +111,36 @@ CREATE TABLE IF NOT EXISTS monthly_pay_slip_history (
     INDEX idx_monthly_pay_slip_history_employee
         (tenant_id, employee_id, target_month, closing_version)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @monthly_history_payment_date_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_pay_slip_history'
+      AND column_name = 'payment_date'
+);
+SET @monthly_history_payment_date_sql := IF(
+    @monthly_history_payment_date_exists = 0,
+    'ALTER TABLE monthly_pay_slip_history ADD COLUMN payment_date DATE NULL AFTER period_to',
+    'SELECT 1'
+);
+PREPARE statement FROM @monthly_history_payment_date_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
+SET @monthly_history_employee_address_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_pay_slip_history'
+      AND column_name = 'employee_address'
+);
+SET @monthly_history_employee_address_sql := IF(
+    @monthly_history_employee_address_exists = 0,
+    'ALTER TABLE monthly_pay_slip_history ADD COLUMN employee_address VARCHAR(600) NULL AFTER employee_name',
+    'SELECT 1'
+);
+PREPARE statement FROM @monthly_history_employee_address_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
 
 SET @monthly_history_saving_balance_exists := (
     SELECT COUNT(*) FROM information_schema.columns
@@ -192,6 +224,7 @@ CREATE TABLE IF NOT EXISTS monthly_pay_slip_render_output (
     employee_id BIGINT NOT NULL,
     employee_code VARCHAR(100) NOT NULL,
     employee_name VARCHAR(200) NOT NULL,
+    employee_address VARCHAR(600) NULL,
     company_name VARCHAR(255) NOT NULL,
     recipient_key VARCHAR(255) NOT NULL,
     recipient_name VARCHAR(255) NOT NULL,
@@ -201,6 +234,7 @@ CREATE TABLE IF NOT EXISTS monthly_pay_slip_render_output (
     mail_template_key VARCHAR(100) NULL,
     period_from DATE NOT NULL,
     period_to DATE NOT NULL,
+    payment_date DATE NOT NULL,
 
     work_day_count INT NOT NULL DEFAULT 0,
     work_hours DECIMAL(10, 2) NOT NULL DEFAULT 0,
@@ -244,6 +278,36 @@ CREATE TABLE IF NOT EXISTS monthly_pay_slip_render_output (
     INDEX idx_monthly_pay_slip_render_delivery
         (tenant_id, execution_id, business_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @monthly_output_payment_date_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_pay_slip_render_output'
+      AND column_name = 'payment_date'
+);
+SET @monthly_output_payment_date_sql := IF(
+    @monthly_output_payment_date_exists = 0,
+    'ALTER TABLE monthly_pay_slip_render_output ADD COLUMN payment_date DATE NULL AFTER period_to',
+    'SELECT 1'
+);
+PREPARE statement FROM @monthly_output_payment_date_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
+
+SET @monthly_output_employee_address_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'monthly_pay_slip_render_output'
+      AND column_name = 'employee_address'
+);
+SET @monthly_output_employee_address_sql := IF(
+    @monthly_output_employee_address_exists = 0,
+    'ALTER TABLE monthly_pay_slip_render_output ADD COLUMN employee_address VARCHAR(600) NULL AFTER employee_name',
+    'SELECT 1'
+);
+PREPARE statement FROM @monthly_output_employee_address_sql;
+EXECUTE statement;
+DEALLOCATE PREPARE statement;
 
 SET @monthly_output_saving_balance_exists := (
     SELECT COUNT(*) FROM information_schema.columns
@@ -548,11 +612,13 @@ BEGIN
             employee_id,
             employee_code,
             employee_name,
+            employee_address,
             company_name,
             recipient_email,
             business_key,
             period_from,
             period_to,
+            payment_date,
             work_day_count,
             work_hours,
             overtime_hours,
@@ -593,11 +659,13 @@ BEGIN
             source.employee_id,
             source.employee_code,
             source.employee_name,
+            source.employee_address,
             source.company_name,
             source.recipient_email,
             source.business_key,
             source.period_from,
             source.period_to,
+            source.payment_date,
             source.work_day_count,
             source.work_hours,
             source.overtime_hours,
@@ -659,7 +727,7 @@ BEGIN
             item.tenant_id,
             NOW(6),
             NOW(6)
-        FROM vw_monthly_pay_slip_variable_item item
+        FROM vw_monthly_pay_slip_display_item item
         JOIN monthly_pay_slip_history history
           ON history.tenant_id = item.tenant_id
          AND history.target_month = item.target_month
@@ -690,6 +758,7 @@ BEGIN
         employee_id,
         employee_code,
         employee_name,
+        employee_address,
         company_name,
         recipient_key,
         recipient_name,
@@ -699,6 +768,7 @@ BEGIN
         mail_template_key,
         period_from,
         period_to,
+        payment_date,
         work_day_count,
         work_hours,
         overtime_hours,
@@ -738,6 +808,7 @@ BEGIN
         history.employee_id,
         history.employee_code,
         history.employee_name,
+        history.employee_address,
         history.company_name,
         CAST(history.employee_id AS CHAR),
         history.employee_name,
@@ -747,6 +818,7 @@ BEGIN
         'MONTHLY_PAY_SLIP_NOTICE',
         history.period_from,
         history.period_to,
+        history.payment_date,
         history.work_day_count,
         history.work_hours,
         history.overtime_hours,

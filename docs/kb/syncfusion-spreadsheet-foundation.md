@@ -426,7 +426,7 @@ documents/generated-reports/ledgers/{tenantId}/MONTHLY_SUMMARY/{yyyy-MM}/MONTHLY
 | 通勤等 | `走行距離×通勤請求単価＋休日時間×休日請求単価` |
 | 基本／残業／深夜単価 | 日報保存時の請求単価スナップショット |
 | 支払給計 | 日付ごとの`estimated_gross_pay_amount`合計 |
-| 社会保険負担額 | 締め前にSpreadsheetで手入力 |
+| 社会保険負担額 | 給与控除の社会保険合計＋支払給計×建設事業の労災保険料率0.0105。全体合計後に四捨五入 |
 | 粗利益 | 原本数式を維持 |
 | 当月利益率 | 0除算時は0% |
 

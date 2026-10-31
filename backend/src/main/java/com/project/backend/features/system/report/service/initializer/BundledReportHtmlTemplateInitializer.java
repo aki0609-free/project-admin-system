@@ -53,7 +53,7 @@ public class BundledReportHtmlTemplateInitializer
             ),
             new TemplateDefinition(
                     "MONTHLY_INVOICE",
-                    1,
+                    2,
                     "monthly_invoice.html"
             )
     );

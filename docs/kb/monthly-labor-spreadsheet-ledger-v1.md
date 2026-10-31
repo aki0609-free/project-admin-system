@@ -12,6 +12,7 @@
 - 生成ファイルはS3の生成帳票領域へ保存
 - 原本の給与・控除・寮費等の3ページを、A3横1ページの統合表として配置
 - 会社名は会社プロフィール、従業員番号・氏名は従業員マスターから表示
+- 官公庁提出用の部分印刷範囲は、左端から`支払給 A`まで（A～N列）
 
 ## 2. 処理フロー
 
@@ -67,15 +68,24 @@ Ruleへ渡す主なパラメータ：
 
 法定休日は残業へ合算せず、`HOLIDAY_PAY`として独立保存する。深夜と重複した場合も、休日分と深夜加算分を別々に確認できる。
 
-## 5. 控除・支払項目
+## 5. 表示項目と集計元
 
-- 前払い：`daily_payments.actual_amount`
-- 当日支給額：日報保存時点の`estimated_net_pay_amount`
-- 税額他：控除マスターの`deduction_type = LEGAL`
+- `休日給`は独立列を設けない。ただし日報の休日給は`支払給 A`（総支給額）に含む。
+- 運転手当：日報手当明細の`DRIVER_ALLOWANCE`
+- 勤務態度手当：日報手当明細の`ATTENDANCE_ATTITUDE`
+- 管理手当：日報手当明細の`MANAGEMENT_ALLOWANCE`
+- その他手当：上記3コード以外の有効な日報手当を動的に合算
+- 法定準備金：日報控除明細の`LEGAL_DEPOSIT`
+- 貯金：`daily_report.saving_amount`
+- 引出：`daily_report.saving_withdrawal_amount`
+- 前借り：日報控除明細の`SHORT_TERM_ADVANCE`（短期貸付の返済額）
+- 借入金返済額：`daily_report.loan_repayment_amount`
 - 寮費：日報控除明細の`DORMITORY_FEE`
-- 積立：`daily_report.saving_amount`
-- 返済：`daily_report.loan_repayment_amount`
-- 車両代：日報手当明細の`DRIVER_ALLOWANCE`
+- 携帯電話貸出料：日報控除明細の`MOBILE_RENTAL`
+- Wi-Fi使用料：日報控除明細の`WIFI_FEE`
+- その他：上記の個別列および法定控除に該当しない控除を合算
+
+旧`前払い`（日払い実績）と`当日支給額 B`は表示しない。
 
 寮費は従業員から日次徴収するため、日報で日別金額を保存する。会社側の月次支払いではその月の合計を使用する。
 
@@ -109,4 +119,5 @@ infrastructure/scripts/database/apply_runtime_schema_upgrade.sh
 - 寮費Ruleまたは日報手入力方法を確定する。
 - 代表的な従業員1名で日別金額を照合する。
 - A3横のブラウザ印刷で1ページに収まることを確認する。
+- 官公庁提出時はA～N列を選択し、部分印刷で`支払給 A`までを印刷する。
 - 全員印刷時のブラウザ負荷と印刷順を確認する。

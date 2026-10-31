@@ -460,7 +460,11 @@ watch(visible, value => {
 
 <style scoped>
 .generated-ledger-dialog {
-  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
 .generated-ledger-dialog__meta {
@@ -472,13 +476,15 @@ watch(visible, value => {
 }
 
 .generated-ledger-dialog__editor {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
+  overflow: hidden;
   padding: 0 16px 16px;
 }
 
 .generated-ledger-dialog__editor :deep(.e-spreadsheet) {
   height: 100% !important;
+  min-height: 0;
   border-radius: 4px;
 }
 </style>

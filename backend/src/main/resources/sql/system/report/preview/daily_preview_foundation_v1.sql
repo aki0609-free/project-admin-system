@@ -213,7 +213,35 @@ FROM detail;
 -- payment_date単位に、承認済み日報の計算上支給可能額を集計する。
 -- -----------------------------------------------------
 CREATE OR REPLACE VIEW vw_daily_payment_preparation_preview AS
-WITH report_summary AS (
+WITH deduction_by_report AS (
+    SELECT
+        item.tenant_id,
+        item.daily_report_id,
+        COALESCE(SUM(CASE WHEN item.deduction_code = 'LEGAL_DEPOSIT'
+            THEN item.amount ELSE 0 END), 0) AS legal_deposit_amount,
+        COALESCE(SUM(CASE WHEN item.deduction_code = 'SHORT_TERM_ADVANCE'
+            THEN item.amount ELSE 0 END), 0) AS short_term_advance_amount,
+        COALESCE(SUM(CASE WHEN item.deduction_code = 'DORMITORY_FEE'
+            THEN item.amount ELSE 0 END), 0) AS dormitory_fee_amount,
+        COALESCE(SUM(CASE WHEN item.deduction_code = 'MOBILE_RENTAL'
+            THEN item.amount ELSE 0 END), 0) AS mobile_rental_amount,
+        COALESCE(SUM(CASE WHEN item.deduction_code = 'WIFI_FEE'
+            THEN item.amount ELSE 0 END), 0) AS wifi_fee_amount,
+        COALESCE(SUM(CASE WHEN item.deduction_code NOT IN (
+            'LEGAL_DEPOSIT',
+            'SHORT_TERM_ADVANCE',
+            'DORMITORY_FEE',
+            'MOBILE_RENTAL',
+            'WIFI_FEE',
+            'SAVING',
+            'SAVINGS',
+            'LOAN_REPAYMENT'
+        ) THEN item.amount ELSE 0 END), 0) AS other_deduction_amount,
+        COALESCE(SUM(item.amount), 0) AS detail_deduction_amount
+    FROM daily_report_deductions item
+    WHERE item.deleted_at IS NULL
+    GROUP BY item.tenant_id, item.daily_report_id
+), report_summary AS (
     SELECT
         dr.tenant_id,
         dr.payment_date AS target_date,
@@ -221,18 +249,64 @@ WITH report_summary AS (
         COALESCE(SUM(dr.estimated_gross_pay_amount), 0)
             AS gross_payment_amount,
         COALESCE(SUM(dr.allowance_amount), 0) AS allowance_amount,
+        COALESCE(SUM(deduction.legal_deposit_amount), 0)
+            AS legal_deposit_amount,
+        COALESCE(SUM(dr.saving_amount), 0) AS saving_amount,
+        COALESCE(SUM(dr.saving_withdrawal_amount), 0)
+            AS saving_withdrawal_amount,
+        COALESCE(SUM(deduction.short_term_advance_amount), 0)
+            AS short_term_advance_amount,
+        COALESCE(SUM(deduction.dormitory_fee_amount), 0)
+            AS dormitory_fee_amount,
+        COALESCE(SUM(deduction.mobile_rental_amount), 0)
+            AS mobile_rental_amount,
+        COALESCE(SUM(deduction.wifi_fee_amount), 0) AS wifi_fee_amount,
+        COALESCE(SUM(dr.loan_repayment_amount), 0)
+            AS long_term_loan_repayment_amount,
         COALESCE(SUM(
-            COALESCE(dr.deduction_amount, 0)
-            + COALESCE(dr.saving_amount, 0)
-            + COALESCE(dr.loan_repayment_amount, 0)
-        ), 0) AS deduction_amount,
-        COALESCE(SUM(dr.estimated_net_pay_amount), 0)
-            AS estimated_net_payment_amount
+            COALESCE(deduction.other_deduction_amount, 0)
+            + GREATEST(
+                COALESCE(dr.deduction_amount, 0)
+                    - COALESCE(deduction.detail_deduction_amount, 0),
+                0
+            )
+        ), 0) AS other_deduction_amount
     FROM daily_report dr
+    LEFT JOIN deduction_by_report deduction
+      ON deduction.tenant_id = dr.tenant_id
+     AND deduction.daily_report_id = dr.id
     WHERE dr.deleted_at IS NULL
       AND dr.approval_status = 'APPROVED'
       AND dr.payment_date IS NOT NULL
     GROUP BY dr.tenant_id, dr.payment_date, dr.employee_id
+), calculated AS (
+    SELECT
+        report.*,
+        report.gross_payment_amount
+            - report.legal_deposit_amount
+            - report.saving_amount
+            + report.saving_withdrawal_amount
+            - report.short_term_advance_amount
+            AS supplied_amount,
+        report.legal_deposit_amount
+            + report.short_term_advance_amount
+            + report.dormitory_fee_amount
+            + report.mobile_rental_amount
+            + report.wifi_fee_amount
+            + report.other_deduction_amount
+            AS deduction_amount,
+        report.gross_payment_amount
+            - report.legal_deposit_amount
+            - report.saving_amount
+            + report.saving_withdrawal_amount
+            - report.short_term_advance_amount
+            - report.dormitory_fee_amount
+            - report.mobile_rental_amount
+            - report.wifi_fee_amount
+            - report.long_term_loan_repayment_amount
+            - report.other_deduction_amount
+            AS payment_amount
+    FROM report_summary report
 ), detail AS (
     SELECT
         report.tenant_id,
@@ -249,9 +323,20 @@ WITH report_summary AS (
         END AS payment_cycle_order,
         report.gross_payment_amount,
         report.allowance_amount,
+        report.legal_deposit_amount,
+        report.saving_amount,
+        report.saving_withdrawal_amount,
+        report.short_term_advance_amount,
+        report.supplied_amount,
+        report.dormitory_fee_amount,
+        report.mobile_rental_amount,
+        report.wifi_fee_amount,
+        report.long_term_loan_repayment_amount,
+        report.other_deduction_amount,
         report.deduction_amount,
-        report.estimated_net_payment_amount AS net_payment_amount
-    FROM report_summary report
+        report.payment_amount,
+        report.payment_amount AS net_payment_amount
+    FROM calculated report
     JOIN employee
       ON employee.tenant_id = report.tenant_id
      AND employee.id = report.employee_id
@@ -260,14 +345,110 @@ WITH report_summary AS (
      ON contract.tenant_id = report.tenant_id
      AND contract.employee_id = report.employee_id
      AND contract.deleted_at IS NULL
-), denomination AS (
+), summarized AS (
     SELECT
         detail.*,
-        GREATEST(FLOOR(detail.net_payment_amount), 0) AS cash_payment_amount,
-        SUM(detail.net_payment_amount) OVER (
+        ROW_NUMBER() OVER (
+            PARTITION BY detail.tenant_id, detail.target_date,
+                detail.payment_cycle
+            ORDER BY detail.employee_code
+        ) AS payment_cycle_row_number,
+        COUNT(*) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date,
+                detail.payment_cycle
+        ) AS payment_cycle_row_count,
+        SUM(detail.gross_payment_amount) OVER (
             PARTITION BY detail.tenant_id, detail.target_date
-        ) AS total_net_payment_amount
+        ) AS total_gross_payment_amount,
+        SUM(detail.legal_deposit_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date
+        ) AS total_legal_deposit_amount,
+        SUM(detail.saving_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date
+        ) AS total_saving_amount,
+        SUM(detail.saving_withdrawal_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date
+        ) AS total_saving_withdrawal_amount,
+        SUM(detail.short_term_advance_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date
+        ) AS total_short_term_advance_amount,
+        SUM(detail.supplied_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date
+        ) AS total_supplied_amount,
+        SUM(detail.dormitory_fee_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date
+        ) AS total_dormitory_fee_amount,
+        SUM(detail.mobile_rental_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date
+        ) AS total_mobile_rental_amount,
+        SUM(detail.wifi_fee_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date
+        ) AS total_wifi_fee_amount,
+        SUM(detail.long_term_loan_repayment_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date
+        ) AS total_long_term_loan_repayment_amount,
+        SUM(detail.other_deduction_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date
+        ) AS total_other_deduction_amount,
+        SUM(detail.payment_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date
+        ) AS total_payment_amount,
+        SUM(detail.gross_payment_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date,
+                detail.payment_cycle
+        ) AS cycle_gross_payment_amount,
+        SUM(detail.legal_deposit_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date,
+                detail.payment_cycle
+        ) AS cycle_legal_deposit_amount,
+        SUM(detail.saving_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date,
+                detail.payment_cycle
+        ) AS cycle_saving_amount,
+        SUM(detail.saving_withdrawal_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date,
+                detail.payment_cycle
+        ) AS cycle_saving_withdrawal_amount,
+        SUM(detail.short_term_advance_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date,
+                detail.payment_cycle
+        ) AS cycle_short_term_advance_amount,
+        SUM(detail.supplied_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date,
+                detail.payment_cycle
+        ) AS cycle_supplied_amount,
+        SUM(detail.dormitory_fee_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date,
+                detail.payment_cycle
+        ) AS cycle_dormitory_fee_amount,
+        SUM(detail.mobile_rental_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date,
+                detail.payment_cycle
+        ) AS cycle_mobile_rental_amount,
+        SUM(detail.wifi_fee_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date,
+                detail.payment_cycle
+        ) AS cycle_wifi_fee_amount,
+        SUM(detail.long_term_loan_repayment_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date,
+                detail.payment_cycle
+        ) AS cycle_long_term_loan_repayment_amount,
+        SUM(detail.other_deduction_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date,
+                detail.payment_cycle
+        ) AS cycle_other_deduction_amount,
+        SUM(detail.payment_amount) OVER (
+            PARTITION BY detail.tenant_id, detail.target_date,
+                detail.payment_cycle
+        ) AS cycle_payment_amount
     FROM detail
+), denomination AS (
+    SELECT
+        summarized.*,
+        summarized.total_payment_amount AS total_net_payment_amount,
+        summarized.total_payment_amount AS bank_withdrawal_amount,
+        GREATEST(FLOOR(summarized.payment_amount), 0) AS cash_payment_amount
+    FROM summarized
 ), totals AS (
     SELECT
         denomination.*,
@@ -351,7 +532,7 @@ INSERT INTO operation_report_preview (
     NULL,
     'payment_cycle, employee_code',
     10,
-    TRUE,
+    FALSE,
     'HTML_PREVIEW'
 ),
 (
