@@ -31,6 +31,13 @@ public interface SystemCalendarHolidayRepository
                     LocalDate holidayDate
             );
 
+    Optional<SystemCalendarHoliday>
+            findByTenantIdAndCalendarTypeAndHolidayDateAndActiveFlagTrueAndDeletedAtIsNull(
+                    String tenantId,
+                    CalendarType calendarType,
+                    LocalDate holidayDate
+            );
+
     boolean existsByTenantIdAndCalendarTypeInAndHolidayDateAndActiveFlagTrueAndDeletedAtIsNull(
             String tenantId,
             Collection<CalendarType> calendarTypes,

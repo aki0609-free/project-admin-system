@@ -56,6 +56,7 @@ public class CalendarHolidayManagementService {
         entity.setHolidayName(request.holidayName().trim());
         entity.setNote(normalize(request.note()));
         entity.setActiveFlag(Boolean.TRUE.equals(request.activeFlag()));
+        entity.setDayType(request.dayType());
         return toResponse(repository.save(entity));
     }
 
@@ -87,7 +88,8 @@ public class CalendarHolidayManagementService {
         return new CalendarHolidayResponse(
                 entity.getId(), entity.getCalendarType(), entity.getHolidayDate(),
                 entity.getHolidayName(), entity.getNote(), entity.isActiveFlag(),
-                entity.getCalendarType() == CalendarType.COMPANY
+                entity.getCalendarType() == CalendarType.COMPANY,
+                entity.getDayType()
         );
     }
 }

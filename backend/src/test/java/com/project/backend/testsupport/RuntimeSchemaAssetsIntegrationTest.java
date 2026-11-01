@@ -88,11 +88,13 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 "annual_report_backup_file",
                 "customer_billing_closings",
                 "system_calendar_holiday",
+                "system_calendar_weekday_rule",
+                "system_calendar_reference",
                 "monthly_order_form_input",
                 "monthly_order_form_history",
                 "monthly_order_form_render_execution",
                 "employee_legal_deposit_refund"
-        )).isEqualTo(15);
+        )).isEqualTo(17);
         assertThat(countViews(
                 "vw_daily_labor_cost_preview",
                 "vw_daily_payment_preparation_preview",
@@ -114,6 +116,30 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 "sp_daily_work_order_prepare",
                 "sp_monthly_order_form_snapshot"
         )).isEqualTo(6);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM import_target
+                WHERE tenant_id = 'default'
+                  AND target_code = 'IMPORT_NATIONAL_HOLIDAY'
+                  AND table_name = 'system_calendar_holiday'
+                  AND source_type = 'UPLOAD'
+                  AND script_type = 'PYTHON'
+                  AND script_path = 'convert_national_holidays_v2.py'
+                  AND import_mode = 'UPSERT'
+                  AND active_flag = TRUE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM import_column column_def
+                JOIN import_target target ON target.id = column_def.target_id
+                WHERE target.target_code = 'IMPORT_NATIONAL_HOLIDAY'
+                  AND column_def.column_name IN (
+                      'calendar_type', 'holiday_date', 'holiday_name',
+                      'day_type', 'note', 'active_flag'
+                  )
+                  AND column_def.deleted_at IS NULL
+                """, Integer.class)).isEqualTo(6);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM information_schema.columns

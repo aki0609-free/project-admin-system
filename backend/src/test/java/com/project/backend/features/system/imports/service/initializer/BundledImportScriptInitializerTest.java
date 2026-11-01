@@ -30,8 +30,18 @@ class BundledImportScriptInitializerTest {
 
         initializer.run(null);
 
-        verify(storageService, times(9)).save(
+        verify(storageService, times(10)).save(
                 anyString(),
+                any(InputStream.class),
+                anyLong(),
+                org.mockito.ArgumentMatchers.eq(
+                        "text/x-python; charset=UTF-8"
+                )
+        );
+        verify(storageService).save(
+                org.mockito.ArgumentMatchers.eq(
+                        "imports/scripts/convert_national_holidays_v2.py"
+                ),
                 any(InputStream.class),
                 anyLong(),
                 org.mockito.ArgumentMatchers.eq(

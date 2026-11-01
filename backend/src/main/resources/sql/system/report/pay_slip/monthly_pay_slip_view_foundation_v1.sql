@@ -928,7 +928,7 @@ JOIN (
  ON selected.company_profile_id = profile.id
  AND selected.tenant_id = profile.tenant_id;
 
--- 月次給与の支払日は給与締め設定を基準とし、土日・会社休日を前倒しする。
+-- 月次給与の支払日は給与締め設定を基準とし、金融機関休日・会社休日を前倒しする。
 CREATE OR REPLACE VIEW vw_monthly_pay_slip_payment_date AS
 SELECT
     em.tenant_id,
@@ -939,8 +939,27 @@ SELECT
         FROM business_calendar_date calendar
         WHERE calendar.weekend_flag = FALSE
           AND NOT (
-              MONTH(calendar.calendar_date) = 8
-              AND DAY(calendar.calendar_date) BETWEEN 13 AND 15
+              (MONTH(calendar.calendar_date) = 12 AND DAY(calendar.calendar_date) >= 31)
+              OR (MONTH(calendar.calendar_date) = 1 AND DAY(calendar.calendar_date) <= 3)
+          )
+          AND NOT EXISTS (
+              SELECT 1
+              FROM system_calendar_weekday_rule weekday_rule
+              WHERE weekday_rule.tenant_id = em.tenant_id
+                AND weekday_rule.calendar_type = 'COMPANY'
+                AND weekday_rule.day_of_week = UPPER(DAYNAME(calendar.calendar_date))
+                AND weekday_rule.closed_flag = TRUE
+                AND weekday_rule.deleted_at IS NULL
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM system_calendar_holiday open_day
+                    WHERE open_day.tenant_id = em.tenant_id
+                      AND open_day.calendar_type = 'COMPANY'
+                      AND open_day.holiday_date = calendar.calendar_date
+                      AND open_day.day_type = 'OPEN'
+                      AND open_day.active_flag = TRUE
+                      AND open_day.deleted_at IS NULL
+                )
           )
           AND NOT EXISTS (
               SELECT 1
@@ -948,8 +967,9 @@ SELECT
               WHERE holiday.tenant_id = em.tenant_id
                 AND holiday.holiday_date = calendar.calendar_date
                 AND holiday.calendar_type IN (
-                    'COMPANY', 'FINANCIAL_INSTITUTION'
+                    'COMPANY', 'FINANCIAL_INSTITUTION', 'NATIONAL_HOLIDAY'
                 )
+                AND holiday.day_type = 'CLOSED'
                 AND holiday.active_flag = TRUE
                 AND holiday.deleted_at IS NULL
           )

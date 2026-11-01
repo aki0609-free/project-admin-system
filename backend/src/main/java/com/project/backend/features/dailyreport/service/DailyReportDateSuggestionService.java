@@ -19,15 +19,15 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DailyReportDateSuggestionService {
     private static final CalendarDayPolicy WORK_DATE_POLICY = new CalendarDayPolicy(
-            Set.of(CalendarType.COMPANY), Set.of(DayOfWeek.SUNDAY)
+            Set.of(CalendarType.COMPANY), Set.of()
     );
     private static final CalendarDayPolicy DAILY_WEEKLY_PAYMENT_POLICY = new CalendarDayPolicy(
             Set.of(CalendarType.COMPANY, CalendarType.FINANCIAL_INSTITUTION),
-            Set.of(DayOfWeek.SUNDAY)
+            Set.of()
     );
     private static final CalendarDayPolicy MONTHLY_PAYMENT_POLICY = new CalendarDayPolicy(
             Set.of(CalendarType.COMPANY, CalendarType.FINANCIAL_INSTITUTION),
-            Set.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
+            Set.of()
     );
 
     private final CalendarAdjustmentService calendar;

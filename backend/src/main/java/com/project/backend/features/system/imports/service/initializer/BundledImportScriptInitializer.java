@@ -38,6 +38,7 @@ public class BundledImportScriptInitializer implements ApplicationRunner {
             "convert_health_insurance_rate.py",
             "convert_income_tax_table.py",
             "convert_income_tax_table_v2.py",
+            "convert_national_holidays_v2.py",
             "convert_pension_insurance_rate.py",
             "convert_resident_tax.py",
             "convert_standard_monthly_remuneration.py"

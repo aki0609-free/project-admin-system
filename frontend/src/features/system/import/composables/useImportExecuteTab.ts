@@ -32,7 +32,11 @@ export const useImportExecuteTab = () => {
       alert('インポートを開始しました。')
     } catch (error) {
       console.error(error)
-      alert('インポートに失敗しました。')
+      if (!localStorage.getItem('accessToken')) {
+        alert('ログイン期限が切れています。再ログイン後にもう一度実行してください。')
+        return
+      }
+      alert('インポートに失敗しました。取込履歴のエラー内容を確認してください。')
     }
   }
 

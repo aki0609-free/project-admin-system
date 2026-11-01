@@ -3,6 +3,7 @@ package com.project.backend.features.system.calendar.dto;
 import java.time.LocalDate;
 
 import com.project.backend.features.system.calendar.enums.CalendarType;
+import com.project.backend.features.system.calendar.enums.CalendarDayType;
 
 public record CalendarHolidayResponse(
         Long id,
@@ -11,5 +12,6 @@ public record CalendarHolidayResponse(
         String holidayName,
         String note,
         boolean activeFlag,
-        boolean editable
+        boolean editable,
+        CalendarDayType dayType
 ) {}

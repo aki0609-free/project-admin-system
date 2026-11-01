@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import com.project.backend.app.base.entity.BaseEntity;
 import com.project.backend.features.system.calendar.enums.CalendarType;
+import com.project.backend.features.system.calendar.enums.CalendarDayType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -40,6 +41,10 @@ public class SystemCalendarHoliday extends BaseEntity {
 
     @Column(name = "holiday_name", nullable = false, length = 100)
     private String holidayName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "day_type", nullable = false, length = 20)
+    private CalendarDayType dayType = CalendarDayType.CLOSED;
 
     @Column(name = "note", length = 500)
     private String note;
