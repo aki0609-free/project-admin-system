@@ -12,20 +12,10 @@ import type {
   ResignationChecklistItem,
   ResignationChecklistSaveRequest,
   ResignationMessage,
-  BusinessHoliday,
   YearEndAdjustment,
 } from '../types/businessSettingTypes'
 
 const basePath = '/api/admin/business-settings'
-
-export const getBusinessHolidays = (year: number) =>
-  get<BusinessHoliday[]>(`${basePath}/holidays/${year}`)
-
-export const saveBusinessHoliday = (request: BusinessHoliday) =>
-  post<BusinessHoliday, BusinessHoliday>(`${basePath}/holidays`, request)
-
-export const deleteBusinessHoliday = (id: number) =>
-  del<undefined>(`${basePath}/holidays/${id}`)
 
 export const getYearEndAdjustments = (taxYear: number) =>
   get<YearEndAdjustment[]>(`${basePath}/year-end-adjustments/${taxYear}`)

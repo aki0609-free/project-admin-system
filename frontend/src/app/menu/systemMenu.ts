@@ -1,3 +1,5 @@
+import { defineAsyncComponent } from 'vue'
+
 import BackupPage from '@/features/system/backup/page/BackupPage.vue'
 import BatchPage from '@/features/system/batch/page/BatchPage.vue'
 import ImportPage from '@/features/system/import/page/ImportPage.vue'
@@ -8,6 +10,10 @@ import type { MenuItem } from './types'
 import RuleManagementPage from '@/features/system/rule/pages/RuleManagementPage.vue'
 import ExcelBookMasterPage from '@/features/system/excelbook/pages/ExcelBookMasterPage.vue'
 import { Role } from '@/shared/auth/types/types'
+
+const CalendarManagementPage = defineAsyncComponent(
+  () => import('@/features/system/calendar/pages/CalendarManagementPage.vue'),
+)
 
 export const systemMenu: MenuItem = {
   title: 'システム運用',
@@ -24,6 +30,14 @@ export const systemMenu: MenuItem = {
       title: 'ルール管理',
       to: '/system/rule',
       component: RuleManagementPage,
+      resource: 'system',
+      action: 'manage',
+      roles: [Role.SYS_ADMIN],
+    },
+    {
+      title: 'カレンダー管理',
+      to: '/system/calendar',
+      component: CalendarManagementPage,
       resource: 'system',
       action: 'manage',
       roles: [Role.SYS_ADMIN],

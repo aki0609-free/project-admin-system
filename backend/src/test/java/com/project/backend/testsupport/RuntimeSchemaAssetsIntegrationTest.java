@@ -59,10 +59,11 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
         assertThat(resources)
-                .hasSize(49)
+                .hasSize(50)
                 .contains(
                         "sql/admin/external_support_links_v1.sql",
                         "sql/admin/business_calendar_year_end_adjustment_v1.sql",
+                        "sql/system/calendar/system_calendar_v1.sql",
                         "sql/application/applicant_legacy_schema_compatibility_v1.sql",
                         "sql/customer/customer_contract_status_v1.sql",
                         "sql/master/allowance_master_foundation_v1.sql",
@@ -86,11 +87,12 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 "annual_report_backup_execution",
                 "annual_report_backup_file",
                 "customer_billing_closings",
+                "system_calendar_holiday",
                 "monthly_order_form_input",
                 "monthly_order_form_history",
                 "monthly_order_form_render_execution",
                 "employee_legal_deposit_refund"
-        )).isEqualTo(14);
+        )).isEqualTo(15);
         assertThat(countViews(
                 "vw_daily_labor_cost_preview",
                 "vw_daily_payment_preparation_preview",

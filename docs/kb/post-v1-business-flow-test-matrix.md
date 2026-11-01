@@ -53,7 +53,7 @@ V1で稼働している主要業務について、業務の入口から最終成
 | --- | --- | --- | --- | --- |
 | BAS-01 | ログイン → テナント識別 → 権限制御 | `JwtAuthenticationFilterTest`、`TenantFilterTest`、`frontend/e2e/auth.spec.ts`、`frontend/e2e/role-access.spec.ts` | B | 複数テナントの同一業務データを用いた完全な漏えい防止E2E、AWS設定での認証失敗時表示 |
 | BAS-02 | 会社情報の登録・更新 → 帳票で利用 | `CompanyProfileCommandServiceTest`、`CompanyProfileQueryServiceTest`、`frontend/e2e/company-profile-ui.spec.ts`、会社情報の入力検証テスト | B | 未登録時の表示、S3ロゴ取得失敗、登録後の請求書・注文書・給与帳票への反映を一連で確認するテスト |
-| BAS-03 | 業務設定・休日設定・給与方針 → 日付・締め計算へ反映 | `BusinessSettingServiceTest`、`BusinessCalendarServiceTest`、`PayrollPolicySettingServiceTest`、`frontend/e2e/business-settings-ui.spec.ts` | B | 日曜日・お盆・土曜通常日を設定画面から変更し、日報初期日付と月払い前倒しへ反映するE2E |
+| BAS-03 | システムカレンダー・給与方針 → 日付・締め計算へ反映 | `CalendarAdjustmentServiceTest`、`CalendarQueryServiceTest`、`DailyReportDateSuggestionServiceTest`、`RuntimeSchemaAssetsIntegrationTest`、`PayrollPolicySettingServiceTest` | B | 会社休日をカレンダー管理画面から変更し、日報初期日付と月払い前倒しへ反映するE2E。官公庁・金融機関休日の供給元は今後追加する。 |
 | BAS-04 | 税・社会保険等の計算マスター登録 → 月次計算 | 各Import結合テスト、給与項目ルール・計算テスト | B | 対象月のマスター未登録／期間切れ／重複時の締めエラー表示と、登録後の再試行成功 |
 
 ### 4.2 顧客・従業員・給与項目

@@ -38,8 +38,6 @@ const {
   previewReportDialog,
   editingPreviewReport,
   previewTemplateFile,
-  holidayYear,
-  holidays,
   taxYear,
   yearEndAdjustments,
   editingYearEndAdjustment,
@@ -50,7 +48,6 @@ const {
   saveChecklist,
   removeChecklist,
   saveClosing,
-  loadHolidays,
   loadYearEndAdjustments,
   editYearEndAdjustment,
   saveYearEnd,
@@ -251,7 +248,7 @@ const previewReportFooterItems = computed<ToolbarItem[]>(() => [
 <template>
   <ListDetailPageLayout
     title="業務管理"
-    description="退職処理、給与締日、休日、年末調整、給与制度、月次締め帳票、年度バックアップ、外部リンクを管理します。"
+    description="退職処理、給与締日、年末調整、給与制度、月次締め帳票、年度バックアップ、外部リンクを管理します。"
   >
     <v-alert
       v-if="errorMessage"
@@ -287,7 +284,6 @@ const previewReportFooterItems = computed<ToolbarItem[]>(() => [
       >
         <v-tab value="resignation">退職時設定</v-tab>
         <v-tab value="closing">締日設定</v-tab>
-        <v-tab value="holidays">休日管理</v-tab>
         <v-tab value="yearEndAdjustment">年末調整</v-tab>
         <v-tab value="payrollPolicy">給与制度設定</v-tab>
         <v-tab value="outputs">締め帳票</v-tab>
@@ -368,30 +364,6 @@ const previewReportFooterItems = computed<ToolbarItem[]>(() => [
                 締日設定を保存
               </v-btn>
             </div>
-          </section>
-        </v-window-item>
-
-        <v-window-item value="holidays">
-          <section class="settings-section">
-            <div class="section-heading">
-              <div>
-                <h2>休日管理</h2>
-                <p>日曜日と8月13日〜15日のお盆休みだけを休日として扱います。土曜日と国民の祝日は通常日です。</p>
-              </div>
-              <div class="inline-actions">
-                <v-text-field v-model.number="holidayYear" label="対象年" type="number" min="2000" max="2200" hide-details />
-                <v-btn variant="tonal" @click="loadHolidays">表示</v-btn>
-              </div>
-            </div>
-            <v-table density="comfortable">
-              <thead><tr><th>日付</th><th>休日名</th><th>区分</th></tr></thead>
-              <tbody>
-                <tr v-for="item in holidays" :key="item.id ?? item.holidayDate">
-                  <td>{{ item.holidayDate }}</td><td>{{ item.holidayName }}</td>
-                  <td>お盆休み</td>
-                </tr>
-              </tbody>
-            </v-table>
           </section>
         </v-window-item>
 

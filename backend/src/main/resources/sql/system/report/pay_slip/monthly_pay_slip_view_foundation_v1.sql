@@ -944,9 +944,12 @@ SELECT
           )
           AND NOT EXISTS (
               SELECT 1
-              FROM business_holiday holiday
+              FROM system_calendar_holiday holiday
               WHERE holiday.tenant_id = em.tenant_id
                 AND holiday.holiday_date = calendar.calendar_date
+                AND holiday.calendar_type IN (
+                    'COMPANY', 'FINANCIAL_INSTITUTION'
+                )
                 AND holiday.active_flag = TRUE
                 AND holiday.deleted_at IS NULL
           )
