@@ -12,6 +12,7 @@ import com.project.backend.features.employee.entity.EmployeeResignationChecklist
 import com.project.backend.features.employee.entity.EmployeeResignationSetting;
 import com.project.backend.features.employee.repository.EmployeeResignationChecklistRepository;
 import com.project.backend.features.employee.repository.EmployeeResignationSettingRepository;
+import com.project.backend.features.system.settings.service.SystemSettingService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,8 +23,23 @@ public class EmployeeResignationChecklistQueryService {
 
     private final EmployeeResignationChecklistRepository repository;
     private final EmployeeResignationSettingRepository settingRepository;
+    private final GenericResignationChecklistResolver genericResolver;
+    private final SystemSettingService systemSettingService;
 
     public List<EmployeeResignationChecklistResponse> findAllActive() {
+        GenericResignationChecklistResolver.Resolution generic = genericResolver.resolve();
+        if (generic.configured()) {
+            return generic.items().stream()
+                    .map(item -> EmployeeResignationChecklistResponse.builder()
+                            .id(item.id())
+                            .code(item.code())
+                            .name(item.name())
+                            .description(item.description())
+                            .requiredFlag(item.requiredFlag())
+                            .displayOrder(item.displayOrder())
+                            .build())
+                    .toList();
+        }
         return repository
                 .findAllByActiveFlagTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc()
                 .stream()
@@ -40,12 +56,19 @@ public class EmployeeResignationChecklistQueryService {
 
         return new EmployeeResignationConfigurationResponse(
                 new EmployeeResignationMessageResponse(
-                        setting.getDialogTitle(),
-                        setting.getGuidanceMessage(),
-                        setting.getConfirmationMessage()
+                        settingValue("DIALOG_TITLE", setting.getDialogTitle()),
+                        settingValue("GUIDANCE_MESSAGE", setting.getGuidanceMessage()),
+                        settingValue("CONFIRMATION_MESSAGE", setting.getConfirmationMessage())
                 ),
                 findAllActive()
         );
+    }
+
+    private String settingValue(String smallKey, String fallback) {
+        String value = systemSettingService.findValue(
+                "BUSINESS", "RESIGNATION_DIALOG", smallKey
+        );
+        return value == null || value.isBlank() ? fallback : value;
     }
 
     private EmployeeResignationChecklistResponse toResponse(

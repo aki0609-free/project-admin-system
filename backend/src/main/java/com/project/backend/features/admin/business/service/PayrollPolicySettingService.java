@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class PayrollPolicySettingService {
 
     private final PayrollPolicySettingRepository repository;
+    private final GenericPayrollPolicyResolver genericResolver;
     private final Clock clock;
 
     @Transactional(readOnly = true)
@@ -73,6 +74,10 @@ public class PayrollPolicySettingService {
     public PayrollPolicyValues resolve(LocalDate targetDate) {
         if (targetDate == null) {
             throw new IllegalArgumentException("給与制度の判定対象日は必須です。");
+        }
+        GenericPayrollPolicyResolver.Resolution generic = genericResolver.resolve(targetDate);
+        if (generic.configured()) {
+            return generic.values().orElseGet(PayrollPolicyValues::defaults);
         }
         List<PayrollPolicySetting> matches = repository.findEffectiveSettings(
                 TenantContext.getTenantId(), targetDate

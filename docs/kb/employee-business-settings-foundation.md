@@ -142,7 +142,6 @@ V1では締め帳票はすべて必須として扱う。任意帳票の失敗継
 | 廃止 | `/dormitory-fees` | 控除マスターの選択肢計算値へ統合 |
 | GET/PUT | `/annual-report-backup` | 年度帳票バックアップ設定 |
 | POST | `/annual-report-backup/{fiscalYear}/execute` | 年度帳票バックアップ手動実行 |
-| GET/PUT | `/external-support-links` | Jira・Confluenceリンク設定 |
 
 ### 7.1 画面とエラー処理
 
@@ -150,7 +149,6 @@ V1では締め帳票はすべて必須として扱う。任意帳票の失敗継
 - 取得に失敗した設定名を画面上のエラーへ表示する。
 - 保存成功メッセージは4秒で自動的に閉じ、手動でも閉じられる。
 - 保存失敗はブラウザ標準ダイアログではなく、業務管理画面内へ表示する。
-- 外部サポートリンクは画面とAPIの両方で有効なHTTPS URLだけを許可する。
 - 退職時TODOの論理削除日時は共通の業務時刻 `Clock` を使用する。
 
 関連テスト：
@@ -158,9 +156,11 @@ V1では締め帳票はすべて必須として扱う。任意帳票の失敗継
 ```text
 BusinessSettingServiceTest
 SelectOptionCalculationValueResolverTest
-ExternalSupportLinkSettingServiceTest
 business-settings-ui.spec.ts
 ```
+
+サポートリンクは業務管理から「システム運用 → 共通設定」へ移行した。
+現在の仕様は `system-common-settings-v1.md` を参照する。
 
 ## 8. DB適用
 

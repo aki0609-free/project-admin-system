@@ -66,9 +66,9 @@ documents/backups/reports/
 設定API：
 
 ```text
-GET  /api/admin/business-settings/annual-report-backup
-PUT  /api/admin/business-settings/annual-report-backup
-POST /api/admin/business-settings/annual-report-backup/{fiscalYear}/execute
+GET  /api/system/backup/annual-reports/setting
+PUT  /api/system/backup/annual-reports/setting
+POST /api/system/backup/annual-reports/{fiscalYear}/execute
 ```
 
 すべて`SYS_ADMIN`限定である。
@@ -76,7 +76,7 @@ POST /api/admin/business-settings/annual-report-backup/{fiscalYear}/execute
 管理画面：
 
 ```text
-管理者メニュー → 業務管理 → 帳票バックアップ
+システム運用 → バックアップ → 年度帳票バックアップ
 ```
 
 画面から設定保存、対象年度を指定した手動実行、直近の実行結果確認ができる。

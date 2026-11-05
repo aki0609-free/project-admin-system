@@ -6,17 +6,19 @@ import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 import BackupTargetTable from '@/features/system/backup/components/BackupTargetTable.vue'
 import BackupTargetEditDialog from '@/features/system/backup/components/BackupTargetEditDialog.vue'
 import BackupHistoryTable from '@/features/system/backup/components/BackupHistoryTable.vue'
+import AnnualReportBackupTab from '@/features/system/backup/components/AnnualReportBackupTab.vue'
 
 import { useBackupPage } from '@/features/system/backup/composables/useBackupPage'
 import { useBackupHistoriesQuery } from '@/features/system/backup/api/useBackupHistoriesQuery'
 import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import AppToolbar from '@/shared/ui/toolbar/AppToolbar.vue'
 
-const activeTab = ref<'targets' | 'histories'>('targets')
+const activeTab = ref<'targets' | 'histories' | 'annualReports'>('targets')
 
 const tabs = [
   { label: 'バックアップ対象', value: 'targets' },
   { label: '履歴', value: 'histories' },
+  { label: '年度帳票バックアップ', value: 'annualReports' },
 ]
 
 const {
@@ -68,6 +70,13 @@ const historiesQuery = useBackupHistoriesQuery()
           <BackupHistoryTable
             :items="historiesQuery.histories.value"
           />
+        </div>
+
+        <div
+          v-else-if="active === 'annualReports'"
+          class="tab-page"
+        >
+          <AnnualReportBackupTab />
         </div>
       </template>
     </TabLayout>

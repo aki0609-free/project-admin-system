@@ -4,10 +4,12 @@ import TabLayout from '@/shared/components/layout/tab_layout/TabLayout.vue'
 import ListDetailPageLayout from '@/shared/templates/list-detail/ListDetailPageTemplate.vue'
 import ReportAdminListTab from '@/features/system/report/components/ReportAdminListTab.vue'
 import ReportTestPrintTab from '@/features/system/report/components/ReportTestPrintTab.vue'
+import ReportOperationSettingsTab from '@/features/system/report/components/ReportOperationSettingsTab.vue'
 
 const tabs = [
   { label: '一覧', value: 'list' },
   { label: '手動印刷', value: 'testPrint' },
+  { label: '運用設定', value: 'operationSettings' },
 ]
 
 const activeTab = ref('list')
@@ -22,6 +24,7 @@ const activeTab = ref('list')
       <template #default="{ active }">
         <ReportAdminListTab v-if="active === 'list'" />
         <ReportTestPrintTab v-else-if="active === 'testPrint'" />
+        <ReportOperationSettingsTab v-else-if="active === 'operationSettings'" />
       </template>
     </TabLayout>
   </ListDetailPageLayout>

@@ -59,9 +59,13 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
         assertThat(resources)
-                .hasSize(50)
+                .hasSize(54)
                 .contains(
-                        "sql/admin/external_support_links_v1.sql",
+                        "sql/system/settings/system_setting_foundation_v1.sql",
+                        "sql/system/settings/generic_master_foundation_v1.sql",
+                        "sql/daily_report/payroll_policy_generic_master_v1.sql",
+                        "sql/employee/resignation_generic_settings_v1.sql",
+                        "sql/employee/payroll_closing_setting_generic_master_v1.sql",
                         "sql/admin/business_calendar_year_end_adjustment_v1.sql",
                         "sql/system/calendar/system_calendar_v1.sql",
                         "sql/application/applicant_legacy_schema_compatibility_v1.sql",
@@ -116,6 +120,75 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 "sp_daily_work_order_prepare",
                 "sp_monthly_order_form_snapshot"
         )).isEqualTo(6);
+        assertThat(countTables(
+                "system_setting_definition",
+                "system_setting_value"
+        )).isEqualTo(2);
+        assertThat(countTables(
+                "generic_master_definition",
+                "generic_master_field_definition",
+                "generic_master_record"
+        )).isEqualTo(3);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM generic_master_definition
+                WHERE master_code = 'PAYROLL_POLICY'
+                  AND definition_status = 'PUBLISHED'
+                  AND active_flag = TRUE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isGreaterThanOrEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM generic_master_definition definition
+                JOIN generic_master_record record
+                  ON record.definition_id = definition.id
+                 AND record.tenant_id = definition.tenant_id
+                 AND record.active_flag = TRUE
+                 AND record.deleted_at IS NULL
+                WHERE definition.master_code = 'PAYROLL_CLOSING_SETTING'
+                  AND definition.definition_status = 'PUBLISHED'
+                  AND definition.active_flag = TRUE
+                  AND definition.deleted_at IS NULL
+                """, Integer.class)).isGreaterThanOrEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM generic_master_field_definition field_def
+                JOIN generic_master_definition definition
+                  ON definition.id = field_def.definition_id
+                WHERE definition.master_code = 'PAYROLL_POLICY'
+                  AND field_def.deleted_at IS NULL
+                """, Integer.class)).isGreaterThanOrEqualTo(11);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM system_setting_definition
+                WHERE large_category_key = 'BUSINESS'
+                  AND middle_category_key = 'RESIGNATION_DIALOG'
+                  AND small_category_key IN (
+                      'DIALOG_TITLE', 'GUIDANCE_MESSAGE', 'CONFIRMATION_MESSAGE'
+                  )
+                  AND active_flag = TRUE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(3);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM generic_master_definition
+                WHERE master_code = 'RESIGNATION_CHECKLIST'
+                  AND definition_status = 'PUBLISHED'
+                  AND active_flag = TRUE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isGreaterThanOrEqualTo(1);
+        assertThat(countTables("external_support_link_setting")).isZero();
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM system_setting_definition
+                WHERE large_category_key = 'SYSTEM'
+                  AND middle_category_key = 'SUPPORT_LINK'
+                  AND small_category_key IN ('MANUAL_URL', 'INCIDENT_REPORT_URL')
+                  AND setting_scope = 'SYSTEM'
+                  AND owner_tenant_id = '*'
+                  AND system_managed_flag = TRUE
+                  AND active_flag = TRUE
+                """, Integer.class)).isEqualTo(2);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM import_target

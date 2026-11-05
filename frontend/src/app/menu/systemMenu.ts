@@ -8,6 +8,7 @@ import NoticeRulePage from '@/features/system/notice/pages/NoticeRulePage.vue'
 import ReportMasterPage from '@/features/system/report/page/ReportMasterPage.vue'
 import type { MenuItem } from './types'
 import RuleManagementPage from '@/features/system/rule/pages/RuleManagementPage.vue'
+import CommonSettingPage from '@/features/system/settings/pages/CommonSettingPage.vue'
 import ExcelBookMasterPage from '@/features/system/excelbook/pages/ExcelBookMasterPage.vue'
 import { Role } from '@/shared/auth/types/types'
 
@@ -38,6 +39,14 @@ export const systemMenu: MenuItem = {
       title: 'カレンダー管理',
       to: '/system/calendar',
       component: CalendarManagementPage,
+      resource: 'system',
+      action: 'manage',
+      roles: [Role.SYS_ADMIN],
+    },
+    {
+      title: '共通設定',
+      to: '/system/common-settings',
+      component: CommonSettingPage,
       resource: 'system',
       action: 'manage',
       roles: [Role.SYS_ADMIN],

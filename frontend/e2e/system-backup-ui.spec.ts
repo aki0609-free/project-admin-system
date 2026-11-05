@@ -54,3 +54,16 @@ test('backup management uses the shared dialog and role-based toolbars', async (
   await closeButton.click()
   await expect(dialog).toBeHidden()
 })
+
+test('annual report backup settings are managed from system backup', async ({ page }) => {
+  await page.goto('/system/backup')
+
+  await page.getByRole('button', { name: '年度帳票バックアップ', exact: true }).click()
+
+  await expect(page.getByRole('heading', { name: '年度帳票バックアップ', exact: true })).toBeVisible()
+  await expect(page.getByLabel('会計年度の開始月', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('年度終了後の猶予日数', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'バックアップ設定を保存', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '手動実行', exact: true })).toBeVisible()
+  await expect(page.getByLabel('対象年度', { exact: true })).toBeVisible()
+})

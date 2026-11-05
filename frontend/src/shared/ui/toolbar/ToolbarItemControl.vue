@@ -93,8 +93,27 @@ const color = computed(() => {
     </v-list>
   </v-menu>
 
+  <v-select
+    v-else-if="item.type === 'select'"
+    :label="item.label"
+    :model-value="item.modelValue"
+    :items="item.options"
+    item-title="title"
+    item-value="value"
+    density="compact"
+    hide-details
+    variant="outlined"
+    rounded="lg"
+    :clearable="item.clearable ?? true"
+    :disabled="item.disabled ?? false"
+    :title="item.tooltip"
+    class="select-field"
+    :style="{ width: `${item.width ?? 220}px` }"
+    @update:model-value="item['onUpdate:modelValue']"
+  />
+
   <v-text-field
-    v-else
+    v-else-if="item.type === 'search'"
     :placeholder="item.placeholder ?? '検索...'"
     :model-value="item.modelValue"
     density="compact"
@@ -116,5 +135,10 @@ const color = computed(() => {
 .search-field {
   width: min(280px, 35vw);
   min-width: 180px;
+}
+
+.select-field {
+  min-width: 180px;
+  max-width: min(280px, 100%);
 }
 </style>

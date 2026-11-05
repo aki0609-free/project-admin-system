@@ -21,8 +21,6 @@ import com.project.backend.features.admin.business.dto.YearEndAdjustmentSaveRequ
 import com.project.backend.features.admin.business.dto.AnnualReportBackupSettingResponse;
 import com.project.backend.features.admin.business.dto.AnnualReportBackupSettingSaveRequest;
 import com.project.backend.features.admin.business.dto.BusinessClosingSettingSaveRequest;
-import com.project.backend.features.admin.business.dto.ExternalSupportLinkSettingResponse;
-import com.project.backend.features.admin.business.dto.ExternalSupportLinkSettingSaveRequest;
 import com.project.backend.features.admin.business.dto.MonthlyClosingOutputAdminResponse;
 import com.project.backend.features.admin.business.dto.MonthlyClosingOutputSaveRequest;
 import com.project.backend.features.admin.business.dto.PayrollPolicySettingResponse;
@@ -35,7 +33,6 @@ import com.project.backend.features.admin.business.dto.PreviewReportSettingSaveR
 import com.project.backend.features.admin.business.service.BusinessSettingService;
 import com.project.backend.features.admin.business.service.YearEndAdjustmentService;
 import com.project.backend.features.admin.business.service.AnnualReportBackupSettingService;
-import com.project.backend.features.admin.business.service.ExternalSupportLinkSettingService;
 import com.project.backend.features.admin.business.service.PayrollPolicySettingService;
 import com.project.backend.features.admin.business.service.PreviewReportSettingService;
 import com.project.backend.features.operation.monthly.dto.AnnualReportBackupResult;
@@ -52,7 +49,6 @@ public class BusinessSettingController {
 
     private final BusinessSettingService service;
     private final AnnualReportBackupSettingService annualReportBackupService;
-    private final ExternalSupportLinkSettingService externalSupportLinkSettingService;
     private final PayrollPolicySettingService payrollPolicySettingService;
     private final PreviewReportSettingService previewReportSettingService;
     private final YearEndAdjustmentService yearEndAdjustmentService;
@@ -109,18 +105,6 @@ public class BusinessSettingController {
     @DeleteMapping("/payroll-policies/{id}")
     public void deletePayrollPolicy(@PathVariable Long id) {
         payrollPolicySettingService.delete(id);
-    }
-
-    @GetMapping("/external-support-links")
-    public ExternalSupportLinkSettingResponse findExternalSupportLinks() {
-        return externalSupportLinkSettingService.find();
-    }
-
-    @PutMapping("/external-support-links")
-    public ExternalSupportLinkSettingResponse saveExternalSupportLinks(
-            @Valid @RequestBody ExternalSupportLinkSettingSaveRequest request
-    ) {
-        return externalSupportLinkSettingService.save(request);
     }
 
     @GetMapping("/annual-report-backup")

@@ -1,11 +1,13 @@
 # AWS実行環境とTestcontainersで共通利用するSQL資産一覧。
 # 依存順で記載し、パスはsrc/main/resourcesからの相対パスとする。
-sql/admin/external_support_links_v1.sql
+sql/system/settings/system_setting_foundation_v1.sql
+sql/system/settings/generic_master_foundation_v1.sql
 sql/admin/business_calendar_year_end_adjustment_v1.sql
 sql/system/calendar/system_calendar_v1.sql
 sql/application/applicant_legacy_schema_compatibility_v1.sql
 sql/customer/customer_contract_status_v1.sql
 sql/daily_report/payroll_policy_setting_v1.sql
+sql/daily_report/payroll_policy_generic_master_v1.sql
 sql/daily_report/pay_component_rule_foundation_v1.sql
 sql/master/allowance_master_foundation_v1.sql
 sql/daily_report/vehicle_arrangement_foundation_v1.sql
@@ -20,6 +22,8 @@ sql/system/report/monthly_snapshot_foundation_v1.sql
 sql/operation/monthly/closing_output_foundation_v1.sql
 sql/operation/monthly/customer_billing_closing_v1.sql
 sql/employee/business_settings_v1.sql
+sql/employee/resignation_generic_settings_v1.sql
+sql/employee/payroll_closing_setting_generic_master_v1.sql
 sql/system/notice/closing_notice_foundation_v1.sql
 sql/employee/finance_foundation_v1.sql
 sql/employee/dormitory_foundation_v1.sql

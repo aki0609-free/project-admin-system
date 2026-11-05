@@ -38,6 +38,7 @@ public class EmployeeAdminService {
     private final EmployeePayrollProfileRepository payrollProfileRepository;
     private final EmployeeContractRepository contractRepository;
     private final EmployeeResignationChecklistRepository resignationChecklistRepository;
+    private final GenericResignationChecklistResolver genericResignationChecklistResolver;
     private final EmployeeMapper mapper;
     private final EmployeeDeletionPolicy deletionPolicy;
     private final com.project.backend.features.master.payrollitem.balance.EmployeePayrollItemSettingService payrollItemSettingService;
@@ -348,14 +349,20 @@ public class EmployeeAdminService {
                 ? request.checkedChecklistIds()
                 : List.of();
 
-        List<EmployeeResignationChecklistMaster> requiredItems =
-                resignationChecklistRepository
-                        .findAllByActiveFlagTrueAndRequiredFlagTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc();
-
-        List<String> missingNames = requiredItems.stream()
-                .filter(item -> !checkedIds.contains(item.getId()))
-                .map(EmployeeResignationChecklistMaster::getName)
-                .toList();
+        GenericResignationChecklistResolver.Resolution generic =
+                genericResignationChecklistResolver.resolve();
+        List<String> missingNames = generic.configured()
+                ? generic.items().stream()
+                        .filter(GenericResignationChecklistResolver.ChecklistItem::requiredFlag)
+                        .filter(item -> !checkedIds.contains(item.id()))
+                        .map(GenericResignationChecklistResolver.ChecklistItem::name)
+                        .toList()
+                : resignationChecklistRepository
+                        .findAllByActiveFlagTrueAndRequiredFlagTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc()
+                        .stream()
+                        .filter(item -> !checkedIds.contains(item.getId()))
+                        .map(EmployeeResignationChecklistMaster::getName)
+                        .toList();
 
         if (!missingNames.isEmpty()) {
             throw new RuntimeException("必須チェックが未完了です。 " + String.join(", ", missingNames));

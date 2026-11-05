@@ -1,9 +1,9 @@
 import { get } from '@/shared/api/http'
 
-export type ExternalSupportLinkSetting = {
+export type SupportLinkSetting = {
   incidentReportUrl: string
   manualUrl: string
 }
 
 export const getExternalSupportLinks = () =>
-  get<ExternalSupportLinkSetting>('/api/support-links')
+  get<SupportLinkSetting>('/api/support-links')

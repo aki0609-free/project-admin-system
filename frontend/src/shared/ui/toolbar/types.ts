@@ -69,9 +69,20 @@ export type ToolbarSearchItem = ToolbarItemBase & {
   placeholder?: string
 }
 
+export type ToolbarSelectItem = ToolbarItemBase & {
+  type: 'select'
+  label: string
+  modelValue: string | number | boolean | null
+  'onUpdate:modelValue': (value: string | number | boolean | null) => void
+  options: BatchParameterOption[]
+  clearable?: boolean
+  width?: number
+}
+
 export type ToolbarItem =
   | ToolbarButtonItem
   | ToolbarBatchItem
   | ToolbarIconItem
   | ToolbarDropdownItem
   | ToolbarSearchItem
+  | ToolbarSelectItem

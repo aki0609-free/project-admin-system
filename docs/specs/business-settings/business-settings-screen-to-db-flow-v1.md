@@ -2,16 +2,15 @@
 
 ドメイン：業務管理
 
+> 更新メモ（V1後）：年末調整は「締め処理 → 年末調整」へ移動した。保存先と月次反映ロジックは変更せず、操作系API `/api/operation/year-end-adjustments` から既存サービスを利用する。旧業務管理APIはロールバック互換のため当面保持する。
+>
+> 締め帳票・プレビュー帳票の運用設定は「システム運用 → 帳票管理 → 運用設定」へ統合した。新APIは `/api/admin/reports/operation-settings` とし、既存の保存サービス・テーブルは変更していない。
+>
+> 年度帳票バックアップは「システム運用 → バックアップ → 年度帳票バックアップ」へ統合した。新APIは `/api/system/backup/annual-reports` とし、既存の保存・実行サービスとテーブルは変更していない。旧業務管理APIはロールバック互換のため当面保持する。
+
 ## 1. 目的と権限
 
-`BusinessSettingsPage.vue`は次の6タブを持つ。
-
-1. 退職時設定
-2. 締日設定
-3. 給与制度設定
-4. 締め帳票
-5. 帳票バックアップ
-6. その他設定
+`BusinessSettingsPage.vue`は、汎用マスターで「業務管理へ公開」と定義されたタブだけを動的に表示する。退職時TODO、締日設定、給与制度設定がその対象であり、帳票・バックアップ・年末調整はそれぞれの責務を持つ既存メニューへ移行済みである。
 
 画面ルートと管理APIは`SYS_ADMIN`専用である。一方、保存された退職設定、締日、外部リンク等は、それぞれの業務画面・共通機能から参照される。
 
@@ -19,11 +18,9 @@
 
 ```text
 BusinessSettingsPage.vue
-  -> useBusinessSettingsPage.load()
-  -> 7個のGETをPromise.allで並行実行
-     退職文言 / 退職TODO / 締日 / 給与制度 / 締め帳票 / 帳票バックアップ / 外部リンク
-  -> 成功した設定は個別に画面へ反映
-  -> 1件でも失敗した場合は、失敗した設定名をまとめて表示
+  -> getPublishedBusinessGenericMasters()
+  -> 業務管理へ公開された汎用マスター定義を取得
+  -> 定義ごとにGenericMasterDataPanelを動的表示
 ```
 
 成功メッセージは4秒後に自動消去される。設定取得に失敗しても他のGETは中断せず、取得できた値は残る。
@@ -115,11 +112,11 @@ PUT closing-outputs
 
 ## 7. 年度帳票バックアップ
 
-### 6.1 設定
+### 7.1 設定
 
 `annual_report_backup_setting`へ会計年度開始月、年度終了後の猶予日数、起動時確認の有無、設定の有効状態を保存する。未登録時は4月開始・14日猶予・起動時確認ON・有効を返す。
 
-### 6.2 自動実行
+### 7.2 自動実行
 
 ```mermaid
 sequenceDiagram
@@ -151,21 +148,22 @@ documents/backups/reports/{tenantId}/{fiscalYear}/{reportCode}/{targetMonth}/v{c
 
 AWS S3側にも`documents/backups/reports/`を2557日後に期限切れにするLifecycleがある。DBの保存期限とS3 Lifecycleの両方を揃えて管理する必要がある。
 
-## 8. その他設定
+## 8. システム共通設定へ移行済みの設定
 
-管理画面でJiraインシデント報告URLとConfluenceマニュアルURLを保存する。
+サポートリンクは業務管理から「システム運用 → 共通設定」へ移行した。
 
 ```text
-PUT /api/admin/business-settings/external-support-links
+PUT /api/system/common-settings/values
   -> HTTPSかつhostあり、2048文字以内を検証
-  -> external_support_link_setting（DEFAULT）
+  -> system_setting_definition（SYSTEM / SUPPORT_LINK / *）
+  -> system_setting_value（テナント別の値）
 
 GET /api/support-links
   -> AppHeader.vue
   -> ユーザーメニューから別タブで開く
 ```
 
-管理APIは`SYS_ADMIN`専用だが、参照APIはログイン利用者向け共通ヘッダーで使われる。Fuyo固有URLは`sql/admin/external_support_links_v1.sql`で初期配置し、Java Coreへは保持しない。DB未登録時は空URLを返し、リンクを表示しない。
+管理APIは`SYS_ADMIN`専用だが、参照APIはログイン利用者向け共通ヘッダーで使われる。初期SQLは`sql/system/settings/external_support_links_v1.sql`で管理する。詳細は`system-common-settings-v1.md`を参照する。
 
 ## 9. 主なDBテーブル
 
@@ -182,21 +180,23 @@ GET /api/support-links
 | `annual_report_backup_file` | コピー元・先・保持期限の対応 |
 | `monthly_closing_report_file` | 月次締め時に生成した帳票ファイル |
 | `report_history` | 通常帳票履歴。年度バックアップ成功時に対象分を論理削除 |
-| `external_support_link_setting` | Jira・Confluenceリンク |
+| `system_setting_definition` | システム共通設定の分類・項目・値型 |
+| `system_setting_value` | Jira・Confluenceリンクを含むテナント別の設定値 |
 
 ## 10. 主な関連クラス
 
 | 層 | クラス・モジュール | 役割 |
 |---|---|---|
-| Frontend | `BusinessSettingsPage.vue` | 6タブの表示・Form |
-| Frontend | `useBusinessSettingsPage.ts` | 並行読込、保存、通知、手動バックアップ |
+| Frontend | `BusinessSettingsPage.vue` | 公開済み汎用マスターの動的タブ表示 |
+| Frontend | `BackupPage.vue` / `AnnualReportBackupTab.vue` | 年度帳票バックアップ設定・手動実行 |
 | Backend | `BusinessSettingController` | SYS_ADMIN管理API |
 | Backend | `BusinessSettingService` | 退職、締日、締め帳票設定 |
 | Backend | `PayrollPolicySettingService` | 期間重複検証、勤務日の制度解決、既定値補完 |
 | Backend | `AnnualReportBackupSettingService` | バックアップ設定と手動実行 |
+| Backend | `AnnualReportBackupAdminController` | システムバックアップ配下の管理API |
 | Backend | `AnnualReportBackupStartupRunner` | 起動時の未処理年度追跡 |
 | Backend | `AnnualReportBackupService` | コピー、照合、履歴整理、実行記録 |
-| Backend | `ExternalSupportLinkSettingService` | URL検証・保存・既定値 |
+| Backend | `SystemSettingService` | マスター定義に基づく型検証・保存・未登録時の空値 |
 | Downstream | `EmployeeAdminService` | 必須退職TODOのサーバー検証 |
 | Downstream | `ClosingSettingQueryService` | 給与締日・支払日の共通参照 |
 | Downstream | `DailyPayComponentCalculationService` | 制度値を週・月時間判定と給与Ruleへ適用 |

@@ -5,6 +5,7 @@ import DailyOperationPage from '@/features/operation/daily/pages/DailyOperationP
 import DailyReportPage from '@/features/dailyreport/page/DailyReportPage.vue'
 import BookOperationPage from '@/features/operation/book/pages/BookOperationPage.vue'
 import CustomerBillingClosingPage from '@/features/operation/customer-billing/pages/CustomerBillingClosingPage.vue'
+import YearEndAdjustmentPage from '@/features/operation/year-end-adjustment/pages/YearEndAdjustmentPage.vue'
 
 export const operationMenu: MenuItem = {
   title: '締め処理',
@@ -35,6 +36,13 @@ export const operationMenu: MenuItem = {
       title: '月次管理',
       to: '/operation/monthly',
       component: MonthlyOperationPage,
+      resource: 'operation',
+      action: 'view',
+    },
+    {
+      title: '年末調整',
+      to: '/operation/year-end-adjustments',
+      component: YearEndAdjustmentPage,
       resource: 'operation',
       action: 'view',
     },

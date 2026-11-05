@@ -36,6 +36,7 @@ class EmployeeAdminServiceTest {
     private EmployeePayrollProfileRepository payrollRepository;
     private EmployeeContractRepository contractRepository;
     private EmployeeResignationChecklistRepository checklistRepository;
+    private GenericResignationChecklistResolver genericResignationChecklistResolver;
     private EmployeeDeletionPolicy deletionPolicy;
     private EmployeeMapper mapper;
     private com.project.backend.features.master.payrollitem.balance.EmployeePayrollItemSettingService payrollItemSettingService;
@@ -51,6 +52,7 @@ class EmployeeAdminServiceTest {
         payrollRepository = mock(EmployeePayrollProfileRepository.class);
         contractRepository = mock(EmployeeContractRepository.class);
         checklistRepository = mock(EmployeeResignationChecklistRepository.class);
+        genericResignationChecklistResolver = mock(GenericResignationChecklistResolver.class);
         deletionPolicy = mock(EmployeeDeletionPolicy.class);
         mapper = mock(EmployeeMapper.class);
         payrollItemSettingService = mock(
@@ -61,10 +63,14 @@ class EmployeeAdminServiceTest {
                 payrollRepository,
                 contractRepository,
                 checklistRepository,
+                genericResignationChecklistResolver,
                 mapper,
                 deletionPolicy,
                 payrollItemSettingService,
                 clock
+        );
+        when(genericResignationChecklistResolver.resolve()).thenReturn(
+                new GenericResignationChecklistResolver.Resolution(false, List.of())
         );
     }
 
@@ -105,6 +111,37 @@ class EmployeeAdminServiceTest {
 
         assertThat(employee.getEmploymentStatus()).isEqualTo(EmploymentStatus.RESIGNED);
         assertThat(employee.isActiveFlag()).isFalse();
+    }
+
+    @Test
+    void resign_shouldValidateRequiredItemsFromGenericMaster() {
+        Employee employee = employee(1L, "E001", EmploymentStatus.ACTIVE);
+        employee.setHireDate(LocalDate.of(2026, 4, 1));
+        when(employeeRepository.findByIdAndDeletedAtIsNull(1L))
+                .thenReturn(Optional.of(employee));
+        when(genericResignationChecklistResolver.resolve()).thenReturn(
+                new GenericResignationChecklistResolver.Resolution(
+                        true,
+                        List.of(new GenericResignationChecklistResolver.ChecklistItem(
+                                101L,
+                                "RETURN_CARD",
+                                "社員証返却",
+                                null,
+                                true,
+                                10
+                        ))
+                )
+        );
+
+        assertThatThrownBy(() -> service.resign(
+                1L,
+                new EmployeeResignRequest(
+                        LocalDate.of(2026, 7, 31),
+                        List.of(),
+                        null
+                )
+        )).isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("社員証返却");
     }
 
     @Test

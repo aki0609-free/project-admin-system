@@ -8,7 +8,7 @@
 |---|---|---|---|
 | 対応済み | 画面説明の「寮費」 | 寮費は控除・従業員別設定へ移行済み | 画面説明とE2Eから旧寮費設定を削除し、控除マスターを正規経路とした |
 | 対応済み | 締日未登録 | DB未登録でも管理画面と業務処理が同じ運用既定値を参照する | 初期SQLで月末締め・翌月25日払いを配置し、`ClosingSettingDefaults`も同じ値を補完する。画面保存後はDB設定を優先する |
-| 対応済み | 既定Jira・Confluence URL | Fuyo固有URLはJava Coreへ直書きしない | テナント初期SQLを正規経路とし、未登録時は空URLを返して管理画面での設定を促す |
+| 移行済み | 既定Jira・Confluence URL | 業務管理からシステム共通設定へ移行 | `system-common-settings-v1.md`を正規仕様とする |
 | 中 | 締め帳票の必須 | Responseには必須・任意があるが、保存時は全件`required_flag=true` | V1で全帳票必須なら画面を固定表示にし、編集可能と誤解させない |
 | 中 | 締め帳票の部分更新 | requestにない既存定義を無効化・削除しない | UIは全行送信を維持。API仕様に「全置換ではない」と明記 |
 | 対応済み | 年度バックアップの失敗応答 | Serviceは`FAILED`結果を返す | 画面は`status=COMPLETED`だけを成功表示し、それ以外はエラー表示する |
@@ -26,7 +26,7 @@
 確認できた主な自動テストは次の通り。
 
 - `BusinessSettingServiceTest`
-- `ExternalSupportLinkSettingServiceTest`
+- `SystemSettingServiceTest`
 - `AnnualReportBackupContainerIntegrationTest`
 
 V1で追加を推奨するケース：

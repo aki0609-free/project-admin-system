@@ -27,9 +27,12 @@ class PayrollPolicySettingServiceTest {
 
     private final PayrollPolicySettingRepository repository =
             mock(PayrollPolicySettingRepository.class);
+    private final GenericPayrollPolicyResolver genericResolver =
+            mock(GenericPayrollPolicyResolver.class);
     private final PayrollPolicySettingService service =
             new PayrollPolicySettingService(
                     repository,
+                    genericResolver,
                     Clock.fixed(
                             Instant.parse("2026-09-05T00:00:00Z"),
                             ZoneOffset.UTC
@@ -39,6 +42,8 @@ class PayrollPolicySettingServiceTest {
     @BeforeEach
     void setUp() {
         TenantContext.setTenantId("tenant-a");
+        when(genericResolver.resolve(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(GenericPayrollPolicyResolver.Resolution.notConfigured());
     }
 
     @AfterEach
@@ -83,6 +88,32 @@ class PayrollPolicySettingServiceTest {
         assertThat(result.overtimeRate()).isEqualByComparingTo("1.300");
         assertThat(result.dailyStandardHours()).isEqualByComparingTo("7.50");
         assertThat(result.amountRoundingMode()).isEqualTo(RoundingMode.DOWN);
+    }
+
+    @Test
+    void resolve_shouldPreferPublishedGenericMaster() {
+        LocalDate targetDate = LocalDate.of(2026, 10, 1);
+        PayrollPolicySettingService.PayrollPolicyValues genericValues =
+                new PayrollPolicySettingService.PayrollPolicyValues(
+                        DayOfWeek.SUNDAY,
+                        new BigDecimal("38.00"),
+                        new BigDecimal("55.00"),
+                        new BigDecimal("1.300"),
+                        new BigDecimal("1.550"),
+                        new BigDecimal("0.300"),
+                        new BigDecimal("1.400"),
+                        new BigDecimal("7.50"),
+                        RoundingMode.DOWN
+                );
+        when(genericResolver.resolve(targetDate)).thenReturn(
+                new GenericPayrollPolicyResolver.Resolution(
+                        true, java.util.Optional.of(genericValues)
+                )
+        );
+
+        var result = service.resolve(targetDate);
+
+        assertThat(result).isEqualTo(genericValues);
     }
 
     @Test

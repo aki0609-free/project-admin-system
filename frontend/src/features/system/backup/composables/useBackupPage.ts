@@ -15,7 +15,7 @@ import { toBackupTargetSaveRequest } from '@/features/system/backup/utils/backup
 import type { BackupTargetResponse } from '@/features/system/backup/types/backupApiTypes'
 import type { BackupTargetDialogForm } from '@/features/system/backup/types/backupFormTypes'
 
-type BackupPageTab = 'targets' | 'histories'
+type BackupPageTab = 'targets' | 'histories' | 'annualReports'
 
 export const useBackupPage = (
   activeTab?: Ref<BackupPageTab>,
