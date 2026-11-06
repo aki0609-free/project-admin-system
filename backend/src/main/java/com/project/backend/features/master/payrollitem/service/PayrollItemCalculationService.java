@@ -15,6 +15,7 @@ import com.project.backend.features.master.payrollitem.dto.PayrollItemCalculatio
 import com.project.backend.features.master.payrollitem.dto.PayrollItemMasterSnapshot;
 import com.project.backend.features.master.payrollitem.dto.PayrollItemValueRequest;
 import com.project.backend.features.master.payrollitem.dto.PayrollItemValueResult;
+import com.project.backend.features.system.rule.gateway.RuleGatewayPreparedBinding;
 
 import lombok.RequiredArgsConstructor;
 
@@ -66,9 +67,20 @@ public class PayrollItemCalculationService {
                                 request.targetType()
                         );
 
-        return snapshots.stream()
+        List<PayrollItemMasterSnapshot> targetSnapshots = snapshots.stream()
                 .filter(snapshot -> request.excludedMasterIds() == null
                         || !request.excludedMasterIds().contains(snapshot.id()))
+                .toList();
+
+        Map<Long, RuleGatewayPreparedBinding> preparedAutoRules =
+                payrollItemValueService.prepareAutoRules(targetSnapshots);
+        if (preparedAutoRules == null) {
+            preparedAutoRules = Map.of();
+        }
+
+        Map<Long, RuleGatewayPreparedBinding> finalPreparedAutoRules =
+                preparedAutoRules;
+        return targetSnapshots.stream()
                 .map(snapshot -> calculateOne(
                         snapshot,
                         mergeParameters(
@@ -78,7 +90,8 @@ public class PayrollItemCalculationService {
                                         : request.itemParameters().get(snapshot.id())
                         ),
                         submittedAmounts,
-                        manualOverrideMasterIds
+                        manualOverrideMasterIds,
+                        finalPreparedAutoRules.get(snapshot.id())
                 ))
                 .sorted(Comparator.comparing(
                         PayrollItemCalculationResult::displayOrder,
@@ -101,21 +114,25 @@ public class PayrollItemCalculationService {
             PayrollItemMasterSnapshot snapshot,
             Map<String, Object> parameters,
             Map<Long, Integer> submittedAmounts,
-            Set<Long> manualOverrideMasterIds
+            Set<Long> manualOverrideMasterIds,
+            RuleGatewayPreparedBinding preparedBinding
     ) {
-        PayrollItemValueResult valueResult =
-                payrollItemValueService.calculate(
-                        new PayrollItemValueRequest(
-                                snapshot.targetType(),
-                                snapshot.id(),
-                                snapshot.code(),
-                                resolveManualAmount(
-                                        snapshot,
-                                        submittedAmounts,
-                                        manualOverrideMasterIds
-                                ),
-                                parameters
-                        )
+        PayrollItemValueRequest valueRequest = new PayrollItemValueRequest(
+                snapshot.targetType(),
+                snapshot.id(),
+                snapshot.code(),
+                resolveManualAmount(
+                        snapshot,
+                        submittedAmounts,
+                        manualOverrideMasterIds
+                ),
+                parameters
+        );
+        PayrollItemValueResult valueResult = preparedBinding == null
+                ? payrollItemValueService.calculate(valueRequest)
+                : payrollItemValueService.calculate(
+                        valueRequest,
+                        preparedBinding
                 );
 
         BigDecimal calculatedAmount =

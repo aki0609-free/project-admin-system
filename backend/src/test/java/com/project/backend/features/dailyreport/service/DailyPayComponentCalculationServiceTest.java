@@ -28,16 +28,17 @@ import com.project.backend.features.dailyreport.repository.DailyReportRepository
 import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.enums.SalaryType;
 import com.project.backend.features.master.payrollitem.service.PayrollMoneyPolicy;
-import com.project.backend.features.system.rule.dto.RuleContextRequest;
-import com.project.backend.features.system.rule.dto.RuleExecutionResult;
-import com.project.backend.features.system.rule.service.RuleExecutionService;
+import com.project.backend.features.system.rule.gateway.RuleGatewayBinding;
+import com.project.backend.features.system.rule.gateway.RuleGatewayExecution;
+import com.project.backend.features.system.rule.gateway.RuleGatewayResultShape;
+import com.project.backend.features.system.rule.gateway.RuleGatewayService;
 
 class DailyPayComponentCalculationServiceTest {
 
     private final DailyPayRuleSettingRepository repository =
             mock(DailyPayRuleSettingRepository.class);
-    private final RuleExecutionService ruleExecutionService =
-            mock(RuleExecutionService.class);
+    private final RuleGatewayService ruleGatewayService =
+            mock(RuleGatewayService.class);
     private final DailyReportRepository dailyReportRepository =
             mock(DailyReportRepository.class);
     private final PayrollPolicySettingService payrollPolicySettingService =
@@ -45,7 +46,7 @@ class DailyPayComponentCalculationServiceTest {
     private final DailyPayComponentCalculationService service =
             new DailyPayComponentCalculationService(
                     repository,
-                    ruleExecutionService,
+                    ruleGatewayService,
                     dailyReportRepository,
                     new PayrollMoneyPolicy(),
                     payrollPolicySettingService
@@ -80,13 +81,25 @@ class DailyPayComponentCalculationServiceTest {
                         setting(DailyPayComponentType.NIGHT_PAY, "NIGHT"),
                         setting(DailyPayComponentType.HOLIDAY_PAY, "HOLIDAY")
                 ));
-        when(ruleExecutionService.execute(eq("NORMAL"), any(RuleContextRequest.class)))
+        when(ruleGatewayService.executeBound(
+                eq(binding(DailyPayComponentType.NORMAL_PAY, "NORMAL")),
+                any(Map.class)
+        ))
                 .thenReturn(result(new BigDecimal("10000")));
-        when(ruleExecutionService.execute(eq("OVERTIME"), any(RuleContextRequest.class)))
+        when(ruleGatewayService.executeBound(
+                eq(binding(DailyPayComponentType.OVERTIME_PAY, "OVERTIME")),
+                any(Map.class)
+        ))
                 .thenReturn(result(new BigDecimal("1250")));
-        when(ruleExecutionService.execute(eq("NIGHT"), any(RuleContextRequest.class)))
+        when(ruleGatewayService.executeBound(
+                eq(binding(DailyPayComponentType.NIGHT_PAY, "NIGHT")),
+                any(Map.class)
+        ))
                 .thenReturn(result(new BigDecimal("500")));
-        when(ruleExecutionService.execute(eq("HOLIDAY"), any(RuleContextRequest.class)))
+        when(ruleGatewayService.executeBound(
+                eq(binding(DailyPayComponentType.HOLIDAY_PAY, "HOLIDAY")),
+                any(Map.class)
+        ))
                 .thenReturn(result(new BigDecimal("1350")));
 
         DailyReport report = report();
@@ -104,8 +117,10 @@ class DailyPayComponentCalculationServiceTest {
         assertThat(amounts.holidayPayAmount())
                 .isEqualByComparingTo("1350");
         assertThat(amounts.total()).isEqualByComparingTo("13100");
-        verify(ruleExecutionService)
-                .execute(eq("NORMAL"), any(RuleContextRequest.class));
+        verify(ruleGatewayService).executeBound(
+                eq(binding(DailyPayComponentType.NORMAL_PAY, "NORMAL")),
+                any(Map.class)
+        );
     }
 
     @Test
@@ -120,24 +135,21 @@ class DailyPayComponentCalculationServiceTest {
                         setting(DailyPayComponentType.NIGHT_PAY, "NIGHT"),
                         setting(DailyPayComponentType.HOLIDAY_PAY, "HOLIDAY")
                 ));
-        when(ruleExecutionService.execute(
-                eq("NORMAL"),
-                any(RuleContextRequest.class)
-        )).thenReturn(RuleExecutionResult.builder()
-                .executed(true)
-                .result("1000.50")
-                .build());
-        when(ruleExecutionService.execute(
-                eq("OVERTIME"),
-                any(RuleContextRequest.class)
+        when(ruleGatewayService.executeBound(
+                eq(binding(DailyPayComponentType.NORMAL_PAY, "NORMAL")),
+                any(Map.class)
+        )).thenReturn(result("1000.50"));
+        when(ruleGatewayService.executeBound(
+                eq(binding(DailyPayComponentType.OVERTIME_PAY, "OVERTIME")),
+                any(Map.class)
         )).thenReturn(result(BigDecimal.ZERO));
-        when(ruleExecutionService.execute(
-                eq("NIGHT"),
-                any(RuleContextRequest.class)
+        when(ruleGatewayService.executeBound(
+                eq(binding(DailyPayComponentType.NIGHT_PAY, "NIGHT")),
+                any(Map.class)
         )).thenReturn(result(BigDecimal.ZERO));
-        when(ruleExecutionService.execute(
-                eq("HOLIDAY"),
-                any(RuleContextRequest.class)
+        when(ruleGatewayService.executeBound(
+                eq(binding(DailyPayComponentType.HOLIDAY_PAY, "HOLIDAY")),
+                any(Map.class)
         )).thenReturn(result(BigDecimal.ZERO));
 
         DailyReport report = report();
@@ -170,7 +182,7 @@ class DailyPayComponentCalculationServiceTest {
         ).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("必須の日報給与Rule設定")
                 .hasMessageContaining("NORMAL_PAY");
-        verifyNoInteractions(ruleExecutionService);
+        verifyNoInteractions(ruleGatewayService);
     }
 
     @Test
@@ -195,7 +207,7 @@ class DailyPayComponentCalculationServiceTest {
         ).isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("必須の日報給与Rule設定")
                 .hasMessageContaining("HOLIDAY_PAY");
-        verifyNoInteractions(ruleExecutionService);
+        verifyNoInteractions(ruleGatewayService);
     }
 
     @Test
@@ -270,13 +282,13 @@ class DailyPayComponentCalculationServiceTest {
                         setting(DailyPayComponentType.HOLIDAY_PAY,
                                 "DAILY_HOLIDAY_PAY")
                 ));
-        when(ruleExecutionService.execute(
-                any(),
-                any(RuleContextRequest.class)
+        when(ruleGatewayService.executeBound(
+                any(RuleGatewayBinding.class),
+                any(Map.class)
         )).thenAnswer(invocation -> {
-            String ruleName = invocation.getArgument(0);
-            RuleContextRequest request = invocation.getArgument(1);
-            Map<String, Object> parameters = request.parameters();
+            RuleGatewayBinding binding = invocation.getArgument(0);
+            String ruleName = binding.ruleName();
+            Map<String, Object> parameters = invocation.getArgument(1);
             BigDecimal value = switch (ruleName) {
                 case "DAILY_NORMAL_PAY" -> decimal(
                         parameters,
@@ -333,11 +345,26 @@ class DailyPayComponentCalculationServiceTest {
         return setting;
     }
 
-    private RuleExecutionResult result(BigDecimal value) {
-        return RuleExecutionResult.builder()
-                .executed(true)
-                .result(value)
-                .build();
+    private RuleGatewayBinding binding(
+            DailyPayComponentType componentType,
+            String ruleName
+    ) {
+        return new RuleGatewayBinding(
+                DailyPayRuleGatewayKeys.forComponent(componentType),
+                ruleName,
+                null
+        );
+    }
+
+    private RuleGatewayExecution result(Object value) {
+        return new RuleGatewayExecution(
+                "TEST",
+                "TEST",
+                null,
+                RuleGatewayResultShape.SCALAR,
+                value,
+                Map.of()
+        );
     }
 
     private DailyReport report() {

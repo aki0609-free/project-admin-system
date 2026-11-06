@@ -2,6 +2,7 @@ package com.project.backend.features.system.rule.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -35,6 +36,11 @@ public interface RuleMasterRepository extends JpaRepository<RuleMaster, Long> {
     Optional<RuleMaster> findByTenantIdAndRuleNameAndActiveFlagTrueAndDeletedAtIsNull(
             String tenantId,
             String ruleName
+    );
+
+    List<RuleMaster> findByTenantIdAndRuleNameInAndActiveFlagTrueAndDeletedAtIsNull(
+            String tenantId,
+            Set<String> ruleNames
     );
 
     boolean existsByRuleNameAndDeletedAtIsNull(String ruleName);

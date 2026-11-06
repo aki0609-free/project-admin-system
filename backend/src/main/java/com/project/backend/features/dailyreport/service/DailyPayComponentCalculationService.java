@@ -25,9 +25,9 @@ import com.project.backend.features.dailyreport.repository.DailyReportRepository
 import com.project.backend.features.employee.entity.EmployeeContract;
 import com.project.backend.features.employee.enums.SalaryType;
 import com.project.backend.features.master.payrollitem.service.PayrollMoneyPolicy;
-import com.project.backend.features.system.rule.dto.RuleContextRequest;
-import com.project.backend.features.system.rule.dto.RuleExecutionResult;
-import com.project.backend.features.system.rule.service.RuleExecutionService;
+import com.project.backend.features.system.rule.gateway.RuleGatewayBinding;
+import com.project.backend.features.system.rule.gateway.RuleGatewayExecution;
+import com.project.backend.features.system.rule.gateway.RuleGatewayService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -40,7 +40,7 @@ import lombok.RequiredArgsConstructor;
 public class DailyPayComponentCalculationService {
 
     private final DailyPayRuleSettingRepository settingRepository;
-    private final RuleExecutionService ruleExecutionService;
+    private final RuleGatewayService ruleGatewayService;
     private final DailyReportRepository dailyReportRepository;
     private final PayrollMoneyPolicy moneyPolicy;
     private final PayrollPolicySettingService payrollPolicySettingService;
@@ -117,11 +117,12 @@ public class DailyPayComponentCalculationService {
 
         Map<String, Object> parameters = new LinkedHashMap<>(baseParameters);
         parameters.put("componentType", componentType.name());
-        RuleExecutionResult result = ruleExecutionService.execute(
-                ruleName,
-                RuleContextRequest.builder()
-                        .parameters(parameters)
-                        .build()
+        String gatewayKey = DailyPayRuleGatewayKeys.forComponent(
+                componentType
+        );
+        RuleGatewayExecution result = ruleGatewayService.executeBound(
+                new RuleGatewayBinding(gatewayKey, ruleName, null),
+                parameters
         );
         BigDecimal amount = moneyPolicy.toDecimal(
                 result.result(),

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,10 +17,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.project.backend.features.master.payrollitem.dto.PayrollItemCalculationRequest;
+import com.project.backend.features.master.payrollitem.dto.PayrollItemCalculationResult;
 import com.project.backend.features.master.payrollitem.dto.PayrollItemMasterSnapshot;
 import com.project.backend.features.master.payrollitem.dto.PayrollItemValueResult;
 import com.project.backend.features.master.payrollitem.enums.PayrollItemQueryType;
 import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
+import com.project.backend.features.system.rule.entity.RuleMaster;
+import com.project.backend.features.system.rule.gateway.RuleGatewayBinding;
+import com.project.backend.features.system.rule.gateway.RuleGatewayPreparedBinding;
 
 class PayrollItemCalculationServiceTest {
 
@@ -186,5 +191,111 @@ class PayrollItemCalculationServiceTest {
                 Map.of(10L, -1)
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("給与項目の手動変更額は0以上で指定してください。");
+    }
+
+    @Test
+    void calculate_shouldPrepareAllAutoRulesOnceAndReusePreparedBindings() {
+        PayrollItemMasterSnapshot first = autoMaster(
+                21L,
+                "FIRST_AUTO",
+                "FIRST_RULE",
+                1
+        );
+        PayrollItemMasterSnapshot second = autoMaster(
+                22L,
+                "SECOND_AUTO",
+                "SECOND_RULE",
+                2
+        );
+        List<PayrollItemMasterSnapshot> masters = List.of(first, second);
+        when(queryService.findItems(
+                PayrollItemQueryType.DAILY,
+                PayrollItemTargetType.ALLOWANCE
+        )).thenReturn(masters);
+
+        RuleGatewayPreparedBinding firstPrepared = prepared(first);
+        RuleGatewayPreparedBinding secondPrepared = prepared(second);
+        when(valueService.prepareAutoRules(masters)).thenReturn(Map.of(
+                first.id(), firstPrepared,
+                second.id(), secondPrepared
+        ));
+        when(valueService.calculate(any(), any())).thenAnswer(invocation -> {
+            var request = invocation.getArgument(
+                    0,
+                    com.project.backend.features.master.payrollitem.dto.PayrollItemValueRequest.class
+            );
+            return new PayrollItemValueResult(
+                    PayrollItemTargetType.ALLOWANCE,
+                    request.targetMasterId(),
+                    request.targetCode(),
+                    request.targetCode(),
+                    "AUTO",
+                    request.targetMasterId().equals(21L)
+                            ? "FIRST_RULE"
+                            : "SECOND_RULE",
+                    BigDecimal.valueOf(
+                            request.targetMasterId().equals(21L) ? 100 : 200
+                    ),
+                    Map.of()
+            );
+        });
+
+        var result = service.calculate(new PayrollItemCalculationRequest(
+                PayrollItemQueryType.DAILY,
+                PayrollItemTargetType.ALLOWANCE,
+                Map.of("employeeId", 10)
+        ));
+
+        assertThat(result).extracting(PayrollItemCalculationResult::amount)
+                .containsExactly(
+                        BigDecimal.valueOf(100),
+                        BigDecimal.valueOf(200)
+                );
+        verify(valueService).prepareAutoRules(masters);
+        verify(valueService).calculate(any(),
+                org.mockito.ArgumentMatchers.eq(firstPrepared));
+        verify(valueService).calculate(any(),
+                org.mockito.ArgumentMatchers.eq(secondPrepared));
+        verify(valueService, never()).calculate(
+                org.mockito.ArgumentMatchers.any(
+                        com.project.backend.features.master.payrollitem.dto.PayrollItemValueRequest.class
+                )
+        );
+    }
+
+    private PayrollItemMasterSnapshot autoMaster(
+            Long id,
+            String code,
+            String ruleName,
+            Integer displayOrder
+    ) {
+        return new PayrollItemMasterSnapshot(
+                PayrollItemTargetType.ALLOWANCE,
+                id,
+                code,
+                code,
+                "AUTO",
+                ruleName,
+                0,
+                0,
+                null,
+                false,
+                displayOrder
+        );
+    }
+
+    private RuleGatewayPreparedBinding prepared(
+            PayrollItemMasterSnapshot master
+    ) {
+        RuleMaster rule = new RuleMaster();
+        rule.setRuleName(master.ruleName());
+        return new RuleGatewayPreparedBinding(
+                new RuleGatewayBinding(
+                        "PAYROLL_ITEM.ALLOWANCE." + master.id(),
+                        master.ruleName(),
+                        null
+                ),
+                rule
+        );
     }
 }

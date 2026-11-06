@@ -2,6 +2,7 @@ package com.project.backend.features.system.rule.service;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
@@ -49,6 +50,20 @@ public class RuleExecutionService {
                 RuleExecutionStage.RULE_LOADING,
                 () -> ruleLoader.loadActive(ruleName)
         );
+        return executeLoaded(rule, contextRequest);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, RuleMaster> loadActiveRules(Set<String> ruleNames) {
+        return ruleLoader.loadActive(ruleNames);
+    }
+
+    @Transactional(readOnly = true)
+    public RuleExecutionResult executeLoaded(
+            RuleMaster rule,
+            RuleContextRequest contextRequest
+    ) {
+        String ruleName = rule.getRuleName();
         Map<String, Object> parameters = executeStage(
                 ruleName,
                 RuleExecutionStage.PARAMETER_RESOLUTION,

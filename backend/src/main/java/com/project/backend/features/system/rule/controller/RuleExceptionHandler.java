@@ -14,7 +14,8 @@ import com.project.backend.features.system.rule.exception.RuleExecutionException
 
 @RestControllerAdvice(assignableTypes = {
         RuleMasterController.class,
-        RuleExecutionController.class
+        RuleExecutionController.class,
+        RuleGatewayController.class
 })
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class RuleExceptionHandler {

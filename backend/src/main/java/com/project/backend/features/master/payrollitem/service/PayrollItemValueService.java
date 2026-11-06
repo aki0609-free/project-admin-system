@@ -16,22 +16,23 @@ import com.project.backend.features.master.payrollitem.dto.PayrollItemValueReque
 import com.project.backend.features.master.payrollitem.dto.PayrollItemValueResult;
 import com.project.backend.features.master.payrollitem.enums.PayrollItemTargetType;
 import com.project.backend.features.master.payrollitem.provider.PayrollItemValueProvider;
-import com.project.backend.features.system.rule.dto.RuleContextRequest;
-import com.project.backend.features.system.rule.dto.RuleExecutionResult;
-import com.project.backend.features.system.rule.service.RuleExecutionService;
+import com.project.backend.features.system.rule.gateway.RuleGatewayBinding;
+import com.project.backend.features.system.rule.gateway.RuleGatewayExecution;
+import com.project.backend.features.system.rule.gateway.RuleGatewayPreparedBinding;
+import com.project.backend.features.system.rule.gateway.RuleGatewayService;
 
 @Service
 @Transactional(readOnly = true)
 public class PayrollItemValueService {
 
     private final Map<PayrollItemTargetType, PayrollItemValueProvider> providerMap;
-    private final RuleExecutionService ruleExecutionService;
+    private final RuleGatewayService ruleGatewayService;
     private final PayrollMoneyPolicy moneyPolicy;
 
     @SuppressWarnings("null")
     public PayrollItemValueService(
             List<PayrollItemValueProvider> providers,
-            RuleExecutionService ruleExecutionService,
+            RuleGatewayService ruleGatewayService,
             PayrollMoneyPolicy moneyPolicy
     ) {
         this.providerMap = providers.stream()
@@ -40,22 +41,29 @@ public class PayrollItemValueService {
                         Function.identity()
                 ));
 
-        this.ruleExecutionService = ruleExecutionService;
+        this.ruleGatewayService = ruleGatewayService;
         this.moneyPolicy = moneyPolicy;
     }
 
     public PayrollItemValueResult calculate(
             PayrollItemValueRequest request
     ) {
+        return calculate(request, null);
+    }
+
+    public PayrollItemValueResult calculate(
+            PayrollItemValueRequest request,
+            RuleGatewayPreparedBinding preparedBinding
+    ) {
         PayrollItemMasterSnapshot master = findMaster(request);
 
-        RuleExecutionResult ruleResult = null;
+        RuleGatewayExecution ruleResult = null;
 
         BigDecimal amount = switch (master.calculationType()) {
             case "MANUAL" -> manualAmount(master, request);
             case "FIXED" -> fixedAmount(master);
             case "AUTO" -> {
-                ruleResult = executeRule(master, request);
+                ruleResult = executeRule(master, request, preparedBinding);
                 yield moneyPolicy.toDecimal(
                         ruleResult.result(),
                         "給与項目Rule計算結果"
@@ -85,6 +93,35 @@ public class PayrollItemValueService {
                         ? ruleResult.facts()
                         : buildBaseFacts(master, request)
         );
+    }
+
+    public Map<Long, RuleGatewayPreparedBinding> prepareAutoRules(
+            List<PayrollItemMasterSnapshot> masters
+    ) {
+        Map<Long, RuleGatewayBinding> bindingsByMasterId =
+                new LinkedHashMap<>();
+        for (PayrollItemMasterSnapshot master : masters) {
+            if (!"AUTO".equals(master.calculationType())) {
+                continue;
+            }
+            bindingsByMasterId.put(
+                    master.id(),
+                    PayrollItemRuleGatewayBindingResolver.binding(master)
+            );
+        }
+        if (bindingsByMasterId.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, RuleGatewayPreparedBinding> preparedByKey =
+                ruleGatewayService.prepareBindings(
+                        bindingsByMasterId.values()
+                );
+        Map<Long, RuleGatewayPreparedBinding> result = new LinkedHashMap<>();
+        bindingsByMasterId.forEach((masterId, binding) -> result.put(
+                masterId,
+                preparedByKey.get(binding.gatewayKey())
+        ));
+        return Map.copyOf(result);
     }
 
     private PayrollItemMasterSnapshot findMaster(
@@ -132,9 +169,10 @@ public class PayrollItemValueService {
                 : BigDecimal.valueOf(master.defaultAmount());
     }
 
-    private RuleExecutionResult executeRule(
+    private RuleGatewayExecution executeRule(
             PayrollItemMasterSnapshot master,
-            PayrollItemValueRequest request
+            PayrollItemValueRequest request,
+            RuleGatewayPreparedBinding preparedBinding
     ) {
         if (!StringUtils.hasText(master.ruleName())) {
             throw new IllegalStateException(
@@ -143,11 +181,31 @@ public class PayrollItemValueService {
         }
 
         try {
-            return ruleExecutionService.execute(
-                    master.ruleName(),
-                    RuleContextRequest.builder()
-                            .parameters(buildRuleParameters(master, request))
-                            .build()
+            Map<String, Object> parameters = buildRuleParameters(
+                    master,
+                    request
+            );
+            if (preparedBinding != null) {
+                String expectedKey = PayrollItemRuleGatewayKeys.forMaster(
+                        master.targetType(),
+                        master.id()
+                );
+                if (!expectedKey.equals(
+                        preparedBinding.binding().gatewayKey()
+                )) {
+                    throw new IllegalArgumentException(
+                            "給与項目と準備済みRuleが一致しません。expected="
+                                    + expectedKey
+                    );
+                }
+                return ruleGatewayService.executePrepared(
+                        preparedBinding,
+                        parameters
+                );
+            }
+            return ruleGatewayService.executeBound(
+                    PayrollItemRuleGatewayBindingResolver.binding(master),
+                    parameters
             );
         } catch (RuntimeException exception) {
             throw new IllegalStateException(

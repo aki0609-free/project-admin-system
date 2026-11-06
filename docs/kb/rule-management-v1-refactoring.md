@@ -257,6 +257,12 @@ RuleDataSourceCatalogServiceTest
 
 ## 12. 未実施・次工程
 
+業務サービスと画面からRuleを安全に再利用する契約は、次を参照する。
+
+```text
+docs/kb/rule-gateway-contract-v1.md
+```
+
 次の項目は、対象業務データの仕様を確認してから追加する。
 
 - `vw_rule_employee_basic`などのRule専用View

@@ -1,5 +1,9 @@
 package com.project.backend.features.system.rule.service.loader;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
 import org.springframework.stereotype.Service;
 
 import com.project.backend.app.tenant.context.TenantContext;
@@ -34,5 +38,31 @@ public class RuleLoader {
                                         + ruleName
                         )
                 );
+    }
+
+    public Map<String, RuleMaster> loadActive(Set<String> ruleNames) {
+        String tenantId = TenantContext.getTenantId();
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new IllegalStateException("TenantContextが設定されていません。");
+        }
+
+        Map<String, RuleMaster> result = new LinkedHashMap<>();
+        repository
+                .findByTenantIdAndRuleNameInAndActiveFlagTrueAndDeletedAtIsNull(
+                        tenantId,
+                        ruleNames
+                )
+                .forEach(rule -> result.put(rule.getRuleName(), rule));
+        for (String ruleName : ruleNames) {
+            if (!result.containsKey(ruleName)) {
+                throw new EntityNotFoundException(
+                        "Ruleが見つかりません。 tenantId="
+                                + tenantId
+                                + ", ruleName="
+                                + ruleName
+                );
+            }
+        }
+        return Map.copyOf(result);
     }
 }
