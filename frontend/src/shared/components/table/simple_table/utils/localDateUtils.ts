@@ -1,5 +1,9 @@
 import { normalizeDateValue } from "@/shared/utils/DateUtils"
 
+export function normalizeSimpleTableDateValue(value: unknown): string {
+  return normalizeDateValue(value)
+}
+
 export function formatDatePickerHeader(date: unknown) {
   const value = normalizeDateValue(date)
   if (!value) return '日付を選択'

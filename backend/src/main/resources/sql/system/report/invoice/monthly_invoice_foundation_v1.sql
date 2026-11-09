@@ -266,7 +266,7 @@ SELECT
         ELSE 0
     END AS base_quantity,
     source.billing_base_unit_price AS base_unit_price,
-    ROUND(
+    CEILING(
         CASE
             WHEN source.billing_unit = 'DAILY'
                 THEN source.work_hours / 8 * source.billing_base_unit_price
@@ -276,32 +276,27 @@ SELECT
                  AND source.billing_rate_occurrence = 1
                 THEN source.billing_base_unit_price
             ELSE 0
-        END,
-        0
+        END
     ) AS base_amount,
     source.overtime_hours,
     source.billing_overtime_unit_price AS overtime_unit_price,
-    ROUND(
-        source.overtime_hours * source.billing_overtime_unit_price,
-        0
+    CEILING(
+        source.overtime_hours * source.billing_overtime_unit_price
     ) AS overtime_amount,
     source.night_work_hours AS night_hours,
     source.billing_night_unit_price AS night_unit_price,
-    ROUND(
-        source.night_work_hours * source.billing_night_unit_price,
-        0
+    CEILING(
+        source.night_work_hours * source.billing_night_unit_price
     ) AS night_amount,
     source.holiday_work_hours AS holiday_hours,
     source.billing_holiday_unit_price AS holiday_unit_price,
-    ROUND(
-        source.holiday_work_hours * source.billing_holiday_unit_price,
-        0
+    CEILING(
+        source.holiday_work_hours * source.billing_holiday_unit_price
     ) AS holiday_amount,
     source.mileage AS commute_distance,
     source.billing_commute_unit_price AS commute_unit_price,
-    ROUND(
-        source.mileage * source.billing_commute_unit_price,
-        0
+    CEILING(
+        source.mileage * source.billing_commute_unit_price
     ) AS commute_amount,
     CASE WHEN source.dispatch_occurrence = 1
         THEN source.other_amount ELSE 0 END AS other_amount,
@@ -391,7 +386,7 @@ SELECT
         ELSE 0
     END AS base_quantity,
     source.billing_base_unit_price AS base_unit_price,
-    ROUND(
+    CEILING(
         CASE
             WHEN source.billing_unit = 'DAILY'
                 THEN source.work_hours / 8 * source.billing_base_unit_price
@@ -401,24 +396,23 @@ SELECT
                  AND source.billing_rate_occurrence = 1
                 THEN source.billing_base_unit_price
             ELSE 0
-        END,
-        0
+        END
     ) AS base_amount,
     source.overtime_hours,
     source.billing_overtime_unit_price AS overtime_unit_price,
-    ROUND(source.overtime_hours * source.billing_overtime_unit_price, 0)
+    CEILING(source.overtime_hours * source.billing_overtime_unit_price)
         AS overtime_amount,
     source.night_work_hours AS night_hours,
     source.billing_night_unit_price AS night_unit_price,
-    ROUND(source.night_work_hours * source.billing_night_unit_price, 0)
+    CEILING(source.night_work_hours * source.billing_night_unit_price)
         AS night_amount,
     source.holiday_work_hours AS holiday_hours,
     source.billing_holiday_unit_price AS holiday_unit_price,
-    ROUND(source.holiday_work_hours * source.billing_holiday_unit_price, 0)
+    CEILING(source.holiday_work_hours * source.billing_holiday_unit_price)
         AS holiday_amount,
     source.mileage AS commute_distance,
     source.billing_commute_unit_price AS commute_unit_price,
-    ROUND(source.mileage * source.billing_commute_unit_price, 0)
+    CEILING(source.mileage * source.billing_commute_unit_price)
         AS commute_amount,
     CASE WHEN source.dispatch_occurrence = 1
         THEN source.other_amount ELSE 0 END AS other_amount,

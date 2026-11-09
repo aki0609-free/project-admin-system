@@ -38,8 +38,8 @@ public class DailyPreparationDispatch extends BaseEntity {
     @Column(name = "site_name", length = 255)
     private String siteName;
 
-    @Column(name = "distance_from_company_km")
-    private Integer distanceFromCompanyKm;
+    @Column(name = "distance_from_company_km", precision = 10, scale = 1)
+    private BigDecimal distanceFromCompanyKm;
 
     @Column(name = "vehicle_count", nullable = false)
     private Integer vehicleCount = 0;

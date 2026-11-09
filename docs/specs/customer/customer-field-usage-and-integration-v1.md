@@ -97,7 +97,7 @@ customers.id / name
 | 担当者名 | `contactPersonName` | `contact_person_name` | 保存のみ | 顧客編集画面での管理のみ。メールや帳票への連携は確認できない |
 | 担当者電話番号 | `contactPersonPhone` | `contact_person_phone` | 保存のみ | 顧客編集画面での管理のみ |
 | 担当者メール | `contactPersonEmail` | `contact_person_email` | 保存のみ | 形式検証と保存のみ。メール基盤への自動登録・送信先解決は未実装 |
-| 会社からの距離 | `distanceFromCompanyKm` | `distance_from_company_km` | 利用中 | 翌日準備の配車情報へコピーし、作業伝票の距離表示に使用 |
+| 会社からの距離 | `distanceFromCompanyKm` | `distance_from_company_km` | 利用中 | 0以上・小数第1位まで保持する。現場配置・配車へ初期値としてコピーし、日報の走行距離初期値と作業伝票の距離表示に使用 |
 
 ### 5.1 現場名と距離の連携
 

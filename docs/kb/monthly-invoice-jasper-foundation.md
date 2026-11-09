@@ -61,8 +61,8 @@
 
 | `billing_unit` | 数量 | 金額 |
 | --- | --- | --- |
-| `DAILY` | `work_hours / 8` | `ROUND(quantity * billing_base_unit_price, 0)` |
-| `HOURLY` | `work_hours` | `ROUND(quantity * billing_base_unit_price, 0)` |
+| `DAILY` | `work_hours / 8` | `CEILING(quantity * billing_base_unit_price)` |
+| `HOURLY` | `work_hours` | `CEILING(quantity * billing_base_unit_price)` |
 
 ### 4.2 割増・通勤
 
@@ -73,7 +73,7 @@
 通勤金額   = mileage × billing_commute_unit_price
 ```
 
-各金額は1円単位で四捨五入する。
+通常、残業、深夜、休日、通勤の各明細金額は、それぞれ1円単位で切り上げてから合算する。手入力のその他金額は入力済み金額をそのまま扱う。
 
 ### 4.3 消費税
 

@@ -1,5 +1,7 @@
 package com.project.backend.features.customer.dto;
 
+import java.math.BigDecimal;
+
 public record CustomerSiteResponse(
         Long id,
         Long customerId,
@@ -7,6 +9,6 @@ public record CustomerSiteResponse(
         String contactPersonName,
         String contactPersonPhone,
         String contactPersonEmail,
-        Integer distanceFromCompanyKm
+        BigDecimal distanceFromCompanyKm
 ) {
 }

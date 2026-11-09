@@ -245,8 +245,14 @@ public class CustomerCommandService {
             validateLength(request.contactPersonPhone(), 255, "現場担当者電話番号");
             validateEmail(request.contactPersonEmail(), "現場担当者メールアドレス");
             if (request.distanceFromCompanyKm() != null
-                    && request.distanceFromCompanyKm() < 0) {
+                    && request.distanceFromCompanyKm().signum() < 0) {
                 throw new IllegalArgumentException("会社からの距離は0以上で入力してください。");
+            }
+            if (request.distanceFromCompanyKm() != null
+                    && request.distanceFromCompanyKm().stripTrailingZeros().scale() > 1) {
+                throw new IllegalArgumentException(
+                        "会社からの距離は小数第1位までで入力してください。"
+                );
             }
         }
     }

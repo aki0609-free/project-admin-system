@@ -1,5 +1,6 @@
 package com.project.backend.features.customer.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import com.project.backend.features.customer.dto.CustomerSiteBillingRateBulkSaveRequest;
 import com.project.backend.features.customer.dto.CustomerSiteBillingRateRequest;
 import com.project.backend.features.customer.entity.CustomerSite;
+import com.project.backend.features.customer.entity.CustomerSiteBillingRate;
 import com.project.backend.features.customer.enums.CustomerBillingUnit;
 import com.project.backend.features.customer.mapper.CustomerSiteBillingRateMapper;
 import com.project.backend.features.customer.repository.CustomerSiteBillingRateRepository;
@@ -67,6 +69,48 @@ class CustomerSiteBillingRateCommandServiceTest {
                 .hasMessageContaining("適用期間が重複");
 
         verify(rateRepository, never()).save(any());
+    }
+
+    @Test
+    void create_shouldPersistPastEffectiveStartDate() {
+        CustomerSite site = site(20L, 10L);
+        LocalDate pastDate = LocalDate.of(2024, 3, 31);
+        CustomerSiteBillingRateRequest base = request(20L, null);
+        CustomerSiteBillingRateRequest pastRate =
+                new CustomerSiteBillingRateRequest(
+                        base.id(),
+                        base.customerSiteId(),
+                        base.jobCode(),
+                        base.jobName(),
+                        base.siteRoleCode(),
+                        base.siteRoleName(),
+                        base.billingUnit(),
+                        base.baseUnitPrice(),
+                        base.overtimeUnitPrice(),
+                        base.nightUnitPrice(),
+                        base.holidayUnitPrice(),
+                        base.commuteUnitPrice(),
+                        pastDate,
+                        base.effectiveTo(),
+                        base.displayOrder(),
+                        base.activeFlag(),
+                        base.note(),
+                        base._isNew(),
+                        base._isUpdated(),
+                        base._isDeleted()
+                );
+        when(siteRepository.findByIdAndDeletedAtIsNull(20L))
+                .thenReturn(Optional.of(site));
+        when(rateRepository.save(any(CustomerSiteBillingRate.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.create(10L, pastRate);
+
+        var captor = org.mockito.ArgumentCaptor
+                .forClass(CustomerSiteBillingRate.class);
+        verify(rateRepository).save(captor.capture());
+        assertThat(captor.getValue().getEffectiveFrom())
+                .isEqualTo(pastDate);
     }
 
     @Test

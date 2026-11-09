@@ -52,9 +52,10 @@ describe('customer editable table columns', () => {
       type: 'number',
       editable: true,
       min: 0,
+      step: 0.1,
       suffix: 'km',
     })
-    expect(distanceColumn?.formatter?.(12, firstSite)).toBe('12km')
+    expect(distanceColumn?.formatter?.(12.5, firstSite)).toBe('12.5km')
   })
 
   it('保存済みの全現場を名称付き請求単価候補にする', () => {

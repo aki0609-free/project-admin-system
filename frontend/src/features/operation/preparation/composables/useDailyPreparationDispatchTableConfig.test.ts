@@ -22,14 +22,16 @@ describe('useDailyPreparationDispatchTableConfig', () => {
       [assignment],
       [],
       [],
-      () => 12,
+      () => 12.5,
     )
     const { columns } = useDailyPreparationDispatchTableConfig(ref(rows))
 
-    expect(rows[0]?.distanceFromCompanyKm).toBe(12)
+    expect(rows[0]?.distanceFromCompanyKm).toBe(12.5)
     expect(rows[0]?.otherAmount).toBe(0)
     expect(columns.value.find(column => column.key === 'distanceFromCompanyKm')?.editable)
       .toBe(true)
+    expect(columns.value.find(column => column.key === 'distanceFromCompanyKm')?.step)
+      .toBe(0.1)
     expect(columns.value.find(column => column.key === 'otherAmount')?.editable)
       .toBe(true)
   })

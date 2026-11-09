@@ -1,5 +1,6 @@
 package com.project.backend.features.customer.entity;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,8 +50,8 @@ public class CustomerSite extends BaseEntity {
     @Column(name = "contact_person_email", length = 255)
     private String contactPersonEmail;
 
-    @Column(name = "distance_from_company_km")
-    private Integer distanceFromCompanyKm;
+    @Column(name = "distance_from_company_km", precision = 10, scale = 1)
+    private BigDecimal distanceFromCompanyKm;
 
     @Builder.Default
     @OneToMany(

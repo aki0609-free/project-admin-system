@@ -60,7 +60,7 @@ public class CustomerBillingSummaryService {
             )
             SELECT
                 COALESCE(SUM(
-                    ROUND(
+                    CEILING(
                         CASE
                             WHEN scoped.billing_unit = 'DAILY'
                                 THEN scoped.work_hours / 8 * scoped.base_unit_price
@@ -70,13 +70,12 @@ public class CustomerBillingSummaryService {
                                  AND scoped.billing_rate_occurrence = 1
                                 THEN scoped.base_unit_price
                             ELSE 0
-                        END,
-                        0
+                        END
                     )
-                    + ROUND(scoped.overtime_hours * scoped.overtime_unit_price, 0)
-                    + ROUND(scoped.night_hours * scoped.night_unit_price, 0)
-                    + ROUND(scoped.holiday_hours * scoped.holiday_unit_price, 0)
-                    + ROUND(scoped.mileage * scoped.commute_unit_price, 0)
+                    + CEILING(scoped.overtime_hours * scoped.overtime_unit_price)
+                    + CEILING(scoped.night_hours * scoped.night_unit_price)
+                    + CEILING(scoped.holiday_hours * scoped.holiday_unit_price)
+                    + CEILING(scoped.mileage * scoped.commute_unit_price)
                 ), 0) AS subtotal_amount,
                 COALESCE(SUM(
                     CASE

@@ -38,7 +38,7 @@
     <field name="page_no" class="java.lang.Long"/>
     <field name="total_pages" class="java.lang.Long"/>
     <field name="page_worker_count" class="java.lang.Long"/>
-    <field name="distance_from_company_km" class="java.lang.Integer"/>
+    <field name="distance_from_company_km" class="java.math.BigDecimal"/>
     <field name="vehicle_count" class="java.lang.Integer"/>
     <field name="company_name" class="java.lang.String"/>
     <field name="company_phone" class="java.lang.String"/>

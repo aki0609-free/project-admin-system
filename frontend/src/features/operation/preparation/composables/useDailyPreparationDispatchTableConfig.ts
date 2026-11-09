@@ -56,7 +56,8 @@ export const useDailyPreparationDispatchTableConfig = (
       editable: true,
       type: 'number',
       min: 0,
-      step: 1,
+      step: 0.1,
+      suffix: 'km',
       filter: { type: 'number' },
     },
     {

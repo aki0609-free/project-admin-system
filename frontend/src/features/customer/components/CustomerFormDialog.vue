@@ -215,8 +215,13 @@ function validateChildRows(): { tab: string; message: string } | null {
     }
     if (site.distanceFromCompanyKm != null) {
       const distance = Number(site.distanceFromCompanyKm)
-      if (!Number.isFinite(distance) || distance < 0 || !Number.isInteger(distance)) {
-        return { tab: 'sites', message: `現場「${site.name}」の会社からの距離は0以上の整数で入力してください。` }
+      const roundedToOneDecimal = Math.round(distance * 10) / 10
+      if (
+        !Number.isFinite(distance)
+        || distance < 0
+        || Math.abs(distance - roundedToOneDecimal) > 0.0000001
+      ) {
+        return { tab: 'sites', message: `現場「${site.name}」の会社からの距離は0以上、小数第1位までで入力してください。` }
       }
     }
   }

@@ -446,8 +446,14 @@ public class DailyPreparationService {
             throw new IllegalArgumentException("配車台数は0以上で指定してください。");
         }
         if (request.getDistanceFromCompanyKm() != null
-                && request.getDistanceFromCompanyKm() < 0) {
+                && request.getDistanceFromCompanyKm().signum() < 0) {
             throw new IllegalArgumentException("現場までの距離は0以上で指定してください。");
+        }
+        if (request.getDistanceFromCompanyKm() != null
+                && request.getDistanceFromCompanyKm().stripTrailingZeros().scale() > 1) {
+            throw new IllegalArgumentException(
+                    "現場までの距離は小数第1位までで指定してください。"
+            );
         }
     }
 

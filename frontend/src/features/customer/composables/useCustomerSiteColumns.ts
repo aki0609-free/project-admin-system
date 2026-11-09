@@ -53,7 +53,7 @@ export const useCustomerSiteColumns = () => {
       editable: true,
       type: 'number',
       min: 0,
-      step: 1,
+      step: 0.1,
       suffix: 'km',
       formatter: value =>
         value == null || value === ''

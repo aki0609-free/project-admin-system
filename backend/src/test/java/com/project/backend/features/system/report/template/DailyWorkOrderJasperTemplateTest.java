@@ -3,6 +3,7 @@ package com.project.backend.features.system.report.template;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Date;
@@ -73,7 +74,7 @@ class DailyWorkOrderJasperTemplateTest {
         row.put("page_no", pageNo);
         row.put("total_pages", totalPages);
         row.put("page_worker_count", pageNo == 1 ? 10L : 3L);
-        row.put("distance_from_company_km", 18);
+        row.put("distance_from_company_km", new BigDecimal("18.5"));
         row.put("vehicle_count", 2);
         row.put("company_name", "株式会社 富陽");
         row.put("company_phone", "0120-49-2401");

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -117,7 +118,7 @@ class CustomerCommandServiceTest {
                 .hasMessageContaining("メールアドレス");
 
         CustomerSiteRequest invalidDistance = new CustomerSiteRequest(
-                null, "本社現場", null, null, null, -1,
+                null, "本社現場", null, null, null, new BigDecimal("-1"),
                 true, false, false
         );
         assertThatThrownBy(() -> service.create(
@@ -126,6 +127,19 @@ class CustomerCommandServiceTest {
                 .hasMessageContaining("距離");
 
         verify(customerRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void create_shouldRejectSiteDistanceWithMoreThanOneDecimalPlace() {
+        CustomerSiteRequest invalidDistance = new CustomerSiteRequest(
+                null, "本社現場", null, null, null, new BigDecimal("12.34"),
+                true, false, false
+        );
+
+        assertThatThrownBy(() -> service.create(
+                request(List.of(invalidDistance), List.of())
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("小数第1位");
     }
 
     @Test

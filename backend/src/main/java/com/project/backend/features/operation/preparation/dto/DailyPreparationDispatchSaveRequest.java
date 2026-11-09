@@ -18,7 +18,7 @@ public class DailyPreparationDispatchSaveRequest {
     @NotNull
     private Long customerSiteId;
 
-    private Integer distanceFromCompanyKm;
+    private BigDecimal distanceFromCompanyKm;
 
     private Integer vehicleCount = 0;
 

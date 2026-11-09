@@ -2,12 +2,16 @@ package com.project.backend.features.customer.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
+
 import org.junit.jupiter.api.Test;
 
 import com.project.backend.common.dayrule.dto.DayRule;
 import com.project.backend.common.dayrule.enums.DayRuleType;
 import com.project.backend.features.customer.dto.CustomerSaveRequest;
+import com.project.backend.features.customer.dto.CustomerSiteRequest;
 import com.project.backend.features.customer.entity.Customer;
+import com.project.backend.features.customer.entity.CustomerSite;
 import com.project.backend.features.customer.enums.CustomerContractStatus;
 import com.project.backend.features.customer.enums.CustomerInvoiceType;
 
@@ -63,6 +67,27 @@ class CustomerMapperTest {
         assertThat(entity.getShortName()).isNull();
         assertThat(entity.getContractFlag()).isEqualTo(CustomerContractStatus.ACTIVE);
         assertThat(entity.getClosingDayValue()).isNull();
+    }
+
+    @Test
+    void applySite_shouldKeepDistanceToOneDecimalPlace() {
+        CustomerSite entity = new CustomerSite();
+        CustomerSiteRequest request = new CustomerSiteRequest(
+                null,
+                "テスト現場",
+                null,
+                null,
+                null,
+                new BigDecimal("22.5"),
+                true,
+                false,
+                false
+        );
+
+        mapper.applySite(entity, request);
+
+        assertThat(entity.getDistanceFromCompanyKm())
+                .isEqualByComparingTo("22.5");
     }
 
     private CustomerSaveRequest request(

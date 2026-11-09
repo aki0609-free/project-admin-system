@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS daily_work_order_render_output (
     page_no BIGINT NOT NULL,
     total_pages BIGINT NOT NULL,
     page_worker_count BIGINT NOT NULL,
-    distance_from_company_km INT NULL,
+    distance_from_company_km DECIMAL(10,1) NULL,
     vehicle_count INT NULL,
     company_name VARCHAR(255) NULL,
     company_phone VARCHAR(50) NULL,
@@ -62,6 +62,9 @@ CREATE TABLE IF NOT EXISTS daily_work_order_render_output (
     INDEX idx_daily_work_order_render_target (tenant_id, target_date),
     UNIQUE KEY uk_daily_work_order_render_page (execution_id, slip_key)
 );
+
+ALTER TABLE daily_work_order_render_output
+    MODIFY COLUMN distance_from_company_km DECIMAL(10,1) NULL;
 
 -- 帳票固有のデータ整形はこのViewへ閉じ込める。
 -- Jasper側は1ページ分に平坦化されたoutputだけを描画する。

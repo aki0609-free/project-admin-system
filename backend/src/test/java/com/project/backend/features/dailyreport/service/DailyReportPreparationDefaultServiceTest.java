@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -61,11 +62,11 @@ class DailyReportPreparationDefaultServiceTest {
         assignment.setPassengerCount(2);
         CustomerSite site = new CustomerSite();
         site.setId(5L);
-        site.setDistanceFromCompanyKm(18);
+        site.setDistanceFromCompanyKm(new BigDecimal("18.5"));
         DailyPreparationDispatch dispatch = new DailyPreparationDispatch();
         dispatch.setPreparationId(1L);
         dispatch.setCustomerSiteId(5L);
-        dispatch.setDistanceFromCompanyKm(23);
+        dispatch.setDistanceFromCompanyKm(new BigDecimal("23.5"));
         when(preparationRepository.findByTargetDateAndDeletedAtIsNull(date))
                 .thenReturn(Optional.of(preparation));
         when(assignmentRepository
@@ -84,7 +85,7 @@ class DailyReportPreparationDefaultServiceTest {
         assertThat(result.customerSiteId()).isEqualTo(5L);
         assertThat(result.workDescription()).isEqualTo("資材搬入");
         assertThat(result.vehicleArrangementType()).isEqualTo(VehicleArrangementType.EMPLOYEE);
-        assertThat(result.mileage()).isEqualByComparingTo("23");
+        assertThat(result.mileage()).isEqualByComparingTo("23.5");
         assertThat(result.passengerCount()).isEqualTo(2);
     }
 

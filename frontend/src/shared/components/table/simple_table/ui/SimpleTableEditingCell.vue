@@ -132,6 +132,7 @@
 import type { SimpleTableColumnDef } from '@/shared/components/table/simple_table/types/item/types'
 import type { DayRule } from '@/shared/types/dayRuleTypes'
 import DayRuleField from '@/shared/components/form/base/components/form/DayRuleField.vue'
+import { normalizeSimpleTableDateValue } from '@/shared/components/table/simple_table/utils/localDateUtils'
 import { computed, ref } from 'vue'
 
 const props = defineProps<{
@@ -208,12 +209,17 @@ const modelValue = computed({
 
     return val ?? ''
   },
-  set: (v) =>
+  set: (v) => {
+    const value = props.column.type === 'date'
+      ? normalizeSimpleTableDateValue(v)
+      : v
+
     emit('update', {
       id: props.item.id,
       field: props.field,
-      value: v,
-    }),
+      value,
+    })
+  },
 })
 
 const checkboxValue = computed<boolean>({

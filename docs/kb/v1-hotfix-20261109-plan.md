@@ -91,3 +91,24 @@
 ## Post-V1ブランチへの戻し方
 
 hotfix完了後、V1修正コミットだけを `refactor/post-v1-stabilization` へ取り込む。Spring Batch・Policy基盤をV1へ逆流させない。
+
+## 実装結果
+
+- 適用開始日：共通日付Editorの値をローカル日付`YYYY-MM-DD`へ正規化し、過去日を消さずに保存できるようにした。
+- 距離：顧客現場、現場配置・配車、日報初期値、作業伝票を`DECIMAL(10,1)` / `BigDecimal`へ統一した。
+- 請求金額：通常、残業、深夜、休日、通勤の各明細を`CEILING`で1円単位に切り上げてから合算するよう統一した。消費税とその他金額の既存処理は変更していない。
+- DB変更はV1専用の冪等なruntime schema assetを1本追加し、Post-V1のテーブル変更を含めていない。
+
+### 確認済み
+
+- バックエンド全Unit Test
+- フロントエンド全Unit Test、型検査
+- runtime schema assetの新規DB適用・再適用Integration Test
+- 変更したフロントエンドファイルのESLint
+- SQL Viewにおける`100.00 -> 100`、`100.01 -> 101`の切り上げ確認
+
+### AWS反映時の注意
+
+- このブランチを直接pushするとGitHub Actionsが起動するため、push前に対象環境と実行workflowを確認する。
+- DBバックアップ後、`customer_distance_precision_v1.sql`だけがV1 DBへ追加適用されることを確認する。
+- `refactor/post-v1-stabilization`のschema assetをV1環境へ混在させない。

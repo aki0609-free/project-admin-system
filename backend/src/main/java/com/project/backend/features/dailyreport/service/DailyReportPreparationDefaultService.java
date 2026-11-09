@@ -56,16 +56,14 @@ public class DailyReportPreparationDefaultService {
                         .findByPreparationIdAndCustomerSiteIdAndDeletedAtIsNull(
                                 preparation.getId(),
                                 assignment.getCustomerSiteId())
-                        .map(dispatch -> java.math.BigDecimal.valueOf(
-                                dispatch.getDistanceFromCompanyKm() != null
-                                        ? dispatch.getDistanceFromCompanyKm()
-                                        : 0))
+                        .map(dispatch -> dispatch.getDistanceFromCompanyKm() != null
+                                ? dispatch.getDistanceFromCompanyKm()
+                                : java.math.BigDecimal.ZERO)
                         .orElseGet(() -> customerSiteRepository
                                 .findByIdAndDeletedAtIsNull(assignment.getCustomerSiteId())
-                                .map(site -> java.math.BigDecimal.valueOf(
-                                        site.getDistanceFromCompanyKm() != null
-                                                ? site.getDistanceFromCompanyKm()
-                                                : 0))
+                                .map(site -> site.getDistanceFromCompanyKm() != null
+                                        ? site.getDistanceFromCompanyKm()
+                                        : java.math.BigDecimal.ZERO)
                                 .orElse(java.math.BigDecimal.ZERO));
 
         return new DailyReportPreparationDefaultResponse(

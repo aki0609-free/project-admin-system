@@ -59,12 +59,13 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
         assertThat(resources)
-                .hasSize(49)
+                .hasSize(50)
                 .contains(
                         "sql/admin/external_support_links_v1.sql",
                         "sql/admin/business_calendar_year_end_adjustment_v1.sql",
                         "sql/application/applicant_legacy_schema_compatibility_v1.sql",
                         "sql/customer/customer_contract_status_v1.sql",
+                        "sql/customer/customer_distance_precision_v1.sql",
                         "sql/master/allowance_master_foundation_v1.sql",
                         "sql/daily_report/vehicle_arrangement_foundation_v1.sql",
                         "sql/operation/monthly/customer_transaction_adjustment_v1.sql"
@@ -119,6 +120,8 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND table_name = 'daily_preparation_dispatches'
                   AND column_name = 'other_amount'
                 """, Integer.class)).isEqualTo(1);
+        assertDistanceColumnsKeepOneDecimalPlace();
+        assertInvoiceAmountsUseWholeYenCeiling();
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM information_schema.columns
@@ -439,6 +442,48 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         assertClosingDayNoticesAreGeneratedOnlyOnce();
         assertBusinessDataBackupDownloadsAsZip();
         assertCareInsuranceAndOfficialRatesReachMonthlyPayrollView();
+    }
+
+    private void assertDistanceColumnsKeepOneDecimalPlace() {
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name IN (
+                      'customer_sites',
+                      'daily_preparation_dispatches',
+                      'daily_work_order_render_output'
+                  )
+                  AND column_name = 'distance_from_company_km'
+                  AND data_type = 'decimal'
+                  AND numeric_scale = 1
+                """, Integer.class)).isEqualTo(3);
+    }
+
+    private void assertInvoiceAmountsUseWholeYenCeiling() {
+        String executionView = jdbcTemplate.queryForObject("""
+                SELECT LOWER(view_definition)
+                FROM information_schema.views
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'vw_monthly_invoice_execution_detail'
+                """, String.class);
+        String latestView = jdbcTemplate.queryForObject("""
+                SELECT LOWER(view_definition)
+                FROM information_schema.views
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'vw_monthly_invoice_latest_detail'
+                """, String.class);
+
+        assertThat(executionView).contains("ceiling");
+        assertThat(latestView).contains("ceiling");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT CEILING(100.01)",
+                BigDecimal.class
+        )).isEqualByComparingTo("101");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT CEILING(100.00)",
+                BigDecimal.class
+        )).isEqualByComparingTo("100");
     }
 
     private void assertFoundationDailyPayRulesCalculateAmounts() {

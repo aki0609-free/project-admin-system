@@ -14,7 +14,7 @@ public record DailyPreparationDispatchResponse(
         String customerName,
         String siteName,
 
-        Integer distanceFromCompanyKm,
+        BigDecimal distanceFromCompanyKm,
         Integer vehicleCount,
         BigDecimal otherAmount,
 
