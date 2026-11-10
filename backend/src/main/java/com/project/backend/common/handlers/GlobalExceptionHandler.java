@@ -6,6 +6,7 @@ import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -25,6 +26,30 @@ import static net.logstash.logback.argument.StructuredArguments.*;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @SuppressWarnings("null")
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleBadCredentials(
+            BadCredentialsException ex,
+            HttpServletRequest request) {
+
+        ErrorCode code = ErrorCode.AUTH_INVALID_CREDENTIALS;
+        String traceId = MDC.get("traceId");
+
+        log.warn(
+                "invalid login credentials",
+                keyValue("errorCode", code.getCode()),
+                keyValue("path", request.getRequestURI()),
+                keyValue("traceId", traceId)
+        );
+
+        return ResponseEntity
+                .status(code.getStatus())
+                .body(new ErrorResponse(
+                        code.getCode(),
+                        code.getMessage(),
+                        traceId));
+    }
 
     @SuppressWarnings("null")
     @ExceptionHandler(CustomerTransactionAlreadySettledException.class)

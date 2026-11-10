@@ -18,7 +18,7 @@ public enum ErrorCode {
     USER_ALREADY_EXISTS("USER_ALREADY_EXISTS", "ユーザーは既に存在します", HttpStatus.CONFLICT),
 
     // ===== AUTH =====
-    AUTH_INVALID_CREDENTIALS("AUTH_INVALID_CREDENTIALS", "認証に失敗しました", HttpStatus.UNAUTHORIZED),
+    AUTH_INVALID_CREDENTIALS("AUTH_INVALID_CREDENTIALS", "ユーザー名またはパスワードが正しくありません", HttpStatus.UNAUTHORIZED),
     AUTH_TOKEN_EXPIRED("AUTH_TOKEN_EXPIRED", "トークンの有効期限が切れています", HttpStatus.UNAUTHORIZED),
     AUTH_ACCESS_DENIED("AUTH_ACCESS_DENIED", "この操作を行う権限がありません", HttpStatus.FORBIDDEN),
     ;

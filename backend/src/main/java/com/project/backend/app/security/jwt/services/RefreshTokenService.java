@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.project.backend.app.security.auth.dto.SecurityUser;
 import com.project.backend.app.security.jwt.entity.RefreshToken;
+import com.project.backend.app.security.jwt.exception.InvalidRefreshTokenException;
 import com.project.backend.app.security.jwt.repository.RefreshTokenRepository;
 
 import jakarta.transaction.Transactional;
@@ -40,11 +41,11 @@ public class RefreshTokenService {
 
         RefreshToken refreshToken = repository
             .findByToken(token)
-            .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+            .orElseThrow(InvalidRefreshTokenException::new);
         
         if (isExpired(refreshToken)) {
             repository.delete(refreshToken);
-            throw new RuntimeException("Refresh token expired");
+            throw new InvalidRefreshTokenException();
         }
 
         return refreshToken;

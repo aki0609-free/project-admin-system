@@ -5,6 +5,7 @@ import type {
   ReportExecuteResponse,
   ReportPreviewResponse,
 } from '@/features/system/report/types/reportExecutionApiTypes'
+import { fetchWithAuthSession } from '@/shared/auth/session/authSession'
 
 type Payload = {
   reportCode: string
@@ -68,16 +69,9 @@ export const useTestPrintReportMutation = () => {
 }
 
 const getBlobByFetch = async (url: string): Promise<Blob> => {
-  const token = localStorage.getItem('accessToken')
-
-  const response = await fetch(url, {
+  const response = await fetchWithAuthSession(url, {
     method: 'GET',
     credentials: 'include',
-    headers: token
-      ? {
-          Authorization: `Bearer ${token}`,
-        }
-      : {},
   })
 
   if (!response.ok) {

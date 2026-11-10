@@ -7,12 +7,36 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 
 import com.project.backend.common.error.dto.ErrorResponse;
 import com.project.backend.common.error.enums.ErrorCode;
 import com.project.backend.features.customer.exception.CustomerTransactionAlreadySettledException;
 
 class GlobalExceptionHandlerTest {
+
+    @Test
+    void handleBadCredentials_shouldReturnUnauthorized() {
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        MockHttpServletRequest request = new MockHttpServletRequest(
+                "POST",
+                "/auth/login"
+        );
+
+        ResponseEntity<ErrorResponse> response =
+                handler.handleBadCredentials(
+                        new BadCredentialsException("Bad credentials"),
+                        request
+                );
+
+        assertThat(response.getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode())
+                .isEqualTo(ErrorCode.AUTH_INVALID_CREDENTIALS.getCode());
+        assertThat(response.getBody().getMessage())
+                .isEqualTo(ErrorCode.AUTH_INVALID_CREDENTIALS.getMessage());
+    }
 
     @Test
     void handleAccessDenied_shouldReturnForbidden() {

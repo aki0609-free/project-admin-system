@@ -19,6 +19,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
         String tenantId
     );
 
+    Optional<User> findByIdAndTenantIdAndEnabledTrueAndDeletedAtIsNull(
+        Long id,
+        String tenantId
+    );
+
     Optional<User> findByUsername(String username);
 
     @Query("""

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { apiClient } from "@/app/plugins/apiClient";
+import { fetchWithAuthSession } from "@/shared/auth/session/authSession";
 
 export async function get<T>(path: any, options?: any) {
     const { data, error } = await apiClient.GET(path, options)
@@ -160,16 +161,9 @@ const parseContentDispositionFileName = (
 }
 
 export const getBlob = async (url: string): Promise<Blob> => {
-  const token = localStorage.getItem('accessToken')
-
-  const response = await fetch(url, {
+  const response = await fetchWithAuthSession(url, {
     method: 'GET',
     credentials: 'include',
-    headers: token
-      ? {
-          Authorization: `Bearer ${token}`,
-        }
-      : {},
   })
 
   if (!response.ok) {

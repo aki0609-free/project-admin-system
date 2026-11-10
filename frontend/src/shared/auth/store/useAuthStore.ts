@@ -1,7 +1,13 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { AuthUser } from "../types/types";
+import type { AuthUser } from "../types/types";
 import axiosApiClient from "@/app/plugins/axiosApiClient";
+import {
+    clearStoredAuth,
+    getAccessToken,
+    getRefreshToken,
+    saveAuthTokens,
+} from "@/shared/auth/session/authSession";
 
 export const useAuthStore = defineStore('auth', () => {
     const user = ref<AuthUser | null>(null)
@@ -21,13 +27,12 @@ export const useAuthStore = defineStore('auth', () => {
         accessToken.value = data.accessToken
         refreshToken.value = data.refreshToken
 
-        localStorage.setItem("accessToken", data.accessToken)
-        localStorage.setItem("refreshToken", data.refreshToken)
+        saveAuthTokens(data.accessToken, data.refreshToken)
     }
 
     function loadAuth() {
-        const at = localStorage.getItem("accessToken")
-        const rt = localStorage.getItem("refreshToken")
+        const at = getAccessToken()
+        const rt = getRefreshToken()
 
         if (at) accessToken.value = at
         if (rt) refreshToken.value = rt
@@ -38,7 +43,7 @@ export const useAuthStore = defineStore('auth', () => {
         accessToken.value = null
         refreshToken.value = null
 
-        localStorage.clear()
+        clearStoredAuth()
     }
 
     async function initAuth() {

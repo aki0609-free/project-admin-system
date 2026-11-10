@@ -55,9 +55,9 @@ public class AuthService {
             refreshTokenService.verifyToken(refreshTokenValue);
         
         SecurityUser user =
-            (SecurityUser) customUserDetailsService
-                .loadUserByUsernameAndTenantId(
-                    jwtService.extractUsername(refreshTokenValue),
+            customUserDetailsService
+                .loadUserByIdAndTenantId(
+                    refreshToken.getUserId(),
                     refreshToken.getTenantId()
                 );
         

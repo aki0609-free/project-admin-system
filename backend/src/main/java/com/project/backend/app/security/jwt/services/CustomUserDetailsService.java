@@ -30,6 +30,21 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new SecurityUser(user);
     }
 
+    public SecurityUser loadUserByIdAndTenantId(
+        Long userId,
+        String tenantId
+    ) throws UsernameNotFoundException {
+
+        User user = userRepository
+                .findByIdAndTenantIdAndEnabledTrueAndDeletedAtIsNull(
+                    userId,
+                    tenantId
+                )
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        return new SecurityUser(user);
+    }
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
