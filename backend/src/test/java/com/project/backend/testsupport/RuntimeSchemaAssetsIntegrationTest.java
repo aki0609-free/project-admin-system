@@ -59,13 +59,14 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
         assertThat(resources)
-                .hasSize(50)
+                .hasSize(51)
                 .contains(
                         "sql/admin/external_support_links_v1.sql",
                         "sql/admin/business_calendar_year_end_adjustment_v1.sql",
                         "sql/application/applicant_legacy_schema_compatibility_v1.sql",
                         "sql/customer/customer_contract_status_v1.sql",
                         "sql/customer/customer_distance_precision_v1.sql",
+                        "sql/system/import/standard_remuneration_editor_foundation_v1.sql",
                         "sql/master/allowance_master_foundation_v1.sql",
                         "sql/daily_report/vehicle_arrangement_foundation_v1.sql",
                         "sql/operation/monthly/customer_transaction_adjustment_v1.sql"
@@ -885,11 +886,18 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         Map<String, Object> refundStatement = jdbcTemplate.queryForMap("""
                 SELECT latest.legal_deposit_refund_amount,
                        latest.gross_amount,
+                       latest.legal_deduction_total AS statement_legal_deduction_total,
+                       latest.other_deduction_total,
                        latest.deduction_total,
                        latest.net_payment_amount,
+                       gross.gross_amount AS calculation_gross_amount,
                        settlement.legal_deposit_amount,
                        settlement.legal_deduction_total
                 FROM vw_monthly_pay_slip_latest latest
+                JOIN vw_monthly_pay_slip_gross_basis gross
+                  ON gross.tenant_id = latest.tenant_id
+                 AND gross.target_month = latest.target_month
+                 AND gross.employee_id = latest.employee_id
                 JOIN vw_monthly_pay_slip_legal_deposit_refund settlement
                   ON settlement.tenant_id = latest.tenant_id
                  AND settlement.target_month = latest.target_month
@@ -924,6 +932,21 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 refundDisplayItem.get("item_value"),
                 expectedLegalDepositRefund.abs().toPlainString()
         );
+        assertAmount(
+                refundStatement.get("gross_amount"),
+                refundStatement.get("calculation_gross_amount").toString()
+        );
+        assertAmount(
+                refundStatement.get("statement_legal_deduction_total"),
+                refundStatement.get("legal_deduction_total").toString()
+        );
+        assertThat(new BigDecimal(
+                refundStatement.get("statement_legal_deduction_total").toString()
+        ).add(new BigDecimal(
+                refundStatement.get("other_deduction_total").toString()
+        ))).isEqualByComparingTo(new BigDecimal(
+                refundStatement.get("deduction_total").toString()
+        ));
         assertThat(new BigDecimal(refundStatement.get("gross_amount").toString())
                 .subtract(new BigDecimal(
                         refundStatement.get("deduction_total").toString()
@@ -1036,6 +1059,74 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 employeeId,
                 executionId
         );
+        assertLegalDepositShortageIsNotDoubleCounted(employeeId);
+    }
+
+    private void assertLegalDepositShortageIsNotDoubleCounted(Long employeeId) {
+        jdbcTemplate.update("""
+                UPDATE daily_report_deductions deduction
+                JOIN daily_report report
+                  ON report.id = deduction.daily_report_id
+                 AND report.tenant_id = deduction.tenant_id
+                SET deduction.amount = 0,
+                    deduction.calculated_amount = 0,
+                    deduction.updated_at = CURRENT_TIMESTAMP(6)
+                WHERE report.tenant_id = ?
+                  AND report.employee_id = ?
+                  AND report.work_date BETWEEN '2026-08-01' AND '2026-08-31'
+                  AND report.deleted_at IS NULL
+                  AND deduction.deduction_code = 'LEGAL_DEPOSIT'
+                  AND deduction.deleted_at IS NULL
+                """, TEST_TENANT_ID, employeeId);
+
+        Map<String, Object> shortageStatement = jdbcTemplate.queryForMap("""
+                SELECT latest.legal_deposit_refund_amount,
+                       latest.gross_amount,
+                       latest.legal_deduction_total AS statement_legal_deduction_total,
+                       latest.other_deduction_total,
+                       latest.deduction_total,
+                       latest.net_payment_amount,
+                       gross.gross_amount AS calculation_gross_amount,
+                       settlement.legal_deduction_total
+                FROM vw_monthly_pay_slip_latest latest
+                JOIN vw_monthly_pay_slip_gross_basis gross
+                  ON gross.tenant_id = latest.tenant_id
+                 AND gross.target_month = latest.target_month
+                 AND gross.employee_id = latest.employee_id
+                JOIN vw_monthly_pay_slip_legal_deposit_refund settlement
+                  ON settlement.tenant_id = latest.tenant_id
+                 AND settlement.target_month = latest.target_month
+                 AND settlement.employee_id = latest.employee_id
+                WHERE latest.tenant_id = ?
+                  AND latest.target_month = '2026-08-01'
+                  AND latest.employee_id = ?
+                """, TEST_TENANT_ID, employeeId);
+
+        assertThat(new BigDecimal(
+                shortageStatement.get("legal_deposit_refund_amount").toString()
+        )).isNegative();
+        assertAmount(
+                shortageStatement.get("gross_amount"),
+                shortageStatement.get("calculation_gross_amount").toString()
+        );
+        assertAmount(
+                shortageStatement.get("statement_legal_deduction_total"),
+                shortageStatement.get("legal_deduction_total").toString()
+        );
+        assertThat(new BigDecimal(
+                shortageStatement.get("statement_legal_deduction_total").toString()
+        ).add(new BigDecimal(
+                shortageStatement.get("other_deduction_total").toString()
+        ))).isEqualByComparingTo(new BigDecimal(
+                shortageStatement.get("deduction_total").toString()
+        ));
+        assertThat(new BigDecimal(
+                shortageStatement.get("gross_amount").toString()
+        ).subtract(new BigDecimal(
+                shortageStatement.get("deduction_total").toString()
+        ))).isEqualByComparingTo(new BigDecimal(
+                shortageStatement.get("net_payment_amount").toString()
+        ));
     }
 
     private void assertRetryUsesHistoryAndRecloseCreatesNewVersion(

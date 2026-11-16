@@ -1,7 +1,8 @@
 import { computed } from "vue";
 import { useAuthStore } from "../store/useAuthStore";
-import type { AuthUser, Role } from "../types/types";
+import type { Role } from "../types/types";
 import { router } from "@/app/router";
+import { logoutAuthSession } from "@/shared/auth/session/authSession";
 
 export function useAuth() {
     const store = useAuthStore()
@@ -11,9 +12,13 @@ export function useAuth() {
 
     const hasRole = (role: Role) => store.user?.roles.includes(role) ?? false
 
-    const logout = () => {
-        store.clearAuth()
-        router.push('/login')
+    const logout = async () => {
+        try {
+            await logoutAuthSession('MANUAL')
+        } finally {
+            store.clearAuth()
+            await router.push('/login')
+        }
     }
 
     return {

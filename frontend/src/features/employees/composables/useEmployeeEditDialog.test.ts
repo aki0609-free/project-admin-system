@@ -43,6 +43,9 @@ describe('employeeTaxCategoryOptions', () => {
       contractFields.find(
         field => field.key === 'standardWorkingHours',
       )?.formatter?.(8, {} as never),
-    ).toBe('8時間')
+    ).toBe('8時間/週')
+    expect(
+      contractFields.find(field => field.key === 'standardWorkingHours')?.label,
+    ).toBe('週所定労働時間')
   })
 })

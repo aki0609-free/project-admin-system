@@ -41,6 +41,7 @@ export type EmployeeListItemResponse = {
   employmentStatus: EmploymentStatus
   phone: string | null
   email: string | null
+  address: string | null
   contractStartDate: string | null
   contractEndDate: string | null
   activeFlag: boolean

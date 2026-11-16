@@ -112,3 +112,8 @@ backend/src/main/resources/image/sign/*
 *.db
 *.sqlite
 *.sqlite3
+
+# =========================
+# Claude Code (local only)
+# =========================
+.claude/

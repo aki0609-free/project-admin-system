@@ -4,6 +4,11 @@ const DEFAULT_TENANT_ID = 'default'
 
 export const AUTH_SESSION_EXPIRED_EVENT = 'auth-session-expired'
 
+export type LogoutReason =
+  | 'MANUAL'
+  | 'SESSION_EXPIRED'
+  | 'REFRESH_FAILED'
+
 type RefreshResponse = {
   accessToken?: string
   refreshToken?: string
@@ -31,7 +36,11 @@ const requestUrl = (input: RequestInfo | URL): string => {
 
 export const isAuthEndpoint = (input: RequestInfo | URL): boolean => {
   const pathname = new URL(requestUrl(input), window.location.origin).pathname
-  return pathname === '/auth/login' || pathname === '/auth/refresh'
+  return (
+    pathname === '/auth/login' ||
+    pathname === '/auth/refresh' ||
+    pathname === '/auth/logout'
+  )
 }
 
 export const getAccessToken = (): string | null =>
@@ -54,18 +63,53 @@ export const clearStoredAuth = (): void => {
   localStorage.removeItem(REFRESH_TOKEN_KEY)
 }
 
-export const expireAuthSession = (): void => {
+const notifyLogout = async (
+  refreshToken: string,
+  reason: LogoutReason,
+): Promise<void> => {
+  try {
+    await fetch(resolveUrl('/auth/logout'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Tenant-ID': DEFAULT_TENANT_ID,
+      },
+      body: JSON.stringify({ refreshToken, reason }),
+      keepalive: true,
+    })
+  } catch {
+    // ローカルのログアウトは監査APIの通信失敗で妨げない。
+  }
+}
+
+export const logoutAuthSession = async (
+  reason: LogoutReason = 'MANUAL',
+): Promise<void> => {
+  const refreshToken = getRefreshToken()
+  if (refreshToken) {
+    await notifyLogout(refreshToken, reason)
+  }
+  clearStoredAuth()
+}
+
+export const expireAuthSession = (
+  reason: LogoutReason = 'SESSION_EXPIRED',
+): void => {
+  const refreshToken = getRefreshToken()
   clearStoredAuth()
 
   if (expirationNotified) return
   expirationNotified = true
+  if (refreshToken) {
+    void notifyLogout(refreshToken, reason)
+  }
   window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT))
 }
 
 const executeRefresh = async (): Promise<string | null> => {
   const refreshToken = getRefreshToken()
   if (!refreshToken) {
-    expireAuthSession()
+    expireAuthSession('SESSION_EXPIRED')
     return null
   }
 
@@ -80,20 +124,20 @@ const executeRefresh = async (): Promise<string | null> => {
     })
 
     if (!response.ok) {
-      expireAuthSession()
+      expireAuthSession('REFRESH_FAILED')
       return null
     }
 
     const data = (await response.json()) as RefreshResponse
     if (!data.accessToken || !data.refreshToken) {
-      expireAuthSession()
+      expireAuthSession('REFRESH_FAILED')
       return null
     }
 
     saveAuthTokens(data.accessToken, data.refreshToken)
     return data.accessToken
   } catch {
-    expireAuthSession()
+    expireAuthSession('REFRESH_FAILED')
     return null
   }
 }

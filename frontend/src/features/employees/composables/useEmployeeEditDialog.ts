@@ -215,9 +215,9 @@ export const useEmployeeEditDialog = (
     },
     {
       key: 'standardWorkingHours',
-      label: '標準労働時間',
+      label: '週所定労働時間',
       type: 'number',
-      formatter: value => formatNumberWithUnit(value, '時間'),
+      formatter: value => formatNumberWithUnit(value, '時間/週'),
     },
     {
       key: 'note',

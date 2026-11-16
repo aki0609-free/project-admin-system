@@ -28,6 +28,7 @@ public interface EmployeeMapper {
         @Mapping(target = "contractStartDate", source = "contract.contractStartDate")
         @Mapping(target = "contractEndDate", source = "contract.contractEndDate")
         @Mapping(target = "id", source = "employee.id")
+        @Mapping(target = "address", source = "employee.address")
         EmployeeListItemResponse toListItemResponse(
                         Employee employee,
                         EmployeeContract contract);

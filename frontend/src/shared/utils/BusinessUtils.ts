@@ -1,15 +1,15 @@
 export const formatZipCode = (zip: string) => {
-  if (!zip) return '';
-  
-  const str = String(zip).replace(/\D/g, '');
-  
+  if (!zip) return ''
+
+  const str = String(zip).replace(/\D/g, '')
+
   // 7桁に満たない場合のバリデーション（必要に応じて）
   if (str.length !== 7) {
-    return str; // またはエラーを返すなど
+    return str // またはエラーを返すなど
   }
-  
-  return `${str.slice(0, 3)}-${str.slice(3)}`;
-};
+
+  return `${str.slice(0, 3)}-${str.slice(3)}`
+}
 
 export const calculateAgeAt = (
   birthDate: string | null | undefined,
@@ -17,24 +17,52 @@ export const calculateAgeAt = (
 ) => {
   if (!birthDate || !targetDate) return ''
 
-  const birth = new Date(birthDate)
-  const target = new Date(targetDate)
-
-  if (Number.isNaN(birth.getTime()) || Number.isNaN(target.getTime())) {
+  const birth = parseDateParts(birthDate)
+  const target = parseDateParts(targetDate)
+  if (!birth || !target) {
     return ''
   }
 
-  let age = target.getFullYear() - birth.getFullYear()
+  let age = target.year - birth.year
 
   const beforeBirthday =
-    target.getMonth() < birth.getMonth() ||
-    (target.getMonth() === birth.getMonth() && target.getDate() < birth.getDate())
+    target.month < birth.month || (target.month === birth.month && target.day < birth.day)
 
   if (beforeBirthday) {
     age--
   }
 
   return age >= 0 ? String(age) : ''
+}
+
+export const calculateCurrentAge = (
+  birthDate: string | null | undefined,
+  currentDate = new Date(),
+) => {
+  const targetDate = [
+    currentDate.getFullYear(),
+    String(currentDate.getMonth() + 1).padStart(2, '0'),
+    String(currentDate.getDate()).padStart(2, '0'),
+  ].join('-')
+
+  return calculateAgeAt(birthDate, targetDate)
+}
+
+const parseDateParts = (value: string) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) return null
+
+  const [, yearText, monthText, dayText] = match
+  const year = Number(yearText)
+  const month = Number(monthText)
+  const day = Number(dayText)
+  const date = new Date(year, month - 1, day)
+
+  if (date.getFullYear() !== year || date.getMonth() + 1 !== month || date.getDate() !== day) {
+    return null
+  }
+
+  return { year, month, day }
 }
 
 export const formatAge = (value: unknown) => {

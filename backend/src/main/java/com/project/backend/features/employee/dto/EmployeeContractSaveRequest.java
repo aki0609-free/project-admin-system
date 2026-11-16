@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import com.project.backend.features.employee.enums.PaymentCycle;
 import com.project.backend.features.employee.enums.SalaryType;
 
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -19,7 +20,7 @@ public record EmployeeContractSaveRequest(
         @DecimalMin("0.0") BigDecimal weeklyWage,
         @DecimalMin("0.0") BigDecimal dailyWage,
         @DecimalMin("0.0") BigDecimal hourlyWage,
-        @DecimalMin("0.0") BigDecimal standardWorkingHours,
+        @DecimalMin("0.0") @DecimalMax("168.0") BigDecimal standardWorkingHours,
         @Size(max = 1000) String note
 ) {
 }

@@ -111,7 +111,7 @@
 | `dailyWage` | 日給 |
 | `weeklyWage` | 週給 |
 | `monthlySalary` | 月給 |
-| `standardWorkingHours` | 標準労働時間 |
+| `standardWorkingHours` | 週所定労働時間 |
 
 ### 給与項目共通
 

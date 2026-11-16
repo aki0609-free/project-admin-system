@@ -10,7 +10,7 @@ import {
   employmentTypeOptions,
   toOptionTitle,
 } from '../types/employeeEnumTypes'
-import { calculateAgeAt, formatAge } from '@/shared/utils/BusinessUtils'
+import { calculateAgeAt, calculateCurrentAge, formatAge } from '@/shared/utils/BusinessUtils'
 import { formatYearMonthDay } from '@/shared/utils/DateUtils'
 
 export type EmployeeTableRow = SimpleTableEditableRow & {
@@ -18,6 +18,9 @@ export type EmployeeTableRow = SimpleTableEditableRow & {
   employeeCode: string
   employeeName: string
   employeeNameKana: string
+  address: string
+  birthDate: string
+  currentAge: string
   employmentType: string
   employmentTypeText: string
   employmentStatus: string
@@ -38,6 +41,9 @@ export const useEmployeeTableConfig = (employees: Ref<EmployeeListItemResponse[]
       employeeCode: item.employeeCode,
       employeeName: item.employeeName,
       employeeNameKana: item.employeeNameKana ?? '',
+      address: item.address ?? '',
+      birthDate: item.birthDate ?? '',
+      currentAge: calculateCurrentAge(item.birthDate),
       employmentType: item.employmentType,
       employmentTypeText: toOptionTitle(employmentTypeOptions, item.employmentType),
       employmentStatus: item.employmentStatus,
@@ -58,11 +64,44 @@ export const useEmployeeTableConfig = (employees: Ref<EmployeeListItemResponse[]
       { title: '社員コード', key: 'employeeCode', width: '140px', filter: { type: 'text' } },
       { title: '氏名', key: 'employeeName', width: '180px', filter: { type: 'text' } },
       { title: 'フリガナ', key: 'employeeNameKana', width: '180px', filter: { type: 'text' } },
+      { title: '住所', key: 'address', width: '300px', filter: { type: 'text' } },
+      {
+        title: '生年月日',
+        key: 'birthDate',
+        width: '160px',
+        filter: { type: 'text' },
+        formatter: (value) => formatYearMonthDay(value as string),
+      },
+      {
+        title: '年齢',
+        key: 'currentAge',
+        width: '100px',
+        filter: { type: 'text' },
+        formatter: formatAge,
+      },
       { title: '雇用区分', key: 'employmentTypeText', width: '180px', filter: { type: 'text' } },
       { title: '在籍状態', key: 'employmentStatusText', width: '120px', filter: { type: 'text' } },
-      { title: '入社日', key: 'hireDate', width: '180px', filter: { type: 'text' }, formatter: (value) => formatYearMonthDay(value as string) },
-      { title: '入社時年齢', key: 'hireAge', width: '140px', filter: { type: 'text' }, formatter: formatAge, },
-      { title: '退社時年齢', key: 'resignAge', width: '140px', filter: { type: 'text' }, formatter: formatAge, },
+      {
+        title: '入社日',
+        key: 'hireDate',
+        width: '180px',
+        filter: { type: 'text' },
+        formatter: (value) => formatYearMonthDay(value as string),
+      },
+      {
+        title: '入社時年齢',
+        key: 'hireAge',
+        width: '140px',
+        filter: { type: 'text' },
+        formatter: formatAge,
+      },
+      {
+        title: '退社時年齢',
+        key: 'resignAge',
+        width: '140px',
+        filter: { type: 'text' },
+        formatter: formatAge,
+      },
       { title: '電話', key: 'phone', width: '150px', filter: { type: 'text' } },
       { title: 'メール', key: 'email', width: '220px', filter: { type: 'text' } },
       { title: '状態', key: 'activeText', width: '100px', filter: { type: 'text' } },

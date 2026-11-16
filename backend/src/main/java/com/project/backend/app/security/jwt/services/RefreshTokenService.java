@@ -3,6 +3,7 @@ package com.project.backend.app.security.jwt.services;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -23,9 +24,6 @@ public class RefreshTokenService {
     @SuppressWarnings("null")
     @Transactional
     public RefreshToken createToken(SecurityUser user) {
-
-        repository.deleteByUserId(user.getUserId());
-
         RefreshToken token = RefreshToken.builder()
                 .userId(user.getUserId())
                 .tenantId(user.getTenantId())
@@ -36,6 +34,13 @@ public class RefreshTokenService {
         return repository.save(token);
     }
 
+    @Transactional
+    public Optional<RefreshToken> revokeToken(String token) {
+        Optional<RefreshToken> refreshToken = repository.findByToken(token);
+        refreshToken.ifPresent(repository::delete);
+        return refreshToken;
+    }
+
     @SuppressWarnings("null")
     public RefreshToken verifyToken(String token) {
 
@@ -44,7 +49,10 @@ public class RefreshTokenService {
             .orElseThrow(InvalidRefreshTokenException::new);
         
         if (isExpired(refreshToken)) {
-            repository.delete(refreshToken);
+            // クライアントが続けて /auth/logout を呼び出した際に、
+            // 失効対象のユーザーと端末セッションを監査できるよう、ここでは
+            // 削除しない。期限切れトークンは検証には必ず失敗し、logout時に
+            // 該当レコードだけを削除する。
             throw new InvalidRefreshTokenException();
         }
 

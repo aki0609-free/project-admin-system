@@ -51,7 +51,9 @@ export const employeeContractSchema = z
     weeklyWage: z.number().min(0, '週給は0以上で指定してください。'),
     dailyWage: z.number().min(0, '日給は0以上で指定してください。'),
     hourlyWage: z.number().min(0, '時給は0以上で指定してください。'),
-    standardWorkingHours: z.number().min(0, '標準労働時間は0以上で指定してください。'),
+    standardWorkingHours: z.number()
+      .min(0, '週所定労働時間は0以上で指定してください。')
+      .max(168, '週所定労働時間は168時間以下で指定してください。'),
     note: z.string().max(1000, '契約メモは1000文字以内で入力してください。'),
   })
   .superRefine((value, context) => {

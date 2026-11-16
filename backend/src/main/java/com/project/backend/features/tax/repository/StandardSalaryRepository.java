@@ -10,4 +10,6 @@ public interface StandardSalaryRepository
         extends JpaRepository<StandardSalary, Long> {
 
     List<StandardSalary> findAllByOrderByMinSalaryAsc();
+
+    boolean existsByStandardSalary(Integer standardSalary);
 }

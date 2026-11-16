@@ -22,6 +22,7 @@ public record EmployeeListItemResponse(
         EmploymentStatus employmentStatus,
         String phone,
         String email,
+        String address,
         LocalDate contractStartDate,
         LocalDate contractEndDate,
         boolean activeFlag

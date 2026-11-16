@@ -1023,27 +1023,15 @@ SELECT
     COALESCE(att.holiday_work_hours, 0) AS holiday_work_hours,
     COALESCE(att.paid_leave_days, 0) AS paid_leave_days,
 
+    -- 日払い・週払いの前払い額は、日報の差引支給額（法定準備金控除後）を
+    -- OTHER_DEDUCTIONとして含む。そのため法定準備金返済額を総支給・控除へ
+    -- 再加算すると正式法定控除を二重計上する。返済額は明細表示と監査用の
+    -- legal_deposit_refund_amountに保持し、合計は正式法定控除を一度だけ使う。
     gross.basic_salary,
     gross.allowance_total
-        + GREATEST(
-            deduction_basis.legal_deposit_amount
-                - tax.social_insurance_total
-                - COALESCE(tax.income_tax, 0)
-                - COALESCE(tax.resident_tax, 0)
-                - deduction_basis.variable_legal_deduction_total,
-            0
-        )
         + GREATEST(COALESCE(year_end.adjustment_amount, 0), 0)
         AS allowance_total,
     gross.gross_amount
-        + GREATEST(
-            deduction_basis.legal_deposit_amount
-                - tax.social_insurance_total
-                - COALESCE(tax.income_tax, 0)
-                - COALESCE(tax.resident_tax, 0)
-                - deduction_basis.variable_legal_deduction_total,
-            0
-        )
         + GREATEST(COALESCE(year_end.adjustment_amount, 0), 0)
         AS gross_amount,
     tax.health_standard_remuneration,
@@ -1063,16 +1051,6 @@ SELECT
         + COALESCE(tax.resident_tax, 0)
         + deduction_basis.variable_legal_deduction_total
         + GREATEST(-COALESCE(year_end.adjustment_amount, 0), 0)
-        + GREATEST(
-            -(
-                deduction_basis.legal_deposit_amount
-                    - tax.social_insurance_total
-                    - COALESCE(tax.income_tax, 0)
-                    - COALESCE(tax.resident_tax, 0)
-                    - deduction_basis.variable_legal_deduction_total
-            ),
-            0
-        )
         AS legal_deduction_total,
     deduction_basis.variable_other_deduction_total AS other_deduction_total,
     tax.social_insurance_total
@@ -1081,16 +1059,6 @@ SELECT
         + deduction_basis.variable_legal_deduction_total
         + deduction_basis.variable_other_deduction_total
         + GREATEST(-COALESCE(year_end.adjustment_amount, 0), 0)
-        + GREATEST(
-            -(
-                deduction_basis.legal_deposit_amount
-                    - tax.social_insurance_total
-                    - COALESCE(tax.income_tax, 0)
-                    - COALESCE(tax.resident_tax, 0)
-                    - deduction_basis.variable_legal_deduction_total
-            ),
-            0
-        )
         AS deduction_total,
     gross.gross_amount
         - tax.social_insurance_total
@@ -1098,11 +1066,6 @@ SELECT
         - COALESCE(tax.resident_tax, 0)
         - deduction_basis.variable_legal_deduction_total
         - deduction_basis.variable_other_deduction_total
-        + deduction_basis.legal_deposit_amount
-        - tax.social_insurance_total
-        - COALESCE(tax.income_tax, 0)
-        - COALESCE(tax.resident_tax, 0)
-        - deduction_basis.variable_legal_deduction_total
         + COALESCE(year_end.adjustment_amount, 0)
         AS net_payment_amount,
     COALESCE(adv.advance_payment_amount, 0) AS advance_payment_amount,

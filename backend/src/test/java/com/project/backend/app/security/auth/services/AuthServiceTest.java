@@ -18,6 +18,8 @@ import com.project.backend.app.security.auth.dto.AuthResponse;
 import com.project.backend.app.security.auth.dto.AuthUserDto;
 import com.project.backend.app.security.auth.dto.SecurityUser;
 import com.project.backend.app.security.auth.mapper.AuthUserMapper;
+import com.project.backend.app.security.auth.enums.LogoutReason;
+import com.project.backend.app.audit.services.AuditLogService;
 import com.project.backend.app.security.jwt.entity.RefreshToken;
 import com.project.backend.app.security.jwt.services.CustomUserDetailsService;
 import com.project.backend.app.security.jwt.services.JwtService;
@@ -41,6 +43,9 @@ class AuthServiceTest {
 
     @Mock
     private AuthUserMapper authUserMapper;
+
+    @Mock
+    private AuditLogService auditLogService;
 
     @InjectMocks
     private AuthService authService;
@@ -78,5 +83,32 @@ class AuthServiceTest {
         assertThat(response.getRefreshToken()).isEqualTo(tokenValue);
         verify(customUserDetailsService)
                 .loadUserByIdAndTenantId(42L, "default");
+    }
+
+    @Test
+    void logout_shouldRevokeOneSessionAndRecordSafeAuditIdentifier() {
+        RefreshToken refreshToken = RefreshToken.builder()
+                .userId(42L)
+                .tenantId("default")
+                .token("raw-refresh-token")
+                .build();
+        when(refreshTokenService.revokeToken("raw-refresh-token"))
+                .thenReturn(java.util.Optional.of(refreshToken));
+
+        authService.logout(
+                "raw-refresh-token",
+                LogoutReason.MANUAL,
+                "Test Browser"
+        );
+
+        verify(refreshTokenService).revokeToken("raw-refresh-token");
+        verify(auditLogService).recordLogout(
+                org.mockito.ArgumentMatchers.eq(42L),
+                org.mockito.ArgumentMatchers.eq("default"),
+                org.mockito.ArgumentMatchers.eq("MANUAL"),
+                org.mockito.ArgumentMatchers.matches("[0-9a-f]{16}"),
+                org.mockito.ArgumentMatchers.eq("Test Browser"),
+                org.mockito.ArgumentMatchers.eq(true)
+        );
     }
 }

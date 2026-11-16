@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.project.backend.app.security.auth.dto.AuthResponse;
 import com.project.backend.app.security.auth.dto.AuthUserDto;
 import com.project.backend.app.security.auth.dto.LoginRequest;
+import com.project.backend.app.security.auth.dto.LogoutRequest;
 import com.project.backend.app.security.auth.services.AuthService;
 import com.project.backend.app.security.jwt.dto.RefreshRequest;
 
@@ -15,6 +16,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.core.Authentication;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
@@ -36,6 +39,20 @@ public class AuthController {
        @Valid @RequestBody RefreshRequest request
     ) {
         return authService.refresh(request.getRefreshToken());
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @Valid @RequestBody LogoutRequest request,
+            @RequestHeader(value = "User-Agent", required = false)
+            String userAgent
+    ) {
+        authService.logout(
+                request.getRefreshToken(),
+                request.getReason(),
+                userAgent
+        );
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/me")

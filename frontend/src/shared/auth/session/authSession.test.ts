@@ -5,6 +5,7 @@ import {
   getAccessToken,
   getRefreshToken,
   saveAuthTokens,
+  logoutAuthSession,
 } from './authSession'
 
 const requestPath = (input: RequestInfo | URL): string => {
@@ -101,7 +102,9 @@ describe('authSession', () => {
   it('clears authentication and notifies once when refresh fails', async () => {
     const expiredListener = vi.fn()
     window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, expiredListener)
-    const fetchMock = vi.fn(async () => new Response(null, { status: 401 }))
+    const fetchMock = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 401 }),
+    )
     vi.stubGlobal('fetch', fetchMock)
 
     const [first, second] = await Promise.all([
@@ -114,7 +117,16 @@ describe('authSession', () => {
     expect(getAccessToken()).toBeNull()
     expect(getRefreshToken()).toBeNull()
     expect(expiredListener).toHaveBeenCalledTimes(1)
-    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+    const logoutCall = fetchMock.mock.calls.find(
+      call => requestPath(call[0]) === '/auth/logout',
+    )
+    expect(logoutCall).toBeDefined()
+    const logoutOptions = logoutCall?.[1] as RequestInit
+    expect(JSON.parse(logoutOptions.body as string)).toEqual({
+      refreshToken: 'valid-refresh-token',
+      reason: 'REFRESH_FAILED',
+    })
     window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, expiredListener)
   })
 
@@ -128,5 +140,28 @@ describe('authSession', () => {
 
     expect(response.status).toBe(401)
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('revokes the current session before a manual logout', async () => {
+    const fetchMock = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 204 }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await logoutAuthSession('MANUAL')
+
+    expect(getAccessToken()).toBeNull()
+    expect(getRefreshToken()).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [input, options] = fetchMock.mock.calls[0] as [
+      RequestInfo | URL,
+      RequestInit,
+    ]
+    expect(requestPath(input)).toBe('/auth/logout')
+    expect(JSON.parse(options.body as string)).toEqual({
+      refreshToken: 'valid-refresh-token',
+      reason: 'MANUAL',
+    })
+    expect(options.keepalive).toBe(true)
   })
 })

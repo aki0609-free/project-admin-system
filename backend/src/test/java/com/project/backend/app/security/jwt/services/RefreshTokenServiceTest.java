@@ -1,6 +1,8 @@
 package com.project.backend.app.security.jwt.services;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.project.backend.app.security.jwt.entity.RefreshToken;
 import com.project.backend.app.security.jwt.exception.InvalidRefreshTokenException;
 import com.project.backend.app.security.jwt.repository.RefreshTokenRepository;
+import com.project.backend.app.security.auth.dto.SecurityUser;
 
 @ExtendWith(MockitoExtension.class)
 class RefreshTokenServiceTest {
@@ -35,7 +38,7 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    void verifyToken_shouldDeleteAndRejectExpiredToken() {
+    void verifyToken_shouldRetainExpiredTokenForAttributedLogoutAudit() {
         RefreshToken expired = RefreshToken.builder()
                 .token("expired")
                 .expiryDate(Instant.now().minusSeconds(1))
@@ -44,6 +47,41 @@ class RefreshTokenServiceTest {
 
         assertThatThrownBy(() -> refreshTokenService.verifyToken("expired"))
                 .isInstanceOf(InvalidRefreshTokenException.class);
-        verify(repository).delete(expired);
+        verify(repository, never()).delete(expired);
+    }
+
+    @Test
+    void createToken_shouldKeepOtherDeviceSessions() {
+        SecurityUser user = org.mockito.Mockito.mock(SecurityUser.class);
+        when(user.getUserId()).thenReturn(42L);
+        when(user.getTenantId()).thenReturn("default");
+        when(repository.save(org.mockito.ArgumentMatchers.any(RefreshToken.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        RefreshToken created = refreshTokenService.createToken(user);
+
+        assertThat(created.getUserId()).isEqualTo(42L);
+        assertThat(created.getTenantId()).isEqualTo("default");
+        verify(repository, never()).deleteByUserId(42L);
+    }
+
+    @Test
+    void revokeToken_shouldDeleteOnlyTheMatchingSession() {
+        RefreshToken token = RefreshToken.builder()
+                .id(10L)
+                .userId(42L)
+                .tenantId("default")
+                .token("device-session")
+                .build();
+        when(repository.findByToken("device-session"))
+                .thenReturn(Optional.of(token));
+
+        Optional<RefreshToken> revoked = refreshTokenService.revokeToken(
+                "device-session"
+        );
+
+        assertThat(revoked).contains(token);
+        verify(repository).delete(token);
+        verify(repository, never()).deleteByUserId(42L);
     }
 }

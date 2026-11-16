@@ -18,6 +18,7 @@ import {
   resolveResidentTaxFiscalYear,
 } from '@/features/master/deduction/utils/residentTaxCsvTemplate'
 import { downloadBlob } from '@/shared/utils/BusinessUtils'
+import StandardRemunerationEditorDialog from '@/features/master/deduction/components/StandardRemunerationEditorDialog.vue'
 
 const props = defineProps<{
   deductionId: number
@@ -38,10 +39,14 @@ const targetDateModel = computed({
 const detail = useDeductionDetailConfig(computed(() => props.detailViewType))
 const { hasRole } = useAuth()
 const residentTaxEditorOpen = ref(false)
+const standardRemunerationEditorOpen = ref(false)
 const residentTaxTemplateDownloading = ref(false)
 const residentTaxTemplateError = ref('')
 const canEditResidentTax = computed(() =>
   props.detailViewType === 'RESIDENT_TAX' && hasRole(Role.SYS_ADMIN),
+)
+const canEditStandardRemuneration = computed(() =>
+  ['HEALTH_INSURANCE', 'PENSION'].includes(props.detailViewType) && hasRole(Role.SYS_ADMIN),
 )
 
 const targetDateDescription = computed(() =>
@@ -104,6 +109,11 @@ async function downloadResidentTaxTemplate() {
         年度別住民税を編集
       </v-btn>
     </div>
+    <div v-if="canEditStandardRemuneration" class="d-flex flex-wrap justify-end ga-2">
+      <v-btn color="primary" prepend-icon="mdi-account-cash" @click="standardRemunerationEditorOpen = true">
+        従業員別標準報酬月額を編集
+      </v-btn>
+    </div>
     <v-alert v-if="residentTaxTemplateError" type="error" variant="tonal">
       {{ residentTaxTemplateError }}
     </v-alert>
@@ -132,5 +142,6 @@ async function downloadResidentTaxTemplate() {
     />
 
     <ResidentTaxEditorDialog v-model="residentTaxEditorOpen" />
+    <StandardRemunerationEditorDialog v-model="standardRemunerationEditorOpen" />
   </div>
 </template>

@@ -310,7 +310,7 @@ INSERT INTO report_master (
         weekly_wage AS `週給`,
         daily_wage AS `日給`,
         hourly_wage AS `時給`,
-        standard_working_hours AS `標準労働時間`,
+        standard_working_hours AS `週所定労働時間`,
         contract_note AS `契約メモ`,
         payroll_item_settings AS `従業員別手当・控除設定`,
         CASE active_flag WHEN TRUE THEN ''有効'' WHEN FALSE THEN ''無効'' END AS `有効状態`,

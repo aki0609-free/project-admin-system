@@ -35,6 +35,12 @@ public class AuditLog {
 
     private String traceId;
 
+    private String logoutReason;
+
+    private String sessionId;
+
+    private String deviceInfo;
+
     private boolean isSuccess;
 
     @CreationTimestamp
