@@ -31,7 +31,7 @@ describe('validateEmployeeForm', () => {
         targetCode: 'DORMITORY_FEE',
         displayName: '寮費',
         enabled: true,
-        effectiveFrom: '',
+        effectiveFrom: '2026-10-31',
         effectiveTo: '',
         inputSource: 'DAILY_REPORT',
         balanceTracked: true,

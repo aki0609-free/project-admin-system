@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { formatYearMonthDay } from '@/shared/utils/DateUtils'
 import type { EmployeeForm } from '../types/employeeFormTypes'
 import PayrollItemTransactionPanel from './PayrollItemTransactionPanel.vue'
 import EmployeePayrollItemParameterField from './EmployeePayrollItemParameterField.vue'
+import DateFormField from '@/shared/components/form/base/components/form/DateFormField.vue'
 
 type Setting = EmployeeForm['payrollItemSettings'][number]
 
@@ -110,6 +110,13 @@ const unitSuffix = (unit: string) =>
         </div>
 
         <template v-if="activeItem.enabled">
+          <DateFormField
+            v-model="activeItem.effectiveFrom"
+            label="適用開始日"
+            density="compact"
+            variant="outlined"
+            class="effective-date mt-5"
+          />
           <div class="parameter-grid mt-5">
             <EmployeePayrollItemParameterField
               v-for="definition in visibleDefinitions"
@@ -122,13 +129,6 @@ const unitSuffix = (unit: string) =>
           <div v-if="activeItem.balanceTracked" class="balance-section mt-4">
             <div class="text-subtitle-2 mb-3">残{{ unitLabel(activeItem.balanceUnit) }}</div>
             <div class="balance-grid">
-              <v-text-field
-                :model-value="formatYearMonthDay(activeItem.effectiveFrom)"
-                label="適用開始日"
-                readonly
-                density="compact"
-                variant="outlined"
-              />
               <v-text-field
                 :model-value="activeItem.openingQuantity"
                 label="前月繰越"
@@ -205,6 +205,9 @@ const unitSuffix = (unit: string) =>
 .balance-section {
   border-top: 1px solid rgba(0, 0, 0, 0.12);
   padding-top: 16px;
+}
+.effective-date {
+  max-width: 360px;
 }
 @media (max-width: 760px) {
   .setting-header {

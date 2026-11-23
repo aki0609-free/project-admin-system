@@ -59,13 +59,15 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
         assertThat(resources)
-                .hasSize(51)
+                .hasSize(53)
                 .contains(
                         "sql/admin/external_support_links_v1.sql",
                         "sql/admin/business_calendar_year_end_adjustment_v1.sql",
                         "sql/application/applicant_legacy_schema_compatibility_v1.sql",
                         "sql/customer/customer_contract_status_v1.sql",
                         "sql/customer/customer_distance_precision_v1.sql",
+                        "sql/daily_report/employee_daily_payroll_defaults_v1.sql",
+                        "sql/tax/insurance_rate_type_v1.sql",
                         "sql/system/import/standard_remuneration_editor_foundation_v1.sql",
                         "sql/master/allowance_master_foundation_v1.sql",
                         "sql/daily_report/vehicle_arrangement_foundation_v1.sql",
@@ -76,6 +78,14 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 mysqlContainer,
                 List.of("sql/system/import/tax_import_foundation_v1.sql")
         );
+
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT DATA_TYPE
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = 'insurance_rate_master'
+                  AND column_name = 'insurance_type'
+                """, String.class)).isEqualTo("varchar");
 
         assertThat(countTables(
                 "monthly_closing_execution",
@@ -182,9 +192,9 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 SELECT COUNT(*)
                 FROM allowance_masters
                 WHERE allowance_code = 'ATTENDANCE_ATTITUDE'
-                  AND calculation_type = 'MANUAL'
+                  AND calculation_type = 'AUTO'
                   AND allowance_unit = 'BOTH'
-                  AND rule_name IS NULL
+                  AND rule_name = 'EMPLOYEE_CONFIGURED_DAILY_AMOUNT'
                   AND allow_manual_input = TRUE
                   AND show_on_daily_statement = TRUE
                   AND show_on_monthly_statement = FALSE
@@ -317,10 +327,23 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND rule.rule_name = 'DAILY_LEGAL_DEPOSIT_ESTIMATE'
                   AND rule.rule_type = 'DEDUCTION'
                   AND rule.dsl_type = 'JEXL'
-                  AND rule.dsl_text = 'predictedStatutoryDeductionTotal / 20'
+                  AND rule.dsl_text = 'employeeDailyAmount > 0 ? employeeDailyAmount : predictedStatutoryDeductionTotal / 20'
                   AND rule.active_flag = TRUE
                   AND rule.deleted_at IS NULL
                 """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM payroll_item_balance_policy policy
+                JOIN payroll_item_parameter_definition definition
+                  ON definition.balance_policy_id = policy.id
+                 AND definition.parameter_key = 'employeeDailyAmount'
+                 AND definition.rule_parameter_flag = TRUE
+                 AND definition.deleted_at IS NULL
+                WHERE policy.tenant_id = 'default'
+                  AND policy.target_code IN ('ATTENDANCE_ATTITUDE', 'LEGAL_DEPOSIT')
+                  AND policy.application_scope = 'EMPLOYEE_ENROLLMENT'
+                  AND policy.deleted_at IS NULL
+                """, Integer.class)).isEqualTo(2);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM deduction_masters

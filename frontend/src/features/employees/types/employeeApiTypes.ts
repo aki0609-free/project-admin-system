@@ -171,6 +171,7 @@ export type EmployeeSaveRequest = {
     targetType: 'ALLOWANCE' | 'DEDUCTION'
     targetCode: string
     enabled: boolean
+    effectiveFrom: string | null
     parameters: Record<string, string>
   }>
 }

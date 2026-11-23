@@ -259,7 +259,10 @@ public class EmployeePayrollItemSettingService {
         if (settings == null) return;
         settings.forEach(setting -> enrollmentService.synchronize(
                 employeeId, setting.targetType(),
-                setting.targetCode(), setting.enabled(), setting.parameters(), effectiveFrom));
+                setting.targetCode(), setting.enabled(), setting.parameters(),
+                !setting.enabled() || setting.effectiveFrom() == null
+                        ? effectiveFrom
+                        : setting.effectiveFrom()));
     }
 
     private String findEnabledMasterName(PayrollItemBalancePolicy policy) {

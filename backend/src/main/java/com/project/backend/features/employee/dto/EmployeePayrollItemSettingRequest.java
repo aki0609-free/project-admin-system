@@ -1,5 +1,6 @@
 package com.project.backend.features.employee.dto;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 import jakarta.validation.constraints.NotBlank;
@@ -10,6 +11,7 @@ public record EmployeePayrollItemSettingRequest(
         @NotNull PayrollItemTargetType targetType,
         @NotBlank String targetCode,
         boolean enabled,
+        LocalDate effectiveFrom,
         Map<String, String> parameters
 ) {
 }

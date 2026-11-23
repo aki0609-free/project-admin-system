@@ -26,6 +26,7 @@ export const toEmployeeSaveRequest = (
     targetType: item.targetType,
     targetCode: item.targetCode,
     enabled: item.enabled,
+    effectiveFrom: blankToNull(item.effectiveFrom),
     parameters: { ...item.parameters },
   })),
   payrollProfile: {

@@ -116,6 +116,10 @@ const validatePayrollItemSettings = (
   for (const setting of settings) {
     if (!setting.enabled) continue
 
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(setting.effectiveFrom)) {
+      return `${setting.displayName}の適用開始日を指定してください。`
+    }
+
     for (const definition of setting.parameterDefinitions) {
       // 値をRule側で解決する項目は従業員画面の入力対象ではない。
       if (definition.ruleValueResolverKey) continue

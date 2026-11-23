@@ -29,7 +29,9 @@ sql/daily_report/payroll_item_transaction_foundation_v1.sql
 sql/daily_report/legal_deposit_refund_foundation_v1.sql
 sql/master/statutory_deduction_master_foundation_v1.sql
 sql/master/fuyo_deduction_master_foundation_v1.sql
+sql/daily_report/employee_daily_payroll_defaults_v1.sql
 sql/system/backup/business_data_backup_foundation_v1.sql
+sql/tax/insurance_rate_type_v1.sql
 sql/system/import/tax_import_foundation_v1.sql
 sql/system/import/resident_tax_editor_foundation_v1.sql
 sql/system/report/envelope/changeDefinition.sql
