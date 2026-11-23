@@ -223,9 +223,9 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                 WHERE tenant_id = 'default'
                   AND allowance_code = 'MANAGEMENT_ALLOWANCE'
                   AND allowance_name = '管理手当'
-                  AND calculation_type = 'MANUAL'
+                  AND calculation_type = 'AUTO'
                   AND allowance_unit = 'BOTH'
-                  AND rule_name IS NULL
+                  AND rule_name = 'EMPLOYEE_CONFIGURED_DAILY_AMOUNT'
                   AND default_amount = 0
                   AND allow_manual_input = TRUE
                   AND min_amount = 0
@@ -340,10 +340,39 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                  AND definition.rule_parameter_flag = TRUE
                  AND definition.deleted_at IS NULL
                 WHERE policy.tenant_id = 'default'
-                  AND policy.target_code IN ('ATTENDANCE_ATTITUDE', 'LEGAL_DEPOSIT')
+                  AND policy.target_code IN (
+                      'ATTENDANCE_ATTITUDE',
+                      'MANAGEMENT_ALLOWANCE',
+                      'LEGAL_DEPOSIT'
+                  )
                   AND policy.application_scope = 'EMPLOYEE_ENROLLMENT'
                   AND policy.deleted_at IS NULL
-                """, Integer.class)).isEqualTo(2);
+                """, Integer.class)).isEqualTo(3);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM payroll_item_balance_policy policy
+                JOIN payroll_item_parameter_definition definition
+                  ON definition.balance_policy_id = policy.id
+                 AND definition.deleted_at IS NULL
+                WHERE policy.tenant_id = 'default'
+                  AND policy.target_code = 'DORMITORY_FEE'
+                  AND definition.parameter_key = 'dormitoryType'
+                  AND definition.required_flag = FALSE
+                  AND policy.deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM payroll_item_balance_policy policy
+                JOIN payroll_item_parameter_definition definition
+                  ON definition.balance_policy_id = policy.id
+                 AND definition.deleted_at IS NULL
+                WHERE policy.tenant_id = 'default'
+                  AND policy.target_code = 'DORMITORY_FEE'
+                  AND definition.parameter_key = 'dormitoryDailyAmount'
+                  AND definition.required_flag = TRUE
+                  AND definition.rule_value_resolver_key IS NULL
+                  AND policy.deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM deduction_masters

@@ -1,5 +1,5 @@
 -- ProjectAdmin / Fuyo
--- 従業員別の日報初期額（勤務態度手当・法定準備金）。
+-- 従業員別の日報初期額（勤務態度手当・管理手当・法定準備金）。
 -- Ruleに従業員コードを直書きせず、有効期間付き設定値をRuleパラメータとして渡す。
 
 SET NAMES utf8mb4;
@@ -111,7 +111,7 @@ SET calculation_type = 'AUTO',
     note = '従業員別の日報初期額を表示し、日報上で手動変更できる。',
     updated_at = CURRENT_TIMESTAMP(6)
 WHERE tenant_id = 'default'
-  AND allowance_code = 'ATTENDANCE_ATTITUDE'
+  AND allowance_code IN ('ATTENDANCE_ATTITUDE', 'MANAGEMENT_ALLOWANCE')
   AND deleted_at IS NULL;
 
 INSERT INTO payroll_item_balance_policy (
@@ -129,7 +129,7 @@ SELECT
     allowance.tenant_id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
 FROM allowance_masters allowance
 WHERE allowance.tenant_id = 'default'
-  AND allowance.allowance_code = 'ATTENDANCE_ATTITUDE'
+  AND allowance.allowance_code IN ('ATTENDANCE_ATTITUDE', 'MANAGEMENT_ALLOWANCE')
   AND allowance.deleted_at IS NULL
 ON DUPLICATE KEY UPDATE
     target_master_id = VALUES(target_master_id),
@@ -193,7 +193,11 @@ SELECT
     CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
 FROM payroll_item_balance_policy policy
 WHERE policy.tenant_id = 'default'
-  AND policy.target_code IN ('ATTENDANCE_ATTITUDE', 'LEGAL_DEPOSIT')
+  AND policy.target_code IN (
+      'ATTENDANCE_ATTITUDE',
+      'MANAGEMENT_ALLOWANCE',
+      'LEGAL_DEPOSIT'
+  )
   AND policy.deleted_at IS NULL
 ON DUPLICATE KEY UPDATE
     display_name = VALUES(display_name),

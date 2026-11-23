@@ -483,7 +483,7 @@ INSERT INTO payroll_item_parameter_definition (
     created_at, updated_at, deleted_at
 )
 SELECT policy.id, 'dormitoryType', '寮タイプ', 'SELECT',
-       TRUE, NULL,
+       FALSE, NULL,
        JSON_ARRAY(
            JSON_OBJECT(
                'label', '一人部屋',
@@ -532,7 +532,8 @@ ON DUPLICATE KEY UPDATE
     input_source_override_flag = VALUES(input_source_override_flag),
     active_flag = TRUE, updated_at = NOW(6), deleted_at = NULL;
 
--- 選択肢の計算値を解決する汎用Resolverにより、寮費固有分岐をCoreへ置かない。
+-- 寮タイプは補助情報とし、実際の日額は従業員ごとに直接設定できるようにする。
+-- 現場運用では同じ寮タイプでも日額が異なるため、選択肢からの自動上書きは行わない。
 INSERT INTO payroll_item_parameter_definition (
     balance_policy_id, parameter_key, display_name, input_type,
     required_flag, default_value, options_json,
@@ -543,7 +544,7 @@ INSERT INTO payroll_item_parameter_definition (
 SELECT policy.id, 'dormitoryDailyAmount', '寮費日額', 'NUMBER',
        TRUE, '0', NULL,
        TRUE, FALSE, FALSE,
-       'SELECT_OPTION_CALCULATION_VALUE:dormitoryType', 15, TRUE, policy.tenant_id,
+       NULL, 15, TRUE, policy.tenant_id,
        NOW(6), NOW(6), NULL
 FROM payroll_item_balance_policy policy
 WHERE policy.target_type = 'DEDUCTION'
@@ -553,7 +554,7 @@ ON DUPLICATE KEY UPDATE
     display_name = VALUES(display_name), input_type = VALUES(input_type),
     required_flag = VALUES(required_flag),
     rule_parameter_flag = TRUE,
-    rule_value_resolver_key = VALUES(rule_value_resolver_key),
+    rule_value_resolver_key = NULL,
     display_order = VALUES(display_order), active_flag = TRUE,
     updated_at = NOW(6), deleted_at = NULL;
 
