@@ -152,6 +152,7 @@ public class DailyPreparationService {
         DailyPreparationAssignment entity = assignmentRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new IllegalArgumentException("従業員配置が見つかりません。 id=" + id));
 
+        requireAssignmentCanBeDeleted(entity);
         entity.setDeletedAt(Instant.now(clock));
     }
 
@@ -508,7 +509,18 @@ public class DailyPreparationService {
                         "従業員配置が見つかりません。 id=" + id
                 ));
         requireSamePreparation(entity.getPreparationId(), preparationId);
+        requireAssignmentCanBeDeleted(entity);
         entity.setDeletedAt(Instant.now(clock));
+    }
+
+    private void requireAssignmentCanBeDeleted(DailyPreparationAssignment assignment) {
+        DailyPreparation preparation = findPreparation(assignment.getPreparationId());
+        if (dailyReportRepository.existsByEmployeeIdAndWorkDateAndDeletedAtIsNull(
+                assignment.getEmployeeId(), preparation.getTargetDate())) {
+            throw new IllegalArgumentException(
+                    "対象日の日報が登録済みのため、従業員配置を初期化できません。"
+                    + "日報を確認してから配置を修正してください。");
+        }
     }
 
     private void deleteDispatch(Long id, Long preparationId) {

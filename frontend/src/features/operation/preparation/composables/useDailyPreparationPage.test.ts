@@ -5,6 +5,7 @@ import type { DailyPreparationDispatchTableRow } from './useDailyPreparationDisp
 import {
   buildAssignmentSaveItems,
   buildDispatchSaveItems,
+  resetAssignmentRowValues,
 } from './useDailyPreparationPage'
 
 describe('useDailyPreparationPage save snapshots', () => {
@@ -73,5 +74,61 @@ describe('useDailyPreparationPage save snapshots', () => {
         isNew: true,
       }),
     ])
+  })
+
+  it('保存済みの従業員配置は初期化後に削除対象になる', () => {
+    const row = {
+      assignmentId: 99,
+      employeeId: 10,
+      customerId: 20,
+      customerSiteId: 30,
+      customerName: '顧客A',
+      siteName: '現場A',
+      vehicleArrangementType: 'EMPLOYEE',
+      passengerCount: 2,
+      workDescription: '資材搬入',
+      _isNew: false,
+      _isUpdated: false,
+      _isDeleted: false,
+    } as DailyPreparationAssignmentTableRow
+
+    resetAssignmentRowValues(row)
+
+    expect(row).toEqual(expect.objectContaining({
+      customerId: null,
+      customerSiteId: null,
+      customerName: '',
+      siteName: '',
+      vehicleArrangementType: 'NONE',
+      passengerCount: 0,
+      workDescription: '',
+      _isDeleted: true,
+    }))
+    expect(buildAssignmentSaveItems([row])).toEqual([
+      expect.objectContaining({ id: 99, isDeleted: true }),
+    ])
+  })
+
+  it('未保存の従業員配置は初期化後に保存対象から外れる', () => {
+    const row = {
+      assignmentId: null,
+      employeeId: 10,
+      customerId: 20,
+      customerSiteId: 30,
+      customerName: '顧客A',
+      siteName: '現場A',
+      vehicleArrangementType: 'COMPANY',
+      passengerCount: 0,
+      workDescription: '',
+      _isNew: true,
+      _isUpdated: false,
+      _isDeleted: false,
+    } as DailyPreparationAssignmentTableRow
+
+    resetAssignmentRowValues(row)
+
+    expect(row._isNew).toBe(false)
+    expect(row._isDeleted).toBe(false)
+    expect(buildAssignmentSaveItems([row])).toEqual([])
   })
 })

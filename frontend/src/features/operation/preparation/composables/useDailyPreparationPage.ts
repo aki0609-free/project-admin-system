@@ -28,9 +28,30 @@ const toNullableNumber = (value: unknown): number | null => {
   return Number.isNaN(num) ? null : num
 }
 
-const hasAssignmentValue = (row: DailyPreparationAssignmentTableRow) =>
+export const hasAssignmentValue = (row: DailyPreparationAssignmentTableRow) =>
   row.customerId != null || row.customerSiteId != null || row.workDescription.trim() !== ''
   || row.vehicleArrangementType !== 'NONE' || row.passengerCount > 0
+
+export const resetAssignmentRowValues = (row: DailyPreparationAssignmentTableRow) => {
+  row.customerId = null
+  row.customerSiteId = null
+  row.customerName = ''
+  row.siteName = ''
+  row.vehicleArrangementType = 'NONE'
+  row.passengerCount = 0
+  row.workDescription = ''
+
+  if (row.assignmentId == null) {
+    row._isNew = false
+    row._isUpdated = false
+    row._isDeleted = false
+    return
+  }
+
+  row._isNew = false
+  row._isUpdated = false
+  row._isDeleted = true
+}
 
 const hasDispatchValue = (row: DailyPreparationDispatchTableRow) =>
   row.customerId != null && row.customerSiteId != null
@@ -295,6 +316,14 @@ export const useDailyPreparationPage = () => {
     }
   }
 
+  const resetAssignmentRow = (id: number) => {
+    const row = assignmentRows.value.find((item) => item.id === id)
+    if (!row || !hasAssignmentValue(row)) return
+
+    resetAssignmentRowValues(row)
+    rebuildDispatchRows()
+  }
+
   const saveAssignments = async (
     currentPreparation: DailyPreparationResponse,
     items: DailyPreparationAssignmentBulkSaveItemRequest[],
@@ -371,6 +400,7 @@ export const useDailyPreparationPage = () => {
     leftToolbarItems,
 
     handleAssignmentCellUpdate,
+    resetAssignmentRow,
     handleDispatchCellUpdate,
   }
 }

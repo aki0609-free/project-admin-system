@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -45,6 +46,7 @@ class DailyPreparationServiceTest {
     private EmployeeRepository employeeRepository;
     private CustomerRepository customerRepository;
     private CustomerSiteRepository siteRepository;
+    private DailyReportRepository dailyReportRepository;
     private DailyPreparationService service;
 
     @BeforeEach
@@ -55,6 +57,7 @@ class DailyPreparationServiceTest {
         employeeRepository = mock(EmployeeRepository.class);
         customerRepository = mock(CustomerRepository.class);
         siteRepository = mock(CustomerSiteRepository.class);
+        dailyReportRepository = mock(DailyReportRepository.class);
         service = new DailyPreparationService(
                 preparationRepository,
                 assignmentRepository,
@@ -62,7 +65,7 @@ class DailyPreparationServiceTest {
                 employeeRepository,
                 customerRepository,
                 siteRepository,
-                mock(DailyReportRepository.class),
+                dailyReportRepository,
                 mock(DailyReportBillingRateService.class),
                 new DailyPreparationMapper(),
                 Clock.fixed(NOW, ZoneOffset.UTC)
@@ -156,6 +159,9 @@ class DailyPreparationServiceTest {
                 .thenReturn(Optional.of(preparation));
         when(assignmentRepository.findByIdAndDeletedAtIsNull(11L))
                 .thenReturn(Optional.of(assignment));
+        when(dailyReportRepository.existsByEmployeeIdAndWorkDateAndDeletedAtIsNull(
+                10L, LocalDate.of(2026, 9, 5)))
+                .thenReturn(false);
         when(assignmentRepository
                 .findByPreparationIdAndDeletedAtIsNullOrderByEmployeeCodeAscIdAsc(1L))
                 .thenReturn(List.of());
@@ -167,6 +173,83 @@ class DailyPreparationServiceTest {
 
         assertThat(assignment.getDeletedAt()).isEqualTo(NOW);
         assertThat(dispatch.getDeletedAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    void bulkSaveAssignments_shouldKeepDispatchUsedByAnotherAssignment() {
+        DailyPreparation preparation = preparation(1L);
+        DailyPreparationAssignment deletedAssignment = new DailyPreparationAssignment();
+        deletedAssignment.setId(11L);
+        deletedAssignment.setPreparationId(1L);
+        deletedAssignment.setEmployeeId(10L);
+        deletedAssignment.setCustomerSiteId(30L);
+        DailyPreparationAssignment activeAssignment = new DailyPreparationAssignment();
+        activeAssignment.setId(12L);
+        activeAssignment.setPreparationId(1L);
+        activeAssignment.setEmployeeId(20L);
+        activeAssignment.setCustomerSiteId(30L);
+        DailyPreparationDispatch dispatch = new DailyPreparationDispatch();
+        dispatch.setId(40L);
+        dispatch.setPreparationId(1L);
+        dispatch.setCustomerSiteId(30L);
+
+        DailyPreparationAssignmentBulkSaveItemRequest item =
+                new DailyPreparationAssignmentBulkSaveItemRequest();
+        item.setId(deletedAssignment.getId());
+        item.setEmployeeId(deletedAssignment.getEmployeeId());
+        item.setDeletedFlag(true);
+        DailyPreparationAssignmentBulkSaveRequest request =
+                new DailyPreparationAssignmentBulkSaveRequest();
+        request.setPreparationId(1L);
+        request.setItems(List.of(item));
+
+        when(preparationRepository.findByIdAndDeletedAtIsNull(1L))
+                .thenReturn(Optional.of(preparation));
+        when(assignmentRepository.findByIdAndDeletedAtIsNull(11L))
+                .thenReturn(Optional.of(deletedAssignment));
+        when(assignmentRepository
+                .findByPreparationIdAndDeletedAtIsNullOrderByEmployeeCodeAscIdAsc(1L))
+                .thenReturn(List.of(activeAssignment));
+        when(dispatchRepository
+                .findByPreparationIdAndDeletedAtIsNullOrderByCustomerNameAscSiteNameAscIdAsc(1L))
+                .thenReturn(List.of(dispatch));
+
+        service.bulkSaveAssignments(request);
+
+        assertThat(deletedAssignment.getDeletedAt()).isEqualTo(NOW);
+        assertThat(dispatch.getDeletedAt()).isNull();
+    }
+
+    @Test
+    void bulkSaveAssignments_shouldRejectResetWhenDailyReportExists() {
+        DailyPreparation preparation = preparation(1L);
+        DailyPreparationAssignment assignment = new DailyPreparationAssignment();
+        assignment.setId(11L);
+        assignment.setPreparationId(1L);
+        assignment.setEmployeeId(10L);
+
+        DailyPreparationAssignmentBulkSaveItemRequest item =
+                new DailyPreparationAssignmentBulkSaveItemRequest();
+        item.setId(assignment.getId());
+        item.setEmployeeId(assignment.getEmployeeId());
+        item.setDeletedFlag(true);
+        DailyPreparationAssignmentBulkSaveRequest request =
+                new DailyPreparationAssignmentBulkSaveRequest();
+        request.setPreparationId(1L);
+        request.setItems(List.of(item));
+
+        when(preparationRepository.findByIdAndDeletedAtIsNull(1L))
+                .thenReturn(Optional.of(preparation));
+        when(assignmentRepository.findByIdAndDeletedAtIsNull(11L))
+                .thenReturn(Optional.of(assignment));
+        when(dailyReportRepository.existsByEmployeeIdAndWorkDateAndDeletedAtIsNull(
+                10L, LocalDate.of(2026, 9, 5)))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> service.bulkSaveAssignments(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("日報が登録済み");
+        assertThat(assignment.getDeletedAt()).isNull();
     }
 
     @Test
@@ -191,6 +274,7 @@ class DailyPreparationServiceTest {
     private DailyPreparation preparation(Long id) {
         DailyPreparation value = new DailyPreparation();
         value.setId(id);
+        value.setTargetDate(LocalDate.of(2026, 9, 5));
         return value;
     }
 

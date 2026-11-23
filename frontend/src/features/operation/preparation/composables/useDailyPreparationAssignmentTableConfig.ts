@@ -27,6 +27,7 @@ export type DailyPreparationAssignmentTableRow = SimpleTableEditableRow & {
   passengerCount: number
 
   workDescription: string
+  resetAction: string
 
   _isNew: boolean
   _isUpdated: boolean
@@ -106,6 +107,12 @@ export const useDailyPreparationAssignmentTableConfig = (
       filter: { type: 'text' },
       type: 'text',
     },
+    {
+      title: '操作',
+      key: 'resetAction',
+      width: '120px',
+      editable: false,
+    },
   ])
 
   const filterRules = computed(() =>
@@ -149,6 +156,7 @@ export const createAssignmentRows = (
       passengerCount: assignment?.passengerCount ?? 0,
 
       workDescription: assignment?.workDescription ?? '',
+      resetAction: '',
 
       _isNew: false,
       _isUpdated: false,

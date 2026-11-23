@@ -21,6 +21,7 @@ const {
   leftToolbarItems,
 
   handleAssignmentCellUpdate,
+  resetAssignmentRow,
   handleDispatchCellUpdate,
 } = useDailyPreparationPage()
 </script>
@@ -64,6 +65,7 @@ const {
           v-if="active === 'assignments'"
           :items="assignmentRows"
           @update:items="handleAssignmentCellUpdate"
+          @reset-row="resetAssignmentRow"
         />
 
         <DailyPreparationDispatchTable
