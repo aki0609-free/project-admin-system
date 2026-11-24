@@ -16,6 +16,9 @@ import lombok.RequiredArgsConstructor;
 /**
  * 従業員が選択したパラメーター選択肢の計算値をRuleへ渡す汎用Resolver。
  * Resolverキーは SELECT_OPTION_CALCULATION_VALUE:{sourceParameterKey} とする。
+ * 任意の従業員別上書き値を許可する場合は、
+ * SELECT_OPTION_CALCULATION_VALUE:{sourceParameterKey}|{overrideParameterKey}
+ * とする。
  */
 @Component
 @RequiredArgsConstructor
@@ -34,11 +37,27 @@ public class SelectOptionCalculationValueResolver
 
     @Override
     public Object resolve(PayrollItemRuleParameterResolutionContext context) {
-        String sourceKey = context.resolverArgument();
+        String argument = context.resolverArgument();
+        String[] keys = argument == null
+                ? new String[0] : argument.split("\\|", -1);
+        String sourceKey = keys.length == 0 ? null : keys[0];
         if (sourceKey == null || sourceKey.isBlank()) {
             throw new IllegalStateException(
                     "選択肢計算値Resolverの参照パラメーターが未設定です。"
             );
+        }
+        if (keys.length > 1 && !keys[1].isBlank()) {
+            String overrideValue = context.employeeSettings().get(keys[1]);
+            if (overrideValue != null && !overrideValue.isBlank()) {
+                try {
+                    return new BigDecimal(overrideValue);
+                } catch (NumberFormatException exception) {
+                    throw new IllegalStateException(
+                            "従業員別上書き値が数値ではありません。key=" + keys[1],
+                            exception
+                    );
+                }
+            }
         }
         if (context.balancePolicyId() == null) {
             throw new IllegalStateException(

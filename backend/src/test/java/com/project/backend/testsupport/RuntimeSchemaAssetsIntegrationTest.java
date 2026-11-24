@@ -370,7 +370,22 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND policy.target_code = 'DORMITORY_FEE'
                   AND definition.parameter_key = 'dormitoryDailyAmount'
                   AND definition.required_flag = TRUE
-                  AND definition.rule_value_resolver_key IS NULL
+                  AND definition.rule_value_resolver_key =
+                      'SELECT_OPTION_CALCULATION_VALUE:dormitoryType|dormitoryDailyAmountOverride'
+                  AND policy.deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM payroll_item_balance_policy policy
+                JOIN payroll_item_parameter_definition definition
+                  ON definition.balance_policy_id = policy.id
+                 AND definition.deleted_at IS NULL
+                WHERE policy.tenant_id = 'default'
+                  AND policy.target_code = 'DORMITORY_FEE'
+                  AND definition.parameter_key = 'dormitoryDailyAmountOverride'
+                  AND definition.input_type = 'NUMBER'
+                  AND definition.required_flag = FALSE
+                  AND definition.rule_parameter_flag = FALSE
                   AND policy.deleted_at IS NULL
                 """, Integer.class)).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject("""

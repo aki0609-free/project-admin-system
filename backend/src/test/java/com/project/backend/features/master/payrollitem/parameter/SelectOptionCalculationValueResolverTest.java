@@ -69,6 +69,19 @@ class SelectOptionCalculationValueResolverTest {
     }
 
     @Test
+    void employeeOverrideTakesPriorityOverSelectedOption() {
+        Object value = resolver.resolve(new PayrollItemRuleParameterResolutionContext(
+                1L, LocalDate.of(2026, 10, 31),
+                Map.of(
+                        "dormitoryType", "SHARED_ROOM",
+                        "dormitoryDailyAmountOverride", "1700"
+                ),
+                10L, "dormitoryType|dormitoryDailyAmountOverride"));
+
+        assertThat(value).isEqualTo(new BigDecimal("1700"));
+    }
+
+    @Test
     void rejectsOptionWithoutCalculationValue() {
         PayrollItemParameterDefinition definition = new PayrollItemParameterDefinition();
         definition.setOptionsJson(

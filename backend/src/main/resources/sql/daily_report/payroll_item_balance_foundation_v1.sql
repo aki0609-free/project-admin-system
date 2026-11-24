@@ -532,8 +532,30 @@ ON DUPLICATE KEY UPDATE
     input_source_override_flag = VALUES(input_source_override_flag),
     active_flag = TRUE, updated_at = NOW(6), deleted_at = NULL;
 
--- 寮タイプは補助情報とし、実際の日額は従業員ごとに直接設定できるようにする。
--- 現場運用では同じ寮タイプでも日額が異なるため、選択肢からの自動上書きは行わない。
+-- 寮タイプの標準日額を維持しつつ、従業員ごとの日額がある場合はそちらを優先する。
+INSERT INTO payroll_item_parameter_definition (
+    balance_policy_id, parameter_key, display_name, input_type,
+    required_flag, default_value, options_json,
+    rule_parameter_flag, daily_display_flag, input_source_override_flag,
+    display_order, active_flag, tenant_id,
+    created_at, updated_at, deleted_at
+)
+SELECT policy.id, 'dormitoryDailyAmountOverride', '寮費日額', 'NUMBER',
+       FALSE, NULL, NULL,
+       FALSE, FALSE, FALSE,
+       15, TRUE, policy.tenant_id,
+       NOW(6), NOW(6), NULL
+FROM payroll_item_balance_policy policy
+WHERE policy.target_type = 'DEDUCTION'
+  AND policy.target_code = 'DORMITORY_FEE'
+  AND policy.deleted_at IS NULL
+ON DUPLICATE KEY UPDATE
+    display_name = VALUES(display_name), input_type = VALUES(input_type),
+    required_flag = FALSE, default_value = NULL,
+    rule_parameter_flag = FALSE,
+    display_order = VALUES(display_order), active_flag = TRUE,
+    updated_at = NOW(6), deleted_at = NULL;
+
 INSERT INTO payroll_item_parameter_definition (
     balance_policy_id, parameter_key, display_name, input_type,
     required_flag, default_value, options_json,
@@ -544,7 +566,8 @@ INSERT INTO payroll_item_parameter_definition (
 SELECT policy.id, 'dormitoryDailyAmount', '寮費日額', 'NUMBER',
        TRUE, '0', NULL,
        TRUE, FALSE, FALSE,
-       NULL, 15, TRUE, policy.tenant_id,
+       'SELECT_OPTION_CALCULATION_VALUE:dormitoryType|dormitoryDailyAmountOverride',
+       20, TRUE, policy.tenant_id,
        NOW(6), NOW(6), NULL
 FROM payroll_item_balance_policy policy
 WHERE policy.target_type = 'DEDUCTION'
@@ -554,7 +577,7 @@ ON DUPLICATE KEY UPDATE
     display_name = VALUES(display_name), input_type = VALUES(input_type),
     required_flag = VALUES(required_flag),
     rule_parameter_flag = TRUE,
-    rule_value_resolver_key = NULL,
+    rule_value_resolver_key = VALUES(rule_value_resolver_key),
     display_order = VALUES(display_order), active_flag = TRUE,
     updated_at = NOW(6), deleted_at = NULL;
 

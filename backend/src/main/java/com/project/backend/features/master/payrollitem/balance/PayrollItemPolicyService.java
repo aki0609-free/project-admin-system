@@ -283,7 +283,9 @@ public class PayrollItemPolicyService {
                     "未対応のRule値Resolverです。key=" + resolverKey
             );
         }
-        String sourceKey = normalizeKey(resolverKey.substring(prefix.length()));
+        String resolverArgument = resolverKey.substring(prefix.length());
+        String[] resolverKeys = resolverArgument.split("\\|", -1);
+        String sourceKey = normalizeKey(resolverKeys[0]);
         PayrollItemParameterDefinitionSaveRequest source =
                 definitionsByKey.get(sourceKey);
         if (source == null
@@ -298,6 +300,18 @@ public class PayrollItemPolicyService {
                     "選択肢計算値Resolverの出力先はNUMBER項目にしてください。key="
                             + parameterKey
             );
+        }
+        if (resolverKeys.length > 1) {
+            String overrideKey = normalizeKey(resolverKeys[1]);
+            PayrollItemParameterDefinitionSaveRequest override =
+                    definitionsByKey.get(overrideKey);
+            if (override == null
+                    || override.inputType() != PayrollItemParameterInputType.NUMBER) {
+                throw new IllegalArgumentException(
+                        "選択肢計算値Resolverの上書き元は同じ設定内のNUMBER項目にしてください。key="
+                                + overrideKey
+                );
+            }
         }
         if (source.options().stream()
                 .anyMatch(option -> option.calculationValue() == null)) {
