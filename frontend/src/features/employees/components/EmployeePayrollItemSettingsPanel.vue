@@ -34,12 +34,6 @@ const visibleDefinitions = computed(
     activeItem.value?.parameterDefinitions.filter(
       (definition) => {
         if (definition.ruleValueResolverKey) return false
-        if (
-          activeItem.value?.targetCode === 'LEGAL_DEPOSIT'
-          && definition.key === 'employeeDailyAmount'
-        ) {
-          return activeItem.value.parameters.dailyAmountMode === 'FIXED'
-        }
         return true
       },
     ) ?? [],

@@ -334,6 +334,4 @@ WHERE employee.tenant_id = 'default'
       WHERE existing.tenant_id = employee.tenant_id
         AND existing.employee_id = employee.id
         AND existing.balance_policy_id = policy.id
-        AND existing.effective_to IS NULL
-        AND existing.deleted_at IS NULL
   );
