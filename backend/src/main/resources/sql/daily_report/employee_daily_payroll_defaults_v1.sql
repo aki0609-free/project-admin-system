@@ -65,10 +65,10 @@ WHERE rule.tenant_id = 'default'
         AND existing.deleted_at IS NULL
   );
 
--- 0円は「従業員別固定額なし」を表し、既存の予測法定控除÷20へフォールバックする。
+-- 計算方式を明示し、固定額では0円も有効な設定値として扱う。
 UPDATE rule_master
-SET dsl_text = 'employeeDailyAmount > 0 ? employeeDailyAmount : predictedStatutoryDeductionTotal / 20',
-    description = '従業員別日報初期額を優先し、未設定時は月額予測法定控除合計を20日で按分する。',
+SET dsl_text = 'dailyAmountMode == ''FIXED'' ? employeeDailyAmount : predictedStatutoryDeductionTotal / 20',
+    description = '自動計算は月額予測法定控除合計を20日で按分し、固定額は0円を含む従業員別日報初期額を使用する。',
     updated_at = CURRENT_TIMESTAMP(6)
 WHERE tenant_id = 'default'
   AND rule_name = 'DAILY_LEGAL_DEPOSIT_ESTIMATE'
@@ -84,7 +84,7 @@ SELECT
     'DECIMAL',
     TRUE,
     '0',
-    '従業員別の法定準備金日報初期額（0円は予測額を使用）',
+    '固定額を選択した場合の法定準備金日報初期額（0円を含む）',
     2,
     rule.tenant_id,
     CURRENT_TIMESTAMP(6),
@@ -99,6 +99,34 @@ WHERE rule.tenant_id = 'default'
       FROM rule_parameter existing
       WHERE existing.rule_id = rule.id
         AND existing.param_name = 'employeeDailyAmount'
+        AND existing.deleted_at IS NULL
+  );
+
+INSERT INTO rule_parameter (
+    rule_id, param_name, data_type, required_flag, default_value,
+    description, order_no, tenant_id, created_at, updated_at, deleted_at
+)
+SELECT
+    rule.id,
+    'dailyAmountMode',
+    'STRING',
+    TRUE,
+    'AUTO',
+    '法定準備金の日報初期額計算方式（AUTOまたはFIXED）',
+    1,
+    rule.tenant_id,
+    CURRENT_TIMESTAMP(6),
+    CURRENT_TIMESTAMP(6),
+    NULL
+FROM rule_master rule
+WHERE rule.tenant_id = 'default'
+  AND rule.rule_name = 'DAILY_LEGAL_DEPOSIT_ESTIMATE'
+  AND rule.deleted_at IS NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM rule_parameter existing
+      WHERE existing.rule_id = rule.id
+        AND existing.param_name = 'dailyAmountMode'
         AND existing.deleted_at IS NULL
   );
 
@@ -213,8 +241,68 @@ ON DUPLICATE KEY UPDATE
     updated_at = CURRENT_TIMESTAMP(6),
     deleted_at = NULL;
 
+INSERT INTO payroll_item_parameter_definition (
+    balance_policy_id, parameter_key, display_name, input_type,
+    required_flag, default_value, options_json,
+    rule_parameter_flag, daily_display_flag, input_source_override_flag,
+    rule_value_resolver_key, display_order, active_flag, tenant_id,
+    created_at, updated_at, deleted_at
+)
+SELECT
+    policy.id, 'dailyAmountMode', '計算方式', 'SELECT',
+    TRUE, 'AUTO',
+    JSON_ARRAY(
+        JSON_OBJECT('label', '自動計算', 'value', 'AUTO'),
+        JSON_OBJECT('label', '固定額', 'value', 'FIXED')
+    ),
+    TRUE, FALSE, FALSE,
+    NULL, 5, TRUE, policy.tenant_id,
+    CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
+FROM payroll_item_balance_policy policy
+WHERE policy.tenant_id = 'default'
+  AND policy.target_type = 'DEDUCTION'
+  AND policy.target_code = 'LEGAL_DEPOSIT'
+  AND policy.deleted_at IS NULL
+ON DUPLICATE KEY UPDATE
+    display_name = VALUES(display_name),
+    input_type = VALUES(input_type),
+    required_flag = VALUES(required_flag),
+    default_value = VALUES(default_value),
+    options_json = VALUES(options_json),
+    rule_parameter_flag = TRUE,
+    daily_display_flag = FALSE,
+    input_source_override_flag = FALSE,
+    rule_value_resolver_key = NULL,
+    display_order = VALUES(display_order),
+    active_flag = TRUE,
+    updated_at = CURRENT_TIMESTAMP(6),
+    deleted_at = NULL;
+
+-- 移行基準日は従業員固有ではなく、設定履歴の性質で判定する。
+-- 1900-01-01 の全員向け基準設定は従来どおり自動計算とし、
+-- 実運用日から開始する個別履歴は0円を含めて固定額として扱う。
+UPDATE employee_payroll_item_enrollment enrollment
+JOIN payroll_item_balance_policy policy
+  ON policy.id = enrollment.balance_policy_id
+ AND policy.tenant_id = enrollment.tenant_id
+SET enrollment.settings_json = JSON_SET(
+        COALESCE(enrollment.settings_json, JSON_OBJECT()),
+        '$.dailyAmountMode',
+        CASE
+            WHEN enrollment.effective_from = DATE('1900-01-01') THEN 'AUTO'
+            ELSE 'FIXED'
+        END
+    ),
+    enrollment.updated_at = CURRENT_TIMESTAMP(6)
+WHERE policy.tenant_id = 'default'
+  AND policy.target_type = 'DEDUCTION'
+  AND policy.target_code = 'LEGAL_DEPOSIT'
+  AND policy.deleted_at IS NULL
+  AND enrollment.deleted_at IS NULL
+  AND JSON_EXTRACT(enrollment.settings_json, '$.dailyAmountMode') IS NULL;
+
 -- 法定準備金は従来から全従業員に表示されていたため、移行時に表示を落とさない。
--- 0円設定により、既存の予測法定控除÷20がそのまま初期値になる。
+-- 自動計算設定により、既存の予測法定控除÷20をそのまま初期値にする。
 INSERT INTO employee_payroll_item_enrollment (
     employee_id, balance_policy_id, effective_from, effective_to,
     settings_json, tenant_id, created_at, updated_at, deleted_at
@@ -224,7 +312,10 @@ SELECT
     policy.id,
     DATE('1900-01-01'),
     NULL,
-    JSON_OBJECT('employeeDailyAmount', '0'),
+    JSON_OBJECT(
+        'dailyAmountMode', 'AUTO',
+        'employeeDailyAmount', '0'
+    ),
     employee.tenant_id,
     CURRENT_TIMESTAMP(6),
     CURRENT_TIMESTAMP(6),

@@ -126,6 +126,18 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         )).isEqualTo(6);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
+                FROM operation_report_preview preview
+                JOIN operation_report_preview_column preview_column
+                  ON preview_column.operation_report_preview_id = preview.id
+                 AND preview_column.deleted_at IS NULL
+                WHERE preview.tenant_id = 'default'
+                  AND preview.report_code = 'DAILY_WORK_ORDER'
+                  AND preview_column.preview_name = '配車台数'
+                  AND preview_column.column_name = 'vehicle_count_preview'
+                  AND preview.deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
                 FROM information_schema.columns
                 WHERE table_schema = DATABASE()
                   AND table_name = 'daily_preparation_dispatches'
@@ -327,7 +339,7 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND rule.rule_name = 'DAILY_LEGAL_DEPOSIT_ESTIMATE'
                   AND rule.rule_type = 'DEDUCTION'
                   AND rule.dsl_type = 'JEXL'
-                  AND rule.dsl_text = 'employeeDailyAmount > 0 ? employeeDailyAmount : predictedStatutoryDeductionTotal / 20'
+                  AND rule.dsl_text = 'dailyAmountMode == ''FIXED'' ? employeeDailyAmount : predictedStatutoryDeductionTotal / 20'
                   AND rule.active_flag = TRUE
                   AND rule.deleted_at IS NULL
                 """, Integer.class)).isEqualTo(1);
@@ -348,6 +360,23 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND policy.application_scope = 'EMPLOYEE_ENROLLMENT'
                   AND policy.deleted_at IS NULL
                 """, Integer.class)).isEqualTo(3);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM payroll_item_balance_policy policy
+                JOIN payroll_item_parameter_definition definition
+                  ON definition.balance_policy_id = policy.id
+                 AND definition.parameter_key = 'dailyAmountMode'
+                 AND definition.input_type = 'SELECT'
+                 AND definition.default_value = 'AUTO'
+                 AND definition.rule_parameter_flag = TRUE
+                 AND JSON_UNQUOTE(JSON_EXTRACT(
+                        definition.options_json, '$[1].value')) = 'FIXED'
+                 AND definition.deleted_at IS NULL
+                WHERE policy.tenant_id = 'default'
+                  AND policy.target_code = 'LEGAL_DEPOSIT'
+                  AND policy.application_scope = 'EMPLOYEE_ENROLLMENT'
+                  AND policy.deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM payroll_item_balance_policy policy

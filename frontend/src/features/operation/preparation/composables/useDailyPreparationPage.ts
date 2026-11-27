@@ -53,6 +53,11 @@ export const resetAssignmentRowValues = (row: DailyPreparationAssignmentTableRow
   row._isDeleted = true
 }
 
+export const preparationForTargetDate = (
+  preparation: DailyPreparationResponse | null,
+  targetDate: string,
+) => preparation?.targetDate === targetDate ? preparation : null
+
 const hasDispatchValue = (row: DailyPreparationDispatchTableRow) =>
   row.customerId != null && row.customerSiteId != null
 
@@ -109,8 +114,12 @@ export const useDailyPreparationPage = () => {
 
   const preparation = computed(() => preparationQuery.preparation.value)
 
+  const activePreparation = computed(() =>
+    preparationForTargetDate(preparation.value, targetDate.value),
+  )
+
   const ensurePreparation = async (): Promise<DailyPreparationResponse> => {
-    if (preparation.value) return preparation.value
+    if (activePreparation.value) return activePreparation.value
 
     return (await createPreparationMutation.mutateAsync({
       targetDate: targetDate.value,
@@ -126,7 +135,7 @@ export const useDailyPreparationPage = () => {
   const rebuildDispatchRows = () => {
     dispatchRows.value = createDispatchRowsFromAssignments(
       assignmentRows.value,
-      preparation.value?.dispatches ?? [],
+      activePreparation.value?.dispatches ?? [],
       dispatchRows.value,
       getDistanceFromSiteId,
     )
@@ -135,18 +144,24 @@ export const useDailyPreparationPage = () => {
   watch(
     () => targetDate.value,
     async () => {
+      // 別日の編集中データを次の日付へ持ち越さない。
+      assignmentRows.value = []
+      dispatchRows.value = []
       await customerStore.load()
-      rebuildDispatchRows()
     },
     { immediate: true },
   )
 
   watch(
-    () => [employeesQuery.employees.value, preparation.value?.assignments],
+    () => [
+      targetDate.value,
+      employeesQuery.employees.value,
+      activePreparation.value?.assignments,
+    ],
     () => {
       assignmentRows.value = createAssignmentRows(
         employeesQuery.employees.value,
-        preparation.value?.assignments ?? [],
+        activePreparation.value?.assignments ?? [],
       )
 
       rebuildDispatchRows()
@@ -155,7 +170,7 @@ export const useDailyPreparationPage = () => {
   )
 
   watch(
-    () => preparation.value?.dispatches,
+    () => activePreparation.value?.dispatches,
     () => {
       rebuildDispatchRows()
     },

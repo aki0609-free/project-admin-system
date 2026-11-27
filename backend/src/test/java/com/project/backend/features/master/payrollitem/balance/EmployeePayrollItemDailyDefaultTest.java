@@ -64,6 +64,41 @@ class EmployeePayrollItemDailyDefaultTest {
     }
 
     @Test
+    void findDailyRuleParameters_shouldKeepFixedZeroDistinctFromAutomaticMode() {
+        TenantContext.setTenantId("default");
+        Fixture fixture = fixture();
+        PayrollItemBalancePolicy policy = policy(12L, PayrollItemTargetType.DEDUCTION);
+        EmployeePayrollItemEnrollment enrollment = enrollment(
+                LocalDate.of(2026, 10, 31),
+                null,
+                "{\"dailyAmountMode\":\"FIXED\",\"employeeDailyAmount\":\"0\"}"
+        );
+        PayrollItemParameterDefinition modeDefinition = modeDefinition(12L);
+        PayrollItemParameterDefinition amountDefinition = amountDefinition(12L);
+
+        when(fixture.policyRepository
+                .findAllByTenantIdAndDeletedAtIsNullOrderByIdAsc("default"))
+                .thenReturn(List.of(policy));
+        when(fixture.enrollmentRepository
+                .findAllByEmployeeIdAndBalancePolicyIdAndEffectiveFromLessThanEqualAndDeletedAtIsNullOrderByEffectiveFromAsc(
+                        20L, 12L, LocalDate.of(2026, 11, 1)))
+                .thenReturn(List.of(enrollment));
+        when(fixture.parameterRepository
+                .findAllByTenantIdAndBalancePolicyIdAndActiveFlagTrueAndDeletedAtIsNullOrderByDisplayOrderAscIdAsc(
+                        "default", 12L))
+                .thenReturn(List.of(modeDefinition, amountDefinition));
+
+        Map<String, Object> parameters = fixture.service.findDailyRuleParameters(
+                20L,
+                PayrollItemTargetType.DEDUCTION,
+                LocalDate.of(2026, 11, 1)
+        ).get(101L);
+
+        assertThat(parameters).containsEntry("dailyAmountMode", "FIXED");
+        assertThat(parameters.get("employeeDailyAmount").toString()).isEqualTo("0");
+    }
+
+    @Test
     void findExcludedDailyMasterIds_shouldExcludeEmployeeItemWithoutEnrollment() {
         TenantContext.setTenantId("default");
         Fixture fixture = fixture();
@@ -148,6 +183,19 @@ class EmployeePayrollItemDailyDefaultTest {
         definition.setDisplayName("日報初期額");
         definition.setInputType(PayrollItemParameterInputType.NUMBER);
         definition.setDefaultValue("0");
+        definition.setRuleParameterFlag(true);
+        definition.setActiveFlag(true);
+        return definition;
+    }
+
+    private PayrollItemParameterDefinition modeDefinition(Long policyId) {
+        PayrollItemParameterDefinition definition =
+                new PayrollItemParameterDefinition();
+        definition.setBalancePolicyId(policyId);
+        definition.setParameterKey("dailyAmountMode");
+        definition.setDisplayName("計算方式");
+        definition.setInputType(PayrollItemParameterInputType.SELECT);
+        definition.setDefaultValue("AUTO");
         definition.setRuleParameterFlag(true);
         definition.setActiveFlag(true);
         return definition;

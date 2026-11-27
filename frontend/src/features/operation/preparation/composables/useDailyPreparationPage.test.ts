@@ -5,10 +5,26 @@ import type { DailyPreparationDispatchTableRow } from './useDailyPreparationDisp
 import {
   buildAssignmentSaveItems,
   buildDispatchSaveItems,
+  preparationForTargetDate,
   resetAssignmentRowValues,
 } from './useDailyPreparationPage'
+import type { DailyPreparationResponse } from '../types/dailyPreparationApiTypes'
 
 describe('useDailyPreparationPage save snapshots', () => {
+  it('選択日と異なる日の配置データを画面へ流用しない', () => {
+    const preparation = {
+      id: 1,
+      targetDate: '2026-11-02',
+      status: 'OPEN',
+      note: null,
+      assignments: [],
+      dispatches: [],
+    } satisfies DailyPreparationResponse
+
+    expect(preparationForTargetDate(preparation, '2026-11-02')).toBe(preparation)
+    expect(preparationForTargetDate(preparation, '2026-11-03')).toBeNull()
+  })
+
   it('初回ヘッダー作成後に画面行が再構築されても従業員配置の保存内容を保持する', () => {
     const row = {
       assignmentId: null,

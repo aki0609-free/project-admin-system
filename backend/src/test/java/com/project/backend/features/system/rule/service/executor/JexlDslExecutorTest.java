@@ -93,4 +93,40 @@ class JexlDslExecutorTest {
         assertThat(employeeResult).isEqualTo(new BigDecimal("550"));
         assertThat(companyResult).isEqualTo(0);
     }
+
+    @Test
+    void execute_shouldDistinguishAutomaticAndFixedZeroLegalDeposit() {
+        RuleMaster rule = new RuleMaster();
+        rule.setRuleName("DAILY_LEGAL_DEPOSIT_ESTIMATE");
+        rule.setDslText("dailyAmountMode == 'FIXED' ? employeeDailyAmount : "
+                + "predictedStatutoryDeductionTotal / 20");
+
+        Object fixedZero = executor.execute(
+                RuleExecutionContext.builder()
+                        .rule(rule)
+                        .facts(Map.of(
+                                "dailyAmountMode", "FIXED",
+                                "employeeDailyAmount", BigDecimal.ZERO,
+                                "predictedStatutoryDeductionTotal",
+                                new BigDecimal("88580")
+                        ))
+                        .parameters(Map.of())
+                        .build()
+        );
+        Object automatic = executor.execute(
+                RuleExecutionContext.builder()
+                        .rule(rule)
+                        .facts(Map.of(
+                                "dailyAmountMode", "AUTO",
+                                "employeeDailyAmount", BigDecimal.ZERO,
+                                "predictedStatutoryDeductionTotal",
+                                new BigDecimal("88580")
+                        ))
+                        .parameters(Map.of())
+                        .build()
+        );
+
+        assertThat(fixedZero).isEqualTo(BigDecimal.ZERO);
+        assertThat(automatic).isEqualTo(new BigDecimal("4429"));
+    }
 }

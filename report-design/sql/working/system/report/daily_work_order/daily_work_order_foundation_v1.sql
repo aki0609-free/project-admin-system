@@ -128,6 +128,10 @@ WITH active_company AS (
 )
 SELECT
     ranked.*,
+    CASE
+        WHEN ranked.worker_row_no = 1 THEN ranked.vehicle_count
+        ELSE NULL
+    END AS vehicle_count_preview,
     FLOOR((ranked.worker_row_no - 1) / 10) + 1 AS page_no,
     CEIL(ranked.total_worker_count / 10) AS total_pages,
     MOD(ranked.worker_row_no - 1, 10) + 1 AS page_slot
@@ -405,4 +409,4 @@ INSERT INTO operation_report_preview_column (
 (@tenant_id, @now, @now, @operation_preview_id, '作業員名', 'employee_name', 4, TRUE),
 (@tenant_id, @now, @now, @operation_preview_id, '作業内容', 'work_description', 5, TRUE),
 (@tenant_id, @now, @now, @operation_preview_id, '距離(km)', 'distance_from_company_km', 6, TRUE),
-(@tenant_id, @now, @now, @operation_preview_id, '配車台数', 'vehicle_count', 7, TRUE);
+(@tenant_id, @now, @now, @operation_preview_id, '配車台数', 'vehicle_count_preview', 7, TRUE);
