@@ -59,7 +59,7 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
         List<String> resources = RuntimeSchemaAssetInstaller.readManifest();
 
         assertThat(resources)
-                .hasSize(53)
+                .hasSize(54)
                 .contains(
                         "sql/admin/external_support_links_v1.sql",
                         "sql/admin/business_calendar_year_end_adjustment_v1.sql",
@@ -68,6 +68,7 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                         "sql/customer/customer_distance_precision_v1.sql",
                         "sql/daily_report/employee_daily_payroll_defaults_v1.sql",
                         "sql/tax/insurance_rate_type_v1.sql",
+                        "sql/tax/income_tax_2027_application_v1.sql",
                         "sql/system/import/standard_remuneration_editor_foundation_v1.sql",
                         "sql/master/allowance_master_foundation_v1.sql",
                         "sql/daily_report/vehicle_arrangement_foundation_v1.sql",
@@ -528,6 +529,26 @@ class RuntimeSchemaAssetsIntegrationTest extends ContainerIntegrationTest {
                   AND script_args LIKE '%--category CONSTRUCTION%'
                   AND deleted_at IS NULL
                 """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM import_target
+                WHERE target_code = 'IMPORT_INCOME_TAX_TABLE'
+                  AND active_flag = TRUE
+                  AND fixed_file_path = 'income_tax_table_2027.csv'
+                  AND script_args LIKE '%--year 2027%'
+                  AND script_args LIKE '%zeigakuhyo2027/data/01-07.xlsx%'
+                  AND script_args LIKE '%nta_income_tax_monthly_2027.xlsx%'
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM payroll_calculation_period
+                WHERE tenant_id = 'default'
+                  AND target_month BETWEEN '2026-12-01' AND '2027-11-01'
+                  AND income_tax_year = 2027
+                  AND verified_flag = FALSE
+                  AND deleted_at IS NULL
+                """, Integer.class)).isEqualTo(12);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM import_column column_def

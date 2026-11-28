@@ -37,6 +37,7 @@ sql/system/import/resident_tax_editor_foundation_v1.sql
 sql/system/report/envelope/changeDefinition.sql
 sql/system/report/envelope/envelope_foundation_v1.sql
 sql/system/report/pay_slip/monthly_pay_slip_view_foundation_v1.sql
+sql/tax/income_tax_2027_application_v1.sql
 sql/system/import/standard_remuneration_editor_foundation_v1.sql
 sql/system/report/pay_slip/daily_pay_slip_view_foundation_v1.sql
 sql/system/report/pay_slip/setup.sql

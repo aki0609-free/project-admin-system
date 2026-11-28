@@ -11,9 +11,9 @@ INSERT INTO import_target (
 (
     'IMPORT_INCOME_TAX_TABLE', '源泉徴収税額表取込', 'income_tax_table',
     '国税庁の源泉徴収税額表を公式Excelから正規化して取り込む',
-    'SCRIPT', 'income_tax_table_2026.csv', 'PYTHON',
+    'SCRIPT', 'income_tax_table_2027.csv', 'PYTHON',
     'convert_income_tax_table_v2.py',
-    '--year 2026 --url https://www.nta.go.jp/publication/pamph/gensen/zeigakuhyo2026/data/01-07.xls --input ${IMPORT_WORK_DIR}/source/nta_income_tax_monthly_2026.xls --output ${IMPORT_CSV_DIR}/income_tax_table_2026.csv',
+    '--year 2027 --url https://www.nta.go.jp/publication/pamph/gensen/zeigakuhyo2027/data/01-07.xlsx --input ${IMPORT_WORK_DIR}/source/nta_income_tax_monthly_2027.xlsx --output ${IMPORT_CSV_DIR}/income_tax_table_2027.csv',
     'UPSERT', 1, 2, 'UTF-8', ',', TRUE,
     'default', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL
 ),

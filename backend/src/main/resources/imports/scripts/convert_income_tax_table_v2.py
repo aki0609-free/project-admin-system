@@ -7,6 +7,7 @@ import pandas as pd
 
 
 MAX_SALARY_SENTINEL = 999_999_999
+SUPPORTED_EXCEL_SUFFIXES = {".xls", ".xlsx"}
 
 
 def download(url: str, path: Path):
@@ -69,6 +70,11 @@ def find_table_layout(df):
 
 
 def normalize_excel(input_file: Path, year: int, output_file: Path):
+    if input_file.suffix.lower() not in SUPPORTED_EXCEL_SUFFIXES:
+        raise RuntimeError(
+            "入力ファイルは国税庁の月額表Excel（.xls または .xlsx）を指定してください。"
+        )
+
     raw = pd.read_excel(input_file, header=None, dtype=object)
 
     header_row, min_column, max_column, dependent_columns = find_table_layout(raw)

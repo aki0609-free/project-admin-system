@@ -36,7 +36,7 @@ RUN python3 -m venv /opt/projectadmin-python \
     && /opt/projectadmin-python/bin/pip install --no-cache-dir \
         --requirement /tmp/requirements-container.txt \
     && /opt/projectadmin-python/bin/python -c \
-        "import pandas, pdfplumber, requests" \
+        "import openpyxl, pandas, pdfplumber, requests" \
     && /opt/projectadmin-python/bin/python -m pip uninstall --yes pip \
     && apt-get purge -y --auto-remove \
         python3-venv \

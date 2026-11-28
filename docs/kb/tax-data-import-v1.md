@@ -256,6 +256,26 @@ import script領域、取込先はImport Target Catalogで許可されたもの�
 税額は高リスクな業務数値のため、Python変換成功だけで本番適用せず、
 原表の先頭・中間・最終税額帯を人手でも照合する。
 
+### 6.1 2027年（令和9年）対応
+
+- 公式月額表: `https://www.nta.go.jp/publication/pamph/gensen/zeigakuhyo2027/data/01-07.xlsx`
+- 取込年: `2027`
+- 正規化CSV: `income_tax_table_2027.csv`
+- 対象月: 2026年12月〜2027年11月
+- `payroll_calculation_period.income_tax_year`: `2027`
+
+月払い給与は対象月の翌月15日に支払うため、2026年12月勤務分は
+2027年1月支給となり、2027年分の源泉徴収税額表を使用する。
+
+令和9年分は国税庁の公式ファイルが`.xlsx`形式のため、実行環境に
+`openpyxl`が必要である。`convert_income_tax_table_v2.py`は`.xls`と`.xlsx`の
+両方を受け付ける。
+
+`income_tax_2027_application_v1.sql`は2027年の計算期間を準備するが、
+社会保険料率まで2027年版と推定しない。直近設定を仮引継ぎし、
+`verified_flag = FALSE`として登録する。対象月の社会保険料率を公式資料と
+照合した後にのみ検証済みへ変更する。
+
 ## 7. 社会保険料の版管理
 
 保険料率の切替条件を給与Viewへ直接ハードコードしない。

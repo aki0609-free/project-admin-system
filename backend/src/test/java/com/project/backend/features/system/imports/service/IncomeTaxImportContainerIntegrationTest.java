@@ -138,6 +138,42 @@ class IncomeTaxImportContainerIntegrationTest
                 });
     }
 
+    @Test
+    void 令和9年分を既存年度と共存させ対象年の控除詳細へ反映する() {
+        MockMultipartFile convertedCsv = new MockMultipartFile(
+                "file",
+                "income-tax-table-2027.csv",
+                "text/csv",
+                ("year,minSalary,maxSalary,dependents,taxAmount\n"
+                        + "2027,105000,106999,0,190\n"
+                        + "2027,105000,106999,1,0\n")
+                        .getBytes(StandardCharsets.UTF_8)
+        );
+
+        var result = importExecutionService.executeUpload(
+                TARGET_CODE,
+                convertedCsv
+        );
+
+        assertThat(result.status()).isEqualTo("COMPLETED");
+        assertThat(incomeTaxRepository
+                .findByYearOrderByMinSalaryAscDependentsAsc(2027))
+                .hasSize(2)
+                .anySatisfy(row -> {
+                    assertThat(row.getDependents()).isZero();
+                    assertThat(row.getTaxAmount()).isEqualTo(190);
+                });
+        assertThat(detailProvider.getDetails(
+                new DeductionMaster(),
+                LocalDate.of(2027, 1, 1)
+        ))
+                .hasSize(2)
+                .anySatisfy(detail -> {
+                    assertThat(detail.detailType()).isEqualTo("INCOME_TAX");
+                    assertThat(detail.values().get("taxAmount")).isEqualTo(190);
+                });
+    }
+
     private ImportColumn column(
             String columnName,
             String csvHeader,

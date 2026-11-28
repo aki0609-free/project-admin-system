@@ -56,11 +56,31 @@
         border-radius: 10px;
     }
 
+    .preview-section + .preview-section {
+        margin-top: 24px;
+    }
+
+    .section-title {
+        margin: 0 0 10px;
+        padding-left: 10px;
+        border-left: 4px solid #2563eb;
+        color: #1e293b;
+        font-size: 18px;
+        font-weight: 800;
+    }
+
     table {
         width: 100%;
-        min-width: 1100px;
         border-collapse: collapse;
         background: #ffffff;
+    }
+
+    .placement-table {
+        min-width: 900px;
+    }
+
+    .work-detail-table {
+        min-width: 720px;
     }
 
     thead th {
@@ -163,8 +183,10 @@
         </div>
     </section>
 
-    <div class="table-wrapper">
-        <table>
+    <section class="preview-section">
+        <h2 class="section-title">配置・配車情報</h2>
+        <div class="table-wrapper">
+        <table class="placement-table">
             <thead>
             <tr>
                 <th class="number">No</th>
@@ -174,14 +196,12 @@
                 <th class="site">現場</th>
                 <th class="distance">距離(km)</th>
                 <th class="vehicle">車両</th>
-                <th class="note">備考</th>
-                <th class="work">作業内容</th>
             </tr>
             </thead>
 
             <tbody>
             <tr th:if="${rows == null || rows.isEmpty()}">
-                <td colspan="9" class="empty">表示するデータがありません。</td>
+                <td colspan="7" class="empty">表示するデータがありません。</td>
             </tr>
 
             <tr th:each="row, stat : ${rows}">
@@ -198,12 +218,42 @@
                     class="vehicle" 
                     th:text="${row['vehicle_count'] != null ? row['vehicle_count'] + ' 台' : ''}"
                 ></td>
+            </tr>
+            </tbody>
+        </table>
+        </div>
+    </section>
+
+    <section class="preview-section">
+        <h2 class="section-title">備考・作業内容</h2>
+        <div class="table-wrapper">
+        <table class="work-detail-table">
+            <thead>
+            <tr>
+                <th class="number">No</th>
+                <th class="code">社員コード</th>
+                <th class="name">氏名</th>
+                <th class="note">備考</th>
+                <th class="work">作業内容</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:if="${rows == null || rows.isEmpty()}">
+                <td colspan="5" class="empty">表示するデータがありません。</td>
+            </tr>
+
+            <tr th:each="row, stat : ${rows}">
+                <td class="number" th:text="${stat.count}"></td>
+                <td th:text="${row['employee_code']}"></td>
+                <td th:text="${row['employee_name']}"></td>
                 <td class="note" th:text="${row['note']}"></td>
                 <td class="work" th:text="${row['work_description']}"></td>
             </tr>
             </tbody>
         </table>
-    </div>
+        </div>
+    </section>
 
 </div>
 </body>

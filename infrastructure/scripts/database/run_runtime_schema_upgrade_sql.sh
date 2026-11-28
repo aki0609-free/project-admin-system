@@ -272,12 +272,30 @@ tax_import_verification="$(
       (SELECT COUNT(*)
        FROM excel_book_master
        WHERE tenant_id = 'default'
-         AND book_code = 'EMPLOYEE_LEDGER_VERIFY')
+         AND book_code = 'EMPLOYEE_LEDGER_VERIFY'),
+      ':',
+      (SELECT COUNT(*)
+       FROM import_target
+       WHERE tenant_id = 'default'
+         AND target_code = 'IMPORT_INCOME_TAX_TABLE'
+         AND fixed_file_path = 'income_tax_table_2027.csv'
+         AND script_args LIKE '%--year 2027%'
+         AND script_args LIKE '%zeigakuhyo2027/data/01-07.xlsx%'
+         AND active_flag = TRUE
+         AND deleted_at IS NULL),
+      ':',
+      (SELECT COUNT(*)
+       FROM payroll_calculation_period
+       WHERE tenant_id = 'default'
+         AND target_month BETWEEN '2026-12-01' AND '2027-11-01'
+         AND income_tax_year = 2027
+         AND verified_flag = FALSE
+         AND deleted_at IS NULL)
     );
   "
 )"
 
-if [[ "${tax_import_verification}" != "7:7:29:0" ]]; then
+if [[ "${tax_import_verification}" != "7:7:29:0:1:12" ]]; then
   echo "Tax import or verification-ledger cleanup failed: ${tax_import_verification}" >&2
   exit 1
 fi

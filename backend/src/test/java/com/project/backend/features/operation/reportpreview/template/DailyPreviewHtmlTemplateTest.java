@@ -178,6 +178,37 @@ class DailyPreviewHtmlTemplateTest {
     }
 
     @Test
+    void rendersDailyWorkOrderAsTwoReadableTables() throws Exception {
+        String html = renderRows(
+                "daily_work_order.html",
+                List.of(Map.ofEntries(
+                        Map.entry("employee_code", "E001"),
+                        Map.entry("employee_name", "山田太郎"),
+                        Map.entry("customer_name", "検証建設株式会社"),
+                        Map.entry("site_name", "第一工事現場"),
+                        Map.entry("distance_from_company_km", amount("12.5")),
+                        Map.entry("vehicle_count", 2),
+                        Map.entry("note", "安全確認済み"),
+                        Map.entry("work_description", "資材搬入と現場清掃")
+                )),
+                Map.of("targetDate", "2026-11-27")
+        );
+
+        assertThat(html)
+                .contains("作業証明伝票")
+                .contains("2026年11月27日")
+                .contains("配置・配車情報")
+                .contains("備考・作業内容")
+                .contains("E001", "山田太郎")
+                .contains("検証建設株式会社", "第一工事現場")
+                .contains("12.5 km", "2 台")
+                .contains("安全確認済み", "資材搬入と現場清掃")
+                .contains("class=\"placement-table\"")
+                .contains("class=\"work-detail-table\"")
+                .doesNotContain("th:text");
+    }
+
+    @Test
     void rendersMonthlyPaySlipAsLatestDataPreview()
             throws Exception {
         String html = render(
@@ -344,6 +375,14 @@ class DailyPreviewHtmlTemplateTest {
             String fileName,
             List<Map<String, Object>> rows
     ) throws Exception {
+        return renderRows(fileName, rows, Map.of());
+    }
+
+    private String renderRows(
+            String fileName,
+            List<Map<String, Object>> rows,
+            Map<String, Object> request
+    ) throws Exception {
         ClassPathResource resource = new ClassPathResource(
                 "templates/operation/reportpreview/" + fileName
         );
@@ -361,7 +400,7 @@ class DailyPreviewHtmlTemplateTest {
                         "rows", rows,
                         "columns", List.of(),
                         "definition", Map.of(),
-                        "request", Map.of()
+                        "request", request
                 )
         );
     }
